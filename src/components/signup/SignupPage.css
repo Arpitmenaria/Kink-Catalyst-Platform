@@ -1,0 +1,460 @@
+/* ─────────────────────────────────────────
+   Root layout
+───────────────────────────────────────── */
+.signup-page {
+  display: flex;
+  min-height: 100vh;
+  background: #0b0d17;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─────────────────────────────────────────
+   Left panel
+───────────────────────────────────────── */
+.signup-left-panel {
+  flex: 0 0 48%;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 48px 48px;
+  background: #0b0d17;
+}
+
+.signup-logo {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.signup-form-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─────────────────────────────────────────
+   Card
+───────────────────────────────────────── */
+.signup-card {
+  width: 100%;
+  max-width: 370px;
+  background: #111420;
+  border: 1px solid #1d2035;
+  border-radius: 14px;
+  padding: 32px 28px 28px;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.signup-card-header {
+  margin-bottom: 20px;
+}
+
+.signup-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f1f3f9;
+  margin: 0 0 6px;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.signup-subtitle {
+  font-size: 13.5px;
+  color: #6d7590;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────
+   OR divider
+───────────────────────────────────────── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: #3e4460;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #1d2035;
+}
+
+/* ─────────────────────────────────────────
+   Social auth buttons
+───────────────────────────────────────── */
+.social-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.social-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background: #161929;
+  border: 1px solid #252840;
+  border-radius: 8px;
+  color: #d4d8ec;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  line-height: 1;
+}
+
+.social-btn:hover {
+  background: #1b1f33;
+  border-color: #313658;
+}
+
+.social-btn:active {
+  background: #1e2238;
+}
+
+/* ─────────────────────────────────────────
+   Form fields
+───────────────────────────────────────── */
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #c0c5d8;
+  letter-spacing: 0.1px;
+}
+
+.form-group input {
+  padding: 9px 13px;
+  background: #161929;
+  border: 1px solid #252840;
+  border-radius: 8px;
+  color: #eef0f8;
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  line-height: 1.4;
+}
+
+.form-group input::placeholder {
+  color: #3a3f5c;
+}
+
+.form-group input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.form-group input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.social-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────
+   Feedback messages
+───────────────────────────────────────── */
+.form-message {
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.form-message--error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+.form-message--success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+
+/* ─────────────────────────────────────────
+   Submit button
+───────────────────────────────────────── */
+.submit-btn {
+  width: 100%;
+  padding: 11px;
+  margin-top: 4px;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.1px;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.submit-btn:hover {
+  background: #1d4ed8;
+}
+
+.submit-btn:active {
+  background: #1e40af;
+  transform: scale(0.99);
+}
+
+.submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-btn:disabled:hover {
+  background: #2563eb;
+}
+
+/* ─────────────────────────────────────────
+   Loading spinner
+───────────────────────────────────────── */
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─────────────────────────────────────────
+   Sign-in link
+───────────────────────────────────────── */
+.signin-text {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: #5c6280;
+  line-height: 1;
+}
+
+.signin-text a,
+.inline-link-btn {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.signin-text a:hover,
+.inline-link-btn:hover {
+  text-decoration: underline;
+}
+
+.inline-link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────
+   Right hero panel
+───────────────────────────────────────── */
+.signup-hero-panel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.hero-bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(5, 7, 18, 0.92) 0%,
+    rgba(5, 7, 18, 0.55) 38%,
+    rgba(5, 7, 18, 0.22) 65%,
+    rgba(5, 7, 18, 0.08) 100%
+  );
+}
+
+.hero-content {
+  position: absolute;
+  bottom: 52px;
+  left: 52px;
+  right: 52px;
+}
+
+.hero-quote {
+  font-size: 27px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+  margin: 0 0 10px;
+  letter-spacing: -0.4px;
+  font-style: normal;
+}
+
+.hero-tagline {
+  font-size: 13px;
+  color: #b0bdd6;
+  margin: 0 0 26px;
+  letter-spacing: 0.1px;
+}
+
+/* ─────────────────────────────────────────
+   Social proof pill
+───────────────────────────────────────── */
+.social-proof {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 100px;
+  padding: 9px 18px 9px 9px;
+}
+
+.avatars {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(11, 13, 23, 0.8);
+  margin-left: -9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar-initials {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.2px;
+  user-select: none;
+}
+
+.avatar-a { background: linear-gradient(135deg, #f97316, #ef4444); }
+.avatar-b { background: linear-gradient(135deg, #a855f7, #ec4899); }
+.avatar-c { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+
+.social-proof-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+
+.social-proof-count {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f0f3ff;
+}
+
+.social-proof-label {
+  font-size: 11px;
+  color: #8892b0;
+  letter-spacing: 0.1px;
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .signup-left-panel {
+    flex: 0 0 55%;
+    padding: 28px 32px 40px;
+  }
+}
+
+@media (max-width: 720px) {
+  .signup-hero-panel {
+    display: none;
+  }
+
+  .signup-left-panel {
+    flex: 1;
+    padding: 28px 24px 40px;
+  }
+
+  .signup-form-wrapper {
+    align-items: flex-start;
+    padding-top: 32px;
+  }
+}
+
+@media (max-width: 400px) {
+  .signup-card {
+    padding: 24px 20px 22px;
+  }
+}

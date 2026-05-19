@@ -1,0 +1,120 @@
+/* ─────────────────────────────────────────
+   Verify card overrides
+───────────────────────────────────────── */
+.verify-card {
+  max-width: 370px;
+}
+
+.verify-header {
+  margin-bottom: 24px;
+}
+
+/* ─────────────────────────────────────────
+   Back button
+───────────────────────────────────────── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #6d7590;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 22px;
+  letter-spacing: 0.1px;
+  transition: color 0.15s ease;
+}
+
+.back-btn:hover {
+  color: #a0aec0;
+}
+
+.back-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────
+   Email highlight in subtitle
+───────────────────────────────────────── */
+.email-highlight {
+  color: #c0c5d8;
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────
+   OTP input group
+───────────────────────────────────────── */
+.otp-input-group {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  margin-bottom: 4px;
+}
+
+.otp-box {
+  width: 48px;
+  height: 54px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #eef0f8;
+  background: #161929;
+  border: 1px solid #252840;
+  border-radius: 10px;
+  outline: none;
+  caret-color: #3b82f6;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  /* remove browser number-input arrows */
+  -moz-appearance: textfield;
+}
+
+.otp-box::-webkit-outer-spin-button,
+.otp-box::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.otp-box:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.otp-box--filled {
+  border-color: #2d3a5e;
+  background: #1a2035;
+}
+
+.otp-box:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────
+   Resend button (inline text button)
+───────────────────────────────────────── */
+.resend-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3b82f6;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.resend-btn:hover {
+  text-decoration: underline;
+}
+
+.resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
