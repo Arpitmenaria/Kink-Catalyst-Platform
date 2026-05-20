@@ -56,6 +56,28 @@ export const commentPost = createAsyncThunk(
   }
 );
 
+export const createPost = createAsyncThunk(
+  'posts/create',
+  async ({ caption, mediaFile }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const formData = new FormData();
+      formData.append('caption', caption);
+      if (mediaFile) formData.append('media', mediaFile);
+      const res = await fetch(`${BASE_URL}/auth/user/posts`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) return rejectWithValue(data?.message || 'Failed to create post.');
+      return data.post;
+    } catch {
+      return rejectWithValue('Network error. Please try again.');
+    }
+  }
+);
+
 export const fetchReportReasons = createAsyncThunk(
   'posts/fetchReportReasons',
   async (_, { getState, rejectWithValue }) => {
@@ -119,6 +141,7 @@ const postsSlice = createSlice({
     likingIds: [],
     commentingId: null,
     sharingId: null,
+    creating: false,
     reportReasons: [],
     reasonsLoading: false,
     reportSubmitting: false,
@@ -193,6 +216,18 @@ const postsSlice = createSlice({
       })
       .addCase(sharePost.rejected, (state) => {
         state.sharingId = null;
+      })
+
+      // ── Create Post ───────────────────────
+      .addCase(createPost.pending, (state) => {
+        state.creating = true;
+      })
+      .addCase(createPost.fulfilled, (state, action) => {
+        state.creating = false;
+        if (action.payload) state.posts.unshift(action.payload);
+      })
+      .addCase(createPost.rejected, (state) => {
+        state.creating = false;
       })
 
       // ── Report Reasons ─────────────────────
