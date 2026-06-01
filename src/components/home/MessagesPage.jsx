@@ -62,8 +62,75 @@ const DOC_TYPE_META = {
   pptx: { icon: <PptxIcon />, color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
 };
 
+/* ── Upload Assets Modal ── */
+const UPLOADED_THUMBS = [
+  'linear-gradient(135deg,#1e3a5f,#2563eb)',
+  'linear-gradient(135deg,#1a1040,#7c3aed)',
+  'linear-gradient(135deg,#0f2a1e,#065f46)',
+  'linear-gradient(135deg,#0c2a2a,#0f766e)',
+  'linear-gradient(135deg,#1a1a2e,#374151)',
+];
+
+function UploadAssetsModal({ onClose }) {
+  const [dragging, setDragging] = useState(false);
+
+  return (
+    <div className="ua-overlay" onClick={onClose}>
+      <div className="ua-modal" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="ua-header">
+          <h2 className="ua-title">Upload New Assets</h2>
+          <button className="ua-close" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        {/* Drop zone */}
+        <div
+          className={`ua-dropzone${dragging ? ' ua-dropzone--active' : ''}`}
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={e => { e.preventDefault(); setDragging(false); }}
+        >
+          <div className="ua-cloud-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+            </svg>
+          </div>
+          <p className="ua-drop-title">Drag and drop your assets here</p>
+          <p className="ua-drop-sub">Support for JPG, PNG, and MP4 up to 50MB</p>
+          <button className="ua-browse-btn">Browse Files</button>
+        </div>
+
+        {/* Uploaded files */}
+        <div className="ua-uploaded-section">
+          <div className="ua-uploaded-header">
+            <span className="ua-uploaded-label">SUCCESSFULLY UPLOADED (5)</span>
+            <span className="ua-uploaded-size">2.4 MB total</span>
+          </div>
+          <div className="ua-thumbs">
+            {UPLOADED_THUMBS.map((bg, i) => (
+              <div key={i} className="ua-thumb" style={{ background: bg }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="ua-footer">
+          <button className="ua-cancel-btn" onClick={onClose}>Cancel</button>
+          <button className="ua-done-btn" onClick={onClose}>Done</button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 function SharedAssetsView({ conv, onBack }) {
-  const [tab, setTab] = useState('media');
+  const [tab, setTab]         = useState('media');
+  const [uploadOpen, setUpload] = useState(false);
   const usedGB  = 6.2;
   const totalGB = 10;
   const pct     = Math.round((usedGB / totalGB) * 100);
@@ -190,7 +257,7 @@ function SharedAssetsView({ conv, onBack }) {
         {/* Quick Actions */}
         <div className="sa-panel">
           <p className="sa-quick-title">QUICK ACTIONS</p>
-          <button className="sa-action-btn sa-action-btn--primary">
+          <button className="sa-action-btn sa-action-btn--primary" onClick={() => setUpload(true)}>
             <UploadIcon /> Upload New
           </button>
           <button className="sa-action-btn sa-action-btn--secondary">
@@ -198,6 +265,8 @@ function SharedAssetsView({ conv, onBack }) {
           </button>
         </div>
       </div>
+
+      {uploadOpen && <UploadAssetsModal onClose={() => setUpload(false)} />}
     </div>
   );
 }
@@ -374,7 +443,7 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function MessagesPage({ onBack }) {
+export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick }) {
   const [tab, setTab]           = useState('All');
   const [search, setSearch]     = useState('');
   const [activeConv, setActiveConv] = useState(null);
@@ -407,7 +476,13 @@ export default function MessagesPage({ onBack }) {
               <button
                 key={item.id}
                 className={`msg-nav-item${item.active ? ' msg-nav-item--active' : ''}`}
-                onClick={item.id === 'feed' ? onBack : undefined}
+                onClick={
+                  item.id === 'feed'     ? onBack :
+                  item.id === 'event'    ? onEventsClick :
+                  item.id === 'groups'   ? onGroupsClick :
+                  item.id === 'calendar' ? onCalendarClick :
+                  undefined
+                }
               >
                 {item.icon}
                 <span>{item.label}</span>

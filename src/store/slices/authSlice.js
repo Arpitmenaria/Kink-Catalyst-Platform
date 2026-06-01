@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { selectPlan } from './plansSlice';
 
-const BASE_URL = 'https://social-platform-backend-a4zd.onrender.com/api';
+const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app/api';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -174,8 +174,9 @@ const authSlice = createSlice({
         state.loading = false;
         state.otpPending = false;
         state.registrationData = null;
-        state.isAuthenticated = true;
+        state.requiresPlanSelection = true;
         state.user = action.payload.user ?? null;
+        state.setupToken = action.payload.setupToken ?? null;
         state.token = action.payload.token ?? null;
         state.successMessage = 'Email verified successfully!';
       })

@@ -34,7 +34,7 @@
   border-radius: 8px;
   color: #5c6a8c;
   font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s, color 0.15s;
@@ -109,7 +109,7 @@
   color: #4a5270;
   text-align: center;
   line-height: 1.3;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-step-label--active { color: #e0e6f8; font-weight: 600; }
@@ -146,7 +146,7 @@
   font-weight: 700;
   color: #e8ecf8;
   margin: 0 0 8px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-form-subtitle {
@@ -181,7 +181,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #c8cfe0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-label--small {
@@ -199,7 +199,7 @@
   padding: 10px 14px;
   color: #c8cfe0;
   font-size: 13.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
@@ -216,7 +216,7 @@
   padding: 12px 14px;
   color: #c8cfe0;
   font-size: 13.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   outline: none;
   resize: vertical;
   min-height: 110px;
@@ -252,7 +252,7 @@
   font-size: 13px;
   color: #8b9cc8;
   cursor: pointer;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-toggle {
@@ -312,7 +312,7 @@
   padding: 10px 36px 10px 14px;
   color: #c8cfe0;
   font-size: 13.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   outline: none;
   cursor: pointer;
   transition: border-color 0.15s;
@@ -347,7 +347,7 @@
   border-radius: 8px;
   color: #5c6a8c;
   font-size: 12.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
@@ -380,7 +380,7 @@
   border: none;
   color: #5c6a8c;
   font-size: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   padding: 8px 4px;
   transition: color 0.15s;
@@ -404,7 +404,7 @@
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   padding: 10px 24px;
   cursor: pointer;
   transition: background 0.15s;
@@ -453,7 +453,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* Free / Paid toggle */
@@ -475,7 +475,7 @@
   color: #5c6a8c;
   font-size: 13px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -533,7 +533,7 @@
   font-weight: 600;
   color: #c8cfe0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-ticket-price {
@@ -542,7 +542,7 @@
   color: #c8cfe0;
   margin: 0;
   flex-shrink: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-ticket-price--active { color: #3b82f6; }
@@ -564,7 +564,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #c8cfe0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-new-ticket-body {
@@ -587,7 +587,7 @@
   font-size: 13px;
   cursor: pointer;
   padding: 4px 6px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   transition: color 0.15s;
 }
 
@@ -603,7 +603,7 @@
   cursor: pointer;
   padding: 10px 12px;
   border-radius: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -617,7 +617,7 @@
   color: #fff;
   font-size: 13px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   padding: 10px 12px;
   cursor: pointer;
   transition: background 0.15s;
@@ -638,7 +638,7 @@
   background: none;
   color: #5c6a8c;
   font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
@@ -691,7 +691,7 @@
   color: #5c6a8c;
   font-size: 13px;
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -719,7 +719,7 @@
   font-weight: 700;
   color: #c8cfe0;
   border-bottom: 1px solid #1a1f35;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   background: #111422;
 }
 
@@ -770,7 +770,7 @@
   border-radius: 6px;
   color: #8b9cc8;
   font-size: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   backdrop-filter: blur(4px);
@@ -789,7 +789,7 @@
   color: #fff;
   font-size: 12px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -817,7 +817,7 @@
   font-weight: 700;
   color: #e8ecf8;
   margin: 0 0 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* Review cards */
@@ -840,7 +840,7 @@
   font-size: 14px;
   font-weight: 700;
   color: #3b82f6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-review-edit-btn {
@@ -852,7 +852,7 @@
   color: #5c6a8c;
   font-size: 12.5px;
   cursor: pointer;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   padding: 4px 6px;
   border-radius: 5px;
   transition: color 0.15s, background 0.15s;
@@ -871,14 +871,14 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin: 0 0 5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-review-field-value {
   font-size: 13px;
   color: #c8cfe0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   line-height: 1.55;
 }
 
@@ -906,7 +906,7 @@
   background: #131626;
   font-size: 12px;
   color: #8b9cc8;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* Tickets review */
@@ -929,21 +929,21 @@
   font-weight: 600;
   color: #c8cfe0;
   margin: 0 0 2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-review-ticket-cap {
   font-size: 12px;
   color: #5c6a8c;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-review-ticket-price {
   font-size: 14px;
   font-weight: 700;
   color: #3b82f6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* Location review */
@@ -1001,7 +1001,7 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* Invite Friends */
@@ -1023,7 +1023,7 @@
   outline: none;
   color: #c8cfe0;
   font-size: 12.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-invite-search::placeholder { color: #3e4460; }
@@ -1051,14 +1051,14 @@
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-invite-name {
   flex: 1;
   font-size: 12.5px;
   color: #c8cfe0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1072,7 +1072,7 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   transition: color 0.15s;
   flex-shrink: 0;
 }
@@ -1099,7 +1099,7 @@
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
@@ -1116,7 +1116,7 @@
   color: #fff;
   font-size: 14px;
   font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -1132,7 +1132,7 @@
   color: #8b9cc8;
   font-size: 14px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -1145,7 +1145,7 @@
   text-align: center;
   margin: 0;
   line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .ev-publish-notice span { color: #3b82f6; cursor: pointer; }

@@ -47,7 +47,7 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo' }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents }) {
   const dispatch = useDispatch();
   const { user: authUser } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
@@ -71,6 +71,11 @@ export default function CreatePostModal({ onClose, initialTab = 'photo' }) {
   }, [onClose]);
 
   function switchTab(t) {
+    if (t === 'event') {
+      onClose();
+      onNavigateToEvents?.();
+      return;
+    }
     setTab(t);
     setMediaFile(null);
     if (mediaPreview) URL.revokeObjectURL(mediaPreview);

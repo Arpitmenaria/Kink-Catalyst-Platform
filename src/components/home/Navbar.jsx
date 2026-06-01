@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import { ALEX_AVATAR } from './mockData';
 
 function SearchIcon() {
   return (
@@ -18,10 +19,11 @@ function BellIcon() {
   );
 }
 
-function FriendsIcon() {
+function ChatBubbleIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path d="M13 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM0 18v-2a4 4 0 0 1 4-4h1a5 5 0 0 0 10 0h1a4 4 0 0 1 4 4v2H0z"/>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -32,12 +34,10 @@ function initials(name = '') {
 
 export default function Navbar() {
   const { user: authUser } = useSelector((state) => state.auth);
-  const { profile } = useSelector((state) => state.profile);
+  const { profile }        = useSelector((state) => state.profile);
 
   const displayName = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
-  const avatarUrl = profile?.avatar || '';
-  const followersCount = profile?.followers?.length ?? 0;
-  const followingCount = profile?.following?.length ?? 0;
+  const avatarUrl   = profile?.avatar   ?? ALEX_AVATAR;
 
   return (
     <nav className="home-navbar">
@@ -50,37 +50,37 @@ export default function Navbar() {
       </div>
 
       <div className="navbar-center">
-        <div className="navbar-stat">
-          <FriendsIcon />
-          <span><strong>{followingCount}</strong> Following</span>
+        <div className="navbar-stat-pill">
+          <span className="navbar-stat-num">326</span>
+          <span className="navbar-stat-lbl">Total Posts</span>
         </div>
         <div className="navbar-divider" />
-        <div className="navbar-stat">
-          <FriendsIcon />
-          <span><strong>{followersCount}</strong> Followers</span>
+        <div className="navbar-stat-pill">
+          <span className="navbar-stat-num">2456</span>
+          <span className="navbar-stat-lbl">Total Friends</span>
         </div>
       </div>
 
       <div className="navbar-right">
+        <button className="navbar-icon-btn" aria-label="Messages">
+          <ChatBubbleIcon />
+          <span className="notif-badge notif-badge--green">2</span>
+        </button>
         <button className="navbar-icon-btn" aria-label="Notifications">
           <BellIcon />
-          <span className="notif-dot notif-dot--red" />
-        </button>
-        <button className="navbar-icon-btn" aria-label="Messages">
-          <BellIcon />
-          <span className="notif-dot notif-dot--green" />
+          <span className="notif-badge notif-badge--red">2</span>
         </button>
         <div className="navbar-user">
-          <div className="navbar-avatar" style={{ overflow: avatarUrl ? 'hidden' : undefined }} aria-hidden="true">
-            {avatarUrl
-              ? <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initials(displayName)
-            }
+          <div className="navbar-avatar-wrap">
+            <div className="navbar-avatar" style={{ overflow: 'hidden' }} aria-hidden="true">
+              <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <span className="navbar-online-dot" />
           </div>
-          <span className="navbar-username">{displayName}</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 4l4 4 4-4" stroke="#6b7399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <div className="navbar-user-info">
+            <span className="navbar-username">{displayName}</span>
+            <span className="navbar-active-now">Active Now</span>
+          </div>
         </div>
       </div>
     </nav>

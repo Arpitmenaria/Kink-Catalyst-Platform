@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-const BASE_URL = 'https://social-platform-backend-a4zd.onrender.com/api';
+const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app/api';
 
 export const fetchFeedPosts = createAsyncThunk(
   'posts/fetchFeed',

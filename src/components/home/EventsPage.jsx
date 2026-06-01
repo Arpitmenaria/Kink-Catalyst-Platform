@@ -72,7 +72,7 @@ const EVENT_TYPES = [
   { id: 'hybrid',  label: 'Hybrid',  icon: <HybridIcon /> },
 ];
 
-export default function EventsPage({ onBack }) {
+export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick }) {
   const [step, setStep] = useState(1);
 
   // Step 1 state
@@ -141,7 +141,14 @@ export default function EventsPage({ onBack }) {
             <button
               key={item.id}
               className={`ev-nav-item${item.active ? ' ev-nav-item--active' : ''}`}
-              onClick={item.id === 'feed' ? onBack : undefined}
+              onClick={
+                item.id === 'feed'     ? onBack :
+                item.id === 'event'    ? onEventsClick :
+                item.id === 'groups'   ? onGroupsClick :
+                item.id === 'calendar' ? onCalendarClick :
+                item.id === 'messages' ? onMessagesClick :
+                undefined
+              }
             >
               {item.icon}
               <span>{item.label}</span>

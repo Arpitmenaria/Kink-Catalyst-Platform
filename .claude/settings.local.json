@@ -4,7 +4,9 @@
       "Bash(npm run *)",
       "Bash(npm list *)",
       "Bash(npm install *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(ls \"f:/company/kick-analyst/\")",
+      "Read(//f/company/kick-analyst/**)"
     ]
   },
   "enableAllProjectMcpServers": true,
