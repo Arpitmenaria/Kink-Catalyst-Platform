@@ -5,6 +5,7 @@
   min-height: 0;
   background: #0b0d17;
   overflow: hidden;
+  position: relative;
 }
 
 /* ── Left sidebar ── */
@@ -58,6 +59,7 @@
   display: flex;
   flex-direction: column;
   padding: 28px 28px 0;
+  margin-left: 52px;
   overflow: hidden;
 }
 
@@ -428,6 +430,7 @@
 /* ── Compact conversation panel (left in chat view) ── */
 .msg-conv-panel {
   width: 210px;
+  margin-left: 52px;
   flex-shrink: 0;
   border-right: 1px solid #181c30;
   background: #0d0f1e;
@@ -2004,3 +2007,285 @@
   transition: background 0.15s;
 }
 .ua-done-btn:hover { background: #1d4ed8; }
+
+/* ══════════════════════════════════════════
+   Messages Page — Premium Animations
+══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes msgSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes msgConvIn {
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0);     }
+}
+
+@keyframes msgPanelIn {
+  from { opacity: 0; transform: translateX(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);   }
+}
+
+@keyframes msgAvatarIn {
+  from { opacity: 0; transform: scale(0.55); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+@keyframes msgOnlinePulse {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(34,197,94,0.45); }
+  50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0);    }
+}
+
+@keyframes msgUnreadBlink {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.3; }
+}
+
+@keyframes msgSupportFlow {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+@keyframes msgTabIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+@keyframes msgBtnWave {
+  0%, 100% { background-position: 0%   center; }
+  50%       { background-position: 100% center; }
+}
+
+@keyframes msgSearchFocus {
+  from { box-shadow: 0 0 0 0px rgba(99,102,241,0.4); }
+  to   { box-shadow: 0 0 0 3px rgba(99,102,241,0);   }
+}
+
+/* ── Header entrance ── */
+.msg-title    { animation: msgSlideUp 0.32s ease 0.08s both; }
+.msg-subtitle { animation: msgSlideUp 0.32s ease 0.14s both; }
+
+/* Compose button spring */
+.msg-compose-btn--lg {
+  transition: color 0.15s, background 0.15s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.msg-compose-btn--lg:hover {
+  transform: scale(1.2) rotate(-8deg);
+  color: #6366f1;
+  background: rgba(99,102,241,0.1);
+}
+
+/* ── Tabs stagger ── */
+.msg-tabs { animation: msgSlideUp 0.3s ease 0.16s both; }
+
+.msg-tab {
+  position: relative;
+  transition: color 0.18s ease, background 0.18s ease, transform 0.28s cubic-bezier(0.16,1,0.3,1);
+}
+.msg-tab:hover { transform: translateY(-1px); color: #c8cfe0; }
+.msg-tab:active { transform: scale(0.94); }
+
+.msg-tab--active {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #2563eb 100%);
+  background-size: 200% 100%;
+  animation: msgBtnWave 3s ease infinite;
+}
+
+/* ── Search bar focus glow ── */
+.msg-search-wrap {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.msg-search-wrap:focus-within {
+  border-color: rgba(99,102,241,0.38);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+}
+.msg-search-wrap:focus-within svg { color: #818cf8; }
+
+/* ── Conversation list items — stagger entrance ── */
+.msg-conv:nth-child(1) { animation: msgConvIn 0.36s cubic-bezier(0.16,1,0.3,1) 0.20s both; }
+.msg-conv:nth-child(2) { animation: msgConvIn 0.36s cubic-bezier(0.16,1,0.3,1) 0.27s both; }
+.msg-conv:nth-child(3) { animation: msgConvIn 0.36s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
+.msg-conv:nth-child(4) { animation: msgConvIn 0.36s cubic-bezier(0.16,1,0.3,1) 0.41s both; }
+.msg-conv:nth-child(5) { animation: msgConvIn 0.36s cubic-bezier(0.16,1,0.3,1) 0.48s both; }
+
+.msg-conv {
+  transition:
+    background    0.18s ease,
+    border-color  0.18s ease,
+    transform     0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.msg-conv:hover {
+  background: rgba(99,102,241,0.055);
+  transform: translateX(4px);
+}
+
+/* Avatar spring + ring on row hover */
+.msg-avatar {
+  transition:
+    transform  0.32s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.25s ease;
+}
+.msg-conv:hover .msg-avatar {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.38);
+}
+
+/* Text brightens on hover */
+.msg-conv-name    { transition: color 0.18s ease; }
+.msg-conv-preview { transition: color 0.18s ease; }
+.msg-conv-time    { transition: color 0.18s ease; }
+
+.msg-conv:hover .msg-conv-name    { color: #f0f4ff; }
+.msg-conv:hover .msg-conv-preview { color: #8b9cc8; }
+.msg-conv:hover .msg-conv-time    { color: #818cf8; }
+
+/* Online dot pulse */
+.msg-online-dot {
+  animation: msgOnlinePulse 2.6s ease-in-out infinite;
+}
+
+/* Unread indicator pulse */
+.msg-unread-dot {
+  animation: msgUnreadBlink 2.2s ease-in-out infinite;
+}
+
+/* ── Right panel entrance ── */
+.msg-panel {
+  animation: msgPanelIn 0.45s cubic-bezier(0.16,1,0.3,1) 0.12s both;
+  transition:
+    border-color 0.25s ease,
+    box-shadow   0.3s  ease,
+    transform    0.35s cubic-bezier(0.16,1,0.3,1);
+}
+.msg-panel:hover {
+  border-color: rgba(99,102,241,0.22);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.09);
+  transform: translateY(-2px);
+}
+
+/* ── Quick Online avatars — stagger + hover spring ── */
+.msg-online-item:nth-child(1) { animation: msgAvatarIn 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.18s both; }
+.msg-online-item:nth-child(2) { animation: msgAvatarIn 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.25s both; }
+.msg-online-item:nth-child(3) { animation: msgAvatarIn 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.32s both; }
+.msg-online-item:nth-child(4) { animation: msgAvatarIn 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.39s both; }
+
+.msg-online-avatar {
+  transition:
+    transform  0.32s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.25s ease;
+}
+.msg-online-item:hover .msg-online-avatar {
+  transform: scale(1.18) translateY(-2px);
+  box-shadow:
+    0 0 0 2px rgba(99,102,241,0.4),
+    0 6px 16px rgba(0,0,0,0.4);
+}
+
+/* Online dot on quick-online items */
+.msg-online-dot--sm {
+  animation: msgOnlinePulse 2.6s ease-in-out infinite;
+}
+
+/* Add people button */
+.msg-online-add {
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.msg-online-add:hover {
+  border-color: #6366f1;
+  color: #818cf8;
+  transform: scale(1.12) rotate(90deg);
+}
+
+/* ── Chat Support card — gradient flow ── */
+.msg-support-card {
+  background: linear-gradient(145deg, #1a4ed8, #2563eb, #3b82f6, #4f46e5, #2563eb, #1a4ed8);
+  background-size: 300% 300%;
+  animation:
+    msgSupportFlow 7s ease infinite,
+    msgPanelIn     0.45s cubic-bezier(0.16,1,0.3,1) 0.22s both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* shimmer sweep */
+.msg-support-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+  transform: skewX(-18deg) translateX(-130%);
+  pointer-events: none;
+}
+.msg-support-card:hover::after {
+  animation: msgImgSweep 0.6s ease forwards;
+}
+
+@keyframes msgImgSweep {
+  from { transform: skewX(-18deg) translateX(-130%); }
+  to   { transform: skewX(-18deg) translateX(290%);  }
+}
+
+.msg-support-btn {
+  transition: background 0.18s ease, transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease;
+}
+.msg-support-btn:hover {
+  background: rgba(255,255,255,0.28);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+.msg-support-btn:active { transform: scale(0.96); }
+
+/* ── Chat input bar ── */
+.msg-input {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.msg-input:focus {
+  border-color: rgba(99,102,241,0.38);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+}
+
+.msg-send-btn {
+  transition: background 0.18s ease, color 0.18s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+}
+.msg-send-btn--active:hover,
+.msg-send-btn:hover {
+  background: #4f46e5;
+  color: #fff;
+  transform: scale(1.1) rotate(-10deg);
+  box-shadow: 0 4px 14px rgba(99,102,241,0.4);
+}
+
+/* ── Message bubbles entrance ── */
+.msg-bubble-row {
+  animation: msgConvIn 0.28s ease both;
+}
+.msg-bubble-row--me {
+  animation: msgConvInReverse 0.28s ease both;
+}
+
+@keyframes msgConvInReverse {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+.msg-bubble {
+  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease;
+}
+.msg-bubble:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+
+/* Input icon buttons */
+.msg-input-icon-btn {
+  transition: color 0.15s, background 0.15s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.msg-input-icon-btn:hover {
+  color: #a5b4fc;
+  background: rgba(99,102,241,0.1);
+  transform: scale(1.18);
+}

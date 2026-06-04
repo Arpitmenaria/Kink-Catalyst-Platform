@@ -81,6 +81,9 @@ export default function PlansPage() {
 
   return (
     <div className="plans-page">
+      <div className="orb orb-1" aria-hidden="true" />
+      <div className="orb orb-2" aria-hidden="true" />
+      <div className="orb orb-3" aria-hidden="true" />
       {/* ── Header ── */}
       <header className="plans-header">
         <h1 className="plans-heading">Elevate your digital pulse.</h1>
@@ -104,8 +107,8 @@ export default function PlansPage() {
 
         {!loading && !error && sortedPlans.length > 0 && (
           <div className="plans-grid">
-            {sortedPlans.map((plan) => (
-              <PlanCard key={plan._id} plan={plan} />
+            {sortedPlans.map((plan, i) => (
+              <PlanCard key={plan._id} plan={plan} index={i} />
             ))}
           </div>
         )}

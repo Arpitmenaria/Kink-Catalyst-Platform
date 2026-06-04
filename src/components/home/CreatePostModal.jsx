@@ -19,9 +19,24 @@ function EventTabIcon() {
 function GlobeIcon() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
 }
+function FriendsIcon() {
+  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+}
+function LockIcon() {
+  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+}
+function CheckIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+}
 function ChevronDownIcon() {
   return <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
+
+const VISIBILITY_OPTIONS = [
+  { id: 'anyone',  label: 'Anyone',       icon: <GlobeIcon />   },
+  { id: 'friends', label: 'Friends only', icon: <FriendsIcon /> },
+  { id: 'only_me', label: 'Only me',      icon: <LockIcon />    },
+];
 function UploadPhotoIcon() {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/><path d="M14 3v4h4"/></svg>;
 }
@@ -53,14 +68,17 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   const { profile } = useSelector(s => s.profile);
   const { creating } = useSelector(s => s.posts);
 
-  const [tab, setTab] = useState(initialTab);
-  const [caption, setCaption] = useState('');
-  const [mediaFile, setMediaFile] = useState(null);
-  const [mediaPreview, setMediaPreview] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [error, setError] = useState('');
+  const [tab,           setTab]           = useState(initialTab);
+  const [caption,       setCaption]       = useState('');
+  const [mediaFile,     setMediaFile]     = useState(null);
+  const [mediaPreview,  setMediaPreview]  = useState(null);
+  const [dragOver,      setDragOver]      = useState(false);
+  const [error,         setError]         = useState('');
+  const [visibility,    setVisibility]    = useState('anyone');
+  const [dropdownOpen,  setDropdownOpen]  = useState(false);
 
-  const fileInputRef = useRef(null);
+  const fileInputRef  = useRef(null);
+  const dropdownRef   = useRef(null);
   const displayName = profile?.fullName ?? authUser?.fullName ?? 'You';
   const avatarUrl = profile?.avatar || '';
 
@@ -69,6 +87,16 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [dropdownOpen]);
 
   function switchTab(t) {
     if (t === 'event') {
@@ -155,9 +183,36 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
                 : getInitials(displayName)
               }
             </div>
-            <button className="cp-audience-chip" type="button">
-              <GlobeIcon /> Anyone <ChevronDownIcon />
-            </button>
+            <div className="cp-audience-wrap" ref={dropdownRef}>
+              <button
+                className={`cp-audience-chip${dropdownOpen ? ' cp-audience-chip--open' : ''}`}
+                type="button"
+                onClick={() => setDropdownOpen(v => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={dropdownOpen}
+              >
+                {VISIBILITY_OPTIONS.find(o => o.id === visibility)?.icon}
+                {VISIBILITY_OPTIONS.find(o => o.id === visibility)?.label}
+                <span className={`cp-chevron${dropdownOpen ? ' cp-chevron--up' : ''}`}><ChevronDownIcon /></span>
+              </button>
+
+              {dropdownOpen && (
+                <ul className="cp-visibility-dropdown" role="listbox">
+                  {VISIBILITY_OPTIONS.map(opt => (
+                    <li key={opt.id} role="option" aria-selected={visibility === opt.id}>
+                      <button
+                        className={`cp-vis-option${visibility === opt.id ? ' cp-vis-option--active' : ''}`}
+                        onClick={() => { setVisibility(opt.id); setDropdownOpen(false); }}
+                      >
+                        <span className="cp-vis-icon">{opt.icon}</span>
+                        <span className="cp-vis-label">{opt.label}</span>
+                        {visibility === opt.id && <span className="cp-vis-check"><CheckIcon /></span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           {/* Caption */}

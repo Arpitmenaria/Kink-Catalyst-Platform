@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import './GroupsPage.css';
+import AnimatedNav from './AnimatedNav';
+import CreatePostModal from './CreatePostModal';
 
-/* ── Nav icons ── */
-function FeedNavIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>; }
-function EventNavIcon()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
-function GroupsNavIcon()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
-function CalendarNavIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
-function MessagesNavIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 
 /* ── UI icons ── */
 function PlusIcon()       { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -72,12 +68,14 @@ function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, on
   const [postApproval,  setPostApproval]  = useState(true);
   const [commentPerms,  setCommentPerms]  = useState(true);
   const [rules,         setRules]         = useState(COMMUNITY_RULES);
-  const [dismissed,     setDismissed]     = useState({});
+  const [dismissed,       setDismissed]       = useState({});
+  const [createPostOpen,  setCreatePostOpen]  = useState(false);
 
   function navClick(id) {
-    if (id === 'feed')     onFeedClick?.();
-    if (id === 'event')    onEventsClick?.();
-    if (id === 'groups')   onBack?.();
+    if (id === 'create')   { setCreatePostOpen(true); return; }
+    if (id === 'home')     onFeedClick?.();
+    if (id === 'events')   onEventsClick?.();
+    if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
     if (id === 'messages') onMessagesClick?.();
   }
@@ -86,16 +84,8 @@ function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, on
 
   return (
     <div className="mod-page">
-      {/* Sidebar */}
-      <aside className="grp-sidebar">
-        <nav className="grp-nav">
-          {GRP_NAV.map(item => (
-            <button key={item.id} className={`grp-nav-item${item.active ? ' grp-nav-item--active' : ''}`} onClick={() => navClick(item.id)}>
-              {item.icon}<span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav activeId="friends" onNavigate={navClick} />
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       {/* Main */}
       <div className="mod-content">
@@ -265,14 +255,16 @@ const ROLE_BADGE_MAP = {
    Group Admin Dashboard
 ══════════════════════════ */
 function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick }) {
-  const [activeTab,   setActiveTab]   = useState('active');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [memberRoles, setMemberRoles] = useState({ 1: 'Admin', 2: 'Admin', 3: 'Member', 4: 'Member' });
+  const [activeTab,      setActiveTab]      = useState('active');
+  const [searchQuery,    setSearchQuery]    = useState('');
+  const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Admin', 3: 'Member', 4: 'Member' });
+  const [createPostOpen, setCreatePostOpen] = useState(false);
 
   function navClick(id) {
-    if (id === 'feed')     onFeedClick?.();
-    if (id === 'event')    onEventsClick?.();
-    if (id === 'groups')   onBack?.();
+    if (id === 'create')   { setCreatePostOpen(true); return; }
+    if (id === 'home')     onFeedClick?.();
+    if (id === 'events')   onEventsClick?.();
+    if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
     if (id === 'messages') onMessagesClick?.();
   }
@@ -284,16 +276,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
   return (
     <div className="adm-page">
-      {/* Sidebar */}
-      <aside className="grp-sidebar">
-        <nav className="grp-nav">
-          {GRP_NAV.map(item => (
-            <button key={item.id} className={`grp-nav-item${item.active ? ' grp-nav-item--active' : ''}`} onClick={() => navClick(item.id)}>
-              {item.icon}<span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav activeId="friends" onNavigate={navClick} />
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       {/* Main content */}
       <div className="adm-content">
@@ -449,28 +433,22 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
   const [description,   setDescription]   = useState('');
   const [category,      setCategory]      = useState('Technology & Software');
   const [privacy,       setPrivacy]       = useState('public');
-  const [adminApproval, setAdminApproval] = useState(true);
+  const [adminApproval,  setAdminApproval]  = useState(true);
+  const [createPostOpen, setCreatePostOpen] = useState(false);
 
   function navClick(id) {
-    if (id === 'feed')     onFeedClick?.();
-    if (id === 'event')    onEventsClick?.();
-    if (id === 'groups')   onBack?.();
+    if (id === 'create')   { setCreatePostOpen(true); return; }
+    if (id === 'home')     onFeedClick?.();
+    if (id === 'events')   onEventsClick?.();
+    if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
     if (id === 'messages') onMessagesClick?.();
   }
 
   return (
     <div className="cg-page">
-      {/* Sidebar */}
-      <aside className="grp-sidebar">
-        <nav className="grp-nav">
-          {GRP_NAV.map(item => (
-            <button key={item.id} className={`grp-nav-item${item.active ? ' grp-nav-item--active' : ''}`} onClick={() => navClick(item.id)}>
-              {item.icon}<span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav activeId="friends" onNavigate={navClick} />
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       {/* Main content */}
       <div className="cg-content">
@@ -594,13 +572,6 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 }
 
 /* ── Nav ── */
-const GRP_NAV = [
-  { id: 'feed',     label: 'Feed',     icon: <FeedNavIcon />     },
-  { id: 'event',    label: 'Event',    icon: <EventNavIcon />    },
-  { id: 'groups',   label: 'Groups',   icon: <GroupsNavIcon />,  active: true },
-  { id: 'calendar', label: 'Calendar', icon: <CalendarNavIcon /> },
-  { id: 'messages', label: 'Messages', icon: <MessagesNavIcon /> },
-];
 
 /* ── Mock data ── */
 const SUGGESTED_GROUPS = [
@@ -717,6 +688,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [showModeration, setShowModeration] = useState(false);
   const [adminGroup,     setAdminGroup]     = useState(null);
   const [joinedSugg,     setJoinedSugg]    = useState({});
+  const [createPostOpen, setCreatePostOpen] = useState(false);
 
   if (showCreate) {
     return (
@@ -759,8 +731,9 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   }
 
   function navClick(id) {
-    if (id === 'feed')     onBack?.();
-    if (id === 'event')    onEventsClick?.();
+    if (id === 'create')   { setCreatePostOpen(true); return; }
+    if (id === 'home')     onBack?.();
+    if (id === 'events')   onEventsClick?.();
     if (id === 'calendar') onCalendarClick?.();
     if (id === 'messages') onMessagesClick?.();
   }
@@ -769,20 +742,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     <div className="grp-page">
 
       {/* ── Left sidebar ── */}
-      <aside className="grp-sidebar">
-        <nav className="grp-nav">
-          {GRP_NAV.map(item => (
-            <button
-              key={item.id}
-              className={`grp-nav-item${item.active ? ' grp-nav-item--active' : ''}`}
-              onClick={() => navClick(item.id)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav activeId="friends" onNavigate={navClick} />
 
       {/* ── Main content ── */}
       <main className="grp-main">
@@ -922,6 +882,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
       </aside>
 
       {modalOpen && <CreateGroupModal onClose={() => setModalOpen(false)} />}
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
     </div>
   );

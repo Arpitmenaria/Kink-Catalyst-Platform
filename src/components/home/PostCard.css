@@ -290,3 +290,227 @@
 }
 
 .report-success-close:hover { background: #1d4ed8; }
+
+/* ══════════════════════════════════════════
+   Post Card — Premium Animations
+══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes postCardIn {
+  from { opacity: 0; transform: translateY(26px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);   }
+}
+
+@keyframes postKenBurns {
+  from { transform: scale(1);    }
+  to   { transform: scale(1.05); }
+}
+
+@keyframes postImgSweep {
+  from { transform: skewX(-15deg) translateX(-130%); }
+  to   { transform: skewX(-15deg) translateX(290%);  }
+}
+
+@keyframes postActionBounce {
+  0%, 100% { transform: translateY(0)    scale(1);    }
+  35%       { transform: translateY(-5px) scale(1.18); }
+  65%       { transform: translateY(2px)  scale(0.92); }
+}
+
+@keyframes postLikePop {
+  0%   { transform: scale(1);    }
+  30%  { transform: scale(1.35); }
+  60%  { transform: scale(0.88); }
+  85%  { transform: scale(1.1);  }
+  100% { transform: scale(1);    }
+}
+
+@keyframes postMenuIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);   }
+}
+
+@keyframes postDotIn {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+
+@keyframes postEmojiWiggle {
+  0%, 100% { transform: rotate(0deg)   scale(1);    }
+  25%       { transform: rotate(-12deg) scale(1.2);  }
+  75%       { transform: rotate(10deg)  scale(1.1);  }
+}
+
+@keyframes postCommentFocus {
+  from { box-shadow: 0 0 0 0px  rgba(99,102,241,0.35); }
+  to   { box-shadow: 0 0 0 3px  rgba(99,102,241,0.12); }
+}
+
+/* ── Card entrance — staggered ── */
+.feed-posts .post-card { animation: postCardIn 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+.feed-posts .post-card:nth-child(1) { animation-delay: 0.04s; }
+.feed-posts .post-card:nth-child(2) { animation-delay: 0.12s; }
+.feed-posts .post-card:nth-child(3) { animation-delay: 0.20s; }
+.feed-posts .post-card:nth-child(4) { animation-delay: 0.28s; }
+.feed-posts .post-card:nth-child(5) { animation-delay: 0.36s; }
+
+/* Card hover */
+.post-card {
+  transition:
+    transform    0.36s cubic-bezier(0.16,1,0.3,1),
+    border-color 0.25s ease,
+    box-shadow   0.3s  ease;
+}
+
+.post-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99,102,241,0.22);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+}
+
+/* ── Header — avatar spring + name brighten ── */
+.post-avatar {
+  transition:
+    transform  0.32s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.25s ease;
+}
+
+.post-header:hover .post-avatar {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.38);
+}
+
+.post-author { transition: color 0.18s ease; }
+.post-header:hover .post-author { color: #f0f4ff; }
+
+/* More button */
+.post-more-btn {
+  transition: color 0.15s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.post-more-btn:hover { color: #a5b4fc; transform: scale(1.2); }
+
+/* Dropdown spring entrance */
+.post-menu-dropdown {
+  animation: postMenuIn 0.22s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── Post image — Ken Burns + shimmer sweep ── */
+.post-image-wrap {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.post-image-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+  transform: skewX(-15deg) translateX(-130%);
+  pointer-events: none;
+}
+
+.post-card:hover .post-image-wrap::after {
+  animation: postImgSweep 0.7s ease forwards;
+}
+
+.post-image {
+  width: 100%;
+  height: 240px;
+  display: block;
+  object-fit: cover;
+  flex-shrink: 0;
+  animation: postKenBurns 10s ease-in-out infinite alternate;
+  will-change: transform;
+  transition: transform 0.3s ease;
+}
+
+/* ── People react dots — stagger pop ── */
+.post-reader-dot {
+  display: inline-block;
+}
+.post-reader-dot:nth-child(1) { animation: postDotIn 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.05s both; }
+.post-reader-dot:nth-child(2) { animation: postDotIn 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.11s both; }
+.post-reader-dot:nth-child(3) { animation: postDotIn 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.17s both; }
+.post-reader-dot:nth-child(4) { animation: postDotIn 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.23s both; }
+
+/* ── Emoji reactions — wiggle on hover ── */
+.post-emoji-reactions {
+  cursor: default;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.post-emoji-reactions:hover { transform: scale(1.1); }
+
+/* ── Action buttons — icon bounce + wave ── */
+.post-action-btn {
+  transition: background 0.18s ease, color 0.18s ease, transform 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+
+.post-action-btn:hover {
+  background: rgba(99,102,241,0.07);
+  color: #a5b4fc;
+  transform: translateY(-1px);
+}
+
+.post-action-btn:hover svg {
+  animation: postActionBounce 0.42s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+.post-action-btn:active { transform: scale(0.95); }
+
+/* React active state pop */
+.post-action-btn--active svg {
+  animation: postLikePop 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+  color: #ef4444;
+}
+
+/* ── Stats numbers — hover brighten ── */
+.post-stats-right span {
+  cursor: default;
+  transition: color 0.18s ease;
+}
+.post-stats-right span:hover { color: #a5b4fc; }
+
+/* ── Comment bar ── */
+.comment-input {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.comment-input:focus {
+  border-color: rgba(99,102,241,0.4);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+  outline: none;
+}
+
+/* Send button spring */
+.comment-send-btn {
+  transition: color 0.18s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.comment-send-btn.active {
+  color: #6366f1;
+}
+
+.comment-send-btn.active:hover {
+  transform: scale(1.25) rotate(-15deg);
+}
+
+/* Comment emoji btn */
+.comment-icon-btn {
+  transition: color 0.15s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.comment-icon-btn:hover {
+  color: #a5b4fc;
+  transform: scale(1.2);
+}
+
+/* Bookmark icon */
+.post-bookmark {
+  cursor: pointer;
+  transition: color 0.18s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.post-bookmark:hover {
+  color: #a5b4fc;
+  transform: scale(1.2) translateY(-1px);
+}

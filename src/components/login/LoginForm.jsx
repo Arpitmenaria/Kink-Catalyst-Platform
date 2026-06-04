@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearAuthState } from '../../store/slices/authSlice';
 import { showSignup, showForgotPassword } from '../../store/slices/uiSlice';
@@ -35,20 +35,70 @@ function EyeIcon({ open }) {
   );
 }
 
-function Spinner() {
-  return <span className="spinner" aria-hidden="true" />;
+/* ── Button content components ── */
+function LoadingContent() {
+  return (
+    <>
+      <span className="btn-dots" aria-hidden="true">
+        <span className="btn-dot" />
+        <span className="btn-dot" />
+        <span className="btn-dot" />
+      </span>
+      Signing in...
+    </>
+  );
+}
+
+function SuccessContent() {
+  return (
+    <>
+      <span className="btn-status-circle btn-status-circle--success" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path
+            className="check-path"
+            d="M2 6l3 3 5-5"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span className="btn-state-text">Signed in!</span>
+    </>
+  );
+}
+
+function ErrorContent() {
+  return (
+    <>
+      <span className="btn-status-circle btn-status-circle--error" aria-hidden="true">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <line x1="2" y1="2" x2="8" y2="8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+          <line x1="8" y1="2" x2="2" y2="8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+      </span>
+      <span className="btn-state-text">Invalid credentials</span>
+    </>
+  );
 }
 
 export default function LoginForm() {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.auth);
+  const { error } = useSelector((state) => state.auth);
 
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form,         setForm]         = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember,     setRemember]     = useState(false);
+  const [btnState,     setBtnState]     = useState('idle'); // 'idle'|'loading'|'success'|'error'
+
+  const resetTimer = useRef(null);
 
   useEffect(() => {
-    return () => { dispatch(clearAuthState()); };
+    return () => {
+      dispatch(clearAuthState());
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    };
   }, [dispatch]);
 
   function handleChange(e) {
@@ -57,10 +107,19 @@ export default function LoginForm() {
     if (error) dispatch(clearAuthState());
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    dispatch(loginUser({ email: form.email, password: form.password }));
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+
+    setBtnState('loading');
+    const result = await dispatch(loginUser({ email: form.email, password: form.password }));
+    const next = loginUser.rejected.match(result) ? 'error' : 'success';
+    setBtnState(next);
+
+    resetTimer.current = setTimeout(() => setBtnState('idle'), 2200);
   }
+
+  const isIdle = btnState === 'idle';
 
   return (
     <div className="signup-left-panel">
@@ -84,7 +143,7 @@ export default function LoginForm() {
                 value={form.email}
                 onChange={handleChange}
                 autoComplete="email"
-                disabled={loading}
+                disabled={!isIdle}
                 required
               />
             </div>
@@ -100,7 +159,7 @@ export default function LoginForm() {
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="current-password"
-                  disabled={loading}
+                  disabled={!isIdle}
                   required
                 />
                 <button
@@ -121,7 +180,7 @@ export default function LoginForm() {
                   className="remember-checkbox"
                   checked={remember}
                   onChange={e => setRemember(e.target.checked)}
-                  disabled={loading}
+                  disabled={!isIdle}
                 />
                 Remember me
               </label>
@@ -130,28 +189,31 @@ export default function LoginForm() {
                 className="forgot-link"
                 style={{ background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
                 onClick={() => { dispatch(resetForgotPassword()); dispatch(showForgotPassword()); }}
-                disabled={loading}
+                disabled={!isIdle}
               >
                 Forgot password?
               </button>
             </div>
 
-            {error && (
-              <p className="form-message form-message--error" role="alert">{error}</p>
-            )}
-
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? <><Spinner /> Signing in…</> : 'Sign In'}
+            <button
+              type="submit"
+              className={`submit-btn submit-btn--${btnState}`}
+              disabled={btnState !== 'idle'}
+            >
+              {btnState === 'idle'    && 'Sign In'}
+              {btnState === 'loading' && <LoadingContent />}
+              {btnState === 'success' && <SuccessContent />}
+              {btnState === 'error'   && <ErrorContent />}
             </button>
           </form>
 
           <div className="divider" style={{ margin: '16px 0 14px' }}><span>Or sign in with</span></div>
 
           <div className="social-buttons">
-            <button type="button" className="social-btn" disabled={loading}>
+            <button type="button" className="social-btn" disabled={!isIdle}>
               <GoogleIcon /> Google
             </button>
-            <button type="button" className="social-btn" disabled={loading}>
+            <button type="button" className="social-btn" disabled={!isIdle}>
               <AppleIcon /> Apple
             </button>
           </div>
@@ -162,7 +224,7 @@ export default function LoginForm() {
               type="button"
               className="inline-link-btn"
               onClick={() => dispatch(showSignup())}
-              disabled={loading}
+              disabled={!isIdle}
             >
               Sign up for free
             </button>

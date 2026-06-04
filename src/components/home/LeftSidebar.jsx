@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { FRIEND_SUGGESTIONS, GROUPS, SIDEBAR_EVENTS, ALEX_AVATAR } from './mockData';
 import CreatePostModal from './CreatePostModal';
+import AnimatedNav from './AnimatedNav';
 
 function membershipLabel(tier = '') {
   const map = { platinum: 'Platinum Member', gold: 'Gold Member', free: 'Free Member' };
@@ -52,7 +53,8 @@ function initials(name) {
 export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick }) {
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen,  setCreateOpen]  = useState(false);
+  const [activeNavId, setActiveNavId] = useState('home');
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
   const role           = profile?.role ?? 'Product Designer';
@@ -60,31 +62,24 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const followersCount = formatCount(profile?.followers?.length ?? 8400);
   const avatarUrl      = profile?.avatar ?? ALEX_AVATAR;
 
+  function handleNavNavigate(id) {
+    if (id === 'create')   { setCreateOpen(true); return; }
+    setActiveNavId(id);
+    if (id === 'events')   onEventsClick?.();
+    if (id === 'messages') onMessagesClick?.();
+    if (id === 'friends')  onGroupsClick?.();
+    if (id === 'calendar') onCalendarClick?.();
+  }
+
   return (
     <aside className="home-left-panel">
 
-      {/* ── Vertical nav strip ── */}
-      <div className="nav-strip">
-        {NAV_ITEMS.map(item => {
-          function handleClick() {
-            if (item.create)    { setCreateOpen(true);   return; }
-            if (item.events)    { onEventsClick?.();     return; }
-            if (item.messages)  { onMessagesClick?.();   return; }
-            if (item.groups)    { onGroupsClick?.();     return; }
-            if (item.calendar)  { onCalendarClick?.();   return; }
-          }
-          return (
-            <button
-              key={item.label}
-              className={`nav-strip-btn${item.active ? ' active' : ''}`}
-              title={item.label}
-              onClick={handleClick}
-            >
-              {item.icon}
-            </button>
-          );
-        })}
-      </div>
+      {/* ── Animated expand-on-hover nav ── */}
+      <AnimatedNav
+        activeId={activeNavId}
+        avatarUrl={avatarUrl}
+        onNavigate={handleNavNavigate}
+      />
 
       {createOpen && <CreatePostModal onClose={() => setCreateOpen(false)} onNavigateToEvents={onEventsClick} />}
 

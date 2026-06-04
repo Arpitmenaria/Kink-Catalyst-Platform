@@ -47,3 +47,152 @@
 
 .inline-link-btn:hover { text-decoration: underline; }
 .inline-link-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════
+   Sign-In button — animated states
+═══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes shimmerIdle {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes dotBounce {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-5px); }
+}
+
+@keyframes successScale {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes drawCheck {
+  from { stroke-dashoffset: 30; }
+  to   { stroke-dashoffset: 0;  }
+}
+
+@keyframes successGlow {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(34,197,94,0.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(34,197,94,0);   }
+}
+
+@keyframes shakeX {
+  0%         { transform: translateX(0);    }
+  16.666%    { transform: translateX(-6px); }
+  33.333%    { transform: translateX(6px);  }
+  50%        { transform: translateX(-5px); }
+  66.666%    { transform: translateX(5px);  }
+  83.333%    { transform: translateX(-2px); }
+  100%       { transform: translateX(0);    }
+}
+
+@keyframes errorGlow {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(239,68,68,0.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(239,68,68,0);   }
+}
+
+@keyframes textFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Idle state — shimmer gradient ── */
+.submit-btn--idle {
+  background: linear-gradient(
+    90deg,
+    #2563eb 0%,
+    #3b6cf0 25%,
+    #60a5fa 50%,
+    #3b6cf0 75%,
+    #2563eb 100%
+  );
+  background-size: 200% 100%;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  animation: shimmerIdle 3s linear infinite;
+  transition: filter 0.15s ease;
+}
+.submit-btn--idle:hover   { filter: brightness(1.12); }
+.submit-btn--idle:active  { filter: brightness(0.94); }
+
+/* ── Loading state ── */
+.submit-btn--loading {
+  background: #1e1b3a !important;
+  border: 1px solid #312e6b !important;
+  color: #a5b4fc !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  animation: none !important;
+}
+.submit-btn--loading:disabled { opacity: 1; }
+
+/* ── Success state ── */
+.submit-btn--success {
+  background: #052e16 !important;
+  border: 1px solid #166534 !important;
+  color: #4ade80 !important;
+  cursor: default;
+  pointer-events: none;
+  animation: successGlow 1.5s ease-in-out infinite !important;
+}
+.submit-btn--success:disabled { opacity: 1; }
+
+/* ── Error state ── */
+.submit-btn--error {
+  background: #2d0a0a !important;
+  border: 1px solid #7f1d1d !important;
+  color: #f87171 !important;
+  cursor: default;
+  pointer-events: none;
+  animation: shakeX 0.4s ease, errorGlow 1.5s ease-in-out 0.4s infinite !important;
+}
+.submit-btn--error:disabled { opacity: 1; }
+
+/* ── Loading dots ── */
+.btn-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #a5b4fc;
+  animation: dotBounce 0.9s ease infinite;
+}
+.btn-dot:nth-child(1) { animation-delay: 0s;    }
+.btn-dot:nth-child(2) { animation-delay: 0.15s; }
+.btn-dot:nth-child(3) { animation-delay: 0.3s;  }
+
+/* ── Status circle (success / error) ── */
+.btn-status-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: successScale 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.btn-status-circle--success { background: #22c55e; }
+.btn-status-circle--error   { background: #ef4444; }
+
+/* ── Checkmark draw-on ── */
+.check-path {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: drawCheck 0.4s ease 0.1s forwards;
+}
+
+/* ── State text fade-up ── */
+.btn-state-text {
+  animation: textFade 0.3s ease 0.05s both;
+}

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './MessagesPage.css';
+import AnimatedNav from './AnimatedNav';
+import CreatePostModal from './CreatePostModal';
 
 /* ── App nav icons ── */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
@@ -445,6 +447,7 @@ function initials(name) {
 
 export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick }) {
   const [tab, setTab]           = useState('All');
+  const [createPostOpen, setCreatePostOpen] = useState(false);
   const [search, setSearch]     = useState('');
   const [activeConv, setActiveConv] = useState(null);
   const [inputMsg, setInputMsg] = useState('');
@@ -469,27 +472,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   if (activeConv) {
     return (
       <div className="msg-page" style={{ overflow: showAssets ? 'auto' : undefined }}>
-        {/* App nav sidebar */}
-        <aside className="msg-sidebar">
-          <nav className="msg-nav">
-            {MSG_NAV.map(item => (
-              <button
-                key={item.id}
-                className={`msg-nav-item${item.active ? ' msg-nav-item--active' : ''}`}
-                onClick={
-                  item.id === 'feed'     ? onBack :
-                  item.id === 'event'    ? onEventsClick :
-                  item.id === 'groups'   ? onGroupsClick :
-                  item.id === 'calendar' ? onCalendarClick :
-                  undefined
-                }
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <AnimatedNav
+          activeId="messages"
+          onNavigate={id => {
+            if (id === 'create')   { setCreatePostOpen(true); return; }
+            if (id === 'home')     onBack?.();
+            if (id === 'events')   onEventsClick?.();
+            if (id === 'friends')  onGroupsClick?.();
+            if (id === 'calendar') onCalendarClick?.();
+          }}
+        />
+        {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
         {/* Compact conversation list */}
         <div className="msg-conv-panel">
@@ -655,20 +648,15 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   /* ── List view (no conversation selected) ── */
   return (
     <div className="msg-page">
-      <aside className="msg-sidebar">
-        <nav className="msg-nav">
-          {MSG_NAV.map(item => (
-            <button
-              key={item.id}
-              className={`msg-nav-item${item.active ? ' msg-nav-item--active' : ''}`}
-              onClick={item.id === 'feed' ? onBack : undefined}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav
+        activeId="messages"
+        onNavigate={id => {
+          if (id === 'home')     onBack?.();
+          if (id === 'events')   onEventsClick?.();
+          if (id === 'friends')  onGroupsClick?.();
+          if (id === 'calendar') onCalendarClick?.();
+        }}
+      />
 
       {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} />}
 

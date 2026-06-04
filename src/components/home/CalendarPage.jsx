@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import './CalendarPage.css';
+import AnimatedNav from './AnimatedNav';
+import CreatePostModal from './CreatePostModal';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>; }
@@ -199,6 +201,7 @@ function CreateEventModal({ onClose }) {
 ══════════════════════════════ */
 export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick, onMessagesClick }) {
   const [monday,    setMonday]   = useState(getMondayOf(new Date()));
+  const [createPostOpen, setCreatePostOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(new Date());
   const [view,      setView]      = useState('week');
 
@@ -234,21 +237,17 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick
     <div className="cal-page">
 
       {/* ── Left sidebar ── */}
-      <aside className="cal-sidebar">
-        <nav className="cal-nav">
-          {[
-            { icon: <FeedNavIcon />,     label: 'Feed',     onClick: onFeedClick     },
-            { icon: <EventNavIcon />,    label: 'Event',    onClick: onEventsClick   },
-            { icon: <GroupsNavIcon />,   label: 'Groups',   onClick: onGroupsClick   },
-            { icon: <CalendarNavIcon />, label: 'Calendar', active: true             },
-            { icon: <MessagesNavIcon />, label: 'Messages', onClick: onMessagesClick },
-          ].map(item => (
-            <button key={item.label} className={`cal-nav-item${item.active ? ' cal-nav-item--active' : ''}`} onClick={item.onClick}>
-              {item.icon}<span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav
+        activeId="calendar"
+        onNavigate={id => {
+          if (id === 'create')   { setCreatePostOpen(true); return; }
+          if (id === 'home')     onFeedClick?.();
+          if (id === 'events')   onEventsClick?.();
+          if (id === 'friends')  onGroupsClick?.();
+          if (id === 'messages') onMessagesClick?.();
+        }}
+      />
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       {/* ── Main area ── */}
       <main className="cal-main">

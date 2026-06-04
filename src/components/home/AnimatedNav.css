@@ -1,0 +1,283 @@
+/* ══════════════════════════════════════════
+   Animated Nav — Keyframes
+══════════════════════════════════════════ */
+
+@keyframes itemIn {
+  from { opacity: 0; transform: translateX(-14px) scale(0.88); }
+  to   { opacity: 1; transform: translateX(0)      scale(1);   }
+}
+
+@keyframes labelReveal {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0);     }
+}
+
+@keyframes activeBar {
+  from { height: 0;    }
+  to   { height: 20px; }
+}
+
+@keyframes activeGlow {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.25); }
+  50%       { box-shadow: 0 0 0 7px rgba(99, 102, 241, 0);   }
+}
+
+@keyframes rippleAnim {
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0.45; }
+  to   { transform: translate(-50%, -50%) scale(3); opacity: 0;    }
+}
+
+@keyframes badgePop {
+  0%   { transform: scale(0);   }
+  60%  { transform: scale(1.3); }
+  100% { transform: scale(1);   }
+}
+
+@keyframes notifShake {
+  0%   { transform: rotate(0deg);   }
+  15%  { transform: rotate(-16deg); }
+  35%  { transform: rotate(13deg);  }
+  55%  { transform: rotate(-9deg);  }
+  75%  { transform: rotate(5deg);   }
+  100% { transform: rotate(0deg);   }
+}
+
+@keyframes wiggleAnim {
+  0%   { transform: rotate(0deg);   }
+  20%  { transform: rotate(-22deg); }
+  50%  { transform: rotate(22deg);  }
+  80%  { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg);   }
+}
+
+/* ══════════════════════════════════════════
+   Nav shell
+══════════════════════════════════════════ */
+.anim-nav {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 52px;
+  background: #0d1117;
+  border-right: 1px solid #1e2540;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 20;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.anim-nav:hover {
+  width: 172px;
+}
+
+/* ══════════════════════════════════════════
+   Item list
+══════════════════════════════════════════ */
+.anim-nav-list {
+  list-style: none;
+  padding: 0 6px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Divider ── */
+.nav-divider-li { padding: 5px 4px; }
+
+.nav-divider {
+  height: 1px;
+  background: #1e2540;
+  border-radius: 1px;
+}
+
+/* ══════════════════════════════════════════
+   Nav item button
+══════════════════════════════════════════ */
+.nav-item {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  border-radius: 9px;
+  background: none;
+  border: none;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  gap: 0px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  /* entrance */
+  opacity: 0;
+  animation: itemIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(0.06s + var(--i, 0) * 0.07s) both;
+  /* gap + color transitions */
+  transition: gap 0.3s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.nav-item:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: #a5b4fc;
+}
+
+/* Gap opens for all items when nav expands */
+.anim-nav:hover .nav-item {
+  gap: 10px;
+}
+
+/* ── Active state ── */
+.nav-item--active {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #818cf8 !important;
+  animation:
+    itemIn     0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(0.06s + var(--i, 0) * 0.07s) both,
+    activeGlow 2.5s ease-in-out                    1.2s                               infinite;
+}
+
+/* Active left bar indicator */
+.nav-item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: #6366f1;
+  animation: activeBar 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) calc(0.06s + var(--i, 0) * 0.07s + 0.18s) both;
+}
+
+/* ══════════════════════════════════════════
+   Nav icon wrapper
+══════════════════════════════════════════ */
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform-origin: center;
+}
+
+/* Settings wiggle — class toggled via JS */
+.nav-icon.wiggle {
+  animation: wiggleAnim 0.5s ease both;
+}
+
+/* Messages icon shake — class toggled via JS */
+.nav-icon.notif-shake {
+  animation: notifShake 0.5s ease both;
+}
+
+/* ══════════════════════════════════════════
+   Nav label
+══════════════════════════════════════════ */
+.nav-label {
+  opacity: 0;
+  transform: translateX(-10px);
+  pointer-events: none;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Only the hovered item shows its label while nav is open */
+.anim-nav:hover .nav-item:hover .nav-label {
+  animation: labelReveal 0.25s ease both;
+}
+
+/* ══════════════════════════════════════════
+   Notification badge
+══════════════════════════════════════════ */
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 1.5px solid #0d1117;
+}
+
+.nav-badge--pop {
+  animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ══════════════════════════════════════════
+   Click ripple
+══════════════════════════════════════════ */
+.ripple-el {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.25);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ripple-el.go {
+  animation: rippleAnim 0.5s ease forwards;
+}
+
+/* ══════════════════════════════════════════
+   Avatar
+══════════════════════════════════════════ */
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #1e2540;
+  flex-shrink: 0;
+  margin: 6px auto 2px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-avatar:hover {
+  border-color: #6366f1;
+  transform: scale(1.08);
+}
+
+.nav-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nav-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  background: #1e1b3a;
+  color: #a5b4fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}

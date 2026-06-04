@@ -121,7 +121,11 @@ export default function PostCard({ post }) {
         {post.caption && <p className="post-text">{post.caption}</p>}
 
         {/* Media */}
-        {mediaUrl && <img src={mediaUrl} alt="" className="post-image" />}
+        {mediaUrl && (
+          <div className="post-image-wrap">
+            <img src={mediaUrl} alt="" className="post-image" />
+          </div>
+        )}
 
         {/* Title / tags / description (album-style posts) */}
         {post.title && (

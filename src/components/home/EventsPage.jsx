@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import './EventsPage.css';
+import AnimatedNav from './AnimatedNav';
+import CreatePostModal from './CreatePostModal';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
@@ -74,6 +76,7 @@ const EVENT_TYPES = [
 
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick }) {
   const [step, setStep] = useState(1);
+  const [createPostOpen, setCreatePostOpen] = useState(false);
 
   // Step 1 state
   const [form, setForm] = useState({
@@ -134,28 +137,18 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   return (
     <div className="ev-page">
-      {/* Left sidebar */}
-      <aside className="ev-sidebar">
-        <nav className="ev-nav">
-          {EV_NAV.map(item => (
-            <button
-              key={item.id}
-              className={`ev-nav-item${item.active ? ' ev-nav-item--active' : ''}`}
-              onClick={
-                item.id === 'feed'     ? onBack :
-                item.id === 'event'    ? onEventsClick :
-                item.id === 'groups'   ? onGroupsClick :
-                item.id === 'calendar' ? onCalendarClick :
-                item.id === 'messages' ? onMessagesClick :
-                undefined
-              }
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AnimatedNav
+        activeId="events"
+        onNavigate={id => {
+          if (id === 'create')   { setCreatePostOpen(true); return; }
+          if (id === 'home')     onBack?.();
+          if (id === 'events')   onEventsClick?.();
+          if (id === 'friends')  onGroupsClick?.();
+          if (id === 'calendar') onCalendarClick?.();
+          if (id === 'messages') onMessagesClick?.();
+        }}
+      />
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       {/* Main content */}
       <div className="ev-main">

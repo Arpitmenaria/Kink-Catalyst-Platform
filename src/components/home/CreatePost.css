@@ -1,3 +1,67 @@
+/* ══════════════════════════════════════════
+   Create Post — Keyframes
+══════════════════════════════════════════ */
+@keyframes cpOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cpModalSpring {
+  0%   { opacity: 0; transform: translateY(28px) scale(0.91); }
+  55%  { opacity: 1; transform: translateY(-5px)  scale(1.015); }
+  100% { opacity: 1; transform: translateY(0)     scale(1);     }
+}
+
+@keyframes cpSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes cpTabIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+@keyframes cpTabBarIn {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes cpUploadZoneIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@keyframes cpIconFloat {
+  0%, 100% { transform: translateY(0);   }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes cpIconRing {
+  0%   { box-shadow: 0 0 0 0px  rgba(59,130,246,0.35); }
+  100% { box-shadow: 0 0 0 10px rgba(59,130,246,0);    }
+}
+
+@keyframes cpCloseRotate {
+  to { transform: rotate(90deg); }
+}
+
+@keyframes cpPostWave {
+  0%, 100% { background-position: 0%   center; }
+  50%       { background-position: 100% center; }
+}
+
+@keyframes cpFooterIconBounce {
+  0%, 100% { transform: translateY(0)    scale(1);    }
+  35%       { transform: translateY(-5px) scale(1.18); }
+  65%       { transform: translateY(2px)  scale(0.92); }
+}
+
+@keyframes cpBodyFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* ── Overlay ── */
 .cp-overlay {
   position: fixed;
@@ -121,6 +185,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+  z-index: 10;
 }
 
 .cp-user-avatar {
@@ -152,7 +218,70 @@
   transition: background 0.15s;
 }
 
-.cp-audience-chip:hover { background: #252d4a; }
+.cp-audience-chip:hover,
+.cp-audience-chip--open { background: #252d4a; }
+
+/* Chevron rotation */
+.cp-chevron { display: flex; transition: transform 0.2s ease; }
+.cp-chevron--up { transform: rotate(180deg); }
+
+/* ── Visibility dropdown ── */
+.cp-audience-wrap { position: relative; }
+
+@keyframes dropdownSlideIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.cp-visibility-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 168px;
+  background: #131726;
+  border: 1px solid #252d4a;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 60;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  animation: dropdownSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.cp-vis-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: #8b9cc8;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cp-vis-option:hover { background: #1e2438; color: #e0e6f8; }
+
+.cp-vis-option--active { color: #a5b4fc; }
+.cp-vis-option--active:hover { background: rgba(99,102,241,0.1); color: #a5b4fc; }
+
+.cp-vis-icon  { display: flex; flex-shrink: 0; }
+.cp-vis-label { flex: 1; }
+
+.cp-vis-check {
+  display: flex;
+  align-items: center;
+  color: #818cf8;
+  flex-shrink: 0;
+}
 
 /* ── Caption textarea ── */
 .cp-textarea {
@@ -323,3 +452,169 @@
 
 .cp-post-btn:hover:not(:disabled) { background: #1d4ed8; }
 .cp-post-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════
+   Create Post — Premium Animation Overrides
+══════════════════════════════════════════ */
+
+/* Overlay backdrop fade */
+.cp-overlay {
+  animation: cpOverlayIn 0.22s ease both;
+  backdrop-filter: blur(6px);
+}
+
+/* Modal spring entrance */
+.cp-modal {
+  animation: cpModalSpring 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Header title / subtitle stagger */
+.cp-title    { animation: cpSlideUp 0.32s ease 0.10s both; }
+.cp-subtitle { animation: cpSlideUp 0.32s ease 0.17s both; }
+
+/* Close button spin on hover */
+.cp-close-btn {
+  transition: background 0.15s, color 0.15s, transform 0.3s ease;
+}
+.cp-close-btn:hover {
+  transform: rotate(90deg);
+  background: #252d4a;
+  color: #e0e6f8;
+}
+
+/* Tabs row entrance */
+.cp-tabs { animation: cpSlideUp 0.3s ease 0.14s both; }
+
+/* Each tab slides in from the left, staggered */
+.cp-tab:nth-child(1) { animation: cpTabIn 0.28s ease 0.18s both; }
+.cp-tab:nth-child(2) { animation: cpTabIn 0.28s ease 0.24s both; }
+.cp-tab:nth-child(3) { animation: cpTabIn 0.28s ease 0.30s both; }
+
+/* Tab hover icon bounce */
+.cp-tab { transition: color 0.18s ease; position: relative; }
+.cp-tab:hover svg { animation: cpFooterIconBounce 0.38s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* Active tab indicator — spring scale from left */
+.cp-tab--active { border-bottom-color: transparent; }
+.cp-tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  border-radius: 2px 2px 0 0;
+  transform-origin: left;
+  animation: cpTabBarIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Body fade-in */
+.cp-body { animation: cpBodyFadeIn 0.3s ease 0.18s both; }
+
+/* Audience row */
+.cp-audience-row { animation: cpSlideUp 0.28s ease 0.22s both; }
+
+/* Avatar subtle entrance */
+.cp-user-avatar {
+  animation: cpSlideUp 0.28s ease 0.20s both;
+  transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease;
+}
+.cp-user-avatar:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.28);
+}
+
+/* Audience chip spring hover */
+.cp-audience-chip {
+  transition: background 0.15s, transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease;
+}
+.cp-audience-chip:hover:not(.cp-audience-chip--open) {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Textarea */
+.cp-textarea {
+  animation: cpSlideUp 0.28s ease 0.26s both;
+  transition: color 0.2s;
+}
+.cp-textarea:focus::placeholder { color: #5c6a8c; }
+
+/* Upload zone spring entrance + hover glow */
+.cp-upload-zone {
+  animation: cpUploadZoneIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
+  transition:
+    border-color 0.22s ease,
+    background   0.22s ease,
+    box-shadow   0.25s ease,
+    transform    0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cp-upload-zone:hover,
+.cp-upload-zone--dragover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.1),
+    inset 0 0 22px rgba(59, 130, 246, 0.04);
+  transform: scale(1.012);
+}
+
+/* Upload icon float + ring on zone hover */
+.cp-upload-icon {
+  animation: cpSlideUp 0.28s ease 0.36s both;
+  transition:
+    background   0.22s ease,
+    border-color 0.22s ease,
+    color        0.22s ease,
+    box-shadow   0.22s ease;
+}
+.cp-upload-zone:hover .cp-upload-icon,
+.cp-upload-zone--dragover .cp-upload-icon {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #3b82f6;
+  animation: cpIconFloat 2.2s ease-in-out infinite, cpIconRing 1.6s ease-in-out infinite;
+}
+
+/* Upload text */
+.cp-upload-title { animation: cpSlideUp 0.28s ease 0.38s both; }
+.cp-upload-sub   { animation: cpSlideUp 0.28s ease 0.42s both; }
+.cp-upload-zone:hover .cp-upload-title { color: #e0e6f8; }
+
+/* Footer entrance */
+.cp-footer { animation: cpSlideUp 0.28s ease 0.2s both; }
+
+/* Footer icon buttons spring + bounce */
+.cp-footer-icon-btn {
+  transition: background 0.15s, color 0.15s, transform 0.28s cubic-bezier(0.16,1,0.3,1);
+}
+.cp-footer-icon-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: #a5b4fc;
+  transform: translateY(-3px) scale(1.18);
+}
+.cp-footer-icon-btn:hover svg {
+  animation: cpFooterIconBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.cp-footer-icon-btn:active { transform: scale(0.88); }
+
+/* Post button — wave gradient + spring hover */
+.cp-post-btn {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #2563eb 100%) !important;
+  background-size: 200% 100% !important;
+  animation: cpPostWave 3s ease infinite !important;
+  transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease, filter 0.2s ease, opacity 0.15s !important;
+}
+.cp-post-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #2563eb 100%) !important;
+  background-size: 200% 100% !important;
+  animation: cpPostWave 3s ease infinite !important;
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 22px rgba(37, 99, 235, 0.45);
+  filter: brightness(1.12);
+}
+.cp-post-btn:active:not(:disabled) {
+  transform: scale(0.95) !important;
+  box-shadow: none !important;
+}
