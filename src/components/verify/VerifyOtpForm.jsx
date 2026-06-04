@@ -1,23 +1,70 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { verifyOtp, resendOtp, clearAuthState, resetToSignup } from '../../store/slices/authSlice';
 import OtpInput from './OtpInput';
 
-function Spinner() {
-  return <span className="spinner" aria-hidden="true" />;
+function LoadingContent() {
+  return (
+    <>
+      <span className="btn-dots" aria-hidden="true">
+        <span className="btn-dot" />
+        <span className="btn-dot" />
+        <span className="btn-dot" />
+      </span>
+      Verifying…
+    </>
+  );
+}
+
+function SuccessContent() {
+  return (
+    <>
+      <span className="btn-status-circle btn-status-circle--success" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path
+            className="check-path"
+            d="M2 6l3 3 5-5"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span className="btn-state-text">Verified!</span>
+    </>
+  );
+}
+
+function ErrorContent() {
+  return (
+    <>
+      <span className="btn-status-circle btn-status-circle--error" aria-hidden="true">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <line x1="2" y1="2" x2="8" y2="8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+          <line x1="8" y1="2" x2="2" y2="8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+      </span>
+      <span className="btn-state-text">Invalid code</span>
+    </>
+  );
 }
 
 export default function VerifyOtpForm() {
   const dispatch = useDispatch();
-  const { loading, resendLoading, error, successMessage, registrationData } = useSelector(
+  const { resendLoading, error, successMessage, registrationData } = useSelector(
     (state) => state.auth
   );
 
   const [otp, setOtp] = useState('');
+  const [btnState, setBtnState] = useState('idle'); // 'idle'|'loading'|'success'|'error'
+
+  const resetTimer = useRef(null);
 
   useEffect(() => {
     return () => {
       dispatch(clearAuthState());
+      if (resetTimer.current) clearTimeout(resetTimer.current);
     };
   }, [dispatch]);
 
@@ -26,10 +73,17 @@ export default function VerifyOtpForm() {
     if (error || successMessage) dispatch(clearAuthState());
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (otp.length < 6) return;
-    dispatch(verifyOtp(otp));
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+
+    setBtnState('loading');
+    const result = await dispatch(verifyOtp(otp));
+    const next = verifyOtp.rejected.match(result) ? 'error' : 'success';
+    setBtnState(next);
+
+    resetTimer.current = setTimeout(() => setBtnState('idle'), 2200);
   }
 
   function handleResend() {
@@ -41,6 +95,8 @@ export default function VerifyOtpForm() {
     dispatch(resetToSignup());
   }
 
+  const isIdle = btnState === 'idle';
+
   return (
     <div className="signup-left-panel">
       <div className="signup-logo">SocialPlatform</div>
@@ -51,7 +107,7 @@ export default function VerifyOtpForm() {
             type="button"
             className="back-btn"
             onClick={handleBack}
-            disabled={loading}
+            disabled={!isIdle}
           >
             ← Back to login
           </button>
@@ -68,7 +124,7 @@ export default function VerifyOtpForm() {
             <OtpInput
               value={otp}
               onChange={handleOtpChange}
-              disabled={loading}
+              disabled={!isIdle}
             />
 
             {error && (
@@ -85,10 +141,13 @@ export default function VerifyOtpForm() {
 
             <button
               type="submit"
-              className="submit-btn"
-              disabled={loading || otp.length < 6}
+              className={`submit-btn submit-btn--${btnState}`}
+              disabled={btnState !== 'idle' || otp.length < 6}
             >
-              {loading ? <><Spinner /> Verifying…</> : 'Verify'}
+              {btnState === 'idle'    && 'Verify'}
+              {btnState === 'loading' && <LoadingContent />}
+              {btnState === 'success' && <SuccessContent />}
+              {btnState === 'error'   && <ErrorContent />}
             </button>
           </form>
 
@@ -98,7 +157,7 @@ export default function VerifyOtpForm() {
               type="button"
               className="resend-btn"
               onClick={handleResend}
-              disabled={resendLoading || loading}
+              disabled={resendLoading || !isIdle}
             >
               {resendLoading ? 'Sending…' : 'Resend'}
             </button>

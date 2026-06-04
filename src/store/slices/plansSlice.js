@@ -1,45 +1,61 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app/api';
+const STATIC_PLANS = [
+  {
+    _id: 'plan-free',
+    tier: 'free',
+    price: 0,
+    features: [
+      'Basic profile',
+      '5 posts per day',
+      'Standard feed',
+      'Connect with friends',
+    ],
+  },
+  {
+    _id: 'plan-gold',
+    tier: 'gold',
+    price: 9,
+    features: [
+      'Everything in Free',
+      'Unlimited posts',
+      'Priority feed ranking',
+      'Analytics dashboard',
+      'Custom profile badge',
+    ],
+  },
+  {
+    _id: 'plan-platinum',
+    tier: 'platinum',
+    price: 19,
+    features: [
+      'Everything in Gold',
+      '4x visibility boost',
+      'Advanced analytics',
+      'Early access to features',
+      'Dedicated support',
+    ],
+  },
+];
 
 export const fetchPlans = createAsyncThunk(
   'plans/fetchPlans',
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const { token, setupToken } = getState().auth;
-      const authToken = token || setupToken;
-      const response = await fetch(`${BASE_URL}/auth/user/plans`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-      });
-      const data = await response.json();
-      if (!response.ok) return rejectWithValue(data?.message || 'Failed to load plans.');
-      return data.plans;
-    } catch {
-      return rejectWithValue('Network error. Please try again.');
-    }
+  async () => {
+    return STATIC_PLANS;
   }
 );
 
 export const selectPlan = createAsyncThunk(
   'plans/selectPlan',
-  async (planId, { getState, rejectWithValue }) => {
-    try {
-      const { token, setupToken } = getState().auth;
-      const authToken = token || setupToken; // setupToken used in login→plan-setup flow
-      const response = await fetch(`${BASE_URL}/auth/user/select-plan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify({ planId }),
-      });
-      const data = await response.json();
-      if (!response.ok) return rejectWithValue(data?.message || 'Failed to select plan.');
-      return { planId, data }; // data contains token + user consumed by authSlice
-    } catch {
-      return rejectWithValue('Network error. Please try again.');
-    }
+  async (planId) => {
+    const plan = STATIC_PLANS.find(p => p._id === planId);
+    return {
+      planId,
+      data: {
+        token: 'mock-token',
+        user: { fullName: 'Demo User', id: 'mock-user-1', membership: plan?.tier ?? 'free' },
+      },
+    };
   }
 );
 

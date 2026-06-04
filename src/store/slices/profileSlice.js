@@ -1,25 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app/api';
-
 export const fetchUserProfile = createAsyncThunk(
   'profile/fetch',
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const { token } = getState().auth;
-      const res = await fetch(`${BASE_URL}/user/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) return rejectWithValue(data?.message || 'Failed to load profile.');
-      return data.user;
-    } catch {
-      return rejectWithValue('Network error.');
-    }
+  async () => {
+    return { fullName: 'Demo User', avatar: '', id: 'mock-user-1' };
   }
 );
-
-
 
 const profileSlice = createSlice({
   name: 'profile',

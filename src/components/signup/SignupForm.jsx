@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearAuthState } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
@@ -40,42 +40,89 @@ function RequirementDot({ met }) {
   );
 }
 
-function Spinner() {
+function LoadingContent() {
   return (
-    <span className="spinner" aria-hidden="true" />
+    <>
+      <span className="btn-dots" aria-hidden="true">
+        <span className="btn-dot" />
+        <span className="btn-dot" />
+        <span className="btn-dot" />
+      </span>
+      Creating account…
+    </>
+  );
+}
+
+function SuccessContent() {
+  return (
+    <>
+      <span className="btn-status-circle btn-status-circle--success" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path
+            className="check-path"
+            d="M2 6l3 3 5-5"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span className="btn-state-text">Account created!</span>
+    </>
+  );
+}
+
+function ErrorContent() {
+  return (
+    <>
+      <span className="btn-status-circle btn-status-circle--error" aria-hidden="true">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <line x1="2" y1="2" x2="8" y2="8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+          <line x1="8" y1="2" x2="2" y2="8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+      </span>
+      <span className="btn-state-text">Sign up failed</span>
+    </>
   );
 }
 
 export default function SignupForm() {
   const dispatch = useDispatch();
-  const { loading, error, successMessage } = useSelector((state) => state.auth);
+  const { error } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({ fullName: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [btnState, setBtnState] = useState('idle'); // 'idle'|'loading'|'success'|'error'
+
+  const resetTimer = useRef(null);
 
   useEffect(() => {
     return () => {
       dispatch(clearAuthState());
+      if (resetTimer.current) clearTimeout(resetTimer.current);
     };
   }, [dispatch]);
 
   function handleChange(e) {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    if (error || successMessage) dispatch(clearAuthState());
+    if (error) dispatch(clearAuthState());
   }
 
   const hasLength = form.password.length >= 8;
 
-  // Check if all entries are filled and valid before enabling the button
-  const isFormValid = 
-    form.fullName.trim() !== '' && 
-    form.email.trim() !== '' && 
+  const isFormValid =
+    form.fullName.trim() !== '' &&
+    form.email.trim() !== '' &&
     hasLength;
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    dispatch(
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+
+    setBtnState('loading');
+    const result = await dispatch(
       registerUser({
         fullName: form.fullName,
         email: form.email,
@@ -83,7 +130,13 @@ export default function SignupForm() {
         fcmToken: 'web_fcm_token',
       })
     );
+    const next = registerUser.rejected.match(result) ? 'error' : 'success';
+    setBtnState(next);
+
+    resetTimer.current = setTimeout(() => setBtnState('idle'), 2200);
   }
+
+  const isIdle = btnState === 'idle';
 
   return (
     <div className="signup-left-panel">
@@ -99,11 +152,11 @@ export default function SignupForm() {
           <div className="divider"><span>OR</span></div>
 
           <div className="social-buttons">
-            <button type="button" className="social-btn" disabled={loading}>
+            <button type="button" className="social-btn" disabled={!isIdle}>
               <GoogleIcon />
               Google
             </button>
-            <button type="button" className="social-btn" disabled={loading}>
+            <button type="button" className="social-btn" disabled={!isIdle}>
               <AppleIcon />
               Apple
             </button>
@@ -120,7 +173,7 @@ export default function SignupForm() {
                 value={form.fullName}
                 onChange={handleChange}
                 autoComplete="name"
-                disabled={loading}
+                disabled={!isIdle}
                 required
               />
             </div>
@@ -135,7 +188,7 @@ export default function SignupForm() {
                 value={form.email}
                 onChange={handleChange}
                 autoComplete="email"
-                disabled={loading}
+                disabled={!isIdle}
                 required
               />
             </div>
@@ -151,7 +204,7 @@ export default function SignupForm() {
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="new-password"
-                  disabled={loading}
+                  disabled={!isIdle}
                   required
                 />
                 <button
@@ -165,7 +218,6 @@ export default function SignupForm() {
               </div>
             </div>
 
-            {/* Password Requirements */}
             <ul className="req-list" style={{ marginBottom: '1rem' }}>
               <li className="req-item">
                 <RequirementDot met={hasLength} />
@@ -181,14 +233,15 @@ export default function SignupForm() {
               </p>
             )}
 
-            {successMessage && (
-              <p className="form-message form-message--success" role="status">
-                {successMessage}
-              </p>
-            )}
-
-            <button type="submit" className="submit-btn" disabled={loading || !isFormValid}>
-              {loading ? <><Spinner /> Creating account…</> : 'Sign Up'}
+            <button
+              type="submit"
+              className={`submit-btn submit-btn--${btnState}`}
+              disabled={btnState !== 'idle' || !isFormValid}
+            >
+              {btnState === 'idle'    && 'Sign Up'}
+              {btnState === 'loading' && <LoadingContent />}
+              {btnState === 'success' && <SuccessContent />}
+              {btnState === 'error'   && <ErrorContent />}
             </button>
           </form>
 
@@ -198,7 +251,7 @@ export default function SignupForm() {
               type="button"
               className="inline-link-btn"
               onClick={() => dispatch(showLogin())}
-              disabled={loading}
+              disabled={!isIdle}
             >
               Sign In
             </button>

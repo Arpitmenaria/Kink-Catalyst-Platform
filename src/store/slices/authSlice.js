@@ -1,88 +1,36 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { selectPlan } from './plansSlice';
 
-const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app/api';
-
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${BASE_URL}/auth/user/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-
-      // User exists but hasn't picked a plan yet — not a real error
-      if (data.requiresPlanSelection) {
-        return { requiresPlanSelection: true, setupToken: data.setupToken };
-      }
-
-      if (!response.ok || !data.success) {
-        return rejectWithValue(data?.message || 'Login failed.');
-      }
-
-      return data;
-    } catch {
-      return rejectWithValue('Network error. Please try again.');
-    }
+  async ({ email }) => {
+    await new Promise(r => setTimeout(r, 1400));
+    const name = email.split('@')[0].replace(/[._]/g, ' ');
+    const fullName = name.charAt(0).toUpperCase() + name.slice(1);
+    return { user: { fullName, id: 'mock-user-1', email }, token: 'mock-token' };
   }
 );
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${BASE_URL}/auth/user/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-      const data = await response.json();
-      if (!response.ok) return rejectWithValue(data?.message || 'Registration failed.');
-      return { data, credentials };
-    } catch {
-      return rejectWithValue('Network error. Please try again.');
-    }
+  async (credentials) => {
+    await new Promise(r => setTimeout(r, 1400));
+    return { data: { success: true }, credentials };
   }
 );
 
 export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
-  async (otp, { getState, rejectWithValue }) => {
-    try {
-      const { registrationData } = getState().auth;
-      const response = await fetch(`${BASE_URL}/auth/user/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...registrationData, otp }),
-      });
-      const data = await response.json();
-      if (!response.ok) return rejectWithValue(data?.message || 'Verification failed.');
-      return data;
-    } catch {
-      return rejectWithValue('Network error. Please try again.');
-    }
+  async () => {
+    await new Promise(r => setTimeout(r, 1400));
+    return { setupToken: 'mock-setup-token', user: null, token: null };
   }
 );
 
 export const resendOtp = createAsyncThunk(
   'auth/resendOtp',
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const { registrationData } = getState().auth;
-      const response = await fetch(`${BASE_URL}/auth/user/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registrationData),
-      });
-      const data = await response.json();
-      if (!response.ok) return rejectWithValue(data?.message || 'Resend failed.');
-      return data;
-    } catch {
-      return rejectWithValue('Network error. Please try again.');
-    }
+  async () => {
+    return {};
   }
 );
 
@@ -134,14 +82,9 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload.requiresPlanSelection) {
-          state.requiresPlanSelection = true;
-          state.setupToken = action.payload.setupToken;
-        } else {
-          state.isAuthenticated = true;
-          state.token = action.payload.token;
-          state.user = action.payload.user;
-        }
+        state.isAuthenticated = true;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -201,8 +144,6 @@ const authSlice = createSlice({
       })
 
       // ── Select Plan ───────────────────────────
-      // Absorbs the token + user returned by the select-plan API.
-      // Also activates the session when coming from the login→plan-setup flow.
       .addCase(selectPlan.fulfilled, (state, action) => {
         const { token, user } = action.payload.data ?? {};
         if (token) {
