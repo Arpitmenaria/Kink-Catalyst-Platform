@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
@@ -42,6 +42,56 @@ function LockIconLg()       { return <svg width="22" height="22" viewBox="0 0 24
 function ChevronDownIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>; }
 function PlantIcon()        { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V12"/><path d="M12 12C12 7 17 4 20 5c-1 4-4 7-8 7z"/><path d="M12 12C12 7 7 4 4 5c1 4 4 7 8 7z"/></svg>; }
 function CheckCircleIcon()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10" fill="none" stroke="white" strokeWidth="2"/></svg>; }
+
+/* ── Premium Role Dropdown ── */
+const ROLE_CONFIG = {
+  Admin:     { color: '#60a5fa', bg: 'rgba(59,130,246,0.14)',  border: 'rgba(59,130,246,0.32)'  },
+  Moderator: { color: '#fbbf24', bg: 'rgba(245,158,11,0.14)',  border: 'rgba(245,158,11,0.32)'  },
+  Member:    { color: '#94a3b8', bg: 'rgba(100,116,139,0.14)', border: 'rgba(100,116,139,0.28)' },
+};
+
+function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
+  const ref = useRef(null);
+  const isOpen = openId === memberId;
+  const cfg = ROLE_CONFIG[value] ?? ROLE_CONFIG.Member;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function onOut(e) { if (ref.current && !ref.current.contains(e.target)) onToggle(null); }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [isOpen, onToggle]);
+
+  return (
+    <div className="adm-rs-wrap" ref={ref}>
+      <button
+        className="adm-rs-trigger"
+        onClick={() => onToggle(isOpen ? null : memberId)}
+        style={{ '--rs-color': cfg.color, '--rs-bg': cfg.bg, '--rs-border': cfg.border }}
+      >
+        <span className="adm-rs-dot" style={{ background: cfg.color }} />
+        <span className="adm-rs-label">{value}</span>
+        <span className={`adm-rs-chevron${isOpen ? ' adm-rs-chevron--up' : ''}`}><ChevronDownIcon /></span>
+      </button>
+
+      {isOpen && (
+        <div className="adm-rs-dropdown">
+          {Object.entries(ROLE_CONFIG).map(([role, rc]) => (
+            <button
+              key={role}
+              className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}`}
+              onClick={() => { onChange(role); onToggle(null); }}
+            >
+              <span className="adm-rs-opt-dot" style={{ background: rc.color, boxShadow: `0 0 6px ${rc.color}` }} />
+              <span className="adm-rs-opt-label">{role}</span>
+              {value === role && <CheckSmIcon />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const CATEGORIES = [
   'Technology & Software', 'Design & Creative', 'Business & Finance',
@@ -257,7 +307,8 @@ const ROLE_BADGE_MAP = {
 function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick }) {
   const [activeTab,      setActiveTab]      = useState('active');
   const [searchQuery,    setSearchQuery]    = useState('');
-  const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Admin', 3: 'Member', 4: 'Member' });
+  const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Moderator', 3: 'Member', 4: 'Member' });
+  const [openDropdownId, setOpenDropdownId] = useState(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
 
   function navClick(id) {
@@ -367,14 +418,13 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     <td><span className={`adm-badge ${badge.cls}`}>{badge.label}</span></td>
                     <td className="adm-date-cell">{m.joined}</td>
                     <td>
-                      <div className="adm-role-select-wrap">
-                        <select className="adm-role-select" value={memberRoles[m.id]} onChange={e => setMemberRoles(p => ({ ...p, [m.id]: e.target.value }))}>
-                          <option>Admin</option>
-                          <option>Moderator</option>
-                          <option>Member</option>
-                        </select>
-                        <span className="adm-role-chevron"><ChevronDownIcon /></span>
-                      </div>
+                      <RoleSelect
+                        value={memberRoles[m.id]}
+                        memberId={m.id}
+                        openId={openDropdownId}
+                        onToggle={setOpenDropdownId}
+                        onChange={role => setMemberRoles(p => ({ ...p, [m.id]: role }))}
+                      />
                     </td>
                     <td><button className="adm-action-btn"><MoreIcon /></button></td>
                   </tr>

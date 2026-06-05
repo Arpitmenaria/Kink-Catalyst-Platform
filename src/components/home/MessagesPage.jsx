@@ -450,10 +450,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [search, setSearch]     = useState('');
   const [activeConv, setActiveConv] = useState(null);
+  const [chatKey, setChatKey]   = useState(0);
   const [inputMsg, setInputMsg] = useState('');
   const [newMsgOpen, setNewMsgOpen] = useState(false);
   const [showAssets, setShowAssets] = useState(false);
   const messagesEndRef = useRef(null);
+
+  function openConversation(conv) {
+    setActiveConv(conv);
+    setChatKey(k => k + 1);
+    setShowAssets(false);
+  }
 
   useEffect(() => {
     if (activeConv) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -495,7 +502,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <div
                 key={conv.id}
                 className={`msg-compact-item${activeConv.id === conv.id ? ' msg-compact-item--active' : ''}`}
-                onClick={() => { setActiveConv(conv); setShowAssets(false); }}
+                onClick={() => openConversation(conv)}
               >
                 <div className="msg-avatar-wrap">
                   <div className="msg-avatar msg-avatar--sm" style={{ background: conv.color }}>{initials(conv.name)}</div>
@@ -520,7 +527,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           ? <SharedAssetsView conv={activeConv} onBack={() => setShowAssets(false)} />
           : <>
         {/* Chat area */}
-        <div className="msg-chat-area">
+        <div className="msg-chat-area" key={chatKey}>
           {/* Chat header */}
           <div className="msg-chat-header">
             <div className="msg-chat-header-user">
@@ -603,7 +610,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} />}
 
         {/* Contact info panel */}
-        <div className="msg-contact-panel">
+        <div className="msg-contact-panel" key={`panel-${chatKey}`}>
           <div className="msg-contact-avatar-wrap">
             <div className="msg-contact-avatar" style={{ background: activeConv.color }}>
               {initials(activeConv.name)}
@@ -699,7 +706,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <div
               key={conv.id}
               className={`msg-conv${conv.unread ? ' msg-conv--unread' : ''}`}
-              onClick={() => setActiveConv(conv)}
+              onClick={() => openConversation(conv)}
             >
               <div className="msg-avatar-wrap">
                 <div className="msg-avatar" style={{ background: conv.color }}>{initials(conv.name)}</div>

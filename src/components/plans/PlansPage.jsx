@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPlans, clearPlansError } from '../../store/slices/plansSlice';
 import PlanCard from './PlanCard';
@@ -68,6 +68,7 @@ function PhoneMockup() {
 export default function PlansPage() {
   const dispatch = useDispatch();
   const { plans, loading, error } = useSelector((state) => state.plans);
+  const [selectedTier, setSelectedTier] = useState(null);
 
   useEffect(() => {
     dispatch(fetchPlans());
@@ -108,7 +109,13 @@ export default function PlansPage() {
         {!loading && !error && sortedPlans.length > 0 && (
           <div className="plans-grid">
             {sortedPlans.map((plan, i) => (
-              <PlanCard key={plan._id} plan={plan} index={i} />
+              <PlanCard
+                key={plan._id}
+                plan={plan}
+                index={i}
+                isSelected={selectedTier === plan.tier}
+                onCardClick={() => setSelectedTier(plan.tier)}
+              />
             ))}
           </div>
         )}

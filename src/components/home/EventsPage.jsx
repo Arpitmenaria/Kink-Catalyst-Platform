@@ -76,6 +76,7 @@ const EVENT_TYPES = [
 
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick }) {
   const [step, setStep] = useState(1);
+  const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
 
   // Step 1 state
@@ -127,11 +128,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }
 
   function handleBack() {
+    setAnimDir('back');
     if (step === 1) onBack();
     else setStep(s => s - 1);
   }
 
   function handleNext() {
+    setAnimDir('forward');
     if (step < 4) setStep(s => s + 1);
   }
 
@@ -169,6 +172,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
         {/* Form card */}
         <div className="ev-form-card">
+          <div key={step} className={`ev-step-content ev-step-content--${animDir}`}>
           {step === 1 && (
             <>
               <div className="ev-form-header">
@@ -672,6 +676,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </div>
             </div>
           )}
+          </div>{/* ev-step-content */}
 
           <div className="ev-form-divider" />
           <div className="ev-form-footer">

@@ -31,6 +31,12 @@ const CARD_DELAYS    = ['0.1s', '0.28s', '0.46s'];
 
 const AURORA_COLORS = ['#5534f0', '#00e5c0', '#ff6ef7', '#ff9900', '#60a5fa'];
 
+const TIER_SELECTED_COLOR = {
+  free:     '#3b82f6',
+  gold:     '#a855f7',
+  platinum: '#a78bfa',
+};
+
 function rand(min, max) { return min + Math.random() * (max - min); }
 
 function CheckIcon() {
@@ -46,7 +52,7 @@ function Spinner() {
   return <span className="btn-spinner" aria-hidden="true" />;
 }
 
-export default function PlanCard({ plan, index = 0 }) {
+export default function PlanCard({ plan, index = 0, isSelected = false, onCardClick }) {
   const dispatch   = useDispatch();
   const { selecting } = useSelector((state) => state.plans);
   const [displayPrice, setDisplayPrice] = useState(0);
@@ -107,13 +113,15 @@ export default function PlanCard({ plan, index = 0 }) {
 
   const cardDelay = CARD_DELAYS[index] ?? '0.1s';
 
+  const tierColor = TIER_SELECTED_COLOR[plan.tier] ?? '#3b82f6';
+
   const cardEl = (
     <div
-      className={`plan-card plan-card--${plan.tier}${meta.popular ? ' plan-card--popular' : ''}`}
-      style={{ '--card-delay': isGold ? undefined : cardDelay }}
+      className={`plan-card plan-card--${plan.tier}${meta.popular ? ' plan-card--popular' : ''}${isSelected ? ' plan-card--selected' : ''}`}
+      style={{ '--card-delay': isGold ? undefined : cardDelay, '--tier-color': tierColor }}
+      onClick={onCardClick}
     >
       {meta.popular && <div className="popular-badge">Most Popular</div>}
-      {isPlatinum && <div className="plat-scan-line" />}
 
       <p className="plan-label">{meta.label}</p>
       <h3 className="plan-name">{meta.name}</h3>
@@ -169,7 +177,10 @@ export default function PlanCard({ plan, index = 0 }) {
 
   if (isGold) {
     return (
-      <div className="gold-aurora-wrap" style={{ '--card-delay': cardDelay }}>
+      <div
+        className={`gold-aurora-wrap${isSelected ? ' gold-aurora-wrap--selected' : ''}`}
+        style={{ '--card-delay': cardDelay }}
+      >
         {cardEl}
       </div>
     );

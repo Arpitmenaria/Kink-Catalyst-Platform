@@ -157,11 +157,29 @@
   will-change: transform;
 }
 
+.plan-card {
+  cursor: pointer;
+}
+
 .plan-card--free:hover,
 .plan-card--platinum:hover {
   transform: translateY(-10px) scale(1.02);
   box-shadow: 0 24px 48px rgba(0,0,0,0.5);
 }
+
+.plan-card--selected {
+  border-color: var(--tier-color, #3b82f6);
+  box-shadow:
+    0 0 0 2px var(--tier-color, #3b82f6),
+    0 24px 52px rgba(0,0,0,0.5);
+  transform: translateY(-10px) scale(1.02);
+}
+
+.gold-aurora-wrap--selected {
+  transform: translateY(-10px) scale(1.02);
+  filter: brightness(1.1);
+}
+
 
 /* ═══════════════════════════════════════════
    Gold card — aurora rotating border

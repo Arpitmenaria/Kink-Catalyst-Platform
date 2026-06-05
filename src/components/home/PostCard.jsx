@@ -6,6 +6,18 @@ import './PostCard.css';
 
 const READER_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
 
+const BURST_EMOJIS = ['😊', '❤️', '🔥', '✨', '💫', '⭐', '🎉', '👏'];
+const BURST_PATHS = [
+  { dx: -48, dy: -64, rot: -30 },
+  { dx: -22, dy: -78, rot:  15 },
+  { dx:   8, dy: -82, rot: -10 },
+  { dx:  36, dy: -68, rot:  25 },
+  { dx:  52, dy: -42, rot: -20 },
+  { dx: -58, dy: -38, rot:  30 },
+  { dx: -12, dy: -72, rot: -18 },
+  { dx:  28, dy: -56, rot:  22 },
+];
+
 function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
@@ -38,6 +50,8 @@ export default function PostCard({ post }) {
 
   const [comment,    setComment]    = useState('');
   const [localLiked, setLocalLiked] = useState(false);
+  const [reacting,   setReacting]   = useState(false);
+  const [particles,  setParticles]  = useState([]);
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const menuRef = useRef(null);
@@ -63,7 +77,14 @@ export default function PostCard({ post }) {
   }, [menuOpen]);
 
   function handleLike() {
-    if (isStatic) { setLocalLiked(v => !v); return; }
+    if (isStatic) {
+      setLocalLiked(v => !v);
+      setReacting(true);
+      const burst = BURST_PATHS.map((p, i) => ({ id: Date.now() + i, emoji: BURST_EMOJIS[i], ...p }));
+      setParticles(burst);
+      setTimeout(() => { setReacting(false); setParticles([]); }, 700);
+      return;
+    }
     if (isLiking || !userId) return;
     dispatch(likePost({ postId: post._id, userId }));
   }
@@ -163,9 +184,24 @@ export default function PostCard({ post }) {
 
         {/* Actions */}
         <div className="post-actions">
-          <button className={`post-action-btn${isLiked ? ' post-action-btn--active' : ''}`} onClick={handleLike} disabled={isLiking}>
-            <ReactIcon /> {isLiked ? 'Reacted' : 'React'}
-          </button>
+          <div className="react-burst-wrap">
+            <button
+              className={`post-action-btn${isLiked ? ' post-action-btn--active' : ''}${reacting ? ' post-action-btn--reacting' : ''}`}
+              onClick={handleLike}
+              disabled={isLiking}
+            >
+              <ReactIcon /> {isLiked ? 'Reacted' : 'React'}
+            </button>
+            {particles.map(p => (
+              <span
+                key={p.id}
+                className="react-particle"
+                style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}
+              >
+                {p.emoji}
+              </span>
+            ))}
+          </div>
           <div className="post-action-sep" />
           <button className="post-action-btn"><CommentIcon /> Comment</button>
           <div className="post-action-sep" />

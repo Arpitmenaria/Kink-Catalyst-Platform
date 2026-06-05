@@ -1153,6 +1153,204 @@
 .ev-publish-notice span { color: #3b82f6; cursor: pointer; }
 .ev-publish-notice span:hover { text-decoration: underline; }
 
+/* ══════════════════════════════════════
+   Events Page — Premium Animations
+══════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes evPageIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes evStepperIn {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+
+@keyframes evCircleIn {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+
+@keyframes evCirclePulse {
+  0%, 100% { box-shadow: 0 0 0 0px  rgba(37,99,235,0.55); }
+  50%       { box-shadow: 0 0 0 8px  rgba(37,99,235,0);    }
+}
+
+@keyframes evStepForward {
+  from { opacity: 0; transform: translateX(40px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+
+@keyframes evStepBack {
+  from { opacity: 0; transform: translateX(-40px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);    }
+}
+
+@keyframes evBtnWave {
+  0%, 100% { background-position: 0%   center; }
+  50%       { background-position: 100% center; }
+}
+
+@keyframes evCardIn {
+  from { opacity: 0; transform: translateY(22px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ── Page entrance ── */
+.ev-stepper  { animation: evStepperIn 0.42s cubic-bezier(0.16,1,0.3,1) 0.04s both; }
+.ev-form-card { animation: evPageIn   0.52s cubic-bezier(0.16,1,0.3,1) 0.10s both; }
+
+/* ── Stepper circles stagger ── */
+.ev-step-col:nth-child(1) .ev-step-circle { animation: evCircleIn 0.36s cubic-bezier(0.34,1.56,0.64,1) 0.06s both; }
+.ev-step-col:nth-child(2) .ev-step-circle { animation: evCircleIn 0.36s cubic-bezier(0.34,1.56,0.64,1) 0.13s both; }
+.ev-step-col:nth-child(3) .ev-step-circle { animation: evCircleIn 0.36s cubic-bezier(0.34,1.56,0.64,1) 0.20s both; }
+.ev-step-col:nth-child(4) .ev-step-circle { animation: evCircleIn 0.36s cubic-bezier(0.34,1.56,0.64,1) 0.27s both; }
+
+/* Active circle glows */
+.ev-step-circle--active {
+  animation: evCirclePulse 2.6s ease-in-out infinite !important;
+  box-shadow: 0 0 0 0px rgba(37,99,235,0.55);
+}
+
+/* ── Step content transition ── */
+.ev-step-content { overflow: hidden; }
+
+.ev-step-content--forward {
+  animation: evStepForward 0.40s cubic-bezier(0.16,1,0.3,1) both;
+}
+.ev-step-content--back {
+  animation: evStepBack 0.40s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── Input focus glow ── */
+.ev-input {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.ev-input:focus {
+  border-color: rgba(99,102,241,0.5);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+.ev-textarea {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.ev-textarea:focus {
+  border-color: rgba(99,102,241,0.5);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+/* ── Event type buttons spring ── */
+.ev-type-btn {
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease,
+              transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+}
+.ev-type-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+.ev-type-btn--active {
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.45), 0 6px 18px rgba(37,99,235,0.2);
+}
+
+/* ── Ticket items spring ── */
+.ev-ticket-item {
+  transition: border-color 0.18s ease, background 0.18s ease,
+              transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+}
+.ev-ticket-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+}
+.ev-ticket-item--active {
+  box-shadow: 0 0 0 1px rgba(37,99,235,0.4), 0 4px 16px rgba(37,99,235,0.18);
+}
+
+/* ── Add ticket button ── */
+.ev-add-ticket-btn {
+  transition: border-color 0.18s ease, color 0.18s ease,
+              transform 0.28s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+}
+.ev-add-ticket-btn:hover {
+  transform: scale(1.015);
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.22);
+}
+
+/* ── Next button wave ── */
+.ev-next-btn {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 33%, #2563eb 66%, #0ea5e9 100%);
+  background-size: 300% 100%;
+  animation: evBtnWave 3.5s ease infinite;
+  transition: filter 0.15s, transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease;
+}
+.ev-next-btn:hover {
+  filter: brightness(1.14);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 28px rgba(37,99,235,0.42);
+}
+.ev-next-btn:active { transform: scale(0.96); }
+
+/* ── Back / cancel button ── */
+.ev-cancel-btn {
+  transition: color 0.15s ease, transform 0.28s cubic-bezier(0.16,1,0.3,1);
+}
+.ev-cancel-btn:hover { transform: translateX(-3px); }
+
+/* ── Review cards stagger ── */
+.ev-review-card:nth-child(1) { animation: evCardIn 0.38s cubic-bezier(0.16,1,0.3,1) 0.08s both; }
+.ev-review-card:nth-child(2) { animation: evCardIn 0.38s cubic-bezier(0.16,1,0.3,1) 0.18s both; }
+.ev-review-card:nth-child(3) { animation: evCardIn 0.38s cubic-bezier(0.16,1,0.3,1) 0.28s both; }
+
+/* ── Sidebar panels stagger ── */
+.ev-s4-panel:nth-child(1) { animation: evCardIn 0.38s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+.ev-s4-panel:nth-child(2) { animation: evCardIn 0.38s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
+
+/* ── Publish button wave ── */
+.ev-publish-btn {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #2563eb 100%);
+  background-size: 200% 100%;
+  animation: evBtnWave 3s ease infinite;
+  transition: filter 0.15s, transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease;
+}
+.ev-publish-btn:hover {
+  filter: brightness(1.14);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(37,99,235,0.45);
+}
+
+/* ── Share buttons spring ── */
+.ev-share-btn {
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease,
+              transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+}
+.ev-share-btn:hover {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.32);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+/* ── Free/Paid toggle ── */
+.ev-fp-btn {
+  transition: background 0.18s ease, color 0.18s ease,
+              transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.ev-fp-btn:hover:not(.ev-fp-btn--active) { transform: scale(1.04); }
+
+/* ── Loc tab hover ── */
+.ev-loc-tab {
+  transition: background 0.18s ease, color 0.18s ease,
+              transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.ev-loc-tab:hover:not(.ev-loc-tab--active) { transform: scale(1.04); }
+
+/* ── Invite button spring ── */
+.ev-invite-btn {
+  transition: color 0.15s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.ev-invite-btn:hover { transform: scale(1.12); }
+
 /* ── Responsive ── */
 @media (max-width: 860px) {
   .ev-main { padding: 0 16px 40px; }
