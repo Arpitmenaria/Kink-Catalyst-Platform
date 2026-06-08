@@ -41,7 +41,7 @@ export const MOCK_POSTS = [
   {
     _id: 'p1',
     author: { fullName: 'Elena Moretti', avatar: ELENA_AVATAR },
-    caption: "Exploring the intersection of architectural minimalism and digital landscapes. This weekend's creative retreat was absolutely transformative. 🌿✦",
+    caption: "Exploring the intersection of architectural minimalism and digital landscapes. This weekend's creative retreat was absolutely transformative.",
     media: [{ url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&q=90&fit=crop' }],
     title: 'Celebration new album song launched',
     tags: '#Musiccelebration, #music, #party, #music',
@@ -55,7 +55,7 @@ export const MOCK_POSTS = [
   {
     _id: 'p2',
     author: { fullName: 'Elena Moretti', avatar: ELENA_AVATAR },
-    caption: "Exploring the intersection of architectural minimalism and digital landscapes. This weekend's creative retreat was absolutely transformative. 🌿✦",
+    caption: "Exploring the intersection of architectural minimalism and digital landscapes. This weekend's creative retreat was absolutely transformative.",
     media: [{ url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=90&fit=crop' }],
     createdAt: new Date(Date.now() - 18000000).toISOString(),
     likes: 3,

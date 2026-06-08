@@ -114,7 +114,7 @@ const REPORTED_CONTENT = [
 /* ══════════════════════════
    Community Moderation Page
 ══════════════════════════ */
-function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick }) {
+function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
   const [postApproval,  setPostApproval]  = useState(true);
   const [commentPerms,  setCommentPerms]  = useState(true);
   const [rules,         setRules]         = useState(COMMUNITY_RULES);
@@ -124,6 +124,8 @@ function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, on
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
     if (id === 'home')     onFeedClick?.();
+    if (id === 'courses')  onCoursesClick?.();
+    if (id === 'library')  onLibraryClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
@@ -304,7 +306,7 @@ const ROLE_BADGE_MAP = {
 /* ══════════════════════════
    Group Admin Dashboard
 ══════════════════════════ */
-function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick }) {
+function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick, onLibraryClick, onCoursesClick }) {
   const [activeTab,      setActiveTab]      = useState('active');
   const [searchQuery,    setSearchQuery]    = useState('');
   const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Moderator', 3: 'Member', 4: 'Member' });
@@ -314,6 +316,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
     if (id === 'home')     onFeedClick?.();
+    if (id === 'courses')  onCoursesClick?.();
+    if (id === 'library')  onLibraryClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
@@ -478,7 +482,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 /* ══════════════════════════
    Create Group Page
 ══════════════════════════ */
-function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onCreateGroup }) {
+function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onCreateGroup, onLibraryClick, onCoursesClick }) {
   const [groupName,     setGroupName]     = useState('');
   const [description,   setDescription]   = useState('');
   const [category,      setCategory]      = useState('Technology & Software');
@@ -489,6 +493,8 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
     if (id === 'home')     onFeedClick?.();
+    if (id === 'courses')  onCoursesClick?.();
+    if (id === 'library')  onLibraryClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
@@ -731,7 +737,7 @@ function CreateGroupModal({ onClose }) {
 /* ══════════════════════════
    Main Component
 ══════════════════════════ */
-export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick }) {
+export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
   const [modalOpen,      setModalOpen]      = useState(false);
   const [showCreate,     setShowCreate]     = useState(false);
   const [showAdmin,      setShowAdmin]      = useState(false);
@@ -748,6 +754,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
         onMessagesClick={onMessagesClick}
+        onLibraryClick={onLibraryClick}
+        onCoursesClick={onCoursesClick}
         onCreateGroup={() => { setShowCreate(false); setAdminGroup(null); setShowAdmin(true); }}
       />
     );
@@ -762,6 +770,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
         onMessagesClick={onMessagesClick}
+        onLibraryClick={onLibraryClick}
+        onCoursesClick={onCoursesClick}
       />
     );
   }
@@ -775,6 +785,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
         onMessagesClick={onMessagesClick}
+        onLibraryClick={onLibraryClick}
+        onCoursesClick={onCoursesClick}
         onModerationClick={() => setShowModeration(true)}
       />
     );
@@ -783,6 +795,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
     if (id === 'home')     onBack?.();
+    if (id === 'courses')  onCoursesClick?.();
+    if (id === 'library')  onLibraryClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'calendar') onCalendarClick?.();
     if (id === 'messages') onMessagesClick?.();

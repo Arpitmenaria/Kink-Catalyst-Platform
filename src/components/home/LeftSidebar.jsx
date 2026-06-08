@@ -50,7 +50,7 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick }) {
+export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick }) {
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const [createOpen,  setCreateOpen]  = useState(false);
@@ -65,6 +65,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   function handleNavNavigate(id) {
     if (id === 'create')   { setCreateOpen(true); return; }
     setActiveNavId(id);
+    if (id === 'courses')  onCoursesClick?.();
+    if (id === 'library')  onLibraryClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'messages') onMessagesClick?.();
     if (id === 'friends')  onGroupsClick?.();
@@ -108,7 +110,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                 <span className="stat-lbl">Followers</span>
               </div>
             </div>
-            <button className="view-profile-btn">View Profile</button>
+            <button className="view-profile-btn" onClick={onProfileClick}>View Profile</button>
           </div>
         </div>
 

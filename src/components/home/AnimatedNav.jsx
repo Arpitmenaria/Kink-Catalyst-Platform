@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   IconHome,
+  IconBook2,
+  IconBooks,
   IconPlus,
   IconCalendar,
   IconUsers,
@@ -12,11 +14,11 @@ import './AnimatedNav.css';
 
 const MAIN_ITEMS = [
   { id: 'home',     Icon: IconHome,          label: 'Home'              },
-  { id: 'create',   Icon: IconPlus,          label: 'Create'            },
+  { id: 'courses',  Icon: IconBook2,         label: 'Courses'           },
+  { id: 'library',  Icon: IconBooks,         label: 'Library'           },
   { id: 'events',   Icon: IconCalendar,      label: 'Events'            },
   { id: 'friends',  Icon: IconUsers,         label: 'Friends'           },
   { id: 'messages', Icon: IconMessageCircle, label: 'Messages', badge: 3 },
-  { id: 'gallery',  Icon: IconPhoto,         label: 'Gallery'           },
 ];
 
 export default function AnimatedNav({ activeId = 'home', avatarUrl, onNavigate }) {

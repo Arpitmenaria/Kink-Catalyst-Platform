@@ -41,6 +41,41 @@ function BookmarkIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" 
 function EmojiIcon()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function SendIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
 
+const MOCK_COMMENTS = [
+  {
+    id: 'c1',
+    initials: 'SB', color: '#3b82f6',
+    name: 'Samuel Bishop', time: '5 hours ago',
+    text: 'Removed demands expense account in outward tedious do. Particular way thoroughly unaffected projection.',
+    likes: 3,
+    replies: [
+      { id: 'c1r1', initials: 'DB', color: '#8b5cf6', name: 'Dennis Barrett', time: '2 hours ago',
+        text: 'See resolved goodness felicity shy civility domestic had but Drawings offended yet answered Jennings perceive.', likes: 5 },
+      { id: 'c1r2', initials: 'LF', color: '#ec4899', name: 'Lori Ferguson', time: '15 minutes ago',
+        text: 'Wishing calling is warrant settled was lucky.', likes: 0 },
+    ],
+  },
+  {
+    id: 'c2',
+    initials: 'JN', color: '#f59e0b',
+    name: 'Judy Nguyen', time: '4 minutes ago',
+    text: 'Removed demands expense account in outward tedious do. Particular way thoroughly unaffected.',
+    likes: 2,
+    replies: [
+      { id: 'c2r1', initials: 'RM', color: '#10b981', name: 'Rachel Moore', time: '2 minutes ago',
+        text: 'Totally agree with this perspective!', likes: 1 },
+    ],
+  },
+  {
+    id: 'c3',
+    initials: 'TK', color: '#6366f1',
+    name: 'Tom Keller', time: '1 hour ago',
+    text: 'Great post! Really inspired by this creative direction.',
+    likes: 7,
+    replies: [],
+  },
+];
+
 export default function PostCard({ post }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
@@ -48,13 +83,32 @@ export default function PostCard({ post }) {
 
   const isStatic = typeof post.likes === 'number';
 
-  const [comment,    setComment]    = useState('');
-  const [localLiked, setLocalLiked] = useState(false);
-  const [reacting,   setReacting]   = useState(false);
-  const [particles,  setParticles]  = useState([]);
-  const [menuOpen,   setMenuOpen]   = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
+  const [comment,         setComment]         = useState('');
+  const [localLiked,      setLocalLiked]      = useState(false);
+  const [reacting,        setReacting]        = useState(false);
+  const [particles,       setParticles]       = useState([]);
+  const [menuOpen,        setMenuOpen]        = useState(false);
+  const [reportOpen,      setReportOpen]      = useState(false);
+  const [showComments,    setShowComments]    = useState(true);
+  const [expandedReplies, setExpandedReplies] = useState(new Set(['c1']));
+  const [likedComments,   setLikedComments]   = useState(new Set());
   const menuRef = useRef(null);
+
+  function toggleReplies(id) {
+    setExpandedReplies(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleCommentLike(id) {
+    setLikedComments(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   const userId = user?.id;
   const authorName = post.author?.fullName || 'Unknown';
@@ -176,8 +230,15 @@ export default function PostCard({ post }) {
             <span className="post-reaction-count">+{likeCount}</span>
           </div>
           <div className="post-stats-right">
-            <span>{commentCount} Comment</span>
-            <span>{shareCount}share</span>
+            <button className="post-stats-link" onClick={() => setShowComments(v => !v)}>
+              👍 Liked ({likeCount})
+            </button>
+            <span className="post-stats-dot">·</span>
+            <button className="post-stats-link" onClick={() => setShowComments(v => !v)}>
+              💬 Comments ({MOCK_COMMENTS.length + MOCK_COMMENTS.reduce((a, c) => a + c.replies.length, 0)})
+            </button>
+            <span className="post-stats-dot">·</span>
+            <span className="post-stats-link">Shares ({shareCount})</span>
             <span className="post-bookmark"><BookmarkIcon /></span>
           </div>
         </div>
@@ -186,11 +247,13 @@ export default function PostCard({ post }) {
         <div className="post-actions">
           <div className="react-burst-wrap">
             <button
-              className={`post-action-btn${isLiked ? ' post-action-btn--active' : ''}${reacting ? ' post-action-btn--reacting' : ''}`}
+              className={`post-action-btn${isLiked ? ' post-action-btn--active' : ''}`}
               onClick={handleLike}
               disabled={isLiking}
             >
-              <ReactIcon /> {isLiked ? 'Reacted' : 'React'}
+              <span className={`react-label${reacting ? ' react-label--spring' : ''}`}>
+                <ReactIcon /> {isLiked ? 'Reacted' : 'React'}
+              </span>
             </button>
             {particles.map(p => (
               <span
@@ -207,6 +270,74 @@ export default function PostCard({ post }) {
           <div className="post-action-sep" />
           <button className="post-action-btn" onClick={handleShare}><ShareIcon /> Share</button>
         </div>
+
+        {/* Comments section */}
+        {showComments && (
+          <div className="post-comments-section">
+            {MOCK_COMMENTS.map(c => (
+              <div key={c.id} className="pc-thread">
+                {/* Top-level comment */}
+                <div className="pc-comment">
+                  <div className="pc-avatar" style={{ background: c.color }}>{c.initials}</div>
+                  <div className="pc-body">
+                    <div className="pc-bubble">
+                      <span className="pc-name">{c.name}</span>
+                      <span className="pc-time">{c.time}</span>
+                      <p className="pc-text">{c.text}</p>
+                    </div>
+                    <div className="pc-actions">
+                      <button className={`pc-act${likedComments.has(c.id) ? ' pc-act--liked' : ''}`} onClick={() => toggleCommentLike(c.id)}>
+                        Like ({c.likes + (likedComments.has(c.id) ? 1 : 0)})
+                      </button>
+                      <span className="pc-dot">·</span>
+                      <button className="pc-act">Reply</button>
+                      {c.replies.length > 0 && (
+                        <>
+                          <span className="pc-dot">·</span>
+                          <button className="pc-act pc-act--view" onClick={() => toggleReplies(c.id)}>
+                            {expandedReplies.has(c.id) ? `Hide replies` : `View ${c.replies.length} replies`}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Replies */}
+                    {expandedReplies.has(c.id) && c.replies.length > 0 && (
+                      <div className="pc-replies">
+                        {c.replies.map(r => (
+                          <div key={r.id} className="pc-comment pc-comment--reply">
+                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.color }}>{r.initials}</div>
+                            <div className="pc-body">
+                              <div className="pc-bubble pc-bubble--reply">
+                                <span className="pc-name">{r.name}</span>
+                                <span className="pc-time">{r.time}</span>
+                                <p className="pc-text">{r.text}</p>
+                              </div>
+                              <div className="pc-actions">
+                                <button className={`pc-act${likedComments.has(r.id) ? ' pc-act--liked' : ''}`} onClick={() => toggleCommentLike(r.id)}>
+                                  Like ({r.likes + (likedComments.has(r.id) ? 1 : 0)})
+                                </button>
+                                <span className="pc-dot">·</span>
+                                <button className="pc-act">Reply</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <button className="pc-load-more">
+                          <span className="pc-load-dots">···</span> Load more replies
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button className="pc-view-all" onClick={() => setShowComments(v => !v)}>
+              View all comments
+            </button>
+          </div>
+        )}
 
         {/* Comment bar */}
         <div className="post-comment-bar">

@@ -1,5 +1,12 @@
+import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { ALEX_AVATAR } from './mockData';
+
+const DEMO_NOTIFICATIONS = [
+  { id: 1, emoji: '💬', text: 'Alex liked your post', sub: '2 minutes ago', color: '#3b82f6', unread: true },
+  { id: 2, emoji: '📸', text: 'Maria commented on your photo', sub: '15 minutes ago', color: '#8b5cf6', unread: true },
+  { id: 3, emoji: '🎉', text: 'New event: Music Festival this Saturday', sub: '1 hour ago', color: '#f59e0b', unread: false },
+];
 
 function SearchIcon() {
   return (
@@ -32,12 +39,31 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export default function Navbar() {
+export default function Navbar({ onMessagesClick }) {
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile }        = useSelector((state) => state.profile);
 
   const displayName = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
   const avatarUrl   = profile?.avatar   ?? ALEX_AVATAR;
+
+  const [notifOpen, setNotifOpen]   = useState(false);
+  const [notifs,    setNotifs]      = useState(DEMO_NOTIFICATIONS);
+  const notifRef                    = useRef(null);
+  const unreadCount                 = notifs.filter(n => n.unread).length;
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    function onOut(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [notifOpen]);
+
+  function handleBell() {
+    setNotifOpen(v => !v);
+    if (!notifOpen) setNotifs(ns => ns.map(n => ({ ...n, unread: false })));
+  }
 
   return (
     <nav className="home-navbar">
@@ -62,14 +88,43 @@ export default function Navbar() {
       </div>
 
       <div className="navbar-right">
-        <button className="navbar-icon-btn" aria-label="Messages">
+        {/* Messages */}
+        <button className="navbar-icon-btn" aria-label="Messages" onClick={onMessagesClick}>
           <ChatBubbleIcon />
           <span className="notif-badge notif-badge--green">2</span>
         </button>
-        <button className="navbar-icon-btn" aria-label="Notifications">
-          <BellIcon />
-          <span className="notif-badge notif-badge--red">2</span>
-        </button>
+
+        {/* Notifications */}
+        <div className="navbar-notif-wrap" ref={notifRef}>
+          <button className="navbar-icon-btn" aria-label="Notifications" onClick={handleBell}>
+            <BellIcon />
+            {unreadCount > 0 && (
+              <span className="notif-badge notif-badge--red">{unreadCount}</span>
+            )}
+          </button>
+
+          {notifOpen && (
+            <div className="navbar-notif-dropdown">
+              <div className="navbar-notif-header">
+                <span className="navbar-notif-title">Notifications</span>
+                <span className="navbar-notif-pill">{DEMO_NOTIFICATIONS.length} new</span>
+              </div>
+              {notifs.map((n, i) => (
+                <div key={n.id} className="navbar-notif-item" style={{ '--ni': i }}>
+                  <div className="navbar-notif-icon" style={{ background: n.color + '22', color: n.color }}>
+                    {n.emoji}
+                  </div>
+                  <div className="navbar-notif-body">
+                    <p className="navbar-notif-text">{n.text}</p>
+                    <p className="navbar-notif-sub">{n.sub}</p>
+                  </div>
+                  {n.unread && <span className="navbar-notif-dot" />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="navbar-user">
           <div className="navbar-avatar-wrap">
             <div className="navbar-avatar" style={{ overflow: 'hidden' }} aria-hidden="true">

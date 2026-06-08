@@ -445,7 +445,7 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick }) {
+export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick }) {
   const [tab, setTab]           = useState('All');
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [search, setSearch]     = useState('');
@@ -484,6 +484,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           onNavigate={id => {
             if (id === 'create')   { setCreatePostOpen(true); return; }
             if (id === 'home')     onBack?.();
+            if (id === 'courses')  onCoursesClick?.();
+            if (id === 'library')  onLibraryClick?.();
             if (id === 'events')   onEventsClick?.();
             if (id === 'friends')  onGroupsClick?.();
             if (id === 'calendar') onCalendarClick?.();
@@ -654,11 +656,15 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
   /* ── List view (no conversation selected) ── */
   return (
+    <>
     <div className="msg-page">
       <AnimatedNav
         activeId="messages"
         onNavigate={id => {
+          if (id === 'create')   { setCreatePostOpen(true); return; }
           if (id === 'home')     onBack?.();
+          if (id === 'courses')  onCoursesClick?.();
+          if (id === 'library')  onLibraryClick?.();
           if (id === 'events')   onEventsClick?.();
           if (id === 'friends')  onGroupsClick?.();
           if (id === 'calendar') onCalendarClick?.();
@@ -756,5 +762,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
       </div>
     </div>
+    {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
+    </>
   );
 }

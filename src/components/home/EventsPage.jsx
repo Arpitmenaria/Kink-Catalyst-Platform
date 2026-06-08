@@ -74,7 +74,7 @@ const EVENT_TYPES = [
   { id: 'hybrid',  label: 'Hybrid',  icon: <HybridIcon /> },
 ];
 
-export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick }) {
+export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
   const [step, setStep] = useState(1);
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
@@ -145,6 +145,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
         onNavigate={id => {
           if (id === 'create')   { setCreatePostOpen(true); return; }
           if (id === 'home')     onBack?.();
+          if (id === 'courses')  onCoursesClick?.();
+          if (id === 'library')  onLibraryClick?.();
           if (id === 'events')   onEventsClick?.();
           if (id === 'friends')  onGroupsClick?.();
           if (id === 'calendar') onCalendarClick?.();

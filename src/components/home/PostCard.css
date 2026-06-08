@@ -42,19 +42,25 @@
   }
 }
 
-.post-action-btn--reacting {
+.react-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.react-label--spring {
   animation: reactBtnSpring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .post-action-btn--active {
   color: #f59e0b !important;
-  background: rgba(245, 158, 11, 0.1) !important;
-  animation: reactGlowPulse 1.8s ease-in-out infinite;
 }
 
-.post-action-btn--active.post-action-btn--reacting {
-  animation: reactBtnSpring 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards,
-             reactGlowPulse 1.8s ease-in-out 0.5s infinite;
+.post-action-btn--active .react-label--spring {
+  animation: reactBtnSpring 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
 }
 
 .react-particle {
@@ -585,3 +591,201 @@
   color: #a5b4fc;
   transform: scale(1.2) translateY(-1px);
 }
+
+/* ── Stats links ── */
+.post-stats-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12.5px;
+  color: #8b9cc8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.post-stats-link:hover { color: #a5b4fc; }
+.post-stats-dot {
+  color: #3d4a6a;
+  font-size: 12px;
+  margin: 0 2px;
+  user-select: none;
+}
+
+/* ══════════════════════════════════════════
+   Post Comments Section
+══════════════════════════════════════════ */
+.post-comments-section {
+  padding: 4px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pc-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Single comment ── */
+.pc-comment {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 0;
+}
+
+.pc-comment--reply {
+  padding: 4px 0;
+}
+
+/* Avatar circle */
+.pc-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.pc-avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 9px;
+}
+
+/* Body */
+.pc-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Bubble */
+.pc-bubble {
+  background: #141928;
+  border: 1px solid #1e2a42;
+  border-radius: 0 12px 12px 12px;
+  padding: 9px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+}
+
+.pc-bubble--reply {
+  background: #0f1520;
+  border-color: #1a2338;
+  border-radius: 0 10px 10px 10px;
+}
+
+.pc-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e0e6f8;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.pc-time {
+  font-size: 11px;
+  color: #4a5a80;
+  margin-left: auto;
+  white-space: nowrap;
+  position: absolute;
+  top: 9px;
+  right: 13px;
+}
+
+.pc-text {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.55;
+  margin: 0;
+  padding-right: 72px;
+}
+
+/* Action row under comment */
+.pc-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 2px;
+}
+
+.pc-act {
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: #5c6a8c;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border-radius: 5px;
+  transition: color 0.15s, background 0.15s;
+}
+.pc-act:hover { color: #a5b4fc; background: rgba(99,102,241,0.07); }
+.pc-act--liked { color: #3b82f6; font-weight: 600; }
+.pc-act--view { color: #3b82f6; }
+.pc-act--view:hover { color: #60a5fa; }
+
+.pc-dot {
+  color: #2d3a56;
+  font-size: 11px;
+  user-select: none;
+}
+
+/* Replies indent */
+.pc-replies {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid #1a2338;
+  margin-left: 8px;
+}
+
+/* Load more replies */
+.pc-load-more {
+  background: none;
+  border: none;
+  color: #5c6a8c;
+  font-size: 12.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  padding: 6px 8px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.pc-load-more:hover { color: #a5b4fc; background: rgba(99,102,241,0.06); }
+
+.pc-load-dots {
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #3d4a6a;
+  line-height: 1;
+}
+
+/* View all comments */
+.pc-view-all {
+  background: none;
+  border: none;
+  color: #4a5a80;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 4px 6px;
+  text-align: left;
+  transition: color 0.15s;
+  border-top: 1px solid #131928;
+  margin-top: 4px;
+}
+.pc-view-all:hover { color: #a5b4fc; }

@@ -199,7 +199,7 @@ function CreateEventModal({ onClose }) {
 /* ══════════════════════════════
    Main Component
 ══════════════════════════════ */
-export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick, onMessagesClick }) {
+export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
   const [monday,    setMonday]   = useState(getMondayOf(new Date()));
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(new Date());
@@ -242,6 +242,8 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick
         onNavigate={id => {
           if (id === 'create')   { setCreatePostOpen(true); return; }
           if (id === 'home')     onFeedClick?.();
+          if (id === 'courses')  onCoursesClick?.();
+          if (id === 'library')  onLibraryClick?.();
           if (id === 'events')   onEventsClick?.();
           if (id === 'friends')  onGroupsClick?.();
           if (id === 'messages') onMessagesClick?.();
