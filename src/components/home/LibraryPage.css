@@ -101,6 +101,9 @@
 
 .lib-stat-card:hover .lib-stat-icon { transform: scale(1.12) rotate(-5deg); }
 
+.lib-stat-card--link { cursor: pointer; }
+.lib-stat-card--link:hover { border-color: rgba(59,130,246,0.4); box-shadow: 0 8px 24px rgba(59,130,246,0.14); }
+
 .lib-stat-label {
   font-size: 9.5px;
   font-weight: 700;

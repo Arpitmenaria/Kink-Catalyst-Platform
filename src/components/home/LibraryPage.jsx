@@ -144,17 +144,26 @@ export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, on
 
         {/* ── Stats row ── */}
         <div className="lib-stats-row">
-          {STAT_CARDS.map(({ Icon, label, value, color }, i) => (
-            <div key={label} className="lib-stat-card" style={{ '--si': i }}>
-              <div className="lib-stat-icon" style={{ color, background: color + '18' }}>
-                <Icon />
+          {STAT_CARDS.map(({ Icon, label, value, color }, i) => {
+            const isEnrolled = label === 'COURSES ENROLLED';
+            return (
+              <div
+                key={label}
+                className={`lib-stat-card${isEnrolled ? ' lib-stat-card--link' : ''}`}
+                style={{ '--si': i }}
+                onClick={isEnrolled ? () => onCoursesClick?.() : undefined}
+                title={isEnrolled ? 'View enrolled courses' : undefined}
+              >
+                <div className="lib-stat-icon" style={{ color, background: color + '18' }}>
+                  <Icon />
+                </div>
+                <div className="lib-stat-body">
+                  <p className="lib-stat-label">{label}</p>
+                  <p className="lib-stat-value">{value}</p>
+                </div>
               </div>
-              <div className="lib-stat-body">
-                <p className="lib-stat-label">{label}</p>
-                <p className="lib-stat-value">{value}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── Type tabs ── */}

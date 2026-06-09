@@ -3,19 +3,25 @@ import {
   IconCalendar,
   IconUsers,
   IconMessageCircle,
-  IconBook2,
-  IconBooks,
   IconWorld,
 } from '@tabler/icons-react';
 import './AnimatedNav.css';
+
+function IconGradCap({ size = 24, stroke = 1.8 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+      <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+    </svg>
+  );
+}
 
 const MAIN_ITEMS = [
   { id: 'home',      Icon: IconHome2,          label: 'Feed'      },
   { id: 'events',    Icon: IconCalendar,        label: 'Events'    },
   { id: 'friends',   Icon: IconUsers,           label: 'Groups'    },
   { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages', badge: 3 },
-  { id: 'courses',   Icon: IconBook2,           label: 'Courses'   },
-  { id: 'library',   Icon: IconBooks,           label: 'Library'   },
+  { id: 'library',   Icon: IconGradCap,         label: 'Education' },
   { id: 'minisites', Icon: IconWorld,           label: 'Mini Sites'},
 ];
 

@@ -35,11 +35,12 @@
 }
 
 .navbar-logo {
-  font-size: 15px;
+  font-size: 25px;
   font-weight: 700;
   color: #38bdf8;
   letter-spacing: -0.2px;
   white-space: nowrap;
+  margin-left: 72px;
 }
 
 .navbar-search {
@@ -1834,26 +1835,7 @@
 .event-card-detail:nth-of-type(2) { animation: rightItemIn 0.3s ease 0.32s both; }
 
 /* ── Going/Not Going button wave ── */
-.event-attend-btn {
-  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #2563eb 100%);
-  background-size: 200% 100%;
-  animation: rightBtnWave 3s ease infinite, rightItemIn 0.3s ease 0.38s both;
-  transition:
-    transform    0.28s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow   0.25s ease,
-    filter       0.2s  ease;
-}
-
-.event-attend-btn:hover {
-  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #2563eb 100%);
-  background-size: 200% 100%;
-  animation: rightBtnWave 3s ease infinite;
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 5px 18px rgba(37, 99, 235, 0.42);
-  filter: brightness(1.1);
-}
-
-.event-attend-btn:active { transform: scale(0.97); box-shadow: none; }
+.event-attend-btn:hover { background: #1d4ed8; }
 
 /* ── Gallery thumbs stagger ── */
 .gallery-thumb { overflow: hidden; }

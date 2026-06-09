@@ -119,7 +119,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Friend Suggestions</span>
-            <button className="section-link">See all</button>
+            <button className="section-link">View all</button>
           </div>
           <div className="friend-list">
             {FRIEND_SUGGESTIONS.map(f => (

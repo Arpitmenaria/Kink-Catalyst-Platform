@@ -3,11 +3,11 @@ import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { MOCK_POSTS, ALEX_AVATAR } from './mockData';
+import { MOCK_POSTS, ALEX_AVATAR, FRIEND_SUGGESTIONS, SIDEBAR_EVENTS, GALLERY_IMAGES } from './mockData';
 import './ProfilePage.css';
 
 const COVER_URL = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
-const TABS = ['Feed', 'About', 'Connections', 'Media', 'Events'];
+const TABS = ['Feed', 'About', 'Connections', 'Photos', 'Events'];
 
 const MEDIA_PHOTOS = [
   { id: 'm1', images: [
@@ -32,68 +32,91 @@ const MEDIA_PHOTOS = [
   { id: 'm9', images: ['https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'], likes: '29K', comments: '7K' },
 ];
 
-const INFO_ITEMS = [
-  { id: 'born',     Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, label: 'Born', value: 'October 20, 1990' },
-  { id: 'status',   Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>, label: 'Status', value: 'Single' },
-  { id: 'job',      Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>, label: null, value: 'Lead Developer' },
-  { id: 'lives',    Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, label: 'Lives in', value: 'New Hampshire' },
-  { id: 'joined',   Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, label: 'Joined on', value: 'Nov 26, 2019' },
-  { id: 'email',    Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: 'Email', value: 'abc@xyz.com' },
+const PERSONAL_INFO = [
+  { id: 'name',    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,     label: 'Full Name',           value: 'Alex Rivera' },
+  { id: 'dob',     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, label: 'Date of Birth',       value: 'October 20, 1990' },
+  { id: 'gender',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="5"/><line x1="12" y1="14" x2="12" y2="21"/><line x1="9" y1="19" x2="15" y2="19"/></svg>, label: 'Gender',               value: 'Male' },
+  { id: 'status',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>, label: 'Relationship Status',  value: 'Single' },
+  { id: 'location',icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, label: 'Location',             value: 'New Hampshire, USA' },
+  { id: 'email',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: 'Email',               value: 'alex.rivera@example.com' },
+  { id: 'phone',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>, label: 'Phone',               value: '+1 (555) 234-5678' },
+  { id: 'website', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, label: 'Website',             value: 'alexrivera.dev' },
+];
+
+const EDUCATION_ITEMS = [
+  { id: 'edu1', school: 'University of California, Berkeley', degree: 'B.Sc. Computer Science', years: '2008 – 2012', type: 'University' },
+  { id: 'edu2', school: 'Stanford Online',                    degree: 'Machine Learning Certificate', years: '2020',       type: 'Certificate' },
+  { id: 'edu3', school: 'Lincoln High School',                degree: 'Science & Mathematics',        years: '2004 – 2008', type: 'High School' },
 ];
 
 const MOCK_CONNECTIONS = [
   {
-    id: 'cn1',
-    name: 'Frances Guerrero',
-    role: 'Full Stack Web Developer',
+    id: 'cn1', name: 'Frances Guerrero', role: 'Full Stack Web Developer',
+    location: 'New York', industry: 'Engineering',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80&fit=crop&crop=face',
-    sharedText: 'Carolyn Ortiz, Frances Guerrero, and 20 other shared connections',
+    online: true, lastActive: null, mutual: 22,
     sharedAvatars: [
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=30&q=80&fit=crop&crop=face',
-    ],
-    extra: '+1',
+    ], extra: '+1',
   },
   {
-    id: 'cn2',
-    name: 'Lori Ferguson',
-    role: 'Web Developer | Freelancer',
+    id: 'cn2', name: 'Lori Ferguson', role: 'Web Developer | Freelancer',
+    location: 'San Francisco', industry: 'Engineering',
     avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&q=80&fit=crop&crop=face',
-    sharedText: 'Amanda Reed, Lori Stevens, and 10 other shared connections',
+    online: false, lastActive: '2h ago', mutual: 12,
     sharedAvatars: [
       'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=30&q=80&fit=crop&crop=face',
-    ],
-    extra: '+7',
+    ], extra: '+7',
   },
   {
-    id: 'cn3',
-    name: 'Samuel Bishop',
-    role: 'Full Stack Web Developer',
+    id: 'cn3', name: 'Samuel Bishop', role: 'Full Stack Web Developer',
+    location: 'London', industry: 'Engineering',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80&fit=crop&crop=face',
-    sharedText: 'Joan Wallace and Larry Lawson shared connections',
+    online: true, lastActive: null, mutual: 5,
     sharedAvatars: [
       'https://images.unsplash.com/photo-1463453091185-61582044d556?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=30&q=80&fit=crop&crop=face',
-    ],
-    extra: null,
+    ], extra: null,
   },
   {
-    id: 'cn4',
-    name: 'Dennis Barrett',
-    role: 'Full Stack Web Developer',
+    id: 'cn4', name: 'Dennis Barrett', role: 'Senior Product Designer',
+    location: 'Berlin', industry: 'Design',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80&fit=crop&crop=face',
-    sharedText: 'Samuel Bishop, Judy Nguyen, and 115 other shared connections',
+    online: false, lastActive: '1d ago', mutual: 117,
     sharedAvatars: [
       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=30&q=80&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=30&q=80&fit=crop&crop=face',
-    ],
-    extra: null,
+    ], extra: null,
+  },
+  {
+    id: 'cn5', name: 'Maria Chen', role: 'UX Designer at Google',
+    location: 'San Francisco', industry: 'Design',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&q=80&fit=crop&crop=face',
+    online: true, lastActive: null, mutual: 34,
+    sharedAvatars: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=30&q=80&fit=crop&crop=face',
+    ], extra: '+8',
+  },
+  {
+    id: 'cn6', name: 'James Park', role: 'DevOps Engineer | AWS',
+    location: 'New York', industry: 'DevOps',
+    avatar: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=80&q=80&fit=crop&crop=face',
+    online: false, lastActive: '45m ago', mutual: 9,
+    sharedAvatars: [
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=30&q=80&fit=crop&crop=face',
+    ], extra: null,
   },
 ];
+
+const CONN_LOCATIONS  = ['New York', 'San Francisco', 'London', 'Berlin'];
+const CONN_INDUSTRIES = ['Engineering', 'Design', 'DevOps'];
 
 const INTERESTS = [
   { id: 'oracle', bg: '#0070c0', logo: 'O', name: 'Oracle', followers: '7,546,224 followers' },
@@ -107,7 +130,6 @@ function BriefcaseIcon() { return <svg width="14" height="14" viewBox="0 0 24 24
 function PinIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 function CalIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function EditIcon()      { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
-function TrashIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>; }
 function MoreIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function PhotosIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function VideoIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
@@ -122,42 +144,256 @@ function HeartFillIcon() { return <svg width="13" height="13" viewBox="0 0 24 24
 function MsgIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function PlusIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 
+function ChevronDown() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
+}
+function CheckIcon() {
+  return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+}
+function PersonAddIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>;
+}
+
+function FriendSuggestionsPanel() {
+  const [added, setAdded] = useState(new Set());
+  return (
+    <div className="prof-conn-suggestions">
+      <div className="prof-sugg-header">
+        <span className="prof-sugg-title">Friend Suggestions</span>
+        <button className="prof-sugg-see-all">View all</button>
+      </div>
+      {FRIEND_SUGGESTIONS.map(f => (
+        <div key={f.id} className="prof-sugg-item">
+          <div className="prof-sugg-avatar" style={{ background: f.color, overflow: 'hidden' }}>
+            {f.avatar
+              ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : f.name.split(' ').map(w => w[0]).join('').toUpperCase()
+            }
+          </div>
+          <div className="prof-sugg-info">
+            <p className="prof-sugg-name">{f.name}</p>
+            <p className="prof-sugg-sub">{f.sub}</p>
+          </div>
+          <button
+            className={`prof-sugg-add-btn${added.has(f.id) ? ' prof-sugg-add-btn--added' : ''}`}
+            onClick={() => setAdded(p => { const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n; })}
+          >
+            {added.has(f.id) ? '✓' : <PersonAddIcon />}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ConnectionsTab() {
-  const [removed, setRemoved] = useState(new Set());
+  const [removed,   setRemoved]   = useState(new Set());
+  const [viewMode,  setViewMode]  = useState('list');
+  const [search,    setSearch]    = useState('');
+  const [filterLoc, setFilterLoc] = useState('');
+  const [filterInd, setFilterInd] = useState('');
+  const [openDrop,  setOpenDrop]  = useState(null); // 'loc' | 'ind' | null
+  const filterBarRef = useRef(null);
+
+  useEffect(() => {
+    if (!openDrop) return;
+    function onOut(e) {
+      if (filterBarRef.current && !filterBarRef.current.contains(e.target)) setOpenDrop(null);
+    }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [openDrop]);
+
+  const hasFilter = filterLoc || filterInd;
+
+  const visible = MOCK_CONNECTIONS.filter(c =>
+    !removed.has(c.id) &&
+    c.name.toLowerCase().includes(search.toLowerCase()) &&
+    (!filterLoc || c.location === filterLoc) &&
+    (!filterInd || c.industry === filterInd)
+  );
 
   return (
+    <div className="prof-conn-layout">
     <div className="prof-conn-tab">
       <div className="prof-conn-header">
-        <h3 className="prof-conn-title">Connections</h3>
-        <span className="prof-conn-count">{MOCK_CONNECTIONS.length * 75}</span>
+        <div className="prof-conn-header-left">
+          <h3 className="prof-conn-title">Connections</h3>
+          <span className="prof-conn-count">{MOCK_CONNECTIONS.length * 75}</span>
+        </div>
+        <div className="prof-conn-header-right">
+          <div className="prof-conn-view-toggle">
+            <button
+              className={`prof-conn-view-btn${viewMode === 'list' ? ' prof-conn-view-btn--active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="List view"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <button
+              className={`prof-conn-view-btn${viewMode === 'grid' ? ' prof-conn-view-btn--active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid view"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="prof-conn-list">
-        {MOCK_CONNECTIONS.filter(c => !removed.has(c.id)).map(conn => (
-          <div key={conn.id} className="prof-conn-item">
-            <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
-            <div className="prof-conn-info">
-              <div className="prof-conn-name-row">
-                <span className="prof-conn-name">{conn.name}</span>
-                <span className="prof-conn-role">{conn.role}</span>
+
+      {/* ── Filter bar ── */}
+      <div className="prof-conn-filter-bar" ref={filterBarRef}>
+        <div className="prof-conn-search-wrap">
+          <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            className="prof-conn-search"
+            type="text"
+            placeholder="Search connections..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <button
+          className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
+          onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filters
+          {hasFilter && <span className="prof-conn-fbar-dot" />}
+        </button>
+
+        <div className="prof-conn-fbar-item">
+          <button
+            className={`prof-conn-fbar-pill${filterLoc ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'loc' ? ' prof-conn-fbar-pill--open' : ''}`}
+            onClick={() => setOpenDrop(openDrop === 'loc' ? null : 'loc')}
+          >
+            {filterLoc || 'Location'} <ChevronDown />
+          </button>
+          {openDrop === 'loc' && (
+            <div className="prof-conn-fbar-dropdown">
+              {CONN_LOCATIONS.map(loc => (
+                <button
+                  key={loc}
+                  className={`prof-conn-fbar-opt${filterLoc === loc ? ' prof-conn-fbar-opt--active' : ''}`}
+                  onClick={() => { setFilterLoc(filterLoc === loc ? '' : loc); setOpenDrop(null); }}
+                >
+                  {filterLoc === loc && <CheckIcon />}
+                  {loc}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="prof-conn-fbar-item">
+          <button
+            className={`prof-conn-fbar-pill${filterInd ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'ind' ? ' prof-conn-fbar-pill--open' : ''}`}
+            onClick={() => setOpenDrop(openDrop === 'ind' ? null : 'ind')}
+          >
+            {filterInd || 'Industry'} <ChevronDown />
+          </button>
+          {openDrop === 'ind' && (
+            <div className="prof-conn-fbar-dropdown">
+              {CONN_INDUSTRIES.map(ind => (
+                <button
+                  key={ind}
+                  className={`prof-conn-fbar-opt${filterInd === ind ? ' prof-conn-fbar-opt--active' : ''}`}
+                  onClick={() => { setFilterInd(filterInd === ind ? '' : ind); setOpenDrop(null); }}
+                >
+                  {filterInd === ind && <CheckIcon />}
+                  {ind}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {hasFilter && (
+          <button
+            className="prof-conn-fbar-clear"
+            onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Remove filter
+          </button>
+        )}
+      </div>
+
+      {/* ── List view ── */}
+      {viewMode === 'list' && (
+        <div className="prof-conn-list">
+          {visible.map(conn => (
+            <div key={conn.id} className="prof-conn-item">
+              <div className="prof-conn-avatar-wrap">
+                <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
+                <span className={`prof-conn-status-dot${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
-              <div className="prof-conn-shared">
+              <div className="prof-conn-info">
+                <div className="prof-conn-name-row">
+                  <span className="prof-conn-name">{conn.name}</span>
+                  {conn.online
+                    ? <span className="prof-conn-online-badge">Online</span>
+                    : <span className="prof-conn-last-active">{conn.lastActive}</span>
+                  }
+                </div>
+                <span className="prof-conn-role">{conn.role}</span>
+                <div className="prof-conn-shared">
+                  <div className="prof-conn-shared-avatars">
+                    {conn.sharedAvatars.map((src, i) => (
+                      <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                    ))}
+                    {conn.extra && <span className="prof-conn-shared-extra">{conn.extra}</span>}
+                  </div>
+                  <span className="prof-conn-shared-text">{conn.mutual} mutual connections</span>
+                </div>
+              </div>
+              <div className="prof-conn-actions">
+                <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => setRemoved(p => new Set([...p, conn.id]))}>Remove from friends</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Grid view ── */}
+      {viewMode === 'grid' && (
+        <div className="prof-conn-grid">
+          {visible.map(conn => (
+            <div key={conn.id} className="prof-conn-card">
+              <div className="prof-conn-card-avatar-wrap">
+                <img src={conn.avatar} alt={conn.name} className="prof-conn-card-avatar" />
+                <span className={`prof-conn-status-dot prof-conn-status-dot--card${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
+              </div>
+              <p className="prof-conn-card-name">{conn.name}</p>
+              <p className="prof-conn-card-role">{conn.role}</p>
+              {conn.online
+                ? <span className="prof-conn-online-badge">Online</span>
+                : <span className="prof-conn-last-active">{conn.lastActive}</span>
+              }
+              <div className="prof-conn-card-mutual">
                 <div className="prof-conn-shared-avatars">
-                  {conn.sharedAvatars.map((src, i) => (
+                  {conn.sharedAvatars.slice(0, 2).map((src, i) => (
                     <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
                   ))}
-                  {conn.extra && <span className="prof-conn-shared-extra">{conn.extra}</span>}
                 </div>
-                <span className="prof-conn-shared-text">{conn.sharedText}</span>
+                <span className="prof-conn-shared-text">{conn.mutual} mutual</span>
+              </div>
+              <div className="prof-conn-card-actions">
+                <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }}>Chat</button>
+                <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => setRemoved(p => new Set([...p, conn.id]))}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                  <span className="prof-conn-remove-tooltip">Remove from friends</span>
+                </button>
               </div>
             </div>
-            <div className="prof-conn-actions">
-              <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => setRemoved(p => new Set([...p, conn.id]))}>Remove</button>
-              <button className="prof-conn-btn prof-conn-btn--msg">Message</button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
       <button className="prof-conn-load-more">View all connections</button>
+    </div>
+    <FriendSuggestionsPanel />
     </div>
   );
 }
@@ -213,8 +449,30 @@ function MediaCard({ photo }) {
   );
 }
 
+function GalleryPanel() {
+  return (
+    <div className="prof-media-sidebar">
+      <div className="right-card">
+        <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
+          <p className="right-section-title">Gallery</p>
+          <button className="section-link" style={{ marginLeft: 'auto' }}>View all</button>
+        </div>
+        <div className="gallery-grid">
+          {GALLERY_IMAGES.map((src, i) => (
+            <div key={i} className="gallery-thumb" style={{ overflow: 'hidden' }}>
+              <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {i === 5 && <div className="gallery-more">+42</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MediaTab() {
   return (
+    <div className="prof-conn-layout">
     <div className="media-tab">
       <div className="media-header">
         <h2 className="media-title">Photos</h2>
@@ -230,6 +488,8 @@ function MediaTab() {
         ))}
       </div>
     </div>
+    <GalleryPanel />
+    </div>
   );
 }
 
@@ -239,11 +499,38 @@ const PROFILE_EVENTS = [
   { id: 'e3', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=200&q=80', title: 'Live Music Night at the Park', date: 'Sat, Dec 07, 2024 at 7:00 PM',  location: 'Los Angeles',    going: 512 },
 ];
 
+function UpcomingEventsPanel() {
+  return (
+    <div className="prof-ev-sidebar">
+      <div className="sidebar-section">
+        <div className="section-header">
+          <span className="section-title">Upcoming Events</span>
+          <button className="section-link">View all</button>
+        </div>
+        <div className="event-list">
+          {SIDEBAR_EVENTS.map(e => (
+            <div key={e.id} className="sidebar-event-item">
+              <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
+                <img src={e.img} alt={e.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div className="friend-info">
+                <p className="friend-name">{e.name}</p>
+                <p className="friend-sub">{e.date}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EventsTab({ onEventsClick }) {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [openMenuId,    setOpenMenuId]    = useState(null);
 
   return (
+    <div className="prof-conn-layout">
     <div className="ev-tab">
       <div className="ev-header">
         <h2 className="ev-title">Discover Events</h2>
@@ -297,32 +584,33 @@ function EventsTab({ onEventsClick }) {
         ))}
       </div>
     </div>
+    <UpcomingEventsPanel />
+    </div>
   );
 }
 
-function AboutTab() {
-  const [bio,          setBio]          = useState(DEFAULT_BIO);
-  const [editingBio,   setEditingBio]   = useState(false);
-  const [draftBio,     setDraftBio]     = useState(DEFAULT_BIO);
-  const [menuOpen,     setMenuOpen]     = useState(false);
-  const menuRef = useRef(null);
+const BIO_LIMIT = 180;
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    function close(e) { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); }
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [menuOpen]);
+function AboutTab() {
+  const [bio,         setBio]         = useState(DEFAULT_BIO);
+  const [editingBio,  setEditingBio]  = useState(false);
+  const [draftBio,    setDraftBio]    = useState(DEFAULT_BIO);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [infoTab,     setInfoTab]     = useState('personal');
+  const [editingPersonal, setEditingPersonal] = useState(false);
+  const [personalValues,  setPersonalValues]  = useState(
+    () => Object.fromEntries(PERSONAL_INFO.map(i => [i.id, i.value]))
+  );
+  const [personalDraft,   setPersonalDraft]   = useState(
+    () => Object.fromEntries(PERSONAL_INFO.map(i => [i.id, i.value]))
+  );
+  const [editingEdu, setEditingEdu] = useState(false);
+  const [eduItems,   setEduItems]   = useState(EDUCATION_ITEMS);
+  const [eduDraft,   setEduDraft]   = useState(EDUCATION_ITEMS);
 
   function handleEdit() {
     setDraftBio(bio ?? '');
     setEditingBio(true);
-    setMenuOpen(false);
-  }
-  function handleDelete() {
-    setBio(null);
-    setEditingBio(false);
-    setMenuOpen(false);
   }
   function handleSave() {
     setBio(draftBio.trim() || null);
@@ -334,25 +622,14 @@ function AboutTab() {
       <h2 className="about-section-title">Profile Info</h2>
 
       {/* Overview card */}
-      <div className="about-card">
+      <div className="about-card about-card--hoverable">
         <div className="about-card-header">
           <span className="about-card-label">Overview</span>
-          <div className="about-card-menu-wrap" ref={menuRef}>
-            <button className="about-dots-btn" onClick={() => setMenuOpen(v => !v)}><MoreIcon /></button>
-            <span className="about-lock-icon"><LockIcon /></span>
-            {menuOpen && (
-              <div className="about-dropdown">
-                <button className="about-dropdown-item" onClick={handleEdit}>
-                  <span className="about-dd-icon about-dd-icon--blue"><EditIcon /></span>
-                  Edit
-                </button>
-                <button className="about-dropdown-item about-dropdown-item--danger" onClick={handleDelete}>
-                  <span className="about-dd-icon about-dd-icon--red"><TrashIcon /></span>
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
+          {!editingBio && (
+            <button className="about-edit-pencil" onClick={handleEdit} title="Edit overview">
+              <EditIcon />
+            </button>
+          )}
         </div>
 
         {editingBio ? (
@@ -370,57 +647,123 @@ function AboutTab() {
             </div>
           </div>
         ) : bio ? (
-          <p className="about-bio-text">{bio}</p>
+          <div>
+            <p className="about-bio-text">
+              {bioExpanded || bio.length <= BIO_LIMIT ? bio : bio.slice(0, BIO_LIMIT) + '…'}
+            </p>
+            {bio.length > BIO_LIMIT && (
+              <button className="about-bio-toggle" onClick={() => setBioExpanded(v => !v)}>
+                {bioExpanded ? 'Show less' : 'Show more'}
+              </button>
+            )}
+          </div>
         ) : (
           <p className="about-bio-empty">No overview added yet.</p>
         )}
       </div>
 
-      {/* Info grid */}
-      <div className="about-info-grid">
-        {INFO_ITEMS.map(item => (
-          <div key={item.id} className="about-info-item">
-            <span className="about-info-icon"><item.Icon /></span>
-            <span className="about-info-text">
-              {item.label && <span className="about-info-label">{item.label}: </span>}
-              <strong>{item.value}</strong>
-            </span>
-            <div className="about-info-actions">
-              <button className="about-dots-btn"><MoreIcon /></button>
-              <span className="about-lock-icon"><LockIcon /></span>
-            </div>
-          </div>
-        ))}
-        <div className="about-info-item about-info-item--add">
-          <PlusCircle /> Add a workplace
+      {/* Info tabs */}
+      <div className="about-info-tabs">
+        <div className="about-info-tab-bar">
+          <button
+            className={`about-info-tab-btn${infoTab === 'personal' ? ' about-info-tab-btn--active' : ''}`}
+            onClick={() => setInfoTab('personal')}
+          >Personal Information</button>
+          <button
+            className={`about-info-tab-btn${infoTab === 'education' ? ' about-info-tab-btn--active' : ''}`}
+            onClick={() => setInfoTab('education')}
+          >Education</button>
+          <button
+            className="about-info-tab-edit"
+            title={`Edit ${infoTab === 'personal' ? 'Personal Information' : 'Education'}`}
+            onClick={() => {
+              if (infoTab === 'personal') {
+                setPersonalDraft({ ...personalValues });
+                setEditingPersonal(true);
+              } else {
+                setEduDraft(eduItems.map(i => ({ ...i })));
+                setEditingEdu(true);
+              }
+            }}
+          ><EditIcon /></button>
         </div>
-        <div className="about-info-item about-info-item--add">
-          <PlusCircle /> Add a education
-        </div>
-      </div>
 
-      {/* Interests */}
-      <div className="about-interests">
-        <div className="about-interests-header">
-          <h3 className="about-interests-title">Interests</h3>
-          <button className="about-see-all">See all</button>
-        </div>
-        <div className="about-interests-grid">
-          {INTERESTS.map(item => (
-            <div key={item.id} className="about-interest-item">
-              <div className="about-interest-logo" style={{ background: item.bg }}>
-                {item.img
-                  ? <img src={item.img} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                  : <span style={{ fontSize: item.logo.length > 1 ? '18px' : '16px', fontWeight: 700, color: '#fff' }}>{item.logo}</span>
-                }
+        {infoTab === 'personal' && (
+          <div className="about-info-section">
+            {PERSONAL_INFO.map(item => (
+              <div key={item.id} className="about-info-row">
+                <span className="about-info-row-icon">{item.icon}</span>
+                <div className="about-info-row-body">
+                  <span className="about-info-row-label">{item.label}</span>
+                  {editingPersonal ? (
+                    <input
+                      className="about-info-row-input"
+                      value={personalDraft[item.id] ?? ''}
+                      onChange={e => setPersonalDraft(d => ({ ...d, [item.id]: e.target.value }))}
+                    />
+                  ) : (
+                    <span className="about-info-row-value">{personalValues[item.id]}</span>
+                  )}
+                </div>
               </div>
-              <div className="about-interest-info">
-                <span className="about-interest-name">{item.name}</span>
-                <span className="about-interest-followers">{item.followers}</span>
+            ))}
+            {editingPersonal && (
+              <div className="about-info-edit-actions">
+                <button className="about-bio-cancel" onClick={() => setEditingPersonal(false)}>Cancel</button>
+                <button className="about-bio-save" onClick={() => { setPersonalValues({ ...personalDraft }); setEditingPersonal(false); }}>Save</button>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
+
+        {infoTab === 'education' && (
+          <div className="about-info-section">
+            {(editingEdu ? eduDraft : eduItems).map((item, idx) => (
+              <div key={item.id} className="about-edu-item">
+                <div className="about-edu-icon-wrap">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                </div>
+                <div className="about-edu-body">
+                  {editingEdu ? (
+                    <>
+                      <input
+                        className="about-info-row-input"
+                        value={item.school}
+                        placeholder="School"
+                        onChange={e => setEduDraft(d => d.map((x, i) => i === idx ? { ...x, school: e.target.value } : x))}
+                      />
+                      <input
+                        className="about-info-row-input"
+                        value={item.degree}
+                        placeholder="Degree"
+                        onChange={e => setEduDraft(d => d.map((x, i) => i === idx ? { ...x, degree: e.target.value } : x))}
+                      />
+                      <input
+                        className="about-info-row-input"
+                        value={item.years}
+                        placeholder="Years"
+                        onChange={e => setEduDraft(d => d.map((x, i) => i === idx ? { ...x, years: e.target.value } : x))}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <p className="about-edu-school">{item.school}</p>
+                      <p className="about-edu-degree">{item.degree}</p>
+                      <p className="about-edu-years">{item.years}</p>
+                      <span className="about-edu-badge">{item.type}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+            {editingEdu && (
+              <div className="about-info-edit-actions">
+                <button className="about-bio-cancel" onClick={() => setEditingEdu(false)}>Cancel</button>
+                <button className="about-bio-save" onClick={() => { setEduItems([...eduDraft]); setEditingEdu(false); }}>Save</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -440,6 +783,11 @@ export default function ProfilePage({
   const [createPostOpen,  setCreatePostOpen]  = useState(false);
   const [createTab,       setCreateTab]       = useState('photo');
   const [creatorClicked,  setCreatorClicked]  = useState(false);
+  const [coverUrl,        setCoverUrl]        = useState(COVER_URL);
+  const [localAvatar,     setAvatarUrl]       = useState(null);
+  const coverInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
+  const displayAvatar = localAvatar ?? avatarUrl;
   const clickTimer = useRef(null);
 
   function openCreate(tab = 'photo') { setCreateTab(tab); setCreatePostOpen(true); }
@@ -469,12 +817,41 @@ export default function ProfilePage({
 
       <div className="prof-main">
         <div className="prof-cover">
-          <img src={COVER_URL} alt="cover" className="prof-cover-img" />
+          <img src={coverUrl} alt="cover" className="prof-cover-img" />
+          <button className="prof-cover-edit-btn" onClick={() => coverInputRef.current?.click()} title="Change cover photo">
+            <EditIcon />
+            <span>Edit Cover</span>
+          </button>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) setCoverUrl(URL.createObjectURL(file));
+              e.target.value = '';
+            }}
+          />
         </div>
 
         <div className="prof-identity">
           <div className="prof-avatar-wrap">
-            <img src={avatarUrl} alt={displayName} className="prof-avatar-img" />
+            <img src={displayAvatar} alt={displayName} className="prof-avatar-img" />
+            <button className="prof-avatar-edit-btn" onClick={() => avatarInputRef.current?.click()} title="Change profile photo">
+              <EditIcon />
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) setAvatarUrl(URL.createObjectURL(file));
+                e.target.value = '';
+              }}
+            />
           </div>
           <div className="prof-info">
             <div className="prof-name-row">
@@ -491,23 +868,22 @@ export default function ProfilePage({
             <div className="prof-counts-row">
               <button className="prof-count-item">
                 <span className="prof-count-num">8,400</span>
-                <span className="prof-count-lbl">Total Followers</span>
+                <span className="prof-count-lbl">Followers</span>
               </button>
               <span className="prof-count-div" />
               <button className="prof-count-item">
                 <span className="prof-count-num">1,200</span>
-                <span className="prof-count-lbl">Total Following</span>
+                <span className="prof-count-lbl">Following</span>
               </button>
               <span className="prof-count-div" />
               <button className="prof-count-item">
                 <span className="prof-count-num">326</span>
-                <span className="prof-count-lbl">Total Posts</span>
+                <span className="prof-count-lbl">Posts</span>
               </button>
             </div>
           </div>
           <div className="prof-actions">
             <button className="prof-edit-btn"><EditIcon /> Edit profile</button>
-            <button className="prof-more-btn"><MoreIcon /></button>
           </div>
         </div>
 
@@ -524,7 +900,7 @@ export default function ProfilePage({
           ))}
         </div>
 
-        <div className="prof-content">
+        <div className={`prof-content${(activeTab === 'Connections' || activeTab === 'Events' || activeTab === 'Photos') ? ' prof-content--wide' : ''}`}>
           {activeTab === 'Feed' && (
             <div className="prof-feed">
               <div className={`post-creator${creatorClicked ? ' post-creator--clicked' : ''}`}>
@@ -555,10 +931,10 @@ export default function ProfilePage({
 
           {activeTab === 'About'       && <AboutTab />}
           {activeTab === 'Connections' && <ConnectionsTab />}
-          {activeTab === 'Media'       && <MediaTab />}
+          {activeTab === 'Photos'      && <MediaTab />}
           {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} />}
 
-          {activeTab !== 'Feed' && activeTab !== 'About' && activeTab !== 'Media' && activeTab !== 'Events' && activeTab !== 'Connections' && (
+          {activeTab !== 'Feed' && activeTab !== 'About' && activeTab !== 'Photos' && activeTab !== 'Events' && activeTab !== 'Connections' && (
             <div className="prof-empty-tab">
               <p className="prof-empty-title">{activeTab}</p>
               <p className="prof-empty-sub">Nothing here yet.</p>

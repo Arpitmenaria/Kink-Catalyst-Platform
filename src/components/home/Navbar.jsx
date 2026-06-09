@@ -9,15 +9,6 @@ const DEMO_NOTIFICATIONS = [
   { id: 3, emoji: '🎉', text: 'New event: Music Festival this Saturday', sub: '1 hour ago', color: '#f59e0b', unread: false },
 ];
 
-function SearchIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <circle cx="9" cy="9" r="7" stroke="#4a5270" strokeWidth="1.8" />
-      <path d="M14.5 14.5l3.5 3.5" stroke="#4a5270" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function BellIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -105,11 +96,7 @@ export default function Navbar({ onMessagesClick }) {
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
-        <span className="navbar-logo">SocialPlatform</span>
-        <div className="navbar-search">
-          <SearchIcon />
-          <input type="text" placeholder="Find Friends" className="navbar-search-input" />
-        </div>
+        <span className="navbar-logo">Social Platform</span>
       </div>
 
       <div className="navbar-center">
