@@ -12,7 +12,7 @@
 
 .library-main {
   flex: 1;
-  margin-left: 52px;
+  margin-left: 72px;
   overflow-y: auto;
   padding: 28px 32px;
   scrollbar-width: thin;
@@ -26,9 +26,6 @@
 .library-main::-webkit-scrollbar { width: 5px; }
 .library-main::-webkit-scrollbar-thumb { background: #1e2238; border-radius: 4px; }
 
-.library-page:has(.anim-nav:hover) .library-main {
-  margin-left: 172px;
-}
 
 /* ═══════════════════════════════════════════
    Page header

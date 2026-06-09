@@ -70,7 +70,7 @@ function CategoryBadge({ label }) {
   );
 }
 
-export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick }) {
+export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
   const { user: authUser } = useSelector(s => s.auth);
   const { profile }        = useSelector(s => s.profile);
   const avatarUrl          = profile?.avatar ?? ALEX_AVATAR;
@@ -102,7 +102,8 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
     if (id === 'messages') onMessagesClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onGroupsClick?.();
-    if (id === 'calendar') onCalendarClick?.();
+    if (id === 'calendar')  onCalendarClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   function toggleWishlist(id) {

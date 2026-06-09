@@ -445,7 +445,7 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick }) {
+export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [tab, setTab]           = useState('All');
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [search, setSearch]     = useState('');
@@ -488,7 +488,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             if (id === 'library')  onLibraryClick?.();
             if (id === 'events')   onEventsClick?.();
             if (id === 'friends')  onGroupsClick?.();
-            if (id === 'calendar') onCalendarClick?.();
+            if (id === 'calendar')  onCalendarClick?.();
+          if (id === 'minisites') onMinisitesClick?.();
           }}
         />
         {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}

@@ -10,15 +10,26 @@ const COVER_URL = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?
 const TABS = ['Feed', 'About', 'Connections', 'Media', 'Events'];
 
 const MEDIA_PHOTOS = [
-  { id: 'm1', url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=500&q=80', likes: '22K', comments: '3K' },
-  { id: 'm2', url: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=500&q=80', likes: '32K', comments: '12K' },
-  { id: 'm3', url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=500&q=80', likes: '21K', comments: '4K' },
-  { id: 'm4', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500&q=80', likes: '32K', comments: '16K' },
-  { id: 'm5', url: 'https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=500&q=80', likes: '20K', comments: '8K' },
-  { id: 'm6', url: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=500&q=80', likes: '56K', comments: '12K' },
-  { id: 'm7', url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80', likes: '18K', comments: '5K' },
-  { id: 'm8', url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=500&q=80', likes: '41K', comments: '9K' },
-  { id: 'm9', url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=500&q=80', likes: '29K', comments: '7K' },
+  { id: 'm1', images: [
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=500&q=80',
+      'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=500&q=80',
+      'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=500&q=80',
+    ], likes: '22K', comments: '3K' },
+  { id: 'm2', images: ['https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500&q=80'], likes: '32K', comments: '12K' },
+  { id: 'm3', images: ['https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=500&q=80'], likes: '21K', comments: '4K' },
+  { id: 'm4', images: [
+      'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=500&q=80',
+      'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
+    ], likes: '32K', comments: '16K' },
+  { id: 'm5', images: ['https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=500&q=80'], likes: '20K', comments: '8K' },
+  { id: 'm6', images: ['https://images.unsplash.com/photo-1519681393784-d120267933ba?w=500&q=80'], likes: '56K', comments: '12K' },
+  // { id: 'm7', images: [
+  //     'https://images.unsplash.com/photo-1518791841217-8f162f1912da?w=500&q=80',
+  //     'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500&q=80',
+  //     'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=500&q=80',
+  //   ], likes: '18K', comments: '5K' },
+  { id: 'm8', images: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&q=80'], likes: '41K', comments: '9K' },
+  { id: 'm9', images: ['https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'], likes: '29K', comments: '7K' },
 ];
 
 const INFO_ITEMS = [
@@ -28,6 +39,60 @@ const INFO_ITEMS = [
   { id: 'lives',    Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, label: 'Lives in', value: 'New Hampshire' },
   { id: 'joined',   Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, label: 'Joined on', value: 'Nov 26, 2019' },
   { id: 'email',    Icon: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: 'Email', value: 'abc@xyz.com' },
+];
+
+const MOCK_CONNECTIONS = [
+  {
+    id: 'cn1',
+    name: 'Frances Guerrero',
+    role: 'Full Stack Web Developer',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80&fit=crop&crop=face',
+    sharedText: 'Carolyn Ortiz, Frances Guerrero, and 20 other shared connections',
+    sharedAvatars: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=30&q=80&fit=crop&crop=face',
+    ],
+    extra: '+1',
+  },
+  {
+    id: 'cn2',
+    name: 'Lori Ferguson',
+    role: 'Web Developer | Freelancer',
+    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&q=80&fit=crop&crop=face',
+    sharedText: 'Amanda Reed, Lori Stevens, and 10 other shared connections',
+    sharedAvatars: [
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=30&q=80&fit=crop&crop=face',
+    ],
+    extra: '+7',
+  },
+  {
+    id: 'cn3',
+    name: 'Samuel Bishop',
+    role: 'Full Stack Web Developer',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80&fit=crop&crop=face',
+    sharedText: 'Joan Wallace and Larry Lawson shared connections',
+    sharedAvatars: [
+      'https://images.unsplash.com/photo-1463453091185-61582044d556?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=30&q=80&fit=crop&crop=face',
+    ],
+    extra: null,
+  },
+  {
+    id: 'cn4',
+    name: 'Dennis Barrett',
+    role: 'Full Stack Web Developer',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80&fit=crop&crop=face',
+    sharedText: 'Samuel Bishop, Judy Nguyen, and 115 other shared connections',
+    sharedAvatars: [
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=30&q=80&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=30&q=80&fit=crop&crop=face',
+    ],
+    extra: null,
+  },
 ];
 
 const INTERESTS = [
@@ -47,7 +112,6 @@ function MoreIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24
 function PhotosIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function VideoIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
 function EventIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
-function CheckBadge()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="#10b981"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>; }
 function PlusCircle()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
 function LockIcon()      { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
 
@@ -58,6 +122,97 @@ function HeartFillIcon() { return <svg width="13" height="13" viewBox="0 0 24 24
 function MsgIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function PlusIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 
+function ConnectionsTab() {
+  const [removed, setRemoved] = useState(new Set());
+
+  return (
+    <div className="prof-conn-tab">
+      <div className="prof-conn-header">
+        <h3 className="prof-conn-title">Connections</h3>
+        <span className="prof-conn-count">{MOCK_CONNECTIONS.length * 75}</span>
+      </div>
+      <div className="prof-conn-list">
+        {MOCK_CONNECTIONS.filter(c => !removed.has(c.id)).map(conn => (
+          <div key={conn.id} className="prof-conn-item">
+            <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
+            <div className="prof-conn-info">
+              <div className="prof-conn-name-row">
+                <span className="prof-conn-name">{conn.name}</span>
+                <span className="prof-conn-role">{conn.role}</span>
+              </div>
+              <div className="prof-conn-shared">
+                <div className="prof-conn-shared-avatars">
+                  {conn.sharedAvatars.map((src, i) => (
+                    <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                  ))}
+                  {conn.extra && <span className="prof-conn-shared-extra">{conn.extra}</span>}
+                </div>
+                <span className="prof-conn-shared-text">{conn.sharedText}</span>
+              </div>
+            </div>
+            <div className="prof-conn-actions">
+              <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => setRemoved(p => new Set([...p, conn.id]))}>Remove</button>
+              <button className="prof-conn-btn prof-conn-btn--msg">Message</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="prof-conn-load-more">View all connections</button>
+    </div>
+  );
+}
+
+function MediaCard({ photo }) {
+  const [idx, setIdx] = useState(0);
+  const multi = photo.images.length > 1;
+  const total = photo.images.length;
+
+  function prev(e) { e.stopPropagation(); setIdx(i => (i - 1 + total) % total); }
+  function next(e) { e.stopPropagation(); setIdx(i => (i + 1) % total); }
+
+  return (
+    <div className="media-photo-card">
+      <div className="media-photo-wrap">
+        <img src={photo.images[idx]} alt="" className="media-photo-img" />
+
+        {/* gradient overlay + stats (always visible on hover) */}
+        <div className="media-photo-overlay">
+          <div className="media-photo-stats">
+            <span className="media-stat"><HeartFillIcon /> {photo.likes}</span>
+            <span className="media-stat"><MsgIcon /> {photo.comments}</span>
+          </div>
+        </div>
+
+        {/* Multi-image badge top-right */}
+        {multi && (
+          <span className="media-multi-badge">{idx + 1}/{total}</span>
+        )}
+
+        {/* Swipe arrows — only on multi */}
+        {multi && (
+          <>
+            <button className="media-arrow media-arrow--prev" onClick={prev}>‹</button>
+            <button className="media-arrow media-arrow--next" onClick={next}>›</button>
+          </>
+        )}
+
+        {/* Dot indicators */}
+        {multi && (
+          <div className="media-dots">
+            {photo.images.map((_, i) => (
+              <span
+                key={i}
+                className={`media-dot${i === idx ? ' media-dot--active' : ''}`}
+                onClick={e => { e.stopPropagation(); setIdx(i); }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MediaTab() {
   return (
     <div className="media-tab">
@@ -66,23 +221,12 @@ function MediaTab() {
         <button className="media-create-btn"><PlusIcon /> Create album</button>
       </div>
       <div className="media-grid">
-        {/* Add photo slot */}
         <button className="media-add-slot">
           <div className="media-add-icon"><CameraIcon /></div>
           <span className="media-add-label">Add photo</span>
         </button>
-
         {MEDIA_PHOTOS.map(photo => (
-          <div key={photo.id} className="media-photo-card">
-            <div className="media-photo-wrap">
-              <img src={photo.url} alt="" className="media-photo-img" />
-              <div className="media-photo-overlay" />
-            </div>
-            <div className="media-photo-stats">
-              <span className="media-stat"><HeartFillIcon /> {photo.likes}</span>
-              <span className="media-stat"><MsgIcon /> {photo.comments}</span>
-            </div>
-          </div>
+          <MediaCard key={photo.id} photo={photo} />
         ))}
       </div>
     </div>
@@ -284,16 +428,27 @@ function AboutTab() {
 
 export default function ProfilePage({
   onBack, onCoursesClick, onLibraryClick, onEventsClick,
-  onGroupsClick, onMessagesClick, onCalendarClick,
+  onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
 }) {
   const { user: authUser }  = useSelector(s => s.auth);
   const { profile }         = useSelector(s => s.profile);
   const avatarUrl           = profile?.avatar ?? ALEX_AVATAR;
-  const displayName         = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
-  const role                = profile?.role ?? 'Lead Developer';
+  const displayName         = profile?.fullName || authUser?.fullName || 'Alex Rivera';
+  const role                = profile?.role || 'Lead Developer';
 
-  const [activeTab,      setActiveTab]      = useState('Feed');
-  const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [activeTab,       setActiveTab]       = useState('Feed');
+  const [createPostOpen,  setCreatePostOpen]  = useState(false);
+  const [createTab,       setCreateTab]       = useState('photo');
+  const [creatorClicked,  setCreatorClicked]  = useState(false);
+  const clickTimer = useRef(null);
+
+  function openCreate(tab = 'photo') { setCreateTab(tab); setCreatePostOpen(true); }
+  function handleCreatorClick(tab = 'photo') {
+    setCreatorClicked(true);
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    clickTimer.current = setTimeout(() => setCreatorClicked(false), 500);
+    openCreate(tab);
+  }
 
   function handleNav(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
@@ -303,7 +458,8 @@ export default function ProfilePage({
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onGroupsClick?.();
     if (id === 'messages') onMessagesClick?.();
-    if (id === 'calendar') onCalendarClick?.();
+    if (id === 'calendar')  onCalendarClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   return (
@@ -323,8 +479,7 @@ export default function ProfilePage({
           <div className="prof-info">
             <div className="prof-name-row">
               <h1 className="prof-name">{displayName}</h1>
-              <CheckBadge />
-              <div className="prof-connections">250 connections</div>
+              {/* <div className="prof-connections">250 connections</div> */}
             </div>
             <div className="prof-meta-row">
               <span className="prof-meta-item"><BriefcaseIcon /> {role}</span>
@@ -372,26 +527,24 @@ export default function ProfilePage({
         <div className="prof-content">
           {activeTab === 'Feed' && (
             <div className="prof-feed">
-              <div className="prof-creator">
-                <div className="prof-creator-top">
-                  <div className="prof-creator-avatar">
-                    <img src={avatarUrl} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              <div className={`post-creator${creatorClicked ? ' post-creator--clicked' : ''}`}>
+                <div className="creator-top">
+                  <div className="creator-avatar" style={{ overflow: 'hidden' }}>
+                    <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  <button className="prof-creator-input" onClick={() => setCreatePostOpen(true)}>
-                    Share your thoughts...
-                  </button>
+                  <textarea
+                    className="creator-input"
+                    placeholder={`What's on your mind, ${displayName.split(' ')[0]}?`}
+                    readOnly
+                    onClick={() => handleCreatorClick('photo')}
+                    rows={3}
+                  />
                 </div>
-                <div className="prof-creator-actions">
-                  <button className="prof-creator-btn" onClick={() => setCreatePostOpen(true)}>
-                    <span className="prof-creator-btn-icon" style={{ background:'#22c55e20', color:'#22c55e' }}><PhotosIcon /></span> Photo
-                  </button>
-                  <button className="prof-creator-btn" onClick={() => setCreatePostOpen(true)}>
-                    <span className="prof-creator-btn-icon" style={{ background:'#3b82f620', color:'#3b82f6' }}><VideoIcon /></span> Video
-                  </button>
-                  <button className="prof-creator-btn" onClick={() => setCreatePostOpen(true)}>
-                    <span className="prof-creator-btn-icon" style={{ background:'#ef444420', color:'#ef4444' }}><EventIcon /></span> Event
-                  </button>
-                  <button className="prof-creator-btn prof-creator-dots"><MoreIcon /></button>
+                <div className="creator-actions">
+                  <button className="creator-media-btn" onClick={() => handleCreatorClick('photo')}><PhotosIcon /> Photos</button>
+                  <button className="creator-media-btn" onClick={() => handleCreatorClick('video')}><VideoIcon /> Video</button>
+                  <button className="creator-media-btn" onClick={() => handleCreatorClick('event')}><EventIcon /> Event</button>
+                  <button className="creator-post-btn"  onClick={() => handleCreatorClick('photo')}>Post</button>
                 </div>
               </div>
               {MOCK_POSTS.map(post => (
@@ -400,9 +553,10 @@ export default function ProfilePage({
             </div>
           )}
 
-          {activeTab === 'About' && <AboutTab />}
-          {activeTab === 'Media'  && <MediaTab />}
-          {activeTab === 'Events' && <EventsTab onEventsClick={onEventsClick} />}
+          {activeTab === 'About'       && <AboutTab />}
+          {activeTab === 'Connections' && <ConnectionsTab />}
+          {activeTab === 'Media'       && <MediaTab />}
+          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} />}
 
           {activeTab !== 'Feed' && activeTab !== 'About' && activeTab !== 'Media' && activeTab !== 'Events' && activeTab !== 'Connections' && (
             <div className="prof-empty-tab">
@@ -413,7 +567,7 @@ export default function ProfilePage({
         </div>
       </div>
     </div>
-    {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} onNavigateToEvents={onEventsClick} />}
+    {createPostOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreatePostOpen(false)} onNavigateToEvents={onEventsClick} />}
     </>
   );
 }

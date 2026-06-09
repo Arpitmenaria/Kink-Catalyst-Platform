@@ -15,7 +15,7 @@
 /* ── Main content — shifts right when AnimatedNav expands ── */
 .la-main {
   flex: 1;
-  margin-left: 52px;
+  margin-left: 72px;
   overflow-y: auto;
   transition: margin-left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 28px 32px 48px;
@@ -27,7 +27,6 @@
 }
 .la-main::-webkit-scrollbar { width: 5px; }
 .la-main::-webkit-scrollbar-thumb { background: #1e2238; border-radius: 4px; }
-.la-page:has(.anim-nav:hover) .la-main { margin-left: 172px; }
 
 /* ── Welcome ── */
 .la-welcome-title {

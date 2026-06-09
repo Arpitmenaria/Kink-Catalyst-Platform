@@ -37,6 +37,24 @@ function FacebookIcon()    { return <svg width="15" height="15" viewBox="0 0 24 
 function TwitterXIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>; }
 function WhatsAppIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>; }
 
+/* ── Discovery mock data ── */
+const DISC_CATEGORIES = ['All', 'Music', 'Tech', 'Business', 'Art', 'Workshop', 'Social'];
+
+const BOOKED_EVENTS = [
+  { id: 'b1', day: '05', month: 'OCT', img: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=600&q=80&fit=crop', category: 'Tech',     catColor: '#0891b2', location: 'San Jose, CA',   title: 'Design Systems Summit 2024', desc: 'A deep dive into scalable design systems, component libraries and tooling for modern teams.', attending: '3.2k', seats: null,            soldOut: false },
+  { id: 'b2', day: '18', month: 'OCT', img: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=600&q=80&fit=crop', category: 'Business', catColor: '#059669', location: 'Seattle, WA',   title: 'Founders Forum 2024',        desc: 'An exclusive gathering of founders, VCs and operators sharing lessons from building companies.', attending: '1.8k', seats: '10 seats left', soldOut: false },
+  { id: 'b3', day: '30', month: 'OCT', img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80&fit=crop', category: 'Workshop', catColor: '#f59e0b', location: 'Remote',       title: 'Full-Stack Web Dev Bootcamp',desc: 'Intensive 2-day workshop covering React, Node.js and cloud deployment with hands-on projects.', attending: '540',  seats: '5 seats left',  soldOut: false },
+];
+
+const DISC_EVENTS = [
+  { id: 'd1', day: '24', month: 'OCT', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80&fit=crop', category: 'Live Music',     catColor: '#7c3aed', location: 'Austin, TX',       title: 'Neon Beats: Electronic Night',   desc: 'Experience the pulse of modern electronic beats in an immersive 360-degree sound environment.', attending: '1.2k', seats: '45 seats left', soldOut: false },
+  { id: 'd2', day: '15', month: 'NOV', img: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80&fit=crop', category: 'Tech & Startup', catColor: '#0891b2', location: 'San Francisco, CA', title: 'Future of AI: Innovation Summit', desc: 'Join industry leaders for a deep dive into the next generation of artificial intelligence and technology.', attending: '2.5k', seats: '120 seats left', soldOut: false },
+  { id: 'd3', day: '02', month: 'DEC', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80&fit=crop', category: 'Business',       catColor: '#059669', location: 'New York, NY',     title: 'Executive Networking Mixer',     desc: 'An exclusive evening for senior executives and entrepreneurs to connect in a premium setting.', attending: '800',  seats: '25 seats left', soldOut: false },
+  { id: 'd4', day: '12', month: 'DEC', img: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80&fit=crop', category: 'Art & Design',   catColor: '#db2777', location: 'London, UK',       title: 'Creative Design Workshop',       desc: 'Master the fundamentals of modern UI/UX design in this hands-on intensive workshop.', attending: '300',  seats: null, soldOut: true },
+  { id: 'd5', day: '20', month: 'JAN', img: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600&q=80&fit=crop', category: 'Music',          catColor: '#7c3aed', location: 'Chicago, IL',     title: 'Jazz Under the Stars',           desc: 'A magical evening of live jazz performances under the open sky with top artists from around the world.', attending: '950',  seats: '60 seats left', soldOut: false },
+  { id: 'd6', day: '28', month: 'JAN', img: 'https://images.unsplash.com/photo-1559223607-b4d0555ae227?w=600&q=80&fit=crop', category: 'Workshop',        catColor: '#f59e0b', location: 'Berlin, DE',      title: 'Startup Pitch Competition',      desc: 'Present your startup idea to top-tier investors and win funding, mentorship, and global recognition.', attending: '420',  seats: '15 seats left', soldOut: false },
+];
+
 const REVIEW_FRIENDS = [
   { id: '1', name: 'Alex Johnson',  color: '#7c3aed' },
   { id: '2', name: 'Sarah Miller',  color: '#0891b2' },
@@ -74,10 +92,20 @@ const EVENT_TYPES = [
   { id: 'hybrid',  label: 'Hybrid',  icon: <HybridIcon /> },
 ];
 
-export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
+export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+  const [showCreate,    setShowCreate]    = useState(false);
+  const [discTab,       setDiscTab]       = useState('upcoming');
+  const [discCat,       setDiscCat]       = useState('All');
+  const [savedIds,      setSavedIds]      = useState(new Set());
+  const [showFilter,    setShowFilter]    = useState(false);
+  const [viewMode,      setViewMode]      = useState('grid');
+  const [filters,       setFilters]       = useState({ eventType: 'all', categories: new Set(), location: '', radius: 25, amenities: new Set() });
+  const [pendingF,      setPendingF]      = useState({ eventType: 'all', categories: new Set(), location: '', radius: 25, amenities: new Set() });
   const [step, setStep] = useState(1);
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
+
+  function toggleSave(id) { setSavedIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
 
   // Step 1 state
   const [form, setForm] = useState({
@@ -129,7 +157,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   function handleBack() {
     setAnimDir('back');
-    if (step === 1) onBack();
+    if (step === 1) { setShowCreate(false); setStep(1); }
     else setStep(s => s - 1);
   }
 
@@ -137,6 +165,24 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     setAnimDir('forward');
     if (step < 4) setStep(s => s + 1);
   }
+
+  const baseEvents = discTab === 'booked' ? BOOKED_EVENTS : DISC_EVENTS;
+  const filteredEvents = baseEvents.filter(ev => {
+    if (discCat !== 'All' && !ev.category.toLowerCase().includes(discCat.toLowerCase())) return false;
+    if (filters.categories.size > 0) {
+      const matched = [...filters.categories].some(c => ev.category.toLowerCase().includes(c.toLowerCase()));
+      if (!matched) return false;
+    }
+    if (filters.location.trim() && !ev.location.toLowerCase().includes(filters.location.trim().toLowerCase())) return false;
+    return true;
+  });
+
+  function openFilter() { setPendingF({ ...filters, categories: new Set(filters.categories), amenities: new Set(filters.amenities) }); setShowFilter(true); }
+  function applyFilters() { setFilters({ ...pendingF, categories: new Set(pendingF.categories), amenities: new Set(pendingF.amenities) }); setShowFilter(false); }
+  function resetFilters() { const def = { eventType: 'all', categories: new Set(), location: '', radius: 25, amenities: new Set() }; setPendingF(def); }
+  function togglePendingCat(cat) { setPendingF(p => { const s = new Set(p.categories); s.has(cat) ? s.delete(cat) : s.add(cat); return { ...p, categories: s }; }); }
+  function togglePendingAmenity(a) { setPendingF(p => { const s = new Set(p.amenities); s.has(a) ? s.delete(a) : s.add(a); return { ...p, amenities: s }; }); }
+  const activeFilterCount = filters.categories.size + filters.amenities.size + (filters.eventType !== 'all' ? 1 : 0) + (filters.location.trim() ? 1 : 0);
 
   return (
     <div className="ev-page">
@@ -150,12 +196,270 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           if (id === 'events')   onEventsClick?.();
           if (id === 'friends')  onGroupsClick?.();
           if (id === 'calendar') onCalendarClick?.();
-          if (id === 'messages') onMessagesClick?.();
+          if (id === 'messages')  onMessagesClick?.();
+          if (id === 'minisites') onMinisitesClick?.();
         }}
       />
       {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
-      {/* Main content */}
+      {/* ── Discovery view ── */}
+      {!showCreate && (
+        <div className="ev-disc-main">
+          {/* Top bar */}
+          <div className="ev-disc-topbar">
+            <div className="ev-disc-tabs">
+              <button className={`ev-disc-tab${discTab === 'booked' ? ' ev-disc-tab--active' : ''}`} onClick={() => setDiscTab('booked')}>My Booked Events</button>
+              <button className={`ev-disc-tab${discTab === 'upcoming' ? ' ev-disc-tab--active' : ''}`} onClick={() => setDiscTab('upcoming')}>Upcoming Events</button>
+            </div>
+            <div className="ev-disc-topbar-right">
+              <button className="ev-disc-create-btn" onClick={() => { setStep(1); setShowCreate(true); }}>
+                <PlusIcon /> Create Event
+              </button>
+              <button className={`ev-disc-filter-btn${activeFilterCount > 0 ? ' ev-disc-filter-btn--active' : ''}`} onClick={openFilter}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Filters{activeFilterCount > 0 && <span className="ev-filter-badge">{activeFilterCount}</span>}
+              </button>
+              <div className="ev-disc-view-toggle">
+                <button className={`ev-disc-view-btn${viewMode === 'grid' ? ' ev-disc-view-btn--active' : ''}`} onClick={() => setViewMode('grid')}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                </button>
+                <button className={`ev-disc-view-btn${viewMode === 'list' ? ' ev-disc-view-btn--active' : ''}`} onClick={() => setViewMode('list')}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Category chips */}
+          <div className="ev-disc-cats">
+            {DISC_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                className={`ev-disc-cat${discCat === cat ? ' ev-disc-cat--active' : ''}`}
+                onClick={() => setDiscCat(cat)}
+              >{cat}</button>
+            ))}
+          </div>
+
+          {/* Event cards — grid or list */}
+          {filteredEvents.length === 0 && (
+            <div className="ev-disc-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <p>No events found{activeFilterCount > 0 ? ' — try clearing some filters' : ''}.</p>
+            </div>
+          )}
+          <div className={viewMode === 'grid' ? 'ev-disc-grid' : 'ev-disc-list'}>
+            {filteredEvents.map(ev => viewMode === 'grid' ? (
+              <div key={ev.id} className="ev-disc-card">
+                <div className="ev-disc-card-img-wrap">
+                  <img src={ev.img} alt={ev.title} className="ev-disc-card-img" />
+                  <div className="ev-disc-date-badge">
+                    <span className="ev-disc-date-day">{ev.day}</span>
+                    <span className="ev-disc-date-month">{ev.month}</span>
+                  </div>
+                  <button
+                    className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}`}
+                    onClick={() => toggleSave(ev.id)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </button>
+                </div>
+                <div className="ev-disc-card-body">
+                  <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location}</p>
+                  <p className="ev-disc-card-title">{ev.title}</p>
+                  <p className="ev-disc-card-desc">{ev.desc}</p>
+                  <div className="ev-disc-card-footer">
+                    <div className="ev-disc-card-meta">
+                      <span className="ev-disc-attending">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        {ev.attending} attending
+                      </span>
+                      {ev.seats && <span className="ev-disc-seats">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>
+                        {ev.seats}
+                      </span>}
+                    </div>
+                    {ev.soldOut
+                      ? <button className="ev-disc-book-btn ev-disc-book-btn--sold">Sold Out</button>
+                      : <button className="ev-disc-book-btn">Book Now</button>
+                    }
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div key={ev.id} className="ev-list-card">
+                <div className="ev-list-img-wrap">
+                  <img src={ev.img} alt={ev.title} className="ev-list-img" />
+                  <div className="ev-disc-date-badge ev-list-date-badge">
+                    <span className="ev-disc-date-day">{ev.day}</span>
+                    <span className="ev-disc-date-month">{ev.month}</span>
+                  </div>
+                </div>
+                <div className="ev-list-body">
+                  <div className="ev-list-top">
+                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location}</p>
+                  </div>
+                  <p className="ev-disc-card-title">{ev.title}</p>
+                  <p className="ev-list-desc">{ev.desc}</p>
+                  <div className="ev-disc-card-footer">
+                    <div className="ev-disc-card-meta">
+                      <span className="ev-disc-attending">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        {ev.attending} attending
+                      </span>
+                      {ev.seats && <span className="ev-disc-seats">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>
+                        {ev.seats}
+                      </span>}
+                    </div>
+                    <div className="ev-list-actions">
+                      <button className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}`} onClick={() => toggleSave(ev.id)} style={{ position: 'static', background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '6px 10px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      </button>
+                      {ev.soldOut
+                        ? <button className="ev-disc-book-btn ev-disc-book-btn--sold">Sold Out</button>
+                        : <button className="ev-disc-book-btn">Book Now</button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Newsletter strip */}
+          <div className="ev-disc-newsletter">
+            <div className="ev-disc-nl-left">
+              <p className="ev-disc-nl-title">Never miss an event that matters to your network.</p>
+              <p className="ev-disc-nl-sub">Join 50,000+ professionals and creators receiving weekly updates on the best events in their area.</p>
+            </div>
+            <div className="ev-disc-nl-right">
+              <input className="ev-disc-nl-input" type="email" placeholder="Enter your email" />
+              <button className="ev-disc-nl-btn">Subscribe Now</button>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* ── Filter panel overlay (outside scroll container) ── */}
+      {showFilter && (
+        <>
+          <div className="ev-filter-backdrop" onClick={() => setShowFilter(false)} />
+          <div className="ev-filter-panel">
+                <div className="ev-filter-panel-header">
+                  <span className="ev-filter-panel-title">Refine Discovery</span>
+                  <div className="ev-filter-header-actions">
+                    <button className="ev-filter-reset-btn" onClick={resetFilters}>Reset All</button>
+                    <button className="ev-filter-apply-btn" onClick={applyFilters}>Apply Filters</button>
+                    <button className="ev-filter-close-btn" onClick={() => setShowFilter(false)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="ev-filter-panel-body">
+                  {/* Event Type */}
+                  <div className="ev-filter-section">
+                    <h4 className="ev-filter-section-title">Event Type</h4>
+                    <div className="ev-filter-type-row">
+                      {['all', 'offline', 'online'].map(t => (
+                        <button
+                          key={t}
+                          className={`ev-filter-type-btn${pendingF.eventType === t ? ' ev-filter-type-btn--active' : ''}`}
+                          onClick={() => setPendingF(p => ({ ...p, eventType: t }))}
+                        >
+                          {t === 'all' ? 'All' : t === 'offline' ? <><OfflineIcon /> In-Person</> : <><OnlineIcon /> Online</>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Categories */}
+                  <div className="ev-filter-section">
+                    <div className="ev-filter-section-head">
+                      <h4 className="ev-filter-section-title">Categories</h4>
+                      {pendingF.categories.size > 0 && <button className="ev-filter-clear-link" onClick={() => setPendingF(p => ({ ...p, categories: new Set() }))}>Clear all</button>}
+                    </div>
+                    <div className="ev-filter-cats-grid">
+                      {['Music', 'Business', 'Tech & Startup', 'Art & Design', 'Workshop', 'Social', 'Sports', 'Food & Drink', 'Health & Wellness'].map(cat => (
+                        <label key={cat} className="ev-filter-check-label">
+                          <input
+                            type="checkbox"
+                            className="ev-filter-checkbox"
+                            checked={pendingF.categories.has(cat)}
+                            onChange={() => togglePendingCat(cat)}
+                          />
+                          <span className="ev-filter-check-box" />
+                          {cat}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="ev-filter-section">
+                    <h4 className="ev-filter-section-title">Location</h4>
+                    <div className="ev-filter-location-row">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <input
+                        className="ev-filter-location-input"
+                        placeholder="Enter city (e.g. San Francisco, CA)"
+                        value={pendingF.location}
+                        onChange={e => setPendingF(p => ({ ...p, location: e.target.value }))}
+                      />
+                    </div>
+                    <div className="ev-filter-slider-row">
+                      <span className="ev-filter-slider-label">Distance Radius</span>
+                      <span className="ev-filter-slider-val">{pendingF.radius} km</span>
+                    </div>
+                    <div className="ev-filter-slider-track">
+                      <input
+                        type="range" min="1" max="100" step="1"
+                        value={pendingF.radius}
+                        className="ev-filter-slider"
+                        style={{ background: `linear-gradient(to right, #2563eb ${pendingF.radius}%, #1a2540 ${pendingF.radius}%)` }}
+                        onChange={e => setPendingF(p => ({ ...p, radius: Number(e.target.value) }))}
+                      />
+                      <div className="ev-filter-slider-range-labels">
+                        <span>1 km</span><span>100 km</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Amenities */}
+                  <div className="ev-filter-section">
+                    <h4 className="ev-filter-section-title">Amenities</h4>
+                    <div className="ev-filter-amenities-grid">
+                      {[
+                        { id: 'parking',    label: 'Parking Available' },
+                        { id: 'accessible', label: 'Wheelchair Accessible' },
+                        { id: 'streaming',  label: 'Live Streaming' },
+                        { id: 'food',       label: 'Food & Beverage' },
+                        { id: 'wifi',       label: 'Free Wi-Fi' },
+                        { id: 'recording',  label: 'Session Recording' },
+                      ].map(a => (
+                        <label key={a.id} className="ev-filter-check-label">
+                          <input
+                            type="checkbox"
+                            className="ev-filter-checkbox"
+                            checked={pendingF.amenities.has(a.id)}
+                            onChange={() => togglePendingAmenity(a.id)}
+                          />
+                          <span className="ev-filter-check-box" />
+                          {a.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+      {/* ── Create event form ── */}
+      {showCreate && (
       <div className="ev-main">
         {/* Stepper */}
         <div className="ev-stepper">
@@ -695,6 +999,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -80,7 +80,7 @@ function ResourceCard({ resource, idx, saved, onSave }) {
   );
 }
 
-export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onCoursesClick }) {
+export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onCoursesClick, onMinisitesClick }) {
   const { user: authUser } = useSelector(s => s.auth);
   const { profile }        = useSelector(s => s.profile);
   const avatarUrl          = profile?.avatar ?? ALEX_AVATAR;
@@ -101,7 +101,8 @@ export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, on
     if (id === 'messages') onMessagesClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onGroupsClick?.();
-    if (id === 'calendar') onCalendarClick?.();
+    if (id === 'calendar')  onCalendarClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   function toggleCategory(id) {

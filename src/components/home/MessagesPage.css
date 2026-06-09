@@ -59,7 +59,7 @@
   display: flex;
   flex-direction: column;
   padding: 28px 28px 0;
-  margin-left: 52px;
+  margin-left: 72px;
   overflow: hidden;
 }
 
@@ -430,7 +430,7 @@
 /* ── Compact conversation panel (left in chat view) ── */
 .msg-conv-panel {
   width: 210px;
-  margin-left: 52px;
+  margin-left: 72px;
   flex-shrink: 0;
   border-right: 1px solid #181c30;
   background: #0d0f1e;

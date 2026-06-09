@@ -1,213 +1,110 @@
 /* ══════════════════════════════════════════
-   Animated Nav — Keyframes
+   AnimatedNav — Box-icon sidebar
 ══════════════════════════════════════════ */
 
-@keyframes itemIn {
-  from { opacity: 0; transform: translateX(-14px) scale(0.88); }
-  to   { opacity: 1; transform: translateX(0)      scale(1);   }
-}
-
-@keyframes labelReveal {
-  from { opacity: 0; transform: translateX(-10px); }
-  to   { opacity: 1; transform: translateX(0);     }
-}
-
-@keyframes activeBar {
-  from { height: 0;    }
-  to   { height: 20px; }
-}
-
-@keyframes activeGlow {
-  0%, 100% { box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.25); }
-  50%       { box-shadow: 0 0 0 7px rgba(99, 102, 241, 0);   }
-}
-
-@keyframes rippleAnim {
-  from { transform: translate(-50%, -50%) scale(0); opacity: 0.45; }
-  to   { transform: translate(-50%, -50%) scale(3); opacity: 0;    }
-}
-
-@keyframes badgePop {
-  0%   { transform: scale(0);   }
-  60%  { transform: scale(1.3); }
-  100% { transform: scale(1);   }
-}
-
-@keyframes notifShake {
-  0%   { transform: rotate(0deg);   }
-  15%  { transform: rotate(-16deg); }
-  35%  { transform: rotate(13deg);  }
-  55%  { transform: rotate(-9deg);  }
-  75%  { transform: rotate(5deg);   }
-  100% { transform: rotate(0deg);   }
-}
-
-@keyframes wiggleAnim {
-  0%   { transform: rotate(0deg);   }
-  20%  { transform: rotate(-22deg); }
-  50%  { transform: rotate(22deg);  }
-  80%  { transform: rotate(-10deg); }
-  100% { transform: rotate(0deg);   }
-}
-
-/* ══════════════════════════════════════════
-   Nav shell
-══════════════════════════════════════════ */
 .anim-nav {
-  position: absolute;
+  position: fixed;
   left: 0;
-  top: 0;
+  top: 58px;
   bottom: 0;
-  width: 52px;
-  background: #0d1117;
-  border-right: 1px solid #1e2540;
+  width: 72px;
+  background: #090c14;
+  border-right: 1px solid #131d2e;
   display: flex;
   flex-direction: column;
-  padding: 12px 0 10px;
-  overflow: hidden;
-  white-space: nowrap;
+  padding: 16px 0 12px;
   z-index: 20;
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
 }
 
-.anim-nav:hover {
-  width: 172px;
-}
-
-/* ══════════════════════════════════════════
-   Item list
-══════════════════════════════════════════ */
+/* ── Item list ── */
 .anim-nav-list {
   list-style: none;
-  padding: 0 6px;
+  padding: 0 8px;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
-  min-height: 0;
 }
 
-/* ── Divider ── */
-.nav-divider-li { padding: 5px 4px; }
-
-.nav-divider {
-  height: 1px;
-  background: #1e2540;
-  border-radius: 1px;
-}
-
-/* ══════════════════════════════════════════
-   Nav item button
-══════════════════════════════════════════ */
+/* ── Nav item button ── */
 .nav-item {
-  position: relative;
-  width: 100%;
-  height: 40px;
-  border-radius: 9px;
-  background: none;
-  border: none;
-  color: #4b5563;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 0 9px;
-  gap: 0px;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 4px 7px;
+  border: none;
+  background: none;
   cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  /* entrance */
-  opacity: 0;
-  animation: itemIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(0.06s + var(--i, 0) * 0.07s) both;
-  /* gap + color transitions */
-  transition: gap 0.3s ease, background 0.15s ease, color 0.15s ease;
+  border-radius: 12px;
+  transition: background 0.15s;
 }
 
-.nav-item:hover {
-  background: rgba(99, 102, 241, 0.1);
-  color: #a5b4fc;
-}
+.nav-item:hover { background: rgba(255,255,255,0.03); }
 
-/* Gap opens for all items when nav expands */
-.anim-nav:hover .nav-item {
-  gap: 10px;
-}
-
-/* ── Active state ── */
-.nav-item--active {
-  background: rgba(99, 102, 241, 0.15) !important;
-  color: #818cf8 !important;
-  animation:
-    itemIn     0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(0.06s + var(--i, 0) * 0.07s) both,
-    activeGlow 2.5s ease-in-out                    1.2s                               infinite;
-}
-
-/* Active left bar indicator */
-.nav-item--active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  border-radius: 0 3px 3px 0;
-  background: #6366f1;
-  animation: activeBar 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) calc(0.06s + var(--i, 0) * 0.07s + 0.18s) both;
-}
-
-/* ══════════════════════════════════════════
-   Nav icon wrapper
-══════════════════════════════════════════ */
-.nav-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
+/* ── Icon box ── */
+.nav-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #141c2e;
+  border: 1px solid #1a2540;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #4b5a7a;
   position: relative;
-  transform-origin: center;
-}
-
-/* Settings wiggle — class toggled via JS */
-.nav-icon.wiggle {
-  animation: wiggleAnim 0.5s ease both;
-}
-
-/* Messages icon shake — class toggled via JS */
-.nav-icon.notif-shake {
-  animation: notifShake 0.5s ease both;
-}
-
-/* ══════════════════════════════════════════
-   Nav label
-══════════════════════════════════════════ */
-.nav-label {
-  opacity: 0;
-  transform: translateX(-10px);
-  pointer-events: none;
+  transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.18s;
   flex-shrink: 0;
-  min-width: 0;
 }
 
-/* Only the hovered item shows its label while nav is open */
-.anim-nav:hover .nav-item:hover .nav-label {
-  animation: labelReveal 0.25s ease both;
+.nav-item:hover .nav-icon-box {
+  background: #1a2540;
+  border-color: #243050;
+  color: #7c8fb0;
+  transform: translateY(-1px);
 }
 
-/* ══════════════════════════════════════════
-   Notification badge
-══════════════════════════════════════════ */
+/* ── Active ── */
+.nav-item--active .nav-icon-box {
+  background: #1d4ed8;
+  border-color: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+}
+
+.nav-item--active:hover .nav-icon-box {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* ── Label ── */
+.nav-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #3d4f6e;
+  text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+  transition: color 0.18s;
+  line-height: 1;
+}
+
+.nav-item:hover .nav-label { color: #607090; }
+.nav-item--active .nav-label { color: #3b82f6; }
+
+/* ── Badge ── */
 .nav-badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 9px;
   background: #ef4444;
   color: #fff;
   font-size: 9px;
@@ -215,69 +112,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 3px;
+  border: 2px solid #090c14;
   line-height: 1;
-  border: 1.5px solid #0d1117;
 }
 
-.nav-badge--pop {
-  animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-/* ══════════════════════════════════════════
-   Click ripple
-══════════════════════════════════════════ */
-.ripple-el {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.25);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.ripple-el.go {
-  animation: rippleAnim 0.5s ease forwards;
-}
-
-/* ══════════════════════════════════════════
-   Avatar
-══════════════════════════════════════════ */
+/* ── Avatar ── */
 .nav-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid #1e2540;
-  flex-shrink: 0;
-  margin: 6px auto 2px;
+  border: 2px solid #1a2540;
+  margin: 8px auto 4px;
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s, transform 0.2s;
 }
-
-.nav-avatar:hover {
-  border-color: #6366f1;
-  transform: scale(1.08);
-}
+.nav-avatar:hover { border-color: #2563eb; transform: scale(1.06); }
 
 .nav-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.nav-avatar-fallback {
-  width: 100%;
-  height: 100%;
-  background: #1e1b3a;
-  color: #a5b4fc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
 }

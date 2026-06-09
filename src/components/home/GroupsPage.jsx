@@ -114,7 +114,7 @@ const REPORTED_CONTENT = [
 /* ══════════════════════════
    Community Moderation Page
 ══════════════════════════ */
-function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
+function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [postApproval,  setPostApproval]  = useState(true);
   const [commentPerms,  setCommentPerms]  = useState(true);
   const [rules,         setRules]         = useState(COMMUNITY_RULES);
@@ -129,7 +129,8 @@ function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, on
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
-    if (id === 'messages') onMessagesClick?.();
+    if (id === 'messages')  onMessagesClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   const visible = REPORTED_CONTENT.filter(r => !dismissed[r.id]);
@@ -306,7 +307,7 @@ const ROLE_BADGE_MAP = {
 /* ══════════════════════════
    Group Admin Dashboard
 ══════════════════════════ */
-function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick, onLibraryClick, onCoursesClick }) {
+function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [activeTab,      setActiveTab]      = useState('active');
   const [searchQuery,    setSearchQuery]    = useState('');
   const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Moderator', 3: 'Member', 4: 'Member' });
@@ -321,7 +322,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
-    if (id === 'messages') onMessagesClick?.();
+    if (id === 'messages')  onMessagesClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   const filtered = ADMIN_MEMBERS.filter(m =>
@@ -482,7 +484,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 /* ══════════════════════════
    Create Group Page
 ══════════════════════════ */
-function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onCreateGroup, onLibraryClick, onCoursesClick }) {
+function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onCreateGroup, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [groupName,     setGroupName]     = useState('');
   const [description,   setDescription]   = useState('');
   const [category,      setCategory]      = useState('Technology & Software');
@@ -498,7 +500,8 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onBack?.();
     if (id === 'calendar') onCalendarClick?.();
-    if (id === 'messages') onMessagesClick?.();
+    if (id === 'messages')  onMessagesClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   return (
@@ -737,7 +740,7 @@ function CreateGroupModal({ onClose }) {
 /* ══════════════════════════
    Main Component
 ══════════════════════════ */
-export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick }) {
+export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [modalOpen,      setModalOpen]      = useState(false);
   const [showCreate,     setShowCreate]     = useState(false);
   const [showAdmin,      setShowAdmin]      = useState(false);
@@ -756,6 +759,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onMessagesClick={onMessagesClick}
         onLibraryClick={onLibraryClick}
         onCoursesClick={onCoursesClick}
+        onMinisitesClick={onMinisitesClick}
         onCreateGroup={() => { setShowCreate(false); setAdminGroup(null); setShowAdmin(true); }}
       />
     );
@@ -772,6 +776,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onMessagesClick={onMessagesClick}
         onLibraryClick={onLibraryClick}
         onCoursesClick={onCoursesClick}
+        onMinisitesClick={onMinisitesClick}
       />
     );
   }
@@ -787,6 +792,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onMessagesClick={onMessagesClick}
         onLibraryClick={onLibraryClick}
         onCoursesClick={onCoursesClick}
+        onMinisitesClick={onMinisitesClick}
         onModerationClick={() => setShowModeration(true)}
       />
     );
@@ -798,8 +804,9 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     if (id === 'courses')  onCoursesClick?.();
     if (id === 'library')  onLibraryClick?.();
     if (id === 'events')   onEventsClick?.();
-    if (id === 'calendar') onCalendarClick?.();
-    if (id === 'messages') onMessagesClick?.();
+    if (id === 'calendar')  onCalendarClick?.();
+    if (id === 'messages')  onMessagesClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   return (

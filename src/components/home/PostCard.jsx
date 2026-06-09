@@ -4,7 +4,12 @@ import { likePost, commentPost, sharePost } from '../../store/slices/postsSlice'
 import ReportModal from './ReportModal';
 import './PostCard.css';
 
-const READER_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
+const REACTOR_AVATARS = [
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&q=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&q=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=40&q=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&q=80&fit=crop&crop=face',
+];
 
 const BURST_EMOJIS = ['😊', '❤️', '🔥', '✨', '💫', '⭐', '🎉', '👏'];
 const BURST_PATHS = [
@@ -215,33 +220,15 @@ export default function PostCard({ post }) {
         {peopleReact > 0 && (
           <div className="post-people-react">
             <div className="post-reader-avatars">
-              {READER_COLORS.slice(0, 4).map((c, i) => (
-                <div key={i} className="post-reader-dot" style={{ background: c }} />
+              {REACTOR_AVATARS.slice(0, Math.min(peopleReact, 4)).map((src, i) => (
+                <div key={i} className="post-reader-dot">
+                  <img src={src} alt="" />
+                </div>
               ))}
             </div>
             <span className="post-react-text">+{peopleReact} people react this post</span>
           </div>
         )}
-
-        {/* Stats row */}
-        <div className="post-stats">
-          <div className="post-stats-left">
-            <span className="post-emoji-reactions">😊 😮 😢 😠</span>
-            <span className="post-reaction-count">+{likeCount}</span>
-          </div>
-          <div className="post-stats-right">
-            <button className="post-stats-link" onClick={() => setShowComments(v => !v)}>
-              👍 Liked ({likeCount})
-            </button>
-            <span className="post-stats-dot">·</span>
-            <button className="post-stats-link" onClick={() => setShowComments(v => !v)}>
-              💬 Comments ({MOCK_COMMENTS.length + MOCK_COMMENTS.reduce((a, c) => a + c.replies.length, 0)})
-            </button>
-            <span className="post-stats-dot">·</span>
-            <span className="post-stats-link">Shares ({shareCount})</span>
-            <span className="post-bookmark"><BookmarkIcon /></span>
-          </div>
-        </div>
 
         {/* Actions */}
         <div className="post-actions">
@@ -252,7 +239,7 @@ export default function PostCard({ post }) {
               disabled={isLiking}
             >
               <span className={`react-label${reacting ? ' react-label--spring' : ''}`}>
-                <ReactIcon /> {isLiked ? 'Reacted' : 'React'}
+                <ReactIcon /> {isLiked ? 'Reacted' : 'React'} ({likeCount + (isStatic && localLiked ? 1 : 0)})
               </span>
             </button>
             {particles.map(p => (
@@ -266,9 +253,13 @@ export default function PostCard({ post }) {
             ))}
           </div>
           <div className="post-action-sep" />
-          <button className="post-action-btn"><CommentIcon /> Comment</button>
+          <button className="post-action-btn" onClick={() => setShowComments(v => !v)}>
+            <CommentIcon /> Comment ({commentCount})
+          </button>
           <div className="post-action-sep" />
-          <button className="post-action-btn" onClick={handleShare}><ShareIcon /> Share</button>
+          <button className="post-action-btn" onClick={handleShare}>
+            <ShareIcon /> {shareCount > 1 ? 'Shares' : 'Share'} ({shareCount})
+          </button>
         </div>
 
         {/* Comments section */}

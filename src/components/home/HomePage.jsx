@@ -10,6 +10,7 @@ import CalendarPage from './CalendarPage';
 import CoursesPage from './CoursesPage';
 import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
+import MiniSitesPage from './MiniSitesPage';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -19,7 +20,18 @@ export default function HomePage() {
     <div className="home-page">
       <Navbar onMessagesClick={() => setSection('messages')} />
       <div className="home-body">
-        {section === 'profile' ? (
+        {section === 'minisites' ? (
+          <MiniSitesPage
+            onBack={() => setSection('feed')}
+            onCoursesClick={() => setSection('courses')}
+            onLibraryClick={() => setSection('library')}
+            onEventsClick={() => setSection('events')}
+            onGroupsClick={() => setSection('groups')}
+            onMessagesClick={() => setSection('messages')}
+            onCalendarClick={() => setSection('calendar')}
+            onMinisitesClick={() => setSection('minisites')}
+          />
+        ) : section === 'profile' ? (
           <ProfilePage
             onBack={() => setSection('feed')}
             onCoursesClick={() => setSection('courses')}
@@ -28,6 +40,7 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onMessagesClick={() => setSection('messages')}
             onCalendarClick={() => setSection('calendar')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'library' ? (
           <LibraryPage
@@ -37,6 +50,7 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'courses' ? (
           <CoursesPage
@@ -46,6 +60,7 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'events' ? (
           <EventsPage
@@ -56,6 +71,7 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'messages' ? (
           <MessagesPage
@@ -65,6 +81,7 @@ export default function HomePage() {
             onEventsClick={() => setSection('events')}
             onGroupsClick={() => setSection('groups')}
             onCalendarClick={() => setSection('calendar')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'groups' ? (
           <GroupsPage
@@ -74,6 +91,7 @@ export default function HomePage() {
             onEventsClick={() => setSection('events')}
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'calendar' ? (
           <CalendarPage
@@ -83,6 +101,7 @@ export default function HomePage() {
             onEventsClick={() => setSection('events')}
             onGroupsClick={() => setSection('groups')}
             onMessagesClick={() => setSection('messages')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : (
           <>
@@ -94,6 +113,7 @@ export default function HomePage() {
               onGroupsClick={() => setSection('groups')}
               onCalendarClick={() => setSection('calendar')}
               onProfileClick={() => setSection('profile')}
+              onMinisitesClick={() => setSection('minisites')}
             />
             <Feed onEventsClick={() => setSection('events')} />
             <RightSidebar />

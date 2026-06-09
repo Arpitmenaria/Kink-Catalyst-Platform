@@ -50,7 +50,7 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick }) {
+export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick }) {
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const [createOpen,  setCreateOpen]  = useState(false);
@@ -70,7 +70,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     if (id === 'events')   onEventsClick?.();
     if (id === 'messages') onMessagesClick?.();
     if (id === 'friends')  onGroupsClick?.();
-    if (id === 'calendar') onCalendarClick?.();
+    if (id === 'calendar')  onCalendarClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   return (

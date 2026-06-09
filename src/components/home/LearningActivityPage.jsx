@@ -47,7 +47,7 @@ const FAVORITES = [
   { Icon: PdfIcon,       title: 'UX Interview Cheatsheet',         meta: 'PDF • 1.2 MB', color: '#f59e0b' },
 ];
 
-export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick }) {
+export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
   const { profile }   = useSelector(s => s.profile);
   const avatarUrl     = profile?.avatar ?? ALEX_AVATAR;
   const firstName     = (profile?.fullName ?? 'Alex Rivera').split(' ')[0];
@@ -64,7 +64,8 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
     if (id === 'messages') onMessagesClick?.();
     if (id === 'events')   onEventsClick?.();
     if (id === 'friends')  onGroupsClick?.();
-    if (id === 'calendar') onCalendarClick?.();
+    if (id === 'calendar')  onCalendarClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
   }
 
   return (

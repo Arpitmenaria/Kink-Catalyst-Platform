@@ -1,0 +1,419 @@
+.ms-page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #070b14;
+}
+
+.ms-main {
+  margin-left: 72px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 36px 48px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.ms-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.ms-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 4px;
+}
+
+.ms-subtitle {
+  font-size: 13px;
+  color: #4b5a7a;
+  margin: 0;
+}
+
+.ms-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s;
+  font-family: inherit;
+}
+.ms-create-btn:hover { background: #2563eb; transform: translateY(-1px); }
+
+/* ── Stats ── */
+.ms-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.ms-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 14px;
+}
+
+.ms-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ms-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 2px;
+  line-height: 1;
+}
+
+.ms-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #4b5a7a;
+  margin: 0;
+}
+
+/* ── Tabs ── */
+.ms-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.ms-tab {
+  padding: 7px 20px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #4b5a7a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.ms-tab--active {
+  background: #1a2540;
+  color: #93c5fd;
+}
+.ms-tab:not(.ms-tab--active):hover { color: #7c8fb0; }
+
+/* ── Sites Grid ── */
+.ms-sites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* New site card */
+.ms-new-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  background: #0d1526;
+  border: 2px dashed #1a2540;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  font-family: inherit;
+  min-height: 220px;
+}
+.ms-new-card:hover {
+  border-color: #2563eb;
+  background: #0f1a30;
+}
+
+.ms-new-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #1a2540;
+  border: 1px solid #243050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+}
+
+.ms-new-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin: 0;
+}
+
+.ms-new-sub {
+  font-size: 12px;
+  color: #4b5a7a;
+  margin: 0;
+  text-align: center;
+}
+
+/* Site card */
+.ms-site-card {
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.ms-site-card:hover {
+  border-color: #1a2540;
+  transform: translateY(-2px);
+}
+
+.ms-site-thumb {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+}
+.ms-site-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+.ms-site-card:hover .ms-site-thumb img { transform: scale(1.04); }
+
+.ms-site-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ms-site-badge--live    { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.ms-site-badge--draft   { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+.ms-site-actions-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(7,11,20,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.ms-site-card:hover .ms-site-actions-overlay { opacity: 1; }
+
+.ms-site-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.ms-site-action-btn:hover { background: rgba(255,255,255,0.2); }
+
+.ms-site-info { padding: 14px 16px 16px; }
+
+.ms-site-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.ms-site-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.ms-site-menu-wrap { position: relative; }
+
+.ms-site-dots {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: #4b5a7a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.ms-site-dots:hover { background: #1a2540; color: #93c5fd; }
+
+.ms-site-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #0f1a30;
+  border: 1px solid #1a2540;
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 130px;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.ms-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-family: inherit;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  text-align: left;
+}
+.ms-dd-item:hover { background: #1a2540; color: #e2e8f0; }
+.ms-dd-item--danger { color: #f87171; }
+.ms-dd-item--danger:hover { background: rgba(239,68,68,0.1); color: #fca5a5; }
+
+.ms-site-url {
+  font-size: 11px;
+  color: #3b82f6;
+  margin: 0 0 10px;
+}
+
+.ms-site-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ms-site-views {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #4b5a7a;
+}
+
+.ms-site-edited {
+  font-size: 11px;
+  color: #2e3d58;
+}
+
+/* ── Templates Grid ── */
+.ms-templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.ms-tpl-card {
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.ms-tpl-card:hover { border-color: #1a2540; transform: translateY(-2px); }
+
+.ms-tpl-thumb {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+}
+.ms-tpl-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+.ms-tpl-card:hover .ms-tpl-thumb img { transform: scale(1.04); }
+
+.ms-tpl-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(59,130,246,0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.3);
+}
+
+.ms-tpl-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(7,11,20,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.ms-tpl-card:hover .ms-tpl-overlay { opacity: 1; }
+
+.ms-tpl-use-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.ms-tpl-use-btn:hover { background: #2563eb; }
+
+.ms-tpl-name {
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 0;
+}
