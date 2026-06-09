@@ -55,7 +55,7 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export default function Navbar({ onMessagesClick }) {
+export default function Navbar({ onMessagesClick, onProfileClick }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
@@ -166,7 +166,7 @@ export default function Navbar({ onMessagesClick }) {
 
           {userOpen && (
             <div className="navbar-user-dropdown">
-              <div className="navbar-user-dropdown-header">
+              <div className="navbar-user-dropdown-header" style={{ cursor: 'pointer' }} onClick={() => { setUserOpen(false); onProfileClick?.(); }}>
                 <div className="navbar-ud-avatar" style={{ overflow: 'hidden' }}>
                   <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>

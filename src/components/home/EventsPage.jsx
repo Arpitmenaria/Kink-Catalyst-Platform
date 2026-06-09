@@ -92,11 +92,23 @@ const EVENT_TYPES = [
   { id: 'hybrid',  label: 'Hybrid',  icon: <HybridIcon /> },
 ];
 
+const HEART_BURST_PATHS = [
+  { dx: -36, dy: -52, rot: -30 },
+  { dx: -16, dy: -62, rot:  15 },
+  { dx:   6, dy: -66, rot: -10 },
+  { dx:  28, dy: -52, rot:  25 },
+  { dx:  40, dy: -32, rot: -20 },
+  { dx: -44, dy: -28, rot:  30 },
+  { dx:  -8, dy: -58, rot: -18 },
+];
+
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [showCreate,    setShowCreate]    = useState(false);
   const [discTab,       setDiscTab]       = useState('upcoming');
   const [discCat,       setDiscCat]       = useState('All');
-  const [savedIds,      setSavedIds]      = useState(new Set());
+  const [savedIds,       setSavedIds]       = useState(new Set());
+  const [heartingIds,    setHeartingIds]    = useState(new Set());
+  const [heartParticles, setHeartParticles] = useState({});
   const [showFilter,    setShowFilter]    = useState(false);
   const [viewMode,      setViewMode]      = useState('grid');
   const [filters,       setFilters]       = useState({ eventType: 'all', categories: new Set(), location: '', radius: 25, amenities: new Set() });
@@ -105,7 +117,22 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
 
-  function toggleSave(id) { setSavedIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function toggleSave(id) {
+    setSavedIds(p => {
+      const n = new Set(p);
+      const adding = !n.has(id);
+      adding ? n.add(id) : n.delete(id);
+      if (adding) {
+        setHeartingIds(h => { const nh = new Set(h); nh.add(id); return nh; });
+        setHeartParticles(prev => ({ ...prev, [id]: HEART_BURST_PATHS.map((bp, i) => ({ id: Date.now() + i, ...bp })) }));
+        setTimeout(() => {
+          setHeartingIds(h => { const nh = new Set(h); nh.delete(id); return nh; });
+          setHeartParticles(prev => { const next = { ...prev }; delete next[id]; return next; });
+        }, 700);
+      }
+      return n;
+    });
+  }
 
   // Step 1 state
   const [form, setForm] = useState({
@@ -194,7 +221,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           if (id === 'home')     onBack?.();
           if (id === 'courses')  onCoursesClick?.();
           if (id === 'library')  onLibraryClick?.();
-          if (id === 'events')   onEventsClick?.();
+          if (id === 'events')   { setShowCreate(false); setStep(1); return; }
           if (id === 'friends')  onGroupsClick?.();
           if (id === 'calendar') onCalendarClick?.();
           if (id === 'messages')  onMessagesClick?.();
@@ -271,12 +298,17 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <span className="ev-disc-date-day">{ev.day}</span>
                     <span className="ev-disc-date-month">{ev.month}</span>
                   </div>
-                  <button
-                    className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}`}
-                    onClick={() => toggleSave(ev.id)}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                  </button>
+                  <div className="ev-heart-burst-wrap">
+                    <button
+                      className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}${heartingIds.has(ev.id) ? ' ev-disc-save-btn--spring' : ''}`}
+                      onClick={() => toggleSave(ev.id)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </button>
+                    {(heartParticles[ev.id] || []).map(p => (
+                      <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
+                    ))}
+                  </div>
                 </div>
                 <div className="ev-disc-card-body">
                   <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
@@ -329,9 +361,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </span>}
                     </div>
                     <div className="ev-list-actions">
-                      <button className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}`} onClick={() => toggleSave(ev.id)} style={{ position: 'static', background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '6px 10px' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                      </button>
+                      <div className="ev-heart-burst-wrap">
+                        <button className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}${heartingIds.has(ev.id) ? ' ev-disc-save-btn--spring' : ''}`} onClick={() => toggleSave(ev.id)} style={{ position: 'static', background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '6px 10px' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </button>
+                        {(heartParticles[ev.id] || []).map(p => (
+                          <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
+                        ))}
+                      </div>
                       {ev.soldOut
                         ? <button className="ev-disc-book-btn ev-disc-book-btn--sold">Sold Out</button>
                         : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}`}>{discTab === 'booked' ? 'Booked' : 'Book Now'}</button>

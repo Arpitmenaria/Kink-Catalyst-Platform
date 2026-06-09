@@ -18,7 +18,7 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      <Navbar onMessagesClick={() => setSection('messages')} />
+      <Navbar onMessagesClick={() => setSection('messages')} onProfileClick={() => setSection('profile')} />
       <div className="home-body">
         {section === 'minisites' ? (
           <MiniSitesPage
@@ -115,7 +115,7 @@ export default function HomePage() {
               onProfileClick={() => setSection('profile')}
               onMinisitesClick={() => setSection('minisites')}
             />
-            <Feed onEventsClick={() => setSection('events')} />
+            <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} />
             <RightSidebar />
           </>
         )}

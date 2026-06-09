@@ -93,7 +93,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         <div className="profile-card">
           <div className="profile-cover" />
           <div className="profile-body">
-            <div className="profile-avatar-wrap">
+            <div className="profile-avatar-wrap" onClick={onProfileClick} style={{ cursor: 'pointer' }}>
               <div className="profile-avatar" style={{ overflow: 'hidden' }}>
                 <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
