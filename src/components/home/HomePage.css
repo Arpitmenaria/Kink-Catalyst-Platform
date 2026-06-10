@@ -731,7 +731,7 @@
   background: #111422;
   border: 1px solid #1a1f35;
   border-radius: 12px;
-  padding: 14px;
+  padding: 5px
 }
 
 .section-header {
@@ -763,7 +763,7 @@
 .friend-list, .group-list, .event-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .friend-item, .group-item, .sidebar-event-item {
