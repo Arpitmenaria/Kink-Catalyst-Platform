@@ -490,7 +490,7 @@
   display: flex;
   flex-shrink: 0;
   width: 295px;
-  border-right: 1px solid #181c30;
+  border-right: none;
   transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -581,28 +581,23 @@
     0 0 0 1px rgba(99, 102, 241, 0.08);
 }
 
-/* ── Cover — animated gradient + shimmer sweep ── */
+/* ── Cover ── */
 .profile-cover {
-  height: 80px;
+  height: 110px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #1a3a9c, #2563eb, #38bdf8, #6366f1, #2563eb, #1a3a9c);
-  background-size: 300% 300%;
-  animation: profileCoverFlow 6s ease infinite;
+  background: #0d1524;
 }
 
-.profile-cover::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
-  transform: skewX(-18deg) translateX(-120%);
-  pointer-events: none;
+.profile-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
 }
 
-.profile-card:hover .profile-cover::after {
-  animation: profileCoverSweep 0.7s ease forwards;
-}
+.profile-card:hover .profile-cover-img { transform: scale(1.05); }
 
 /* ── Body ── */
 .profile-body {
@@ -614,46 +609,44 @@
 
 /* ── Avatar ── */
 .profile-avatar-wrap {
-  margin-top: -30px;
-  margin-bottom: 8px;
+  margin-top: -44px;
+  margin-bottom: 10px;
 }
 
 .profile-avatar {
-  width: 60px;
-  height: 60px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  border: 3px solid #111422;
+  border: 4px solid #111422;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: #fff;
-  animation:
-    profileAvatarIn   0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.18s both,
-    profileAvatarRing 2.8s ease-in-out                        1.2s  infinite;
+  animation: profileAvatarIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.18s both;
   transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
 }
 
 .profile-card:hover .profile-avatar {
-  transform: scale(1.1);
+  transform: scale(1.06);
   border-color: #6366f1;
 }
 
 /* ── Name / Role / Stats / Button entrance ── */
 .profile-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
   color: #e8ecf8;
-  margin: 0 0 2px;
+  margin: 0 0 4px;
   animation: profileItemIn 0.35s ease 0.28s both;
 }
 
 .profile-role {
-  font-size: 11.5px;
-  color: #5c6480;
-  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: #6b7a9f;
+  margin: 0 0 14px;
   animation: profileItemIn 0.35s ease 0.34s both;
 }
 
@@ -674,9 +667,9 @@
 }
 
 .stat-num {
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 700;
-  color: #3b82f6;
+  color: #e2e8f0;
   display: inline-block;
   transition: color 0.2s ease;
 }
@@ -687,8 +680,8 @@
 }
 
 .stat-lbl {
-  font-size: 10.5px;
-  color: #5c6480;
+  font-size: 11px;
+  color: #6b7a9f;
   transition: color 0.2s ease;
 }
 
@@ -1041,7 +1034,7 @@
 .home-feed {
   flex: 1;
   min-width: 0;
-  padding: 16px 16px;
+  padding: 16px 2px;
   transition: flex 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
@@ -1564,7 +1557,7 @@
 .home-right-sidebar {
   width: 272px;
   flex-shrink: 0;
-  border-left: 1px solid #181c30;
+  border-left: none;
   padding: 16px 14px;
   display: flex;
   flex-direction: column;

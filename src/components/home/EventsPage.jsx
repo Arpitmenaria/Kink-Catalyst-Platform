@@ -13,7 +13,6 @@ function MessagesNavIcon() { return <svg width="16" height="16" viewBox="0 0 24 
 /* ── Event type icons ── */
 function OnlineIcon()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; }
 function OfflineIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
-function HybridIcon()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
 
 /* ── Misc icons ── */
 function ChevronDownIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>; }
@@ -89,7 +88,6 @@ const CATEGORIES = [
 const EVENT_TYPES = [
   { id: 'online',  label: 'Online',  icon: <OnlineIcon /> },
   { id: 'offline', label: 'Offline', icon: <OfflineIcon /> },
-  { id: 'hybrid',  label: 'Hybrid',  icon: <HybridIcon /> },
 ];
 
 const HEART_BURST_PATHS = [
@@ -102,8 +100,8 @@ const HEART_BURST_PATHS = [
   { dx:  -8, dy: -58, rot: -18 },
 ];
 
-export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
-  const [showCreate,    setShowCreate]    = useState(false);
+export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate }) {
+  const [showCreate,    setShowCreate]    = useState(startCreate || false);
   const [discTab,       setDiscTab]       = useState('upcoming');
   const [discCat,       setDiscCat]       = useState('All');
   const [savedIds,       setSavedIds]       = useState(new Set());
@@ -160,9 +158,41 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [organizer, setOrganizer] = useState({ fullName: '', email: '', phone: '' });
   const [virtual, setVirtual] = useState({ link: '', instructions: '' });
 
+  const [dateErrors, setDateErrors] = useState({ startDate: '', endDate: '', endTime: '' });
+  const todayStr = new Date().toISOString().split('T')[0];
+
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    const next = type === 'checkbox' ? checked : value;
+    setForm(prev => {
+      const updated = { ...prev, [name]: next };
+      const errors = { ...dateErrors };
+      if (name === 'startDate') {
+        errors.startDate = next && next < todayStr ? 'Start date cannot be in the past' : '';
+        const ed = updated.endDate;
+        errors.endDate = ed && next && ed < next ? 'End date cannot be before start date' : '';
+        if (updated.endTime && updated.startTime) {
+          const sameDay = next === updated.endDate;
+          errors.endTime = sameDay && updated.endTime < updated.startTime ? 'End time cannot be before start time' : '';
+        }
+      }
+      if (name === 'endDate') {
+        const sd = updated.startDate;
+        errors.endDate = next && sd && next < sd ? 'End date cannot be before start date' : '';
+        if (updated.endTime && updated.startTime) {
+          const sameDay = updated.startDate === next;
+          errors.endTime = sameDay && updated.endTime < updated.startTime ? 'End time cannot be before start time' : '';
+        }
+      }
+      if (name === 'startTime' || name === 'endTime') {
+        const st = name === 'startTime' ? next : updated.startTime;
+        const et = name === 'endTime'   ? next : updated.endTime;
+        const sameDay = updated.startDate && updated.endDate && updated.startDate === updated.endDate;
+        errors.endTime = sameDay && et && st && et < st ? 'End time cannot be before start time' : '';
+      }
+      setDateErrors(errors);
+      return updated;
+    });
   }
 
   function handleNewTicketChange(e) {
@@ -597,19 +627,22 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-date-grid">
                     <div className="ev-field">
                       <label className="ev-label ev-label--small">Start Date</label>
-                      <input className="ev-input" type="date" name="startDate" value={form.startDate} onChange={handleChange} />
+                      <input className={`ev-input${dateErrors.startDate ? ' ev-input--error' : ''}`} type="date" name="startDate" value={form.startDate} min={todayStr} onChange={handleChange} onClick={e => e.target.showPicker?.()} />
+                      {dateErrors.startDate && <span className="ev-field-error">{dateErrors.startDate}</span>}
                     </div>
                     <div className="ev-field">
                       <label className="ev-label ev-label--small">End Date</label>
-                      <input className="ev-input" type="date" name="endDate" value={form.endDate} onChange={handleChange} />
+                      <input className={`ev-input${dateErrors.endDate ? ' ev-input--error' : ''}`} type="date" name="endDate" value={form.endDate} min={form.startDate || undefined} onChange={handleChange} onClick={e => e.target.showPicker?.()} />
+                      {dateErrors.endDate && <span className="ev-field-error">{dateErrors.endDate}</span>}
                     </div>
                     <div className="ev-field" style={{ opacity: form.isAllDay ? 0.35 : 1, pointerEvents: form.isAllDay ? 'none' : undefined }}>
                       <label className="ev-label ev-label--small">Start Time</label>
-                      <input className="ev-input" type="time" name="startTime" value={form.startTime} onChange={handleChange} disabled={form.isAllDay} />
+                      <input className="ev-input" type="time" name="startTime" value={form.startTime} onChange={handleChange} disabled={form.isAllDay} onClick={e => e.target.showPicker?.()} />
                     </div>
                     <div className="ev-field" style={{ opacity: form.isAllDay ? 0.35 : 1, pointerEvents: form.isAllDay ? 'none' : undefined }}>
                       <label className="ev-label ev-label--small">End Time</label>
-                      <input className="ev-input" type="time" name="endTime" value={form.endTime} onChange={handleChange} disabled={form.isAllDay} />
+                      <input className={`ev-input${dateErrors.endTime ? ' ev-input--error' : ''}`} type="time" name="endTime" value={form.endTime} min={form.startDate && form.endDate && form.startDate === form.endDate ? form.startTime || undefined : undefined} onChange={handleChange} disabled={form.isAllDay} onClick={e => e.target.showPicker?.()} />
+                      {dateErrors.endTime && <span className="ev-field-error">{dateErrors.endTime}</span>}
                     </div>
                   </div>
                 </div>
@@ -775,7 +808,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-panel-field">
                     <label className="ev-label ev-label--small">Registration Deadline</label>
                     <div className="ev-input-icon-wrap">
-                      <input className="ev-input" name="deadline" type="date" value={registration.deadline} onChange={handleRegistrationChange} />
+                      <input className="ev-input" name="deadline" type="date" value={registration.deadline} onChange={handleRegistrationChange} onClick={e => e.target.showPicker?.()} />
                       <span className="ev-input-icon"><CalendarIcon /></span>
                     </div>
                   </div>

@@ -525,7 +525,7 @@ function UpcomingEventsPanel() {
   );
 }
 
-function EventsTab({ onEventsClick }) {
+function EventsTab({ onEventsClick, onCreateEvent }) {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [openMenuId,    setOpenMenuId]    = useState(null);
 
@@ -534,7 +534,7 @@ function EventsTab({ onEventsClick }) {
     <div className="ev-tab">
       <div className="ev-header">
         <h2 className="ev-title">Discover Events</h2>
-        <button className="ev-create-btn" onClick={onEventsClick}><PlusIcon /> Create events</button>
+        <button className="ev-create-btn" onClick={onCreateEvent ?? onEventsClick}><PlusIcon /> Create events</button>
       </div>
 
       {bannerVisible && (
@@ -770,7 +770,7 @@ function AboutTab() {
 }
 
 export default function ProfilePage({
-  onBack, onCoursesClick, onLibraryClick, onEventsClick,
+  onBack, onCoursesClick, onLibraryClick, onEventsClick, onEventsCreateClick,
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
 }) {
   const { user: authUser }  = useSelector(s => s.auth);
@@ -882,9 +882,6 @@ export default function ProfilePage({
               </button>
             </div>
           </div>
-          <div className="prof-actions">
-            <button className="prof-edit-btn"><EditIcon /> Edit profile</button>
-          </div>
         </div>
 
         <div className="prof-tabs">
@@ -932,7 +929,7 @@ export default function ProfilePage({
           {activeTab === 'About'       && <AboutTab />}
           {activeTab === 'Connections' && <ConnectionsTab />}
           {activeTab === 'Photos'      && <MediaTab />}
-          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} />}
+          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} />}
 
           {activeTab !== 'Feed' && activeTab !== 'About' && activeTab !== 'Photos' && activeTab !== 'Events' && activeTab !== 'Connections' && (
             <div className="prof-empty-tab">

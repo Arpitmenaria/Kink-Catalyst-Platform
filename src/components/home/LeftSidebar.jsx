@@ -91,7 +91,9 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
 
         {/* Profile card */}
         <div className="profile-card">
-          <div className="profile-cover" />
+          <div className="profile-cover">
+            <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80&fit=crop" alt="cover" className="profile-cover-img" />
+          </div>
           <div className="profile-body">
             <div className="profile-avatar-wrap" onClick={onProfileClick} style={{ cursor: 'pointer' }}>
               <div className="profile-avatar" style={{ overflow: 'hidden' }}>

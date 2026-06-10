@@ -1002,6 +1002,9 @@
 
 .ev-input::placeholder { color: #3e4460; }
 .ev-input:focus { border-color: #2d3a5e; }
+.ev-input--error { border-color: #ef4444 !important; }
+.ev-input--error:focus { border-color: #f87171 !important; }
+.ev-field-error { display: block; margin-top: 4px; font-size: 11.5px; color: #ef4444; }
 
 .ev-textarea {
   background: #0d1020;

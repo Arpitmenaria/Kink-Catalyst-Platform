@@ -14,7 +14,10 @@ import MiniSitesPage from './MiniSitesPage';
 import './HomePage.css';
 
 export default function HomePage() {
-  const [section, setSection] = useState('feed');
+  const [section,      setSection]      = useState('feed');
+  const [eventsCreate, setEventsCreate] = useState(false);
+
+  function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
 
   return (
     <div className="home-page">
@@ -37,6 +40,7 @@ export default function HomePage() {
             onCoursesClick={() => setSection('courses')}
             onLibraryClick={() => setSection('library')}
             onEventsClick={() => setSection('events')}
+            onEventsCreateClick={goToEventsCreate}
             onGroupsClick={() => setSection('groups')}
             onMessagesClick={() => setSection('messages')}
             onCalendarClick={() => setSection('calendar')}
@@ -64,7 +68,7 @@ export default function HomePage() {
           />
         ) : section === 'events' ? (
           <EventsPage
-            onBack={() => setSection('feed')}
+            onBack={() => { setEventsCreate(false); setSection('feed'); }}
             onCoursesClick={() => setSection('courses')}
             onLibraryClick={() => setSection('library')}
             onEventsClick={() => setSection('events')}
@@ -72,6 +76,7 @@ export default function HomePage() {
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}
+            startCreate={eventsCreate}
           />
         ) : section === 'messages' ? (
           <MessagesPage
@@ -115,7 +120,7 @@ export default function HomePage() {
               onProfileClick={() => setSection('profile')}
               onMinisitesClick={() => setSection('minisites')}
             />
-            <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} />
+            <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} onCreateEvent={goToEventsCreate} />
             <RightSidebar />
           </>
         )}
