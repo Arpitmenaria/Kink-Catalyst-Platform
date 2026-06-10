@@ -62,7 +62,7 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent }) {
   const dispatch = useDispatch();
   const { user: authUser } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
@@ -101,7 +101,8 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   function switchTab(t) {
     if (t === 'event') {
       onClose();
-      onNavigateToEvents?.();
+      if (onCreateEvent) onCreateEvent();
+      else onNavigateToEvents?.();
       return;
     }
     setTab(t);

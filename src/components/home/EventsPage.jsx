@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import { CustomDatePicker, CustomTimePicker } from './DateTimePicker';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
@@ -627,21 +628,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-date-grid">
                     <div className="ev-field">
                       <label className="ev-label ev-label--small">Start Date</label>
-                      <input className={`ev-input${dateErrors.startDate ? ' ev-input--error' : ''}`} type="date" name="startDate" value={form.startDate} min={todayStr} onChange={handleChange} onClick={e => e.target.showPicker?.()} />
+                      <CustomDatePicker name="startDate" value={form.startDate} min={todayStr} onChange={handleChange} placeholder="Pick start date" hasError={!!dateErrors.startDate} />
                       {dateErrors.startDate && <span className="ev-field-error">{dateErrors.startDate}</span>}
                     </div>
                     <div className="ev-field">
                       <label className="ev-label ev-label--small">End Date</label>
-                      <input className={`ev-input${dateErrors.endDate ? ' ev-input--error' : ''}`} type="date" name="endDate" value={form.endDate} min={form.startDate || undefined} onChange={handleChange} onClick={e => e.target.showPicker?.()} />
+                      <CustomDatePicker name="endDate" value={form.endDate} min={form.startDate || todayStr} onChange={handleChange} placeholder="Pick end date" hasError={!!dateErrors.endDate} />
                       {dateErrors.endDate && <span className="ev-field-error">{dateErrors.endDate}</span>}
                     </div>
-                    <div className="ev-field" style={{ opacity: form.isAllDay ? 0.35 : 1, pointerEvents: form.isAllDay ? 'none' : undefined }}>
-                      <label className="ev-label ev-label--small">Start Time</label>
-                      <input className="ev-input" type="time" name="startTime" value={form.startTime} onChange={handleChange} disabled={form.isAllDay} onClick={e => e.target.showPicker?.()} />
+                    <div className="ev-field">
+                      <label className="ev-label ev-label--small" style={{ opacity: form.isAllDay ? 0.4 : 1 }}>Start Time</label>
+                      <CustomTimePicker name="startTime" value={form.startTime} onChange={handleChange} disabled={form.isAllDay} placeholder="Pick start time" />
                     </div>
-                    <div className="ev-field" style={{ opacity: form.isAllDay ? 0.35 : 1, pointerEvents: form.isAllDay ? 'none' : undefined }}>
-                      <label className="ev-label ev-label--small">End Time</label>
-                      <input className={`ev-input${dateErrors.endTime ? ' ev-input--error' : ''}`} type="time" name="endTime" value={form.endTime} min={form.startDate && form.endDate && form.startDate === form.endDate ? form.startTime || undefined : undefined} onChange={handleChange} disabled={form.isAllDay} onClick={e => e.target.showPicker?.()} />
+                    <div className="ev-field">
+                      <label className="ev-label ev-label--small" style={{ opacity: form.isAllDay ? 0.4 : 1 }}>End Time</label>
+                      <CustomTimePicker name="endTime" value={form.endTime} onChange={handleChange} disabled={form.isAllDay} placeholder="Pick end time" min={form.startDate === form.endDate ? form.startTime : undefined} hasError={!!dateErrors.endTime} />
                       {dateErrors.endTime && <span className="ev-field-error">{dateErrors.endTime}</span>}
                     </div>
                   </div>
@@ -807,10 +808,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
                   <div className="ev-panel-field">
                     <label className="ev-label ev-label--small">Registration Deadline</label>
-                    <div className="ev-input-icon-wrap">
-                      <input className="ev-input" name="deadline" type="date" value={registration.deadline} onChange={handleRegistrationChange} onClick={e => e.target.showPicker?.()} />
-                      <span className="ev-input-icon"><CalendarIcon /></span>
-                    </div>
+                    <CustomDatePicker name="deadline" value={registration.deadline} min={todayStr} onChange={handleRegistrationChange} placeholder="Pick deadline date" />
                   </div>
                 </div>
               </div>

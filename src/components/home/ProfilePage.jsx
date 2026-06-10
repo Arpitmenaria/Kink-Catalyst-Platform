@@ -9,6 +9,26 @@ import './ProfilePage.css';
 const COVER_URL = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
 const TABS = ['Feed', 'About', 'Connections', 'Photos', 'Events'];
 
+const DEMO_FOLLOWERS = [
+  { id: 1,  name: 'Elena Moretti',    role: 'UX Designer at Figma',          mutual: 12, avatar: 'https://i.pravatar.cc/150?img=47', following: true  },
+  { id: 2,  name: 'Sarah Chen',       role: 'Frontend Engineer at Vercel',   mutual: 4,  avatar: 'https://i.pravatar.cc/150?img=44', following: false },
+  { id: 3,  name: 'Marcus Tye',       role: 'Product Manager at Notion',     mutual: 2,  avatar: 'https://i.pravatar.cc/150?img=51', following: true  },
+  { id: 4,  name: 'Priya Sharma',     role: 'Data Scientist at Google',      mutual: 7,  avatar: 'https://i.pravatar.cc/150?img=48', following: false },
+  { id: 5,  name: 'James Okafor',     role: 'DevOps Lead at AWS',            mutual: 3,  avatar: 'https://i.pravatar.cc/150?img=53', following: true  },
+  { id: 6,  name: 'Lena Fischer',     role: 'Graphic Designer · Freelance',  mutual: 9,  avatar: 'https://i.pravatar.cc/150?img=49', following: false },
+  { id: 7,  name: 'Carlos Rivera',    role: 'Software Architect at Spotify', mutual: 5,  avatar: 'https://i.pravatar.cc/150?img=56', following: true  },
+  { id: 8,  name: 'Amara Osei',       role: 'Marketing Lead at HubSpot',     mutual: 1,  avatar: 'https://i.pravatar.cc/150?img=45', following: false },
+];
+
+const DEMO_FOLLOWING = [
+  { id: 11, name: 'Raj Patel',        role: 'CTO at StartupXYZ',             mutual: 6,  avatar: 'https://i.pravatar.cc/150?img=60', following: true  },
+  { id: 12, name: 'Sophie Laurent',   role: 'AI Researcher at OpenAI',       mutual: 8,  avatar: 'https://i.pravatar.cc/150?img=46', following: true  },
+  { id: 13, name: 'David Kim',        role: 'iOS Developer at Apple',        mutual: 3,  avatar: 'https://i.pravatar.cc/150?img=57', following: true  },
+  { id: 14, name: 'Fatima Al-Zahra',  role: 'Cloud Architect at Microsoft',  mutual: 11, avatar: 'https://i.pravatar.cc/150?img=43', following: true  },
+  { id: 15, name: 'Noah Williams',    role: 'Backend Engineer at Stripe',    mutual: 2,  avatar: 'https://i.pravatar.cc/150?img=52', following: true  },
+  { id: 16, name: 'Yuki Tanaka',      role: 'Game Developer at Unity',       mutual: 4,  avatar: 'https://i.pravatar.cc/150?img=55', following: true  },
+];
+
 const MEDIA_PHOTOS = [
   { id: 'm1', images: [
       'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=500&q=80',
@@ -154,32 +174,62 @@ function PersonAddIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>;
 }
 
+function MutualIcon() {
+  return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+}
+
 function FriendSuggestionsPanel() {
-  const [added, setAdded] = useState(new Set());
+  const [addedIds,     setAddedIds]     = useState(new Set());
+  const [poppingIds,   setPoppingIds]   = useState(new Set());
+  const [removingIds,  setRemovingIds]  = useState(new Set());
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+
+  function handleAdd(id) {
+    if (addedIds.has(id)) return;
+    setAddedIds(p => new Set([...p, id]));
+    setPoppingIds(p => new Set([...p, id]));
+    setTimeout(() => setPoppingIds(p => { const s = new Set(p); s.delete(id); return s; }), 500);
+  }
+
+  function handleRemove(id) {
+    setRemovingIds(p => new Set([...p, id]));
+    setTimeout(() => {
+      setDismissedIds(p => new Set([...p, id]));
+      setRemovingIds(p => { const s = new Set(p); s.delete(id); return s; });
+    }, 380);
+  }
+
   return (
     <div className="prof-conn-suggestions">
       <div className="prof-sugg-header">
         <span className="prof-sugg-title">Friend Suggestions</span>
         <button className="prof-sugg-see-all">View all</button>
       </div>
-      {FRIEND_SUGGESTIONS.map(f => (
-        <div key={f.id} className="prof-sugg-item">
-          <div className="prof-sugg-avatar" style={{ background: f.color, overflow: 'hidden' }}>
-            {f.avatar
-              ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : f.name.split(' ').map(w => w[0]).join('').toUpperCase()
-            }
+      {FRIEND_SUGGESTIONS.filter(f => !dismissedIds.has(f.id)).map(f => (
+        <div key={f.id} className={`prof-sugg-item${removingIds.has(f.id) ? ' prof-sugg-item--removing' : ''}`}>
+          <div className="prof-sugg-item-top">
+            <div className="prof-sugg-avatar" style={{ background: f.color, overflow: 'hidden' }}>
+              {f.avatar
+                ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : f.name.split(' ').map(w => w[0]).join('').toUpperCase()
+              }
+            </div>
+            <div className="prof-sugg-info">
+              <p className="prof-sugg-name">{f.name}</p>
+              <p className="prof-sugg-sub"><MutualIcon />{f.sub}</p>
+            </div>
           </div>
-          <div className="prof-sugg-info">
-            <p className="prof-sugg-name">{f.name}</p>
-            <p className="prof-sugg-sub">{f.sub}</p>
+          <div className="prof-sugg-actions">
+            <button
+              className={`prof-sugg-add-btn${addedIds.has(f.id) ? ' prof-sugg-add-btn--added' : ''}${poppingIds.has(f.id) ? ' prof-sugg-add-btn--pop' : ''}`}
+              onClick={() => handleAdd(f.id)}
+            >
+              {addedIds.has(f.id) ? '✓ Added' : 'Add Friend'}
+            </button>
+            <button className="prof-sugg-remove-btn" onClick={() => handleRemove(f.id)}>
+              Remove
+            </button>
           </div>
-          <button
-            className={`prof-sugg-add-btn${added.has(f.id) ? ' prof-sugg-add-btn--added' : ''}`}
-            onClick={() => setAdded(p => { const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n; })}
-          >
-            {added.has(f.id) ? '✓' : <PersonAddIcon />}
-          </button>
         </div>
       ))}
     </div>
@@ -647,16 +697,14 @@ function AboutTab() {
             </div>
           </div>
         ) : bio ? (
-          <div>
-            <p className="about-bio-text">
-              {bioExpanded || bio.length <= BIO_LIMIT ? bio : bio.slice(0, BIO_LIMIT) + '…'}
-            </p>
+          <p className="about-bio-text">
+            {bioExpanded || bio.length <= BIO_LIMIT ? bio : bio.slice(0, BIO_LIMIT) + '…'}
             {bio.length > BIO_LIMIT && (
               <button className="about-bio-toggle" onClick={() => setBioExpanded(v => !v)}>
-                {bioExpanded ? 'Show less' : 'Show more'}
+                {bioExpanded ? 'See less' : 'See more'}
               </button>
             )}
-          </div>
+          </p>
         ) : (
           <p className="about-bio-empty">No overview added yet.</p>
         )}
@@ -772,6 +820,7 @@ function AboutTab() {
 export default function ProfilePage({
   onBack, onCoursesClick, onLibraryClick, onEventsClick, onEventsCreateClick,
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
+  initialTab, onInitTabConsumed,
 }) {
   const { user: authUser }  = useSelector(s => s.auth);
   const { profile }         = useSelector(s => s.profile);
@@ -779,7 +828,13 @@ export default function ProfilePage({
   const displayName         = profile?.fullName || authUser?.fullName || 'Alex Rivera';
   const role                = profile?.role || 'Lead Developer';
 
-  const [activeTab,       setActiveTab]       = useState('Feed');
+  const [activeTab,       setActiveTab]       = useState(initialTab || 'Feed');
+  useEffect(() => {
+    if (initialTab) { setActiveTab(initialTab); onInitTabConsumed?.(); }
+  }, [initialTab]);
+  const [followPanel,     setFollowPanel]     = useState(null); // 'followers' | 'following' | null
+  const [followSearch,    setFollowSearch]    = useState('');
+  const [followingIds,    setFollowingIds]    = useState(new Set([11,12,13,14,15,16,1,3,5,7]));
   const [createPostOpen,  setCreatePostOpen]  = useState(false);
   const [createTab,       setCreateTab]       = useState('photo');
   const [creatorClicked,  setCreatorClicked]  = useState(false);
@@ -866,12 +921,12 @@ export default function ProfilePage({
               <span className="prof-meta-item"><CalIcon /> Joined on Nov 26, 2019</span>
             </div>
             <div className="prof-counts-row">
-              <button className="prof-count-item">
+              <button className="prof-count-item" onClick={() => { setFollowSearch(''); setFollowPanel('followers'); }}>
                 <span className="prof-count-num">8,400</span>
                 <span className="prof-count-lbl">Followers</span>
               </button>
               <span className="prof-count-div" />
-              <button className="prof-count-item">
+              <button className="prof-count-item" onClick={() => { setFollowSearch(''); setFollowPanel('following'); }}>
                 <span className="prof-count-num">1,200</span>
                 <span className="prof-count-lbl">Following</span>
               </button>
@@ -941,6 +996,62 @@ export default function ProfilePage({
       </div>
     </div>
     {createPostOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreatePostOpen(false)} onNavigateToEvents={onEventsClick} />}
+
+    {followPanel && (() => {
+      const list = (followPanel === 'followers' ? DEMO_FOLLOWERS : DEMO_FOLLOWING)
+        .filter(p => p.name.toLowerCase().includes(followSearch.toLowerCase()) || p.role.toLowerCase().includes(followSearch.toLowerCase()));
+      return (
+        <div className="fp-overlay" onClick={() => setFollowPanel(null)}>
+          <div className="fp-panel" onClick={e => e.stopPropagation()}>
+            <div className="fp-header">
+              <div className="fp-tabs">
+                <button className={`fp-tab${followPanel === 'followers' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('followers'); }}>
+                  Followers <span className="fp-tab-count">8,400</span>
+                </button>
+                <button className={`fp-tab${followPanel === 'following' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('following'); }}>
+                  Following <span className="fp-tab-count">1,200</span>
+                </button>
+              </div>
+              <button className="fp-close" onClick={() => setFollowPanel(null)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className="fp-search-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="fp-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input className="fp-search" placeholder={`Search ${followPanel}…`} value={followSearch} onChange={e => setFollowSearch(e.target.value)} autoFocus />
+            </div>
+            <div className="fp-list">
+              {list.length === 0 && <p className="fp-empty">No results found</p>}
+              {list.map(person => (
+                <div className="fp-person" key={person.id}>
+                  <img className="fp-avatar" src={person.avatar} alt={person.name} />
+                  <div className="fp-info">
+                    <span className="fp-name">{person.name}</span>
+                    <span className="fp-role">{person.role}</span>
+                    {person.mutual > 0 && (
+                      <span className="fp-mutual">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        {person.mutual} mutual connections
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    className={`fp-follow-btn${followingIds.has(person.id) ? ' fp-follow-btn--following' : ''}`}
+                    onClick={() => setFollowingIds(prev => {
+                      const s = new Set(prev);
+                      s.has(person.id) ? s.delete(person.id) : s.add(person.id);
+                      return s;
+                    })}
+                  >
+                    {followingIds.has(person.id) ? 'Following' : '+ Follow'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    })()}
     </>
   );
 }

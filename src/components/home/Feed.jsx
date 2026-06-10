@@ -46,7 +46,7 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent }) {
         </div>
       </div>
 
-      {createOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreateOpen(false)} onNavigateToEvents={onEventsClick} />}
+      {createOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreateOpen(false)} onNavigateToEvents={onEventsClick} onCreateEvent={onCreateEvent} />}
 
       <div className="feed-posts">
         {MOCK_POSTS.map(post => (

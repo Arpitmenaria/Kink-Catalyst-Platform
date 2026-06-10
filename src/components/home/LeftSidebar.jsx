@@ -35,13 +35,12 @@ const NAV_ITEMS = [
   { icon: <SettingsIcon />,    label: 'Settings'                       },
 ];
 
-function PersonAddIcon() {
+function MutualIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
-      <line x1="19" y1="8" x2="19" y2="14"/>
-      <line x1="22" y1="11" x2="16" y2="11"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   );
 }
@@ -55,6 +54,25 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const { profile } = useSelector((state) => state.profile);
   const [createOpen,  setCreateOpen]  = useState(false);
   const [activeNavId, setActiveNavId] = useState('home');
+  const [addedIds,    setAddedIds]    = useState(new Set());
+  const [poppingIds,  setPoppingIds]  = useState(new Set());
+  const [removingIds, setRemovingIds] = useState(new Set());
+  const [dismissedIds,setDismissedIds]= useState(new Set());
+
+  function handleAddFriend(id) {
+    if (addedIds.has(id)) return;
+    setAddedIds(prev => new Set([...prev, id]));
+    setPoppingIds(prev => new Set([...prev, id]));
+    setTimeout(() => setPoppingIds(prev => { const s = new Set(prev); s.delete(id); return s; }), 500);
+  }
+
+  function handleRemoveSuggestion(id) {
+    setRemovingIds(prev => new Set([...prev, id]));
+    setTimeout(() => {
+      setDismissedIds(prev => new Set([...prev, id]));
+      setRemovingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }, 380);
+  }
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
   const role           = profile?.role ?? 'Product Designer';
@@ -124,19 +142,37 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <button className="section-link">View all</button>
           </div>
           <div className="friend-list">
-            {FRIEND_SUGGESTIONS.map(f => (
-              <div key={f.id} className="friend-item">
-                <div className="friend-avatar" style={{ background: f.color, overflow: 'hidden' }}>
-                  {f.avatar
-                    ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : initials(f.name)
-                  }
+            {FRIEND_SUGGESTIONS.filter(f => !dismissedIds.has(f.id)).map(f => (
+              <div
+                key={f.id}
+                className={`friend-item${removingIds.has(f.id) ? ' friend-item--removing' : ''}`}
+              >
+                <div className="friend-item-top">
+                  <div className="friend-avatar" style={{ background: f.color, overflow: 'hidden' }}>
+                    {f.avatar
+                      ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : initials(f.name)
+                    }
+                  </div>
+                  <div className="friend-info">
+                    <p className="friend-name">{f.name}</p>
+                    <p className="friend-sub"><MutualIcon />{f.sub}</p>
+                  </div>
                 </div>
-                <div className="friend-info">
-                  <p className="friend-name">{f.name}</p>
-                  <p className="friend-sub">{f.sub}</p>
+                <div className="friend-actions">
+                  <button
+                    className={`friend-add-btn${addedIds.has(f.id) ? ' friend-add-btn--added' : ''}${poppingIds.has(f.id) ? ' friend-add-btn--pop' : ''}`}
+                    onClick={() => handleAddFriend(f.id)}
+                  >
+                    {addedIds.has(f.id) ? '✓ Added' : 'Add Friend'}
+                  </button>
+                  <button
+                    className="friend-remove-btn"
+                    onClick={() => handleRemoveSuggestion(f.id)}
+                  >
+                    Remove
+                  </button>
                 </div>
-                <button className="friend-add-btn" aria-label={`Add ${f.name}`}><PersonAddIcon /></button>
               </div>
             ))}
           </div>

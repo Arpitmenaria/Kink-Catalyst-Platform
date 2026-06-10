@@ -55,7 +55,7 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export default function Navbar({ onMessagesClick, onProfileClick }) {
+export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
@@ -100,14 +100,14 @@ export default function Navbar({ onMessagesClick, onProfileClick }) {
       </div>
 
       <div className="navbar-center">
-        <div className="navbar-stat-pill">
+        <div className="navbar-stat-pill" onClick={onPostsClick} style={{ cursor: 'pointer' }}>
           <span className="navbar-stat-num">326</span>
           <span className="navbar-stat-lbl">Total Posts</span>
         </div>
         <div className="navbar-divider" />
-        <div className="navbar-stat-pill">
+        <div className="navbar-stat-pill" onClick={onConnectionsClick} style={{ cursor: 'pointer' }}>
           <span className="navbar-stat-num">2456</span>
-          <span className="navbar-stat-lbl">Total Friends</span>
+          <span className="navbar-stat-lbl">Total Connections</span>
         </div>
       </div>
 

@@ -14,14 +14,16 @@ import MiniSitesPage from './MiniSitesPage';
 import './HomePage.css';
 
 export default function HomePage() {
-  const [section,      setSection]      = useState('feed');
-  const [eventsCreate, setEventsCreate] = useState(false);
+  const [section,         setSection]         = useState('feed');
+  const [eventsCreate,    setEventsCreate]    = useState(false);
+  const [profileInitTab,  setProfileInitTab]  = useState(null);
 
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
+  function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
 
   return (
     <div className="home-page">
-      <Navbar onMessagesClick={() => setSection('messages')} onProfileClick={() => setSection('profile')} />
+      <Navbar onMessagesClick={() => setSection('messages')} onProfileClick={() => setSection('profile')} onConnectionsClick={() => goToProfileTab('Connections')} onPostsClick={() => goToProfileTab('Feed')} />
       <div className="home-body">
         {section === 'minisites' ? (
           <MiniSitesPage
@@ -45,6 +47,8 @@ export default function HomePage() {
             onMessagesClick={() => setSection('messages')}
             onCalendarClick={() => setSection('calendar')}
             onMinisitesClick={() => setSection('minisites')}
+            initialTab={profileInitTab}
+            onInitTabConsumed={() => setProfileInitTab(null)}
           />
         ) : section === 'library' ? (
           <LibraryPage

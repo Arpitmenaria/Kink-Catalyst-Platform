@@ -1,0 +1,259 @@
+import { useState, useRef, useEffect } from 'react';
+import './DateTimePicker.css';
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function ChevLeft() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
+}
+function ChevRight() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+}
+function CalIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+}
+function ClockIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+}
+
+export function CustomDatePicker({ value, onChange, min, max, disabled, placeholder = 'Select date', name, hasError }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const minDate = min ? (() => { const d = new Date(min + 'T00:00:00'); d.setHours(0,0,0,0); return d; })() : null;
+  const maxDate = max ? (() => { const d = new Date(max + 'T00:00:00'); d.setHours(0,0,0,0); return d; })() : null;
+  const selected = value ? (() => { const d = new Date(value + 'T00:00:00'); d.setHours(0,0,0,0); return d; })() : null;
+
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState(() => {
+    if (value) return new Date(value + 'T00:00:00');
+    if (min) return new Date(min + 'T00:00:00');
+    return new Date();
+  });
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (value) setView(new Date(value + 'T00:00:00'));
+  }, [value]);
+
+  const year = view.getFullYear();
+  const month = view.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month, d);
+    cells.push(date);
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  function isDisabled(date) {
+    if (!date) return true;
+    if (minDate && date < minDate) return true;
+    if (maxDate && date > maxDate) return true;
+    return false;
+  }
+
+  function selectDate(date) {
+    const iso = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    onChange({ target: { name, value: iso } });
+    setOpen(false);
+  }
+
+  const displayValue = selected
+    ? `${SHORT_MONTHS[selected.getMonth()]} ${selected.getDate()}, ${selected.getFullYear()}`
+    : '';
+
+  return (
+    <div className={`dtp-wrap${disabled ? ' dtp-wrap--disabled' : ''}`} ref={ref}>
+      <div
+        className={`dtp-field${open ? ' dtp-field--open' : ''}${hasError ? ' dtp-field--error' : ''}`}
+        onClick={() => !disabled && setOpen(v => !v)}
+      >
+        <CalIcon />
+        <span className={`dtp-val${!displayValue ? ' dtp-val--ph' : ''}`}>
+          {displayValue || placeholder}
+        </span>
+        <svg className={`dtp-chevron${open ? ' dtp-chevron--up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      {open && (
+        <div className="dtp-dropdown dtp-dropdown--cal">
+          <div className="dtp-cal-nav">
+            <button className="dtp-nav-btn" onClick={() => setView(new Date(year, month - 1, 1))}><ChevLeft /></button>
+            <span className="dtp-month-label">{MONTHS[month]} {year}</span>
+            <button className="dtp-nav-btn" onClick={() => setView(new Date(year, month + 1, 1))}><ChevRight /></button>
+          </div>
+          <div className="dtp-day-names">
+            {DAYS.map(d => <span key={d} className="dtp-day-name">{d}</span>)}
+          </div>
+          <div className="dtp-grid">
+            {cells.map((date, i) => {
+              if (!date) return <span key={i} className="dtp-cell dtp-cell--empty" />;
+              const dis = isDisabled(date);
+              const isSel = selected && date.toDateString() === selected.toDateString();
+              const isToday = date.toDateString() === today.toDateString();
+              return (
+                <button
+                  key={i}
+                  className={`dtp-cell${isSel ? ' dtp-cell--sel' : ''}${isToday && !isSel ? ' dtp-cell--today' : ''}${dis ? ' dtp-cell--dis' : ''}`}
+                  disabled={dis}
+                  onClick={() => selectDate(date)}
+                  type="button"
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+          {selected && (
+            <div className="dtp-footer">
+              <button className="dtp-clear-btn" type="button" onClick={() => { onChange({ target: { name, value: '' } }); setOpen(false); }}>Clear</button>
+              <span className="dtp-selected-label">{displayValue}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function CustomTimePicker({ value, onChange, disabled, placeholder = 'Select time', name, min }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const hrScrollRef = useRef(null);
+  const minScrollRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const parsed = value ? value.split(':').map(Number) : [null, null];
+  const [selH, selM] = parsed;
+
+  const minParsed = min ? min.split(':').map(Number) : null;
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
+
+  function isHourDis(h) {
+    if (!minParsed) return false;
+    return h < minParsed[0];
+  }
+  function isMinDis(m) {
+    if (!minParsed || selH === null) return false;
+    if (selH > minParsed[0]) return false;
+    if (selH === minParsed[0]) return m < minParsed[1];
+    return true;
+  }
+
+  function select(h, m) {
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    onChange({ target: { name, value: `${hh}:${mm}` } });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    setTimeout(() => {
+      if (hrScrollRef.current) {
+        const target = hrScrollRef.current.querySelector('.dtp-time-item--sel') || hrScrollRef.current.querySelector('.dtp-time-item:not(.dtp-time-item--dis)');
+        target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      if (minScrollRef.current) {
+        const target = minScrollRef.current.querySelector('.dtp-time-item--sel') || minScrollRef.current.querySelector('.dtp-time-item:not(.dtp-time-item--dis)');
+        target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }, 60);
+  }, [open]);
+
+  const displayValue = value ? (() => {
+    const h = selH;
+    const m = selM;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  })() : '';
+
+  return (
+    <div className={`dtp-wrap${disabled ? ' dtp-wrap--disabled' : ''}`} ref={ref}>
+      <div
+        className={`dtp-field${open ? ' dtp-field--open' : ''}`}
+        onClick={() => !disabled && setOpen(v => !v)}
+      >
+        <ClockIcon />
+        <span className={`dtp-val${!displayValue ? ' dtp-val--ph' : ''}`}>
+          {displayValue || placeholder}
+        </span>
+        <svg className={`dtp-chevron${open ? ' dtp-chevron--up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      {open && (
+        <div className="dtp-dropdown dtp-dropdown--time">
+          <div className="dtp-time-header">
+            <span>Hour</span>
+            <span>Minute</span>
+          </div>
+          <div className="dtp-time-cols">
+            <div className="dtp-time-scroll" ref={hrScrollRef}>
+              {hours.map(h => {
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 === 0 ? 12 : h % 12;
+                const dis = isHourDis(h);
+                const sel = selH === h;
+                return (
+                  <button
+                    key={h}
+                    type="button"
+                    className={`dtp-time-item${sel ? ' dtp-time-item--sel' : ''}${dis ? ' dtp-time-item--dis' : ''}`}
+                    disabled={dis}
+                    onClick={() => select(h, selM ?? 0)}
+                  >
+                    <span className="dtp-time-num">{String(h12).padStart(2,'0')}</span>
+                    <span className="dtp-time-ampm">{ampm}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="dtp-time-divider" />
+            <div className="dtp-time-scroll" ref={minScrollRef}>
+              {minutes.map(m => {
+                const dis = isMinDis(m);
+                const sel = selM !== null && selM === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`dtp-time-item${sel ? ' dtp-time-item--sel' : ''}${dis ? ' dtp-time-item--dis' : ''}`}
+                    disabled={dis}
+                    onClick={() => select(selH ?? 0, m)}
+                  >
+                    <span className="dtp-time-num">:{String(m).padStart(2,'0')}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {value && (
+            <div className="dtp-footer">
+              <button className="dtp-clear-btn" type="button" onClick={() => { onChange({ target: { name, value: '' } }); setOpen(false); }}>Clear</button>
+              <span className="dtp-selected-label">{displayValue}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

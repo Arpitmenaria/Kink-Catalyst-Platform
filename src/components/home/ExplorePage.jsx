@@ -185,7 +185,7 @@ export default function ExplorePage({ onBack }) {
             <span className="ep-stat-lbl">Total Posts</span>
           </div>
           <div className="ep-stat-pill">
-            <span className="ep-stat-num">2456</span>
+            <span className="ep-stat-num">300</span>
             <span className="ep-stat-lbl">Total Friends</span>
           </div>
         </div>
