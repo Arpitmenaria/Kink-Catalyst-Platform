@@ -284,118 +284,191 @@ const MODAL_CONTACTS = [
   { id: '4', name: 'David Park',      role: 'Community Manager',   color: '#6d28d9' },
 ];
 
-function NewMessageModal({ onClose }) {
-  const [groupName, setGroupName]   = useState('');
+function NewMessageModal({ onClose, onStartConversation }) {
+  const [view,        setView]        = useState('dm'); // 'dm' | 'group'
+  const [search,      setSearch]      = useState('');
+  const [groupName,   setGroupName]   = useState('');
   const [description, setDescription] = useState('');
-  const [selected, setSelected]     = useState(['2']);
-  const [contactSearch, setContactSearch] = useState('');
+  const [selected,    setSelected]    = useState([]);
 
   function toggleContact(id) {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
   const filtered = MODAL_CONTACTS.filter(c =>
-    c.name.toLowerCase().includes(contactSearch.toLowerCase())
+    c.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  function handleSelectDM(contact) {
+    onStartConversation?.(contact);
+    onClose();
+  }
+
+  function switchToGroup() {
+    setSearch('');
+    setSelected([]);
+    setView('group');
+  }
+
+  function switchToDM() {
+    setSearch('');
+    setGroupName('');
+    setDescription('');
+    setSelected([]);
+    setView('dm');
+  }
 
   return (
     <div className="nm-overlay" onClick={onClose}>
       <div className="nm-modal" onClick={e => e.stopPropagation()}>
+
         {/* Header */}
         <div className="nm-header">
           <div>
-            <h2 className="nm-title">New Message</h2>
-            <p className="nm-subtitle">Start a conversation or create a group chat.</p>
+            <h2 className="nm-title">{view === 'dm' ? 'New Message' : 'Create Group'}</h2>
+            <p className="nm-subtitle">
+              {view === 'dm' ? 'Search for someone to start a conversation.' : 'Set up a group chat with your contacts.'}
+            </p>
           </div>
           <button className="nm-close-btn" onClick={onClose}>✕</button>
         </div>
 
-        {/* Create Group link */}
         <div className="nm-body">
-          <button className="nm-group-link">
-            <GroupNewIcon /> Create New Group
-          </button>
+          {/* ── DM view ── */}
+          {view === 'dm' && (
+            <>
+              <button className="nm-group-link" onClick={switchToGroup}>
+                <GroupNewIcon /> Create New Group
+              </button>
 
-          {/* Form row: image upload + fields */}
-          <div className="nm-form-row">
-            <div className="nm-img-upload">
-              <CameraIcon />
-              <span className="nm-img-badge"><CheckSmIcon /></span>
-            </div>
-            <div className="nm-form-fields">
-              <div className="nm-field">
-                <label className="nm-label">Group Name</label>
+              <div className="nm-contact-search-wrap" style={{ marginBottom: 12 }}>
+                <SearchIcon />
                 <input
-                  className="nm-input"
-                  placeholder="Enter group name..."
-                  value={groupName}
-                  onChange={e => setGroupName(e.target.value)}
+                  className="nm-contact-search"
+                  placeholder="Search people..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  autoFocus
                 />
               </div>
-              <div className="nm-field">
-                <label className="nm-label">Description (Optional)</label>
-                <textarea
-                  className="nm-textarea"
-                  placeholder="What's this group about?"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Suggested Contacts */}
-          <div className="nm-contacts-section">
-            <div className="nm-contacts-header">
-              <span className="nm-contacts-title">Suggested Contacts</span>
-              <div className="nm-contacts-right">
-                <div className="nm-contact-search-wrap">
-                  <SearchIcon />
-                  <input
-                    className="nm-contact-search"
-                    placeholder="Search contacts..."
-                    value={contactSearch}
-                    onChange={e => setContactSearch(e.target.value)}
-                  />
+              <div className="nm-contacts-section">
+                <span className="nm-contacts-title">Suggested</span>
+                <div className="nm-contact-list">
+                  {filtered.map(c => (
+                    <div
+                      key={c.id}
+                      className="nm-contact-item"
+                      onClick={() => handleSelectDM(c)}
+                    >
+                      <div className="nm-contact-avatar" style={{ background: c.color }}>
+                        {initials(c.name)}
+                      </div>
+                      <div className="nm-contact-info">
+                        <p className="nm-contact-name">{c.name}</p>
+                        <p className="nm-contact-role">{c.role}</p>
+                      </div>
+                      <ArrowRightSmIcon />
+                    </div>
+                  ))}
+                  {filtered.length === 0 && (
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No contacts found.</p>
+                  )}
                 </div>
-                <button className="nm-select-all" onClick={() => setSelected(MODAL_CONTACTS.map(c => c.id))}>
-                  Select All
-                </button>
               </div>
-            </div>
-            <div className="nm-contact-list">
-              {filtered.map(c => {
-                const checked = selected.includes(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    className={`nm-contact-item${checked ? ' nm-contact-item--selected' : ''}`}
-                    onClick={() => toggleContact(c.id)}
-                  >
-                    <div className="nm-contact-avatar" style={{ background: c.color }}>
-                      {initials(c.name)}
-                    </div>
-                    <div className="nm-contact-info">
-                      <p className="nm-contact-name">{c.name}</p>
-                      <p className="nm-contact-role">{c.role}</p>
-                    </div>
-                    <div className={`nm-checkbox${checked ? ' nm-checkbox--checked' : ''}`}>
-                      {checked && <CheckSmIcon />}
-                    </div>
+            </>
+          )}
+
+          {/* ── Group view ── */}
+          {view === 'group' && (
+            <>
+              <div className="nm-form-row">
+                <div className="nm-img-upload">
+                  <CameraIcon />
+                  <span className="nm-img-badge"><CheckSmIcon /></span>
+                </div>
+                <div className="nm-form-fields">
+                  <div className="nm-field">
+                    <label className="nm-label">Group Name</label>
+                    <input
+                      className="nm-input"
+                      placeholder="Enter group name..."
+                      value={groupName}
+                      onChange={e => setGroupName(e.target.value)}
+                      autoFocus
+                    />
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  <div className="nm-field">
+                    <label className="nm-label">Description (Optional)</label>
+                    <textarea
+                      className="nm-textarea"
+                      placeholder="What's this group about?"
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="nm-contacts-section">
+                <div className="nm-contacts-header">
+                  <span className="nm-contacts-title">Add Members</span>
+                  <div className="nm-contacts-right">
+                    <div className="nm-contact-search-wrap">
+                      <SearchIcon />
+                      <input
+                        className="nm-contact-search"
+                        placeholder="Search contacts..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                      />
+                    </div>
+                    <button className="nm-select-all" onClick={() => setSelected(MODAL_CONTACTS.map(c => c.id))}>
+                      Select All
+                    </button>
+                  </div>
+                </div>
+                <div className="nm-contact-list">
+                  {filtered.map(c => {
+                    const checked = selected.includes(c.id);
+                    return (
+                      <div
+                        key={c.id}
+                        className={`nm-contact-item${checked ? ' nm-contact-item--selected' : ''}`}
+                        onClick={() => toggleContact(c.id)}
+                      >
+                        <div className="nm-contact-avatar" style={{ background: c.color }}>
+                          {initials(c.name)}
+                        </div>
+                        <div className="nm-contact-info">
+                          <p className="nm-contact-name">{c.name}</p>
+                          <p className="nm-contact-role">{c.role}</p>
+                        </div>
+                        <div className={`nm-checkbox${checked ? ' nm-checkbox--checked' : ''}`}>
+                          {checked && <CheckSmIcon />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
         <div className="nm-footer">
-          <button className="nm-cancel-btn" onClick={onClose}>Cancel</button>
-          <button className="nm-create-btn">
-            Create Group <ArrowRightSmIcon />
-          </button>
+          {view === 'dm' ? (
+            <button className="nm-cancel-btn" onClick={onClose}>Cancel</button>
+          ) : (
+            <>
+              <button className="nm-cancel-btn" onClick={switchToDM}>Back</button>
+              <button className="nm-create-btn" disabled={!groupName.trim() || selected.length === 0}>
+                Create Group <ArrowRightSmIcon />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -610,7 +683,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           </div>
         </div>
 
-        {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} />}
+        {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} onStartConversation={conv => { setNewMsgOpen(false); openConversation(conv); }} />}
 
         {/* Contact info panel */}
         <div className="msg-contact-panel" key={`panel-${chatKey}`}>
@@ -672,7 +745,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         }}
       />
 
-      {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} />}
+      {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} onStartConversation={conv => { setNewMsgOpen(false); openConversation(conv); }} />}
 
       <div className="msg-main">
         <div className="msg-header">
