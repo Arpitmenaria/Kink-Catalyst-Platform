@@ -41,18 +41,108 @@ function WhatsAppIcon()    { return <svg width="15" height="15" viewBox="0 0 24 
 const DISC_CATEGORIES = ['All', 'Music', 'Tech', 'Business', 'Art', 'Workshop', 'Social'];
 
 const BOOKED_EVENTS = [
-  { id: 'b1', day: '05', month: 'OCT', img: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=600&q=80&fit=crop', category: 'Tech',     catColor: '#0891b2', location: 'San Jose, CA',   title: 'Design Systems Summit 2024', desc: 'A deep dive into scalable design systems, component libraries and tooling for modern teams.', attending: '3.2k', seats: null,            soldOut: false },
-  { id: 'b2', day: '18', month: 'OCT', img: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=600&q=80&fit=crop', category: 'Business', catColor: '#059669', location: 'Seattle, WA',   title: 'Founders Forum 2024',        desc: 'An exclusive gathering of founders, VCs and operators sharing lessons from building companies.', attending: '1.8k', seats: '10 seats left', soldOut: false },
-  { id: 'b3', day: '30', month: 'OCT', img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80&fit=crop', category: 'Workshop', catColor: '#f59e0b', location: 'Remote',       title: 'Full-Stack Web Dev Bootcamp',desc: 'Intensive 2-day workshop covering React, Node.js and cloud deployment with hands-on projects.', attending: '540',  seats: '5 seats left',  soldOut: false },
+  {
+    id: 'b1', day: '05', month: 'OCT', monthFull: 'October',
+    fullDate: 'Sunday 5 October 2025 at 09:00',
+    img: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=600&q=80&fit=crop',
+    category: 'Tech', catColor: '#0891b2', location: 'San Jose, CA',
+    title: 'Design Systems Summit 2024',
+    desc: 'A deep dive into scalable design systems, component libraries and tooling for modern teams.',
+    attending: '3.2k', seats: null, soldOut: false, responded: '3,200',
+    about: 'Design Systems Summit brings together the world\'s leading design engineers, product designers, and engineering leaders for two days of in-depth workshops and talks. Explore token-based theming, component governance, accessibility at scale, and the future of collaborative design tooling. Whether you\'re just starting a design system or scaling one across hundreds of teams, this is the event for you.',
+    venue: 'San Jose Convention Center, South Hall',
+  },
+  {
+    id: 'b2', day: '18', month: 'OCT', monthFull: 'October',
+    fullDate: 'Saturday 18 October 2025 at 18:00',
+    img: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=600&q=80&fit=crop',
+    category: 'Business', catColor: '#059669', location: 'Seattle, WA',
+    title: 'Founders Forum 2024',
+    desc: 'An exclusive gathering of founders, VCs and operators sharing lessons from building companies.',
+    attending: '1.8k', seats: '10 seats left', soldOut: false, responded: '1,800',
+    about: 'Founders Forum is the most intimate gathering of builders and investors in the Pacific Northwest. Hear candid stories from founders who\'ve navigated product-market fit, rapid scaling, and pivots. Connect one-on-one with top-tier VCs, angels, and operators in a setting designed for real conversations, not pitches. Applications are reviewed — only verified founders and operators gain entry.',
+    venue: 'Hyatt Regency Seattle, Grand Ballroom',
+  },
+  {
+    id: 'b3', day: '30', month: 'OCT', monthFull: 'October',
+    fullDate: 'Thursday 30 October 2025 at 09:00',
+    img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80&fit=crop',
+    category: 'Workshop', catColor: '#f59e0b', location: 'Remote',
+    title: 'Full-Stack Web Dev Bootcamp',
+    desc: 'Intensive 2-day workshop covering React, Node.js and cloud deployment with hands-on projects.',
+    attending: '540', seats: '5 seats left', soldOut: false, responded: '540',
+    about: 'This hands-on 2-day intensive covers the modern full-stack JavaScript ecosystem from scratch to deployment. Day one focuses on React 19 patterns, state management, and component architecture. Day two dives into Node.js APIs, database integration, and deploying on cloud platforms. You\'ll leave with a fully built project, reviewed code, and a mentor\'s feedback on your architecture decisions.',
+    venue: 'Virtual — Zoom + Discord',
+  },
 ];
 
 const DISC_EVENTS = [
-  { id: 'd1', day: '24', month: 'OCT', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80&fit=crop', category: 'Live Music',     catColor: '#7c3aed', location: 'Austin, TX',       title: 'Neon Beats: Electronic Night',   desc: 'Experience the pulse of modern electronic beats in an immersive 360-degree sound environment.', attending: '1.2k', seats: '45 seats left', soldOut: false },
-  { id: 'd2', day: '15', month: 'NOV', img: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80&fit=crop', category: 'Tech & Startup', catColor: '#0891b2', location: 'San Francisco, CA', title: 'Future of AI: Innovation Summit', desc: 'Join industry leaders for a deep dive into the next generation of artificial intelligence and technology.', attending: '2.5k', seats: '120 seats left', soldOut: false },
-  { id: 'd3', day: '02', month: 'DEC', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80&fit=crop', category: 'Business',       catColor: '#059669', location: 'New York, NY',     title: 'Executive Networking Mixer',     desc: 'An exclusive evening for senior executives and entrepreneurs to connect in a premium setting.', attending: '800',  seats: '25 seats left', soldOut: false },
-  { id: 'd4', day: '12', month: 'DEC', img: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80&fit=crop', category: 'Art & Design',   catColor: '#db2777', location: 'London, UK',       title: 'Creative Design Workshop',       desc: 'Master the fundamentals of modern UI/UX design in this hands-on intensive workshop.', attending: '300',  seats: null, soldOut: true },
-  { id: 'd5', day: '20', month: 'JAN', img: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600&q=80&fit=crop', category: 'Music',          catColor: '#7c3aed', location: 'Chicago, IL',     title: 'Jazz Under the Stars',           desc: 'A magical evening of live jazz performances under the open sky with top artists from around the world.', attending: '950',  seats: '60 seats left', soldOut: false },
-  { id: 'd6', day: '28', month: 'JAN', img: 'https://images.unsplash.com/photo-1559223607-b4d0555ae227?w=600&q=80&fit=crop', category: 'Workshop',        catColor: '#f59e0b', location: 'Berlin, DE',      title: 'Startup Pitch Competition',      desc: 'Present your startup idea to top-tier investors and win funding, mentorship, and global recognition.', attending: '420',  seats: '15 seats left', soldOut: false },
+  {
+    id: 'd1', day: '24', month: 'OCT', monthFull: 'October',
+    fullDate: 'Thursday 24 October 2025 at 21:00',
+    img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80&fit=crop',
+    category: 'Live Music', catColor: '#7c3aed', location: 'Austin, TX',
+    title: 'Neon Beats: Electronic Night',
+    desc: 'Experience the pulse of modern electronic beats in an immersive 360-degree sound environment.',
+    attending: '1.2k', seats: '45 seats left', soldOut: false, responded: '1,200',
+    about: 'Neon Beats is Austin\'s most anticipated underground electronic music event. An immersive 360-degree audio-visual experience featuring headlining DJs from Berlin, Amsterdam, and Tokyo, laser installations, and a lineup that spans house, techno, and ambient electronica. Doors open at 9 PM, headliners hit the stage at midnight. General and VIP areas available.',
+    venue: 'Austin360 Amphitheatre, Circuit of the Americas',
+  },
+  {
+    id: 'd2', day: '15', month: 'NOV', monthFull: 'November',
+    fullDate: 'Saturday 15 November 2025 at 09:00',
+    img: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80&fit=crop',
+    category: 'Tech & Startup', catColor: '#0891b2', location: 'San Francisco, CA',
+    title: 'Future of AI: Innovation Summit',
+    desc: 'Join industry leaders for a deep dive into the next generation of artificial intelligence and technology.',
+    attending: '2.5k', seats: '120 seats left', soldOut: false, responded: '2,500',
+    about: 'The Future of AI Summit assembles researchers, founders, and enterprise leaders building the next generation of intelligent systems. Tracks cover foundation models, multimodal AI, agentic systems, AI safety, and enterprise adoption. Expect live demos, panel debates, and direct access to the minds shaping the trajectory of artificial intelligence over the next decade.',
+    venue: 'Moscone Center, West Hall',
+  },
+  {
+    id: 'd3', day: '02', month: 'DEC', monthFull: 'December',
+    fullDate: 'Tuesday 2 December 2025 at 19:00',
+    img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80&fit=crop',
+    category: 'Business', catColor: '#059669', location: 'New York, NY',
+    title: 'Executive Networking Mixer',
+    desc: 'An exclusive evening for senior executives and entrepreneurs to connect in a premium setting.',
+    attending: '800', seats: '25 seats left', soldOut: false, responded: '800',
+    about: 'A curated evening of high-signal networking for C-suite leaders, serial entrepreneurs, and Fortune 500 decision-makers. Hosted in a private penthouse setting with a 3-course dinner, open bar, and structured introductions — no pitches, no slides, just genuine conversation. Attendees are vetted. Each ticket grants access to our private Slack community for ongoing connections.',
+    venue: 'The Pierre Hotel, Grand Ballroom',
+  },
+  {
+    id: 'd4', day: '12', month: 'DEC', monthFull: 'December',
+    fullDate: 'Friday 12 December 2025 at 10:00',
+    img: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80&fit=crop',
+    category: 'Art & Design', catColor: '#db2777', location: 'London, UK',
+    title: 'Creative Design Workshop',
+    desc: 'Master the fundamentals of modern UI/UX design in this hands-on intensive workshop.',
+    attending: '300', seats: null, soldOut: true, responded: '300',
+    about: 'This sold-out intensive workshop covers the full design thinking process from user research to high-fidelity prototyping. Led by senior designers from top studios, the day is structured around real briefs with peer critique sessions. Participants receive Figma templates, a curated resource pack, and lifetime access to workshop recordings. Entry is no longer available — join the waitlist for future dates.',
+    venue: 'The Design Museum, Commonwealth Room, London',
+  },
+  {
+    id: 'd5', day: '20', month: 'JAN', monthFull: 'January',
+    fullDate: 'Tuesday 20 January 2026 at 19:30',
+    img: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600&q=80&fit=crop',
+    category: 'Music', catColor: '#7c3aed', location: 'Chicago, IL',
+    title: 'Jazz Under the Stars',
+    desc: 'A magical evening of live jazz performances under the open sky with top artists from around the world.',
+    attending: '950', seats: '60 seats left', soldOut: false, responded: '950',
+    about: 'Jazz Under the Stars is a landmark event in Chicago\'s annual music calendar. Set against the iconic skyline, the evening features four headline acts spanning bebop, fusion, and contemporary jazz. Guests are invited to bring blankets, enjoy curated food vendors, and lose themselves in two hours of uninterrupted live performance. Weather contingency plan in place — event will move to the indoor pavilion if needed.',
+    venue: 'Millennium Park, Jay Pritzker Pavilion',
+  },
+  {
+    id: 'd6', day: '28', month: 'JAN', monthFull: 'January',
+    fullDate: 'Wednesday 28 January 2026 at 14:00',
+    img: 'https://images.unsplash.com/photo-1559223607-b4d0555ae227?w=600&q=80&fit=crop',
+    category: 'Workshop', catColor: '#f59e0b', location: 'Berlin, DE',
+    title: 'Startup Pitch Competition',
+    desc: 'Present your startup idea to top-tier investors and win funding, mentorship, and global recognition.',
+    attending: '420', seats: '15 seats left', soldOut: false, responded: '420',
+    about: 'Berlin\'s premier startup pitch competition returns for its 8th edition. Teams of up to 3 founders get 5 minutes to pitch and 5 minutes of Q&A in front of a panel of 12 leading European VCs. Top 3 teams win cash prizes (€50k, €20k, €10k), 6 months of co-working space, and fast-track consideration from participating funds. Apply early — only 30 slots available across 8 verticals.',
+    venue: 'Factory Berlin, Görlitzer Park Campus',
+  },
 ];
 
 const REVIEW_FRIENDS = [
@@ -62,6 +152,54 @@ const REVIEW_FRIENDS = [
 ];
 
 function reviewInitials(name) { return name.split(' ').map(w => w[0]).join('').toUpperCase(); }
+function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
+function BackArrowIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
+function SendIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
+function ThumbUpIcon()     { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>; }
+function BookmarkIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>; }
+function BellIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>; }
+function UnfollowIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>; }
+function FlagIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
+
+const CREATED_EVENTS = [
+  {
+    id: 'c1', day: '15', month: 'JUL', monthFull: 'July',
+    fullDate: 'Wednesday 15 July 2026 at 18:00',
+    img: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80&fit=crop',
+    category: 'Tech & Startup', catColor: '#0891b2',
+    location: 'Bengaluru, India',
+    title: 'DevFest India 2026',
+    desc: 'Annual developer festival bringing together 5000+ engineers, designers and product leaders.',
+    attending: '4.8k', seats: '200 seats left', soldOut: false, responded: '4,820',
+    about: 'DevFest India is the largest annual developer festival in South Asia, bringing together engineers, designers, product managers, and tech leaders from across the country and beyond. This year\'s theme is "Build for Billions" — focusing on AI-first products, scalable infrastructure, and developer experience. Expect 60+ sessions, live demos, hackathons, and networking with the brightest minds in tech.',
+    venue: 'KTPO Convention Centre, Whitefield',
+  },
+  {
+    id: 'c2', day: '28', month: 'AUG', monthFull: 'August',
+    fullDate: 'Friday 28 August 2026 at 19:30',
+    img: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200&q=80&fit=crop',
+    category: 'Art & Design', catColor: '#db2777',
+    location: 'Mumbai, India',
+    title: 'Design Spectrum 2026',
+    desc: 'A premier design conference exploring the intersection of technology, creativity, and human experience.',
+    attending: '2.1k', seats: '50 seats left', soldOut: false, responded: '2,140',
+    about: 'Design Spectrum is a premier design conference that brings together the world\'s most innovative designers, creative directors, and product thinkers. Explore workshops, keynotes, and exhibitions spanning UI/UX, motion, brand identity, and emerging creative tools. A one-of-a-kind event where craft meets culture.',
+    venue: 'Nesco Exhibition Centre, Goregaon',
+  },
+];
+
+const DISCUSSION_COMMENTS = [
+  { id: 1, name: 'Priya Nair',    avatar: 'https://i.pravatar.cc/36?img=5',  time: '2 hours ago',  text: 'Super excited for this! Will there be recordings available for those who miss a session?', likes: 14 },
+  { id: 2, name: 'Rohan Mehta',   avatar: 'https://i.pravatar.cc/36?img=12', time: '5 hours ago',  text: 'Attended last year — absolute top-tier event. The networking alone is worth it.', likes: 31 },
+  { id: 3, name: 'Sneha Kapoor',  avatar: 'https://i.pravatar.cc/36?img=20', time: '1 day ago',    text: 'Will there be a beginner-friendly track this year? First-time attendee here!', likes: 8 },
+];
+
+const RESPONDED_AVATARS = [
+  'https://i.pravatar.cc/28?img=1',
+  'https://i.pravatar.cc/28?img=3',
+  'https://i.pravatar.cc/28?img=7',
+  'https://i.pravatar.cc/28?img=9',
+];
 
 const TICKET_ICONS = { star: <StarIcon />, ticket: <TicketIcon />, clock: <ClockIcon /> };
 const MAX_PER_USER_OPTIONS = ['1', '2', '3', '4', '5', '10', 'Unlimited'];
@@ -104,6 +242,12 @@ const HEART_BURST_PATHS = [
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate }) {
   const [showCreate,    setShowCreate]    = useState(startCreate || false);
   const [discTab,       setDiscTab]       = useState('upcoming');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [evDetailTab,   setEvDetailTab]   = useState('about');
+  const [goingIds,      setGoingIds]      = useState(new Set());
+  const [comment,       setComment]       = useState('');
+  const [comments,      setComments]      = useState(DISCUSSION_COMMENTS);
+  const [moreOpen,      setMoreOpen]      = useState(false);
   const [discCat,       setDiscCat]       = useState('All');
   const [savedIds,       setSavedIds]       = useState(new Set());
   const [heartingIds,    setHeartingIds]    = useState(new Set());
@@ -225,7 +369,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }
 
   const ALL_EVENTS = [...DISC_EVENTS, ...BOOKED_EVENTS];
-  const baseEvents = discTab === 'booked' ? BOOKED_EVENTS : discTab === 'favorites' ? ALL_EVENTS.filter(ev => savedIds.has(ev.id)) : DISC_EVENTS;
+  const baseEvents = discTab === 'booked' ? BOOKED_EVENTS
+    : discTab === 'favorites' ? ALL_EVENTS.filter(ev => savedIds.has(ev.id))
+    : discTab === 'created'   ? CREATED_EVENTS
+    : DISC_EVENTS;
   const filteredEvents = baseEvents.filter(ev => {
     if (discCat !== 'All' && !ev.category.toLowerCase().includes(discCat.toLowerCase())) return false;
     if (filters.categories.size > 0) {
@@ -261,8 +408,251 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       />
       {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
+      {/* ── Event detail view ── */}
+      {!showCreate && selectedEvent && (
+        <div className="ev-detail-page">
+
+          {/* Cover image */}
+          <div className="ev-detail-cover">
+            <img src={selectedEvent.img} alt={selectedEvent.title} className="ev-detail-cover-img" />
+            <button className="ev-detail-cover-back-btn" onClick={() => setSelectedEvent(null)} title="Back to Events">
+              <BackArrowIcon />
+            </button>
+          </div>
+
+          {/* Hero row: calendar badge + info */}
+          <div className="ev-detail-hero">
+            <div className="ev-detail-cal-badge">
+              <div className="ev-detail-cal-top">{selectedEvent.month}</div>
+              <div className="ev-detail-cal-day">{selectedEvent.day}</div>
+            </div>
+            <div className="ev-detail-hero-info">
+              <p className="ev-detail-datetime">{selectedEvent.fullDate}</p>
+              <h1 className="ev-detail-title">{selectedEvent.title}</h1>
+              <p className="ev-detail-location"><MapPinIcon /> {selectedEvent.location}</p>
+            </div>
+          </div>
+
+          {/* Tabs + action row */}
+          <div className="ev-detail-tab-row">
+            <div className="ev-detail-tabs">
+              <button
+                className={`ev-detail-tab${evDetailTab === 'about' ? ' ev-detail-tab--active' : ''}`}
+                onClick={() => setEvDetailTab('about')}
+              >About</button>
+              <button
+                className={`ev-detail-tab${evDetailTab === 'discussion' ? ' ev-detail-tab--active' : ''}`}
+                onClick={() => setEvDetailTab('discussion')}
+              >Discussion</button>
+            </div>
+            <div className="ev-detail-actions">
+              {selectedEvent._sourceTab === 'created' ? (
+                <button className="ev-detail-going-btn">
+                  <EditIcon /> Edit Event
+                </button>
+              ) : (
+                <button
+                  className={`ev-detail-going-btn${goingIds.has(selectedEvent.id) ? ' ev-detail-going-btn--active' : ''}`}
+                  onClick={() => setGoingIds(s => { const n = new Set(s); n.has(selectedEvent.id) ? n.delete(selectedEvent.id) : n.add(selectedEvent.id); return n; })}
+                >
+                  {goingIds.has(selectedEvent.id) && <CheckIcon />}
+                  {goingIds.has(selectedEvent.id) ? 'Going' : 'Going?'}
+                  <ChevronDownIcon />
+                </button>
+              )}
+              <div className="ev-more-wrap">
+                <button className="ev-detail-more-btn" onClick={() => setMoreOpen(v => !v)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </button>
+                {moreOpen && (
+                  <>
+                    <div className="ev-more-backdrop" onClick={() => setMoreOpen(false)} />
+                    <div className="ev-more-menu">
+                      <div className="ev-more-link-row">
+                        <div className="ev-more-icon"><LinkIcon /></div>
+                        <div>
+                          <p className="ev-more-link-url">https://kick.me/e/{selectedEvent.id}</p>
+                          <p className="ev-more-link-sub">Share this link to invite others</p>
+                        </div>
+                      </div>
+                      <div className="ev-more-divider" />
+                      {(selectedEvent._sourceTab === 'created' ? [
+                        { icon: <EditIcon />,     label: 'Edit Event' },
+                        { icon: <BookmarkIcon />, label: 'Save' },
+                        { icon: <CalendarIcon />, label: 'Add to Calendar' },
+                        { icon: <FlagIcon />,     label: 'Cancel Event' },
+                      ] : [
+                        { icon: <BookmarkIcon />, label: 'Save' },
+                        { icon: <BellIcon />,     label: 'Notification settings' },
+                        { icon: <UnfollowIcon />, label: 'Unfollow event' },
+                        { icon: <CalendarIcon />, label: 'Add to Calendar' },
+                        { icon: <FlagIcon />,     label: 'Report Event' },
+                      ]).map(item => (
+                        <button key={item.label} className="ev-more-item" onClick={() => setMoreOpen(false)}>
+                          <span className="ev-more-item-icon">{item.icon}</span>
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Body: main + map sidebar */}
+          <div className="ev-detail-body">
+
+            {/* About tab */}
+            {evDetailTab === 'about' && (
+              <>
+                <div className="ev-detail-main">
+
+                  {/* Details card */}
+                  <div className="ev-detail-card">
+                    <h3 className="ev-detail-card-title">Details</h3>
+                    <div className="ev-detail-responded-row">
+                      <div className="ev-detail-avatars">
+                        {RESPONDED_AVATARS.map((src, i) => (
+                          <img key={i} src={src} alt="" className="ev-detail-resp-av" />
+                        ))}
+                      </div>
+                      <span className="ev-detail-responded-txt">{selectedEvent.responded} people responded</span>
+                    </div>
+                  </div>
+
+                  {/* About card */}
+                  <div className="ev-detail-card">
+                    <h3 className="ev-detail-card-title">About the Event</h3>
+                    <p className="ev-detail-about-text">{selectedEvent.about}</p>
+                  </div>
+
+                  {/* Event info card */}
+                  <div className="ev-detail-card">
+                    <h3 className="ev-detail-card-title">Event Info</h3>
+                    <div className="ev-detail-info-rows">
+                      <div className="ev-detail-info-row"><CalendarIcon /><span>{selectedEvent.fullDate}</span></div>
+                      <div className="ev-detail-info-row"><MapPinIcon /><span>{selectedEvent.venue || selectedEvent.location}</span></div>
+                      <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{selectedEvent.category}</span></div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Map sidebar */}
+                <div className="ev-detail-sidebar">
+                  <div className="ev-detail-map-card">
+                    <div className="ev-detail-map-bg">
+                      <div className="ev-detail-map-overlay">
+                        <span className="ev-detail-map-label"><MapPinIcon /> {selectedEvent.location}</span>
+                      </div>
+                    </div>
+                    <div className="ev-detail-map-footer">
+                      <p className="ev-detail-map-venue">{selectedEvent.venue || selectedEvent.location}</p>
+                      <button className="ev-detail-map-btn"><ExternalLinkIcon /> Open in Maps</button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Discussion tab */}
+            {evDetailTab === 'discussion' && (
+              <>
+                {/* Left: comment feed */}
+                <div className="ev-detail-main">
+
+                  {/* Compose */}
+                  <div className="ev-disc-compose">
+                    <img src="https://i.pravatar.cc/36?img=2" alt="you" className="ev-disc-compose-av" />
+                    <input
+                      className="ev-disc-compose-input"
+                      placeholder="Write a comment…"
+                      value={comment}
+                      onChange={e => setComment(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && comment.trim()) {
+                          setComments(c => [{ id: Date.now(), name: 'You', avatar: 'https://i.pravatar.cc/36?img=2', time: 'Just now', text: comment.trim(), likes: 0 }, ...c]);
+                          setComment('');
+                        }
+                      }}
+                    />
+                    <button className="ev-disc-send-btn" onClick={() => {
+                      if (comment.trim()) {
+                        setComments(c => [{ id: Date.now(), name: 'You', avatar: 'https://i.pravatar.cc/36?img=2', time: 'Just now', text: comment.trim(), likes: 0 }, ...c]);
+                        setComment('');
+                      }
+                    }}><SendIcon /></button>
+                  </div>
+
+                  {/* Comments list */}
+                  <div className="ev-disc-comments">
+                    {comments.map(c => (
+                      <div key={c.id} className="ev-disc-comment">
+                        <img src={c.avatar} alt={c.name} className="ev-disc-comment-av" />
+                        <div className="ev-disc-comment-body">
+                          <div className="ev-disc-comment-bubble">
+                            <span className="ev-disc-comment-name">{c.name}</span>
+                            <p className="ev-disc-comment-text">{c.text}</p>
+                          </div>
+                          <div className="ev-disc-comment-meta">
+                            <span>{c.time}</span>
+                            <button className="ev-disc-like-btn"><ThumbUpIcon /> {c.likes > 0 ? c.likes : 'Like'}</button>
+                            <button className="ev-disc-reply-btn">Reply</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+
+                {/* Right: description sidebar */}
+                <div className="ev-detail-sidebar">
+
+                  <div className="ev-detail-card">
+                    <h3 className="ev-detail-card-title">Description</h3>
+
+                    <div className="ev-detail-info-rows" style={{ marginBottom: 16 }}>
+                      <div className="ev-detail-info-row">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>{selectedEvent.responded} people responded</span>
+                      </div>
+                      <div className="ev-detail-info-row">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>Alex Vanguard's Event</span>
+                      </div>
+                      <div className="ev-detail-info-row">
+                        <MapPinIcon />
+                        <span>{selectedEvent.location}</span>
+                      </div>
+                      <div className="ev-detail-info-row">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <span>Public · Anyone can join</span>
+                      </div>
+                    </div>
+
+                    <p className="ev-detail-about-text">{selectedEvent.about}</p>
+
+                    {selectedEvent.category && (
+                      <div style={{ marginTop: 14 }}>
+                        <span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>
+                          {selectedEvent.category}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
+
       {/* ── Discovery view ── */}
-      {!showCreate && (
+      {!showCreate && !selectedEvent && (
         <div className="ev-disc-main">
           {/* Top bar */}
           <div className="ev-disc-topbar">
@@ -272,6 +662,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               <button className={`ev-disc-tab${discTab === 'favorites' ? ' ev-disc-tab--active' : ''}`} onClick={() => setDiscTab('favorites')}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill={discTab === 'favorites' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 Favorites{savedIds.size > 0 && <span className="ev-fav-count">{savedIds.size}</span>}
+              </button>
+              <button className={`ev-disc-tab${discTab === 'created' ? ' ev-disc-tab--active' : ''}`} onClick={() => { setDiscTab('created'); setSelectedEvent(null); }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+                My Created Events<span className="ev-fav-count">{CREATED_EVENTS.length}</span>
               </button>
             </div>
             <div className="ev-disc-topbar-right">
@@ -322,7 +716,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           )}
           <div className={viewMode === 'grid' ? 'ev-disc-grid' : 'ev-disc-list'}>
             {filteredEvents.map(ev => viewMode === 'grid' ? (
-              <div key={ev.id} className="ev-disc-card">
+              <div key={ev.id} className="ev-disc-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-disc-card-img-wrap">
                   <img src={ev.img} alt={ev.title} className="ev-disc-card-img" />
                   <div className="ev-disc-date-badge">
@@ -332,7 +726,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-heart-burst-wrap">
                     <button
                       className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}${heartingIds.has(ev.id) ? ' ev-disc-save-btn--spring' : ''}`}
-                      onClick={() => toggleSave(ev.id)}
+                      onClick={e => { e.stopPropagation(); toggleSave(ev.id); }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     </button>
@@ -358,14 +752,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </span>}
                     </div>
                     {ev.soldOut
-                      ? <button className="ev-disc-book-btn ev-disc-book-btn--sold">Sold Out</button>
-                      : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}`}>{discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
+                      ? <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
+                      : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
                     }
                   </div>
                 </div>
               </div>
             ) : (
-              <div key={ev.id} className="ev-list-card">
+              <div key={ev.id} className="ev-list-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-list-img-wrap">
                   <img src={ev.img} alt={ev.title} className="ev-list-img" />
                   <div className="ev-disc-date-badge ev-list-date-badge">
@@ -393,7 +787,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </div>
                     <div className="ev-list-actions">
                       <div className="ev-heart-burst-wrap">
-                        <button className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}${heartingIds.has(ev.id) ? ' ev-disc-save-btn--spring' : ''}`} onClick={() => toggleSave(ev.id)} style={{ position: 'static', background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '6px 10px' }}>
+                        <button className={`ev-disc-save-btn${savedIds.has(ev.id) ? ' ev-disc-save-btn--saved' : ''}${heartingIds.has(ev.id) ? ' ev-disc-save-btn--spring' : ''}`} onClick={e => { e.stopPropagation(); toggleSave(ev.id); }} style={{ position: 'static', background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '6px 10px' }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         </button>
                         {(heartParticles[ev.id] || []).map(p => (
@@ -401,8 +795,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         ))}
                       </div>
                       {ev.soldOut
-                        ? <button className="ev-disc-book-btn ev-disc-book-btn--sold">Sold Out</button>
-                        : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}`}>{discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
+                        ? <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
+                        : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
                       }
                     </div>
                   </div>
