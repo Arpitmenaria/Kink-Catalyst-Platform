@@ -1277,29 +1277,34 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid #1a1f35;
+  padding: 0 20px;
 }
 
 /* Tabs */
-.adm-tabs { display: flex; gap: 4px; }
+.adm-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #1a1f35;
+}
 
 .adm-tab {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 12px 20px;
   background: none;
   border: none;
-  border-radius: 8px;
+  border-bottom: 3px solid transparent;
   font-size: 13px;
   font-weight: 500;
   color: #5c6a8c;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  margin-bottom: -1px;
+  transition: color 0.18s, border-color 0.18s;
 }
-.adm-tab:hover     { background: #131626; color: #c8cfe0; }
-.adm-tab--active   { background: rgba(37,99,235,0.12); color: #3b82f6; font-weight: 600; }
+.adm-tab:hover     { color: #94a3b8; }
+.adm-tab--active   { color: #3b82f6; border-bottom-color: #3b82f6; font-weight: 600; }
 
 .adm-tab-count {
   background: #2563eb;
@@ -1390,7 +1395,18 @@
 }
 
 .adm-member-name  { font-size: 13.5px; font-weight: 600; color: #d8dff0; margin: 0 0 2px; }
-.adm-member-email { font-size: 12px; color: #4a5270; margin: 0; }
+.adm-member-mutual { font-size: 12px; color: #4a5270; margin: 0; }
+
+.adm-member-joined-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 110px;
+  color: #4a5270;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
 
 /* Role badges */
 .adm-badge {
@@ -2132,26 +2148,29 @@
 .grp-hub-tabs {
   display: flex;
   gap: 4px;
-  background: #111422;
-  border: 1px solid #1a1f35;
+  background: #0d1526;
+  border: 1px solid #131d2e;
   border-radius: 10px;
   padding: 4px;
 }
 
 .grp-hub-tab {
-  padding: 8px 18px;
-  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
   border: none;
+  border-radius: 8px;
   background: none;
-  color: #5c6a8c;
+  color: #4b5a7a;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.grp-hub-tab:hover       { color: #c8cfe0; }
-.grp-hub-tab--active     { background: #1e2a50; color: #e0e6f8; font-weight: 600; }
+.grp-hub-tab--active                          { background: #1d4ed8; color: #fff; }
+.grp-hub-tab:not(.grp-hub-tab--active):hover  { color: #7c8fb0; }
 
 .grp-hub-create-btn {
   display: inline-flex;
@@ -2348,6 +2367,14 @@
   font-size: 11.5px;
   color: #5c6a8c;
   margin: 0;
+}
+
+.hub-card-conn-members {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0 10px;
 }
 
 .hub-card-join {
@@ -2719,6 +2746,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.adm-action-cell .prof-conn-btn:first-child {
+  width: 108px;
+  text-align: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.adm-action-cell .prof-conn-btn:last-child {
+  width: 160px;
+  text-align: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .adm-act-btn {

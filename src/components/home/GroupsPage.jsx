@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import PostCard from './PostCard';
 
 
 /* ── UI icons ── */
@@ -30,7 +31,6 @@ function PlusCircleIcon()   { return <svg width="14" height="14" viewBox="0 0 24
 /* ── Admin Dashboard icons ── */
 function ExportIcon()       { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>; }
 function InviteIcon()       { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>; }
-function FilterIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>; }
 function InsightsIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
 function ChevronLeftIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 function ChevronRightIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
@@ -56,6 +56,9 @@ const ROLE_CONFIG = {
   Member:    { color: '#94a3b8', bg: 'rgba(100,116,139,0.14)', border: 'rgba(100,116,139,0.28)' },
 };
 
+const MEMBER_ROLES   = ['Admin', 'Moderator', 'Member'];
+const MEMBER_JOINED  = ['2023', '2024'];
+
 function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
   const ref = useRef(null);
   const isOpen = openId === memberId;
@@ -79,7 +82,6 @@ function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
         <span className="adm-rs-label">{value}</span>
         <span className={`adm-rs-chevron${isOpen ? ' adm-rs-chevron--up' : ''}`}><ChevronDownIcon /></span>
       </button>
-
       {isOpen && (
         <div className="adm-rs-dropdown">
           {Object.entries(ROLE_CONFIG).map(([role, rc]) => (
@@ -298,19 +300,19 @@ function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, on
 
 /* ── Admin Dashboard mock data ── */
 const ADMIN_MEMBERS = [
-  { id: 1, name: 'Sarah Jenkins',  email: 'sarah.jenkins@design.co',   role: 'group_admin', joined: 'Oct 12, 2023', img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
-  { id: 2, name: 'Marcus Thorne',  email: 'marcus.thorne@devhub.io',    role: 'moderator',   joined: 'Nov 5, 2023',  img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
-  { id: 3, name: 'Alex Rivera',    email: 'alex.r@techlabs.dev',        role: 'member',      joined: 'Jan 8, 2024',  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
-  { id: 4, name: 'Elena Vance',    email: 'elena.v@creativeflow.net',   role: 'member',      joined: 'Feb 20, 2024', img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
-  { id: 5, name: 'James Okafor',   email: 'james.o@buildspace.io',      role: 'member',      joined: 'Mar 14, 2024', img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
-  { id: 6, name: 'Priya Sharma',   email: 'priya.s@codecraft.dev',      role: 'member',      joined: 'Apr 2, 2024',  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
+  { id: 1, name: 'Sarah Jenkins',  title: 'UX Designer at Figma',          mutual: 12, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'], role: 'group_admin', joined: 'Oct 12, 2023', img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
+  { id: 2, name: 'Marcus Thorne',  title: 'Backend Engineer at Vercel',     mutual: 4,  sharedAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20'],                              role: 'moderator',   joined: 'Nov 5, 2023',  img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
+  { id: 3, name: 'Alex Rivera',    title: 'Product Manager at Notion',      mutual: 8,  sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'], role: 'member',   joined: 'Jan 8, 2024',  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
+  { id: 4, name: 'Elena Vance',    title: 'Graphic Designer · Freelance',   mutual: 2,  sharedAvatars: ['https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'],                              role: 'member',      joined: 'Feb 20, 2024', img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
+  { id: 5, name: 'James Okafor',   title: 'DevOps Lead at AWS',             mutual: 5,  sharedAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'], role: 'member',   joined: 'Mar 14, 2024', img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
+  { id: 6, name: 'Priya Sharma',   title: 'Data Scientist at Google',       mutual: 7,  sharedAvatars: ['https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=43'], role: 'member',   joined: 'Apr 2, 2024',  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
 ];
 
 const INIT_PENDING = [
-  { id: 101, name: 'Lucas Bennett',  email: 'lucas.b@webdev.io',      requestedOn: 'Jun 20, 2026', bio: 'Full-stack dev, 5 yrs exp. Passionate about open source.',            img: 'https://i.pravatar.cc/40?img=11' },
-  { id: 102, name: 'Amara Diallo',   email: 'amara.d@designhub.co',   requestedOn: 'Jun 21, 2026', bio: 'UI/UX designer focused on accessibility and design systems.',           img: 'https://i.pravatar.cc/40?img=20' },
-  { id: 103, name: 'Kenji Watanabe', email: 'kenji.w@techforge.dev',  requestedOn: 'Jun 22, 2026', bio: 'Backend engineer, Go & Rust enthusiast. Looking for like-minded devs.', img: 'https://i.pravatar.cc/40?img=33' },
-  { id: 104, name: 'Sofia Herrera',  email: 'sofia.h@pixelcraft.io',  requestedOn: 'Jun 22, 2026', bio: 'Frontend dev specialising in React. Active open source contributor.',    img: 'https://i.pravatar.cc/40?img=44' },
+  { id: 101, name: 'Lucas Bennett',  mutual: 0, requestedOn: 'Jun 20, 2026', bio: 'Full-stack dev, 5 yrs exp. Passionate about open source.',            img: 'https://i.pravatar.cc/40?img=11' },
+  { id: 102, name: 'Amara Diallo',   mutual: 3, requestedOn: 'Jun 21, 2026', bio: 'UI/UX designer focused on accessibility and design systems.',           img: 'https://i.pravatar.cc/40?img=20' },
+  { id: 103, name: 'Kenji Watanabe', mutual: 0, requestedOn: 'Jun 22, 2026', bio: 'Backend engineer, Go & Rust enthusiast. Looking for like-minded devs.', img: 'https://i.pravatar.cc/40?img=33' },
+  { id: 104, name: 'Sofia Herrera',  mutual: 6, requestedOn: 'Jun 22, 2026', bio: 'Frontend dev specialising in React. Active open source contributor.',    img: 'https://i.pravatar.cc/40?img=44' },
 ];
 
 const ADMIN_POSTS = [
@@ -341,22 +343,54 @@ const ADMIN_POSTS = [
   },
 ];
 
-const ROLE_BADGE_MAP = {
-  group_admin: { label: 'GROUP ADMIN', cls: 'adm-badge--admin'  },
-  moderator:   { label: 'MODERATOR',   cls: 'adm-badge--mod'    },
-  member:      { label: 'MEMBER',      cls: 'adm-badge--member' },
-};
+const GROUP_POSTS = [
+  {
+    _id: 'gp1',
+    author: { fullName: 'Alex Vanguard', avatar: 'https://i.pravatar.cc/40?img=3' },
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    caption: 'Critical update pushed to all nodes: security patch v2.4.9 is now live. Please synchronize your local buffers. This patch addresses the recursive vulnerability found in the primary decryption gateway of Sector 4.',
+    media: [{ url: 'https://picsum.photos/seed/server-rack-dark/600/280' }],
+    likes: 1200, comments: 86, shares: 34, peopleReact: 4,
+  },
+  {
+    _id: 'gp2',
+    author: { fullName: 'Priya Sharma', avatar: 'https://i.pravatar.cc/40?img=16' },
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    caption: 'Just wrapped up the weekly sync — incredible ideas from the community this week. The collaboration here is next level. Drop your biggest win from this week in the comments 👇',
+    likes: 312, comments: 47, shares: 19, peopleReact: 4,
+  },
+  {
+    _id: 'gp3',
+    author: { fullName: 'Marcus Thorne', avatar: 'https://i.pravatar.cc/40?img=7' },
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    caption: 'Reminder: our monthly open-source sprint starts this Friday. We have 6 open issues across 3 repos that need contributors. All skill levels welcome — DM me for the repo links!',
+    media: [{ url: 'https://picsum.photos/seed/open-source-sprint/600/260' }],
+    likes: 256, comments: 23, shares: 41, peopleReact: 3,
+  },
+];
+
+
 
 /* ══════════════════════════
    Group Admin Dashboard
 ══════════════════════════ */
 function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
-  const [activeTab,      setActiveTab]      = useState('posts');
+  const [activeTab,      setActiveTab]      = useState('about');
   const [searchQuery,    setSearchQuery]    = useState('');
   const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Moderator', 3: 'Member', 4: 'Member', 5: 'Member', 6: 'Member' });
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [filterRole,     setFilterRole]     = useState('');
+  const [filterJoined,   setFilterJoined]   = useState('');
+  const [openMbrDrop,    setOpenMbrDrop]    = useState(null);
+  const memberFilterRef = useRef(null);
+  const [filterMutual,   setFilterMutual]   = useState('');
+  const [filterDate,     setFilterDate]     = useState('');
+  const [openPndDrop,    setOpenPndDrop]    = useState(null);
+  const pendingFilterRef = useRef(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [pendingList,    setPendingList]    = useState(INIT_PENDING);
+  const [friendIds,      setFriendIds]      = useState(() => new Set(ADMIN_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
+  const [removedMbrs,    setRemovedMbrs]    = useState(new Set());
   const [coverImg,       setCoverImg]       = useState(null);
   const [groupImg,       setGroupImg]       = useState(null);
   const coverInputRef = useRef(null);
@@ -385,17 +419,37 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     if (id === 'minisites') onMinisitesClick?.();
   }
 
-  function switchTab(tab) { setActiveTab(tab); setSearchQuery(''); }
+  function switchTab(tab) { setActiveTab(tab); setSearchQuery(''); setFilterRole(''); setFilterJoined(''); }
   function acceptRequest(id) { setPendingList(p => p.filter(r => r.id !== id)); }
   function rejectRequest(id) { setPendingList(p => p.filter(r => r.id !== id)); }
 
+  useEffect(() => {
+    if (!openMbrDrop) return;
+    function onOut(e) { if (memberFilterRef.current && !memberFilterRef.current.contains(e.target)) setOpenMbrDrop(null); }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [openMbrDrop]);
+
+  useEffect(() => {
+    if (!openPndDrop) return;
+    function onOut(e) { if (pendingFilterRef.current && !pendingFilterRef.current.contains(e.target)) setOpenPndDrop(null); }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [openPndDrop]);
+
+  const hasMbrFilter = filterRole || filterJoined;
+  const hasPndFilter = filterMutual || filterDate;
+
   const filteredMembers = ADMIN_MEMBERS.filter(m =>
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.email.toLowerCase().includes(searchQuery.toLowerCase())
+    !removedMbrs.has(m.id) &&
+    m.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (!filterRole   || memberRoles[m.id] === filterRole) &&
+    (!filterJoined || m.joined.includes(filterJoined))
   );
   const filteredPending = pendingList.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.email.toLowerCase().includes(searchQuery.toLowerCase())
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (!filterMutual || (filterMutual === 'Has Mutual' ? r.mutual > 0 : r.mutual === 0)) &&
+    (!filterDate   || r.requestedOn.includes(filterDate))
   );
 
   return (
@@ -439,12 +493,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
             </div>
 
             <div className="adm-group-info">
-              <span className="adm-breadcrumb">ADMIN DASHBOARD</span>
               <h1 className="adm-title">{group?.name ?? 'Creative Directors United'}</h1>
-              <p className="adm-subtitle">
-                Manage {ADMIN_MEMBERS.length} members
-                {pendingList.length > 0 && ` · ${pendingList.length} pending requests`}
-              </p>
             </div>
 
             <div className="adm-header-btns">
@@ -459,13 +508,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         <div className="adm-stats-row">
           <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('members')}>
             <p className="adm-stat-label">Total Members</p>
-            <p className="adm-stat-value">{ADMIN_MEMBERS.length}</p>
+            <p className="adm-stat-value">{(group?.memberCount ?? ADMIN_MEMBERS.length).toLocaleString()}</p>
             <span className="adm-stat-pill adm-stat-pill--green">+12% this month</span>
-          </div>
-          <div className="adm-stat-card">
-            <p className="adm-stat-label">Active This Week</p>
-            <p className="adm-stat-value">{ADMIN_MEMBERS.length - 1}</p>
-            <span className="adm-stat-pill adm-stat-pill--green">High Engagement</span>
           </div>
           {group?.privacy === 'private' && (
             <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('pending')}>
@@ -487,14 +531,14 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         <div className="adm-table-card">
           <div className="adm-table-top">
             <div className="adm-tabs">
+              <button className={`adm-tab${activeTab === 'about'   ? ' adm-tab--active' : ''}`} onClick={() => switchTab('about')}>
+                About
+              </button>
               <button className={`adm-tab${activeTab === 'posts'   ? ' adm-tab--active' : ''}`} onClick={() => switchTab('posts')}>
                 Posts <span className="adm-tab-count">{ADMIN_POSTS.length}</span>
               </button>
               <button className={`adm-tab${activeTab === 'members' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('members')}>
-                Members <span className="adm-tab-count">{ADMIN_MEMBERS.length}</span>
-              </button>
-              <button className={`adm-tab${activeTab === 'about'   ? ' adm-tab--active' : ''}`} onClick={() => switchTab('about')}>
-                About
+                Members <span className="adm-tab-count">{(group?.memberCount ?? ADMIN_MEMBERS.length).toLocaleString()}</span>
               </button>
               {group?.privacy === 'private' && (
                 <button className={`adm-tab${activeTab === 'pending' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('pending')}>
@@ -503,17 +547,141 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
               )}
             </div>
             {activeTab !== 'posts' && activeTab !== 'about' && (
-              <div className="adm-table-tools">
-                <div className="adm-search-wrap">
-                  <SearchIcon />
+              <div className="prof-conn-filter-bar adm-filter-bar-override" ref={activeTab === 'members' ? memberFilterRef : activeTab === 'pending' ? pendingFilterRef : null}>
+                <div className="prof-conn-search-wrap">
+                  <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input
-                    className="adm-search-input"
-                    placeholder={activeTab === 'members' ? 'Search by name or email…' : 'Search applicants…'}
+                    className="prof-conn-search"
+                    type="text"
+                    placeholder={activeTab === 'members' ? 'Search members…' : 'Search applicants…'}
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
-                {activeTab === 'members' && <button className="adm-filter-btn"><FilterIcon /> Filter</button>}
+
+                {activeTab === 'members' && (<>
+                  <button
+                    className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasMbrFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
+                    onClick={() => { setFilterRole(''); setFilterJoined(''); setOpenMbrDrop(null); }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    Filters
+                    {hasMbrFilter && <span className="prof-conn-fbar-dot" />}
+                  </button>
+
+                  <div className="prof-conn-fbar-item">
+                    <button
+                      className={`prof-conn-fbar-pill${filterRole ? ' prof-conn-fbar-pill--active' : ''}${openMbrDrop === 'role' ? ' prof-conn-fbar-pill--open' : ''}`}
+                      onClick={() => setOpenMbrDrop(openMbrDrop === 'role' ? null : 'role')}
+                    >
+                      {filterRole || 'Role'} <ChevronDownIcon />
+                    </button>
+                    {openMbrDrop === 'role' && (
+                      <div className="prof-conn-fbar-dropdown">
+                        {MEMBER_ROLES.map(r => (
+                          <button
+                            key={r}
+                            className={`prof-conn-fbar-opt${filterRole === r ? ' prof-conn-fbar-opt--active' : ''}`}
+                            onClick={() => { setFilterRole(filterRole === r ? '' : r); setOpenMbrDrop(null); }}
+                          >
+                            {filterRole === r && <CheckSmIcon />} {r}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="prof-conn-fbar-item">
+                    <button
+                      className={`prof-conn-fbar-pill${filterJoined ? ' prof-conn-fbar-pill--active' : ''}${openMbrDrop === 'joined' ? ' prof-conn-fbar-pill--open' : ''}`}
+                      onClick={() => setOpenMbrDrop(openMbrDrop === 'joined' ? null : 'joined')}
+                    >
+                      {filterJoined || 'Joined'} <ChevronDownIcon />
+                    </button>
+                    {openMbrDrop === 'joined' && (
+                      <div className="prof-conn-fbar-dropdown">
+                        {MEMBER_JOINED.map(y => (
+                          <button
+                            key={y}
+                            className={`prof-conn-fbar-opt${filterJoined === y ? ' prof-conn-fbar-opt--active' : ''}`}
+                            onClick={() => { setFilterJoined(filterJoined === y ? '' : y); setOpenMbrDrop(null); }}
+                          >
+                            {filterJoined === y && <CheckSmIcon />} {y}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {hasMbrFilter && (
+                    <button className="prof-conn-fbar-clear" onClick={() => { setFilterRole(''); setFilterJoined(''); setOpenMbrDrop(null); }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      Clear
+                    </button>
+                  )}
+                </>)}
+
+                {activeTab === 'pending' && (<>
+                  <button
+                    className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasPndFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
+                    onClick={() => { setFilterMutual(''); setFilterDate(''); setOpenPndDrop(null); }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    Filters
+                    {hasPndFilter && <span className="prof-conn-fbar-dot" />}
+                  </button>
+
+                  <div className="prof-conn-fbar-item">
+                    <button
+                      className={`prof-conn-fbar-pill${filterMutual ? ' prof-conn-fbar-pill--active' : ''}${openPndDrop === 'mutual' ? ' prof-conn-fbar-pill--open' : ''}`}
+                      onClick={() => setOpenPndDrop(openPndDrop === 'mutual' ? null : 'mutual')}
+                    >
+                      {filterMutual || 'Connection'} <ChevronDownIcon />
+                    </button>
+                    {openPndDrop === 'mutual' && (
+                      <div className="prof-conn-fbar-dropdown">
+                        {['Has Mutual', 'New to Network'].map(opt => (
+                          <button
+                            key={opt}
+                            className={`prof-conn-fbar-opt${filterMutual === opt ? ' prof-conn-fbar-opt--active' : ''}`}
+                            onClick={() => { setFilterMutual(filterMutual === opt ? '' : opt); setOpenPndDrop(null); }}
+                          >
+                            {filterMutual === opt && <CheckSmIcon />} {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="prof-conn-fbar-item">
+                    <button
+                      className={`prof-conn-fbar-pill${filterDate ? ' prof-conn-fbar-pill--active' : ''}${openPndDrop === 'date' ? ' prof-conn-fbar-pill--open' : ''}`}
+                      onClick={() => setOpenPndDrop(openPndDrop === 'date' ? null : 'date')}
+                    >
+                      {filterDate || 'Date'} <ChevronDownIcon />
+                    </button>
+                    {openPndDrop === 'date' && (
+                      <div className="prof-conn-fbar-dropdown">
+                        {['Jun 20', 'Jun 21', 'Jun 22'].map(d => (
+                          <button
+                            key={d}
+                            className={`prof-conn-fbar-opt${filterDate === d ? ' prof-conn-fbar-opt--active' : ''}`}
+                            onClick={() => { setFilterDate(filterDate === d ? '' : d); setOpenPndDrop(null); }}
+                          >
+                            {filterDate === d && <CheckSmIcon />} {d}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {hasPndFilter && (
+                    <button className="prof-conn-fbar-clear" onClick={() => { setFilterMutual(''); setFilterDate(''); setOpenPndDrop(null); }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      Clear
+                    </button>
+                  )}
+                </>)}
               </div>
             )}
           </div>
@@ -524,35 +692,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
               {/* Feed */}
               <div className="adm-posts-feed">
-                {ADMIN_POSTS.map(post => (
-                  <div key={post.id} className="adm-post-card">
-                    <div className="adm-post-header">
-                      <img src={post.avatar} alt={post.author} className="adm-post-avatar" />
-                      <div className="adm-post-meta">
-                        <div className="adm-post-name-row">
-                          <span className="adm-post-name">{post.author}</span>
-                          {post.badge && <span className={`adm-post-badge ${post.badgeCls || ''}`}>{post.badge}</span>}
-                        </div>
-                        <span className="adm-post-time">{post.time} · {post.protocol}</span>
-                      </div>
-                      <button className="adm-post-more"><MoreIcon /></button>
-                    </div>
-
-                    {post.text && <p className="adm-post-text">{post.text}</p>}
-                    {post.img  && <img src={post.img} alt="" className="adm-post-img" />}
-                    {post.alert && (
-                      <div className="adm-post-alert-box">
-                        <AlertTriangleIcon />
-                        <p>{post.alertText}</p>
-                      </div>
-                    )}
-
-                    <div className="adm-post-footer">
-                      <button className="adm-post-reaction"><HeartIcon /> {post.likes}</button>
-                      <button className="adm-post-reaction"><ChatIcon /> {post.comments} Comments</button>
-                      <button className="adm-post-bookmark"><BookmarkIcon /></button>
-                    </div>
-                  </div>
+                {GROUP_POSTS.map(p => (
+                  <PostCard key={p._id} post={p} />
                 ))}
               </div>
 
@@ -592,52 +733,55 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                 <thead>
                   <tr>
                     <th>MEMBER</th>
-                    <th>CURRENT ROLE</th>
                     <th>DATE JOINED</th>
                     <th>ASSIGN ROLE</th>
                     <th>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMembers.map(m => {
-                    const badge = ROLE_BADGE_MAP[m.role] ?? ROLE_BADGE_MAP.member;
-                    return (
-                      <tr key={m.id}>
-                        <td>
-                          <div className="adm-member-cell">
-                            <img src={m.img} alt={m.name} className="adm-member-avatar" />
-                            <div>
-                              <p className="adm-member-name">{m.name}</p>
-                              <p className="adm-member-email">{m.email}</p>
-                            </div>
+                  {filteredMembers.map(m => (
+                    <tr key={m.id}>
+                      <td>
+                        <div className="adm-member-cell">
+                          <img src={m.img} alt={m.name} className="adm-member-avatar" />
+                          <div>
+                            <p className="adm-member-name">{m.name}</p>
+                            <p className="adm-member-mutual">{m.mutual} mutual connections</p>
                           </div>
-                        </td>
-                        <td><span className={`adm-badge ${badge.cls}`}>{badge.label}</span></td>
-                        <td className="adm-date-cell">{m.joined}</td>
-                        <td>
-                          <RoleSelect
-                            value={memberRoles[m.id]}
-                            memberId={m.id}
-                            openId={openDropdownId}
-                            onToggle={setOpenDropdownId}
-                            onChange={role => setMemberRoles(p => ({ ...p, [m.id]: role }))}
-                          />
-                        </td>
-                        <td>
-                          <div className="adm-action-cell">
-                            <button className="adm-act-btn adm-act-btn--chat" title="Send message"><ChatIcon /></button>
-                            {!m.isFriend && (
-                              <button className="adm-act-btn adm-act-btn--add" title="Add friend"><InviteIcon /></button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td className="adm-date-cell">{m.joined}</td>
+                      <td>
+                        <RoleSelect
+                          value={memberRoles[m.id]}
+                          memberId={m.id}
+                          openId={openDropdownId}
+                          onToggle={setOpenDropdownId}
+                          onChange={role => setMemberRoles(p => ({ ...p, [m.id]: role }))}
+                        />
+                      </td>
+                      <td>
+                        <div className="adm-action-cell">
+                          {friendIds.has(m.id) ? (
+                            <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                          ) : (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--add"
+                              onClick={() => setFriendIds(s => new Set([...s, m.id]))}
+                            >Add Friend</button>
+                          )}
+                          <button
+                            className="prof-conn-btn prof-conn-btn--remove"
+                            onClick={() => setRemovedMbrs(s => new Set([...s, m.id]))}
+                          >Remove from Group</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
               <div className="adm-table-footer">
-                <span className="adm-showing">Showing {filteredMembers.length} of {ADMIN_MEMBERS.length} members</span>
+                <span className="adm-showing">Showing {filteredMembers.length} of {(group?.memberCount ?? ADMIN_MEMBERS.length).toLocaleString()} members</span>
                 <div className="adm-pagination">
                   <button className="adm-pg-btn"><ChevronLeftIcon /></button>
                   <button className="adm-pg-btn adm-pg-btn--active">1</button>
@@ -731,7 +875,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                           <img src={r.img} alt={r.name} className="adm-member-avatar" />
                           <div>
                             <p className="adm-member-name">{r.name}</p>
-                            <p className="adm-member-email">{r.email}</p>
+                            <p className="adm-member-mutual">
+                              {r.mutual > 0 ? `${r.mutual} mutual connections` : 'New to your network'}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -987,20 +1133,20 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 const HUB_CATEGORIES = ['All Hubs', 'Technology', 'Design', 'Business', 'Education', 'Health', 'Science', 'Finance', 'Arts'];
 
 const HUB_GROUPS = [
-  { id: 1,  name: 'Neural Interface Labs',   category: 'Technology', members: '14.2k members', memberCount: 14200, coverImg: 'https://picsum.photos/seed/hub-neural/400/200',  iconText: 'NI', color: '#2563eb', tab: 'suggested', privacy: 'public',  createdAt: 'February 8, 2022',   admin: 'Lena Hartmann',  mission: 'Push the boundary between human cognition and machine intelligence.',     description: 'Neural Interface Labs is a research-driven community for engineers, neuroscientists, and AI practitioners exploring brain-computer interfaces, neural decoding, and next-gen human-machine interaction. We share papers, tools, and collaborate on open research.' },
-  { id: 2,  name: 'Quantum Finance Guild',   category: 'Finance',    members: '8.7k members',  memberCount: 8700,  coverImg: 'https://picsum.photos/seed/hub-quantum/400/200', iconText: 'QF', color: '#7c3aed', tab: 'suggested', privacy: 'private', createdAt: 'September 3, 2021',  admin: 'Ravi Menon',     mission: 'Apply quantum computing to financial modelling and risk.',                description: 'The Quantum Finance Guild connects quants, mathematicians, and fintech engineers exploring quantum algorithms for portfolio optimisation, derivatives pricing, and high-frequency trading. Private group — verified finance professionals only.' },
-  { id: 3,  name: 'BioSynth Research',       category: 'Science',    members: '5.1k members',  memberCount: 5100,  coverImg: 'https://picsum.photos/seed/hub-bio/400/200',     iconText: 'BR', color: '#059669', tab: 'suggested', privacy: 'public',  createdAt: 'April 17, 2023',     admin: 'Dr. Yuki Tanaka', mission: 'Accelerate synthetic biology through open collaboration.',              description: 'BioSynth Research brings together biologists, chemists, and computational scientists working on engineered biological systems. Members share protocols, discuss CRISPR tooling, and collaborate on open-source biology projects.' },
-  { id: 4,  name: 'Digital Arts Collective', category: 'Design',     members: '11.3k members', memberCount: 11300, coverImg: 'https://picsum.photos/seed/hub-arts/400/200',    iconText: 'DA', color: '#db2777', tab: 'suggested', privacy: 'public',  createdAt: 'June 1, 2021',       admin: 'Mira Osei',      mission: 'Celebrate digital creativity in every medium.',                          description: 'The Digital Arts Collective is a vibrant space for illustrators, motion designers, 3D artists, and generative art creators. Share your work, get critique, explore new tools, and collaborate on community art projects and exhibitions.' },
-  { id: 5,  name: 'Infratech Alliance',      category: 'Technology', members: '9.8k members',  memberCount: 9800,  coverImg: 'https://picsum.photos/seed/hub-infra/400/200',   iconText: 'IA', color: '#0891b2', tab: 'suggested', privacy: 'public',  createdAt: 'November 12, 2022',  admin: 'Chen Wei',       mission: 'Redefine infrastructure with open, scalable, cloud-native patterns.',    description: 'Infratech Alliance is the go-to community for DevOps engineers, SREs, and platform teams. Discussions cover Kubernetes, Terraform, observability, CI/CD, and modern infrastructure patterns. A collaborative space for sharing runbooks, incident postmortems, and tooling reviews.' },
-  { id: 6,  name: 'CryptoVault Network',     category: 'Finance',    members: '18.5k members', memberCount: 18500, coverImg: 'https://picsum.photos/seed/hub-crypto/400/200',  iconText: 'CV', color: '#d97706', tab: 'suggested', privacy: 'public',  createdAt: 'January 20, 2021',   admin: 'Andre Volta',    mission: 'Decode the future of decentralised finance for everyone.',               description: 'CryptoVault Network is one of the largest DeFi communities on the platform. Members analyse on-chain data, debate protocol governance, share alpha, and break down complex financial instruments in plain language. All experience levels welcome.' },
-  { id: 7,  name: 'Health Matrix',           category: 'Health',     members: '6.4k members',  memberCount: 6400,  coverImg: 'https://picsum.photos/seed/hub-health/400/200',  iconText: 'HM', color: '#16a34a', tab: 'suggested', privacy: 'public',  createdAt: 'March 9, 2023',      admin: 'Dr. Priya Sood', mission: 'Empower individuals with data-driven health and wellness knowledge.',     description: 'Health Matrix is a science-first wellness community for doctors, researchers, fitness professionals, and health-curious individuals. We discuss evidence-based nutrition, longevity research, mental health, and the quantified self movement.' },
-  { id: 8,  name: 'Edu Nexus Academy',       category: 'Education',  members: '21.0k members', memberCount: 21000, coverImg: 'https://picsum.photos/seed/hub-edu/400/200',     iconText: 'EN', color: '#4f46e5', tab: 'suggested', privacy: 'public',  createdAt: 'August 5, 2020',     admin: 'James Okafor',   mission: 'Make quality education accessible and collaborative for all.',            description: 'Edu Nexus Academy connects educators, learners, and ed-tech builders. Share learning resources, discuss pedagogy, build study groups, and explore the latest trends in online education, MOOCs, and adaptive learning technologies.' },
-  { id: 9,  name: 'Open Source Forge',       category: 'Technology', members: '1.2k members',  memberCount: 1200,  coverImg: 'https://picsum.photos/seed/hub-oss/400/200',     iconText: 'OS', color: '#2563eb', tab: 'yours',     privacy: 'public',  pendingReqs: 0,  createdAt: 'March 14, 2023',  admin: 'Alex Vanguard',  mission: 'Accelerate open-source adoption by connecting contributors worldwide.',   description: 'Open Source Forge is a collaborative hub for developers passionate about open-source software. We share projects, review code, host sprints, and mentor new contributors across all technology stacks.' },
-  { id: 10, name: 'Digital Artists Hub',     category: 'Design',     members: '1.1k members',  memberCount: 1100,  coverImg: 'https://picsum.photos/seed/hub-dart/400/200',    iconText: 'DH', color: '#db2777', tab: 'yours',     privacy: 'private', pendingReqs: 7,  createdAt: 'July 2, 2023',    admin: 'Alex Vanguard',  mission: 'Celebrate and elevate digital art in all its forms.',                    description: 'A private creative space for digital artists to share work-in-progress, get constructive critique, discover tools, and collaborate on commissions and exhibitions.' },
-  { id: 14, name: 'Full-Stack Builders',     category: 'Technology', members: '874 members',   memberCount: 874,   coverImg: 'https://picsum.photos/seed/hub-fsb/400/200',     iconText: 'FB', color: '#0891b2', tab: 'yours',     privacy: 'public',  pendingReqs: 0,  createdAt: 'January 9, 2024', admin: 'Alex Vanguard',  mission: 'Bridge the gap between frontend craft and backend engineering.',          description: 'Full-Stack Builders brings together engineers who love the entire stack. From API design to pixel-perfect UIs, we dive deep into architecture patterns, performance tuning, and real-world project challenges.' },
-  { id: 11, name: 'UX Design Masters',       category: 'Design',     members: '3.5k members',  memberCount: 3500,  coverImg: 'https://picsum.photos/seed/hub-ux/400/200',      iconText: 'UX', color: '#7c3aed', tab: 'joined',    joined: true, privacy: 'public',  createdAt: 'May 22, 2022',      admin: 'Fatima Al-Rashid', mission: 'Master every facet of user experience design.',                          description: 'UX Design Masters is a practitioner community for UX researchers, interaction designers, and product designers. Monthly design challenges, critique sessions, job boards, and deep dives into research methodologies keep the community sharp.' },
-  { id: 12, name: 'Modern Stack Devs',       category: 'Technology', members: '12.4k members', memberCount: 12400, coverImg: 'https://picsum.photos/seed/hub-stack/400/200',   iconText: 'MS', color: '#0891b2', tab: 'joined',    joined: true, privacy: 'public',  createdAt: 'October 14, 2021',  admin: 'Soren Bjerg',    mission: 'Ship faster by sharing what actually works in production.',              description: 'Modern Stack Devs is a no-fluff engineering community where developers share real-world experiences with React, Next.js, TypeScript, Bun, and everything in between. Candid discussions about tooling, architecture trade-offs, and career growth.' },
-  { id: 13, name: 'Beat Makers Collective',  category: 'Arts',       members: '22.9k members', memberCount: 22900, coverImg: 'https://picsum.photos/seed/hub-beats/400/200',   iconText: 'BM', color: '#d97706', tab: 'joined',    joined: true, privacy: 'public',  createdAt: 'July 30, 2020',     admin: 'DJ NovaCast',    mission: 'Connect music producers and grow the global beat-making community.',     description: 'Beat Makers Collective is the largest music production community on the platform. Share your beats, get feedback, collaborate with artists worldwide, discuss DAWs, sample packs, and the business side of music production.' },
+  { id: 1,  name: 'Neural Interface Labs',   category: 'Technology', members: '14.2k members', memberCount: 14200, memberAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],  coverImg: 'https://picsum.photos/seed/hub-neural/400/200',  iconText: 'NI', color: '#2563eb', tab: 'suggested', privacy: 'public',  createdAt: 'February 8, 2022',   admin: 'Lena Hartmann',    mission: 'Push the boundary between human cognition and machine intelligence.',     description: 'Neural Interface Labs is a research-driven community for engineers, neuroscientists, and AI practitioners exploring brain-computer interfaces, neural decoding, and next-gen human-machine interaction. We share papers, tools, and collaborate on open research.' },
+  { id: 2,  name: 'Quantum Finance Guild',   category: 'Finance',    members: '8.7k members',  memberCount: 8700,  memberAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20','https://i.pravatar.cc/28?img=25'], coverImg: 'https://picsum.photos/seed/hub-quantum/400/200', iconText: 'QF', color: '#7c3aed', tab: 'suggested', privacy: 'private', createdAt: 'September 3, 2021',  admin: 'Ravi Menon',       mission: 'Apply quantum computing to financial modelling and risk.',                description: 'The Quantum Finance Guild connects quants, mathematicians, and fintech engineers exploring quantum algorithms for portfolio optimisation, derivatives pricing, and high-frequency trading. Private group — verified finance professionals only.' },
+  { id: 3,  name: 'BioSynth Research',       category: 'Science',    members: '5.1k members',  memberCount: 5100,  memberAvatars: ['https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=36','https://i.pravatar.cc/28?img=40'], coverImg: 'https://picsum.photos/seed/hub-bio/400/200',     iconText: 'BR', color: '#059669', tab: 'suggested', privacy: 'public',  createdAt: 'April 17, 2023',     admin: 'Dr. Yuki Tanaka',  mission: 'Accelerate synthetic biology through open collaboration.',              description: 'BioSynth Research brings together biologists, chemists, and computational scientists working on engineered biological systems. Members share protocols, discuss CRISPR tooling, and collaborate on open-source biology projects.' },
+  { id: 4,  name: 'Digital Arts Collective', category: 'Design',     members: '11.3k members', memberCount: 11300, memberAvatars: ['https://i.pravatar.cc/28?img=44','https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'], coverImg: 'https://picsum.photos/seed/hub-arts/400/200',    iconText: 'DA', color: '#db2777', tab: 'suggested', privacy: 'public',  createdAt: 'June 1, 2021',       admin: 'Mira Osei',        mission: 'Celebrate digital creativity in every medium.',                          description: 'The Digital Arts Collective is a vibrant space for illustrators, motion designers, 3D artists, and generative art creators. Share your work, get critique, explore new tools, and collaborate on community art projects and exhibitions.' },
+  { id: 5,  name: 'Infratech Alliance',      category: 'Technology', members: '9.8k members',  memberCount: 9800,  memberAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'], coverImg: 'https://picsum.photos/seed/hub-infra/400/200',   iconText: 'IA', color: '#0891b2', tab: 'suggested', privacy: 'public',  createdAt: 'November 12, 2022',  admin: 'Chen Wei',         mission: 'Redefine infrastructure with open, scalable, cloud-native patterns.',    description: 'Infratech Alliance is the go-to community for DevOps engineers, SREs, and platform teams. Discussions cover Kubernetes, Terraform, observability, CI/CD, and modern infrastructure patterns. A collaborative space for sharing runbooks, incident postmortems, and tooling reviews.' },
+  { id: 6,  name: 'CryptoVault Network',     category: 'Finance',    members: '18.5k members', memberCount: 18500, memberAvatars: ['https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=3'],  coverImg: 'https://picsum.photos/seed/hub-crypto/400/200',  iconText: 'CV', color: '#d97706', tab: 'suggested', privacy: 'public',  createdAt: 'January 20, 2021',   admin: 'Andre Volta',      mission: 'Decode the future of decentralised finance for everyone.',               description: 'CryptoVault Network is one of the largest DeFi communities on the platform. Members analyse on-chain data, debate protocol governance, share alpha, and break down complex financial instruments in plain language. All experience levels welcome.' },
+  { id: 7,  name: 'Health Matrix',           category: 'Health',     members: '6.4k members',  memberCount: 6400,  memberAvatars: ['https://i.pravatar.cc/28?img=7','https://i.pravatar.cc/28?img=11','https://i.pravatar.cc/28?img=14'], coverImg: 'https://picsum.photos/seed/hub-health/400/200',  iconText: 'HM', color: '#16a34a', tab: 'suggested', privacy: 'public',  createdAt: 'March 9, 2023',      admin: 'Dr. Priya Sood',   mission: 'Empower individuals with data-driven health and wellness knowledge.',     description: 'Health Matrix is a science-first wellness community for doctors, researchers, fitness professionals, and health-curious individuals. We discuss evidence-based nutrition, longevity research, mental health, and the quantified self movement.' },
+  { id: 8,  name: 'Edu Nexus Academy',       category: 'Education',  members: '21.0k members', memberCount: 21000, memberAvatars: ['https://i.pravatar.cc/28?img=19','https://i.pravatar.cc/28?img=22','https://i.pravatar.cc/28?img=27'], coverImg: 'https://picsum.photos/seed/hub-edu/400/200',     iconText: 'EN', color: '#4f46e5', tab: 'suggested', privacy: 'public',  createdAt: 'August 5, 2020',     admin: 'James Okafor',     mission: 'Make quality education accessible and collaborative for all.',            description: 'Edu Nexus Academy connects educators, learners, and ed-tech builders. Share learning resources, discuss pedagogy, build study groups, and explore the latest trends in online education, MOOCs, and adaptive learning technologies.' },
+  { id: 9,  name: 'Open Source Forge',       category: 'Technology', members: '1.2k members',  memberCount: 1200,  memberAvatars: ['https://i.pravatar.cc/28?img=30','https://i.pravatar.cc/28?img=32','https://i.pravatar.cc/28?img=35'], coverImg: 'https://picsum.photos/seed/hub-oss/400/200',     iconText: 'OS', color: '#2563eb', tab: 'yours',     privacy: 'public',  pendingReqs: 0,  createdAt: 'March 14, 2023',  admin: 'Alex Vanguard',  mission: 'Accelerate open-source adoption by connecting contributors worldwide.',   description: 'Open Source Forge is a collaborative hub for developers passionate about open-source software. We share projects, review code, host sprints, and mentor new contributors across all technology stacks.' },
+  { id: 10, name: 'Digital Artists Hub',     category: 'Design',     members: '1.1k members',  memberCount: 1100,  memberAvatars: ['https://i.pravatar.cc/28?img=37','https://i.pravatar.cc/28?img=41','https://i.pravatar.cc/28?img=43'], coverImg: 'https://picsum.photos/seed/hub-dart/400/200',    iconText: 'DH', color: '#db2777', tab: 'yours',     privacy: 'private', pendingReqs: 7,  createdAt: 'July 2, 2023',    admin: 'Alex Vanguard',  mission: 'Celebrate and elevate digital art in all its forms.',                    description: 'A private creative space for digital artists to share work-in-progress, get constructive critique, discover tools, and collaborate on commissions and exhibitions.' },
+  { id: 14, name: 'Full-Stack Builders',     category: 'Technology', members: '874 members',   memberCount: 874,   memberAvatars: ['https://i.pravatar.cc/28?img=45','https://i.pravatar.cc/28?img=49','https://i.pravatar.cc/28?img=52'], coverImg: 'https://picsum.photos/seed/hub-fsb/400/200',     iconText: 'FB', color: '#0891b2', tab: 'yours',     privacy: 'public',  pendingReqs: 0,  createdAt: 'January 9, 2024', admin: 'Alex Vanguard',  mission: 'Bridge the gap between frontend craft and backend engineering.',          description: 'Full-Stack Builders brings together engineers who love the entire stack. From API design to pixel-perfect UIs, we dive deep into architecture patterns, performance tuning, and real-world project challenges.' },
+  { id: 11, name: 'UX Design Masters',       category: 'Design',     members: '3.5k members',  memberCount: 3500,  memberAvatars: ['https://i.pravatar.cc/28?img=54','https://i.pravatar.cc/28?img=58','https://i.pravatar.cc/28?img=62'], coverImg: 'https://picsum.photos/seed/hub-ux/400/200',      iconText: 'UX', color: '#7c3aed', tab: 'joined',    joined: true, privacy: 'public',  createdAt: 'May 22, 2022',      admin: 'Fatima Al-Rashid', mission: 'Master every facet of user experience design.',                          description: 'UX Design Masters is a practitioner community for UX researchers, interaction designers, and product designers. Monthly design challenges, critique sessions, job boards, and deep dives into research methodologies keep the community sharp.' },
+  { id: 12, name: 'Modern Stack Devs',       category: 'Technology', members: '12.4k members', memberCount: 12400, memberAvatars: ['https://i.pravatar.cc/28?img=63','https://i.pravatar.cc/28?img=65','https://i.pravatar.cc/28?img=1'],  coverImg: 'https://picsum.photos/seed/hub-stack/400/200',   iconText: 'MS', color: '#0891b2', tab: 'joined',    joined: true, privacy: 'public',  createdAt: 'October 14, 2021',  admin: 'Soren Bjerg',      mission: 'Ship faster by sharing what actually works in production.',              description: 'Modern Stack Devs is a no-fluff engineering community where developers share real-world experiences with React, Next.js, TypeScript, Bun, and everything in between. Candid discussions about tooling, architecture trade-offs, and career growth.' },
+  { id: 13, name: 'Beat Makers Collective',  category: 'Arts',       members: '22.9k members', memberCount: 22900, memberAvatars: ['https://i.pravatar.cc/28?img=15','https://i.pravatar.cc/28?img=18','https://i.pravatar.cc/28?img=21'], coverImg: 'https://picsum.photos/seed/hub-beats/400/200',   iconText: 'BM', color: '#d97706', tab: 'joined',    joined: true, privacy: 'public',  createdAt: 'July 30, 2020',     admin: 'DJ NovaCast',      mission: 'Connect music producers and grow the global beat-making community.',     description: 'Beat Makers Collective is the largest music production community on the platform. Share your beats, get feedback, collaborate with artists worldwide, discuss DAWs, sample packs, and the business side of music production.' },
 ];
 
 const MODAL_CONTACTS = [
@@ -1018,20 +1164,21 @@ function initials(name) {
    Group Detail Page
 ══════════════════════════ */
 const GD_MEMBERS = [
-  { id: 1, name: 'Sarah Jenkins',  role: 'Admin',     joined: 'Oct 2023', img: 'https://i.pravatar.cc/56?img=1',  isFriend: true  },
-  { id: 2, name: 'Marcus Thorne',  role: 'Moderator', joined: 'Nov 2023', img: 'https://i.pravatar.cc/56?img=3',  isFriend: false },
-  { id: 3, name: 'Alex Rivera',    role: 'Member',    joined: 'Jan 2024', img: 'https://i.pravatar.cc/56?img=5',  isFriend: true  },
-  { id: 4, name: 'Elena Vance',    role: 'Member',    joined: 'Feb 2024', img: 'https://i.pravatar.cc/56?img=9',  isFriend: false },
-  { id: 5, name: 'James Okafor',   role: 'Member',    joined: 'Mar 2024', img: 'https://i.pravatar.cc/56?img=12', isFriend: false },
-  { id: 6, name: 'Priya Sharma',   role: 'Member',    joined: 'Apr 2024', img: 'https://i.pravatar.cc/56?img=16', isFriend: true  },
-  { id: 7, name: 'Tom Barker',     role: 'Member',    joined: 'May 2024', img: 'https://i.pravatar.cc/56?img=21', isFriend: false },
-  { id: 8, name: 'Nina Petrova',   role: 'Member',    joined: 'Jun 2024', img: 'https://i.pravatar.cc/56?img=25', isFriend: true  },
+  { id: 1, name: 'Sarah Jenkins',  title: 'UX Designer at Figma',          role: 'Admin',     joined: 'Oct 2023', mutual: 12, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],  img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
+  { id: 2, name: 'Marcus Thorne',  title: 'Backend Engineer at Vercel',     role: 'Moderator', joined: 'Nov 2023', mutual: 4,  sharedAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20'],                                   img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
+  { id: 3, name: 'Alex Rivera',    title: 'Product Manager at Notion',      role: 'Member',    joined: 'Jan 2024', mutual: 8,  sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'],  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
+  { id: 4, name: 'Elena Vance',    title: 'Graphic Designer · Freelance',   role: 'Member',    joined: 'Feb 2024', mutual: 2,  sharedAvatars: ['https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'],                                   img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
+  { id: 5, name: 'James Okafor',   title: 'DevOps Lead at AWS',             role: 'Member',    joined: 'Mar 2024', mutual: 5,  sharedAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'],  img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
+  { id: 6, name: 'Priya Sharma',   title: 'Data Scientist at Google',       role: 'Member',    joined: 'Apr 2024', mutual: 7,  sharedAvatars: ['https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=43'],  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
+  { id: 7, name: 'Tom Barker',     title: 'iOS Developer at Apple',         role: 'Member',    joined: 'May 2024', mutual: 0,  sharedAvatars: [],                                                                                                        img: 'https://i.pravatar.cc/40?img=21', isFriend: false },
+  { id: 8, name: 'Nina Petrova',   title: 'Cloud Architect at Microsoft',   role: 'Member',    joined: 'Jun 2024', mutual: 3,  sharedAvatars: ['https://i.pravatar.cc/28?img=45','https://i.pravatar.cc/28?img=49'],                                   img: 'https://i.pravatar.cc/40?img=25', isFriend: true  },
 ];
 
 function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const [detailTab,    setDetailTab]    = useState('about');
   const [joinedLocal,  setJoinedLocal]  = useState(group.joined || false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [gdFriendIds,  setGdFriendIds]  = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
 
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
@@ -1162,32 +1309,8 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
         {detailTab === 'posts' && (
           <>
             <div className="gd-main">
-              {ADMIN_POSTS.map(post => (
-                <div key={post.id} className="adm-post-card">
-                  <div className="adm-post-header">
-                    <img src={post.avatar} alt={post.author} className="adm-post-avatar" />
-                    <div className="adm-post-meta">
-                      <div className="adm-post-author-row">
-                        <span className="adm-post-author">{post.author}</span>
-                        {post.badge && <span className={`adm-post-badge ${post.badgeCls}`}>{post.badge}</span>}
-                      </div>
-                      <span className="adm-post-time">{post.time}</span>
-                    </div>
-                  </div>
-                  {post.alert ? (
-                    <div className="adm-post-alert-box">{post.alertText}</div>
-                  ) : (
-                    <>
-                      <p className="adm-post-text">{post.text}</p>
-                      {post.img && <img src={post.img} alt="post" className="adm-post-img" />}
-                    </>
-                  )}
-                  <div className="adm-post-footer">
-                    <span className="adm-post-stat"><HeartIcon /> {post.likes}</span>
-                    <span className="adm-post-stat"><ChatIcon /> {post.comments}</span>
-                    <span className="adm-post-stat"><ShareIcon2 /> Share</span>
-                  </div>
-                </div>
+              {GROUP_POSTS.map(p => (
+                <PostCard key={p._id} post={p} />
               ))}
             </div>
             <div className="gd-sidebar">
@@ -1226,18 +1349,38 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
         {/* ── Members tab ── */}
         {detailTab === 'members' && (
           <div className="gd-members-section">
-            <div className="gd-members-grid">
+            <div className="prof-conn-list">
               {GD_MEMBERS.map(m => (
-                <div key={m.id} className="gd-member-card">
-                  <img src={m.img} alt={m.name} className="gd-member-av" />
-                  <div className="gd-member-info">
-                    <p className="gd-member-name">{m.name}</p>
-                    <p className="gd-member-role">{m.role}</p>
-                    <p className="gd-member-joined">Joined {m.joined}</p>
+                <div key={m.id} className="prof-conn-item">
+                  <div className="prof-conn-avatar-wrap">
+                    <img src={m.img} alt={m.name} className="prof-conn-avatar" />
                   </div>
-                  <div className="gd-member-actions">
-                    <button className="gd-act-btn gd-act-btn--chat" title="Message"><ChatIcon /></button>
-                    {!m.isFriend && <button className="gd-act-btn gd-act-btn--add" title="Add friend"><InviteIcon /></button>}
+                  <div className="prof-conn-info">
+                    <div className="prof-conn-name-row">
+                      <span className="prof-conn-name">{m.name}</span>
+                    </div>
+                    <span className="prof-conn-role">{m.title}</span>
+                    <div className="prof-conn-shared">
+                      <div className="prof-conn-shared-avatars">
+                        {m.sharedAvatars.map((src, i) => (
+                          <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                        ))}
+                        {m.mutual > 3 && <span className="prof-conn-shared-extra">+{m.mutual - 3}</span>}
+                      </div>
+                      <span className="prof-conn-shared-text">
+                        {m.mutual > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="prof-conn-actions">
+                    {gdFriendIds.has(m.id) ? (
+                      <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                    ) : (
+                      <button
+                        className="prof-conn-btn prof-conn-btn--add"
+                        onClick={() => setGdFriendIds(s => new Set([...s, m.id]))}
+                      >Add Friend</button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1258,17 +1401,16 @@ function GroupHubCard({ group, onManage, onView }) {
   const isOwned = group.tab === 'yours';
 
   return (
-    <div className="hub-card hub-card--clickable" onClick={onView}>
+    <div className={`hub-card${isOwned ? '' : ' hub-card--clickable'}`} onClick={isOwned ? undefined : onView}>
       <div className="hub-card-cover">
         <img src={group.coverImg} alt={group.name} className="hub-card-cover-img" />
         <span className="hub-card-badge">{group.category}</span>
         {isOwned && group.privacy === 'private' && group.pendingReqs > 0 && (
-          <span className="hub-card-pending" onClick={e => { e.stopPropagation(); onManage?.(); }}>{group.pendingReqs} pending</span>
+          <span className="hub-card-pending" onClick={() => onManage?.()}>{group.pendingReqs} pending</span>
         )}
       </div>
       <div className="hub-card-icon-wrap">
         <div className="hub-card-icon" style={{ background: group.color }}>{group.iconText}</div>
-        {isOwned && <span className="hub-card-owner-badge">Admin</span>}
       </div>
       <div className="hub-card-body">
         <p className="hub-card-name">{group.name}</p>
@@ -1292,13 +1434,20 @@ function GroupHubCard({ group, onManage, onView }) {
                 </>
               )}
             </div>
-            <button className="hub-card-manage" onClick={e => { e.stopPropagation(); onManage?.(); }}>
+            <button className="hub-card-manage" onClick={() => onManage?.()}>
               Manage Group
             </button>
           </>
         ) : (
           <>
-            <p className="hub-card-members"><UsersIcon /> {group.members}</p>
+            <div className="hub-card-conn-members">
+              <div className="prof-conn-shared-avatars">
+                {(group.memberAvatars || []).map((src, i) => (
+                  <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                ))}
+              </div>
+              <span className="prof-conn-shared-text">{group.members}</span>
+            </div>
             <button
               className={`hub-card-join${joined ? ' hub-card-join--joined' : ''}`}
               onClick={e => { e.stopPropagation(); setJoined(v => !v); }}
@@ -1536,14 +1685,6 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         </div>
 
         {/* Status bar */}
-        <div className="grp-hub-footer">
-          <span className="grp-hub-status">
-            <span className="grp-hub-status-dot" />
-            SYSTEM STATUS &bull; ALL NODES OPERATIONAL
-          </span>
-          <span className="grp-hub-footer-sep">|</span>
-          <span className="grp-hub-total">TOTAL USERS 148,298</span>
-        </div>
 
       </main>
 
