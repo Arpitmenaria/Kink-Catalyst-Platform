@@ -987,6 +987,9 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
               alt="Group cover"
               className="adm-cover-img"
             />
+            <button className="gd-cover-back-btn" onClick={onBack} title="Back to Groups">
+              <BackArrowIcon />
+            </button>
             <button className="adm-edit-cover-btn" onClick={() => coverInputRef.current?.click()}>
               <EditIcon /> Edit Cover
             </button>
@@ -1014,7 +1017,6 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 
         {/* Header */}
         <div className="cg-header">
-          <button className="cg-back-btn" onClick={onBack}><BackArrowIcon /></button>
           <div>
             <h1 className="cg-title">Create New Group</h1>
             <p className="cg-subtitle">Build a community for shared interests and collaboration.</p>
