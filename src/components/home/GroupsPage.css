@@ -678,11 +678,45 @@
 
 /* Two-column layout */
 .cg-layout {
-  display: grid;
-  grid-template-columns: 1fr 220px;
-  gap: 20px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
+
+.cg-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 0 16px;
+}
+
+.cg-cancel-btn {
+  padding: 10px 28px;
+  border-radius: 9px;
+  border: 1px solid #1e2a40;
+  background: none;
+  color: #8b9cc8;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.cg-cancel-btn:hover { background: #111422; color: #e0e6f8; }
+
+.cg-create-btn {
+  padding: 10px 28px;
+  border-radius: 9px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cg-create-btn:hover { background: #1d4ed8; }
 
 /* Left column */
 .cg-left { display: flex; flex-direction: column; gap: 16px; }
@@ -967,34 +1001,6 @@
 }
 .cg-tips-list li svg { flex-shrink: 0; margin-top: 1px; }
 
-/* Action buttons */
-.cg-create-btn {
-  width: 100%;
-  padding: 12px;
-  background: #111d3e;
-  border: 1px solid #1e2d5e;
-  border-radius: 10px;
-  color: #e0e6f8;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.cg-create-btn:hover { background: #1a2a52; }
-
-.cg-draft-btn {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  border: 1px solid #252d4a;
-  border-radius: 10px;
-  color: #c8cfe0;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.cg-draft-btn:hover { background: #131626; }
 
 /* ══════════════════════════════════════
    Group Admin Dashboard
@@ -1030,6 +1036,24 @@
   /* negative horizontal margins break out of the padded content area */
   margin-left: -28px;
   margin-right: -28px;
+}
+
+.cg-cover-section {
+  flex-shrink: 0;
+  margin-left: -28px;
+  margin-right: -28px;
+  margin-bottom: 0;
+}
+
+.cg-cover-section .adm-cover {
+  overflow: visible;
+}
+
+.cg-photo-center {
+  position: absolute;
+  bottom: -52px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .adm-cover {

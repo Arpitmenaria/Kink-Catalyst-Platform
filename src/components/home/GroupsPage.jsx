@@ -37,7 +37,6 @@ function ChevronRightIcon() { return <svg width="14" height="14" viewBox="0 0 24
 
 /* ── Create Group Page icons ── */
 function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
-function IdentityIcon()     { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M8 12h.01M12 12h4M8 16h8"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg>; }
 function ShieldIcon2()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>; }
 function GlobeIconLg()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
 function LockIconLg()       { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
@@ -980,7 +979,7 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
       <div className="cg-content">
 
         {/* Cover + Group Photo */}
-        <div className="adm-cover-section">
+        <div className="cg-cover-section">
           <div className="adm-cover">
             <img
               src={coverImg || 'https://picsum.photos/seed/cg-new-cover/1200/300'}
@@ -994,44 +993,32 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
               <EditIcon /> Edit Cover
             </button>
             <input ref={coverInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCoverChange} />
-          </div>
-          <div className="adm-profile-row">
-            <div className="adm-group-photo-area">
-              <img
-                src={groupImg || 'https://picsum.photos/seed/cg-new-gp/120/120'}
-                alt="Group photo"
-                className="adm-group-photo-img"
-              />
-              <button className="adm-edit-photo-btn" onClick={() => photoInputRef.current?.click()}>
-                <EditIcon />
-              </button>
-              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-            </div>
-            <div className="adm-group-info">
-              <span className="adm-breadcrumb">NEW GROUP</span>
-              <h1 className="adm-title">{groupName || 'Untitled Group'}</h1>
-              <p className="adm-subtitle">Upload a cover and group photo above</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Header */}
-        <div className="cg-header">
-          <div>
-            <h1 className="cg-title">Create New Group</h1>
-            <p className="cg-subtitle">Build a community for shared interests and collaboration.</p>
+            {/* Centered profile photo overlapping cover bottom */}
+            <div className="cg-photo-center">
+              <div className="adm-group-photo-area">
+                <img
+                  src={groupImg || 'https://picsum.photos/seed/cg-new-gp/120/120'}
+                  alt="Group photo"
+                  className="adm-group-photo-img"
+                />
+                <button className="adm-edit-photo-btn" onClick={() => photoInputRef.current?.click()}>
+                  <EditIcon />
+                </button>
+                <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Two-column layout */}
-        <div className="cg-layout">
+        <div className="cg-layout" style={{ marginTop: '56px' }}>
 
           {/* Left column */}
           <div className="cg-left">
 
             {/* Group Identity */}
             <div className="cg-section">
-              <div className="cg-section-head"><IdentityIcon /> Group Identity</div>
 
               <div className="cg-field">
                 <label className="cg-label">Group Name</label>
@@ -1090,7 +1077,8 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
                 </div>
               </div>
 
-              {/* Admin Approval toggle */}
+              {/* Admin Approval toggle — only for private groups */}
+              {privacy === 'private' && (
               <div className="cg-toggle-row">
                 <div className="cg-toggle-icon"><ShieldIcon2 /></div>
                 <div className="cg-toggle-info">
@@ -1101,29 +1089,19 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
                   <div className="cg-toggle-thumb" />
                 </div>
               </div>
+              )}
             </div>
 
           </div>
 
-          {/* Right column */}
-          <div className="cg-right">
-
-            {/* Grow your group */}
-            <div className="cg-tips-card">
-              <div className="cg-tips-head"><PlantIcon /> Grow your group</div>
-              <ul className="cg-tips-list">
-                <li><CheckCircleIcon /> Pick a clear, searchable name that defines the group's intent.</li>
-                <li><CheckCircleIcon /> Add relevant tags to help people find your community easily.</li>
-                <li><CheckCircleIcon /> Invite 5–10 friends to start the conversation and build momentum.</li>
-              </ul>
-            </div>
-
-            {/* Action buttons */}
-            <button className="cg-create-btn" onClick={onCreateGroup}>Create Group</button>
-            <button className="cg-draft-btn">Save as Draft</button>
-
-          </div>
         </div>
+
+        {/* Action buttons */}
+        <div className="cg-form-actions">
+          <button className="cg-cancel-btn" onClick={onBack}>Cancel</button>
+          <button className="cg-create-btn" onClick={onCreateGroup}>Create Group</button>
+        </div>
+
       </div>
     </div>
   );
