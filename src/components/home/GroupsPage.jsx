@@ -17,6 +17,7 @@ function GlobeIcon()      { return <svg width="13" height="13" viewBox="0 0 24 2
 function LockIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
 function CameraIcon()     { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>; }
 function CheckSmIcon()    { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
+function PinIcon()        { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 function ArrowRightIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 function UsersIcon()        { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function EditIcon()         { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -299,19 +300,19 @@ function CommunityModerationPage({ group, onBack, onFeedClick, onEventsClick, on
 
 /* ── Admin Dashboard mock data ── */
 const ADMIN_MEMBERS = [
-  { id: 1, name: 'Sarah Jenkins',  title: 'UX Designer at Figma',          mutual: 12, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'], role: 'group_admin', joined: 'Oct 12, 2023', img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
-  { id: 2, name: 'Marcus Thorne',  title: 'Backend Engineer at Vercel',     mutual: 4,  sharedAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20'],                              role: 'moderator',   joined: 'Nov 5, 2023',  img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
-  { id: 3, name: 'Alex Rivera',    title: 'Product Manager at Notion',      mutual: 8,  sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'], role: 'member',   joined: 'Jan 8, 2024',  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
-  { id: 4, name: 'Elena Vance',    title: 'Graphic Designer · Freelance',   mutual: 2,  sharedAvatars: ['https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'],                              role: 'member',      joined: 'Feb 20, 2024', img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
-  { id: 5, name: 'James Okafor',   title: 'DevOps Lead at AWS',             mutual: 5,  sharedAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'], role: 'member',   joined: 'Mar 14, 2024', img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
-  { id: 6, name: 'Priya Sharma',   title: 'Data Scientist at Google',       mutual: 7,  sharedAvatars: ['https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=43'], role: 'member',   joined: 'Apr 2, 2024',  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
+  { id: 1, name: 'Sarah Jenkins',  title: 'UX Designer at Figma',          location: 'San Francisco, CA', mutual: 12, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'], role: 'group_admin', joined: 'Oct 12, 2023', img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
+  { id: 2, name: 'Marcus Thorne',  title: 'Backend Engineer at Vercel',     location: 'New York, NY',      mutual: 4,  sharedAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20'],                              role: 'moderator',   joined: 'Nov 5, 2023',  img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
+  { id: 3, name: 'Alex Rivera',    title: 'Product Manager at Notion',      location: 'Austin, TX',        mutual: 8,  sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'], role: 'member',   joined: 'Jan 8, 2024',  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
+  { id: 4, name: 'Elena Vance',    title: 'Graphic Designer · Freelance',   location: 'Berlin, Germany',   mutual: 2,  sharedAvatars: ['https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'],                              role: 'member',      joined: 'Feb 20, 2024', img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
+  { id: 5, name: 'James Okafor',   title: 'DevOps Lead at AWS',             location: 'Seattle, WA',       mutual: 5,  sharedAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'], role: 'member',   joined: 'Mar 14, 2024', img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
+  { id: 6, name: 'Priya Sharma',   title: 'Data Scientist at Google',       location: 'Bangalore, India',  mutual: 7,  sharedAvatars: ['https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=43'], role: 'member',   joined: 'Apr 2, 2024',  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
 ];
 
 const INIT_PENDING = [
-  { id: 101, name: 'Lucas Bennett',  mutual: 0, requestedOn: 'Jun 20, 2026', bio: 'Full-stack dev, 5 yrs exp. Passionate about open source.',            img: 'https://i.pravatar.cc/40?img=11' },
-  { id: 102, name: 'Amara Diallo',   mutual: 3, requestedOn: 'Jun 21, 2026', bio: 'UI/UX designer focused on accessibility and design systems.',           img: 'https://i.pravatar.cc/40?img=20' },
-  { id: 103, name: 'Kenji Watanabe', mutual: 0, requestedOn: 'Jun 22, 2026', bio: 'Backend engineer, Go & Rust enthusiast. Looking for like-minded devs.', img: 'https://i.pravatar.cc/40?img=33' },
-  { id: 104, name: 'Sofia Herrera',  mutual: 6, requestedOn: 'Jun 22, 2026', bio: 'Frontend dev specialising in React. Active open source contributor.',    img: 'https://i.pravatar.cc/40?img=44' },
+  { id: 101, name: 'Lucas Bennett',  location: 'Toronto, Canada',   mutual: 0, sharedAvatars: [],                                                                                                        requestedOn: 'Jun 20, 2026', bio: 'Full-stack dev, 5 yrs exp. Passionate about open source.',            img: 'https://i.pravatar.cc/40?img=11' },
+  { id: 102, name: 'Amara Diallo',   location: 'Paris, France',     mutual: 3, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],    requestedOn: 'Jun 21, 2026', bio: 'UI/UX designer focused on accessibility and design systems.',           img: 'https://i.pravatar.cc/40?img=20' },
+  { id: 103, name: 'Kenji Watanabe', location: 'Tokyo, Japan',      mutual: 0, sharedAvatars: [],                                                                                                        requestedOn: 'Jun 22, 2026', bio: 'Backend engineer, Go & Rust enthusiast. Looking for like-minded devs.', img: 'https://i.pravatar.cc/40?img=33' },
+  { id: 104, name: 'Sofia Herrera',  location: 'Madrid, Spain',     mutual: 6, sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'],  requestedOn: 'Jun 22, 2026', bio: 'Frontend dev specialising in React. Active open source contributor.',    img: 'https://i.pravatar.cc/40?img=44' },
 ];
 
 const ADMIN_POSTS = [
@@ -687,41 +688,12 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
           {/* Posts tab */}
           {activeTab === 'posts' && (
-            <div className="adm-posts-layout">
-
-              {/* Feed */}
-              <div className="adm-posts-feed">
+            <div className="gd-body">
+              <div className="gd-main">
                 {GROUP_POSTS.map(p => (
                   <PostCard key={p._id} post={p} />
                 ))}
               </div>
-
-              {/* Sidebar */}
-              <div className="adm-posts-sidebar">
-                <div className="adm-mission-card">
-                  <div className="adm-mission-head">
-                    <span className="adm-mission-icon"><InfoCircleIcon /></span>
-                    <span className="adm-mission-title">Group Mission</span>
-                  </div>
-                  <p className="adm-mission-text">
-                    {group?.name} is an elite collective of cybersecurity experts dedicated to
-                    maintaining the integrity of the core network. Established in cycle 2046,
-                    this group operates under Level 5 clearance protocols for global node monitoring.
-                  </p>
-                </div>
-
-                <div className="adm-roster-card">
-                  <p className="adm-roster-title">Current Members</p>
-                  <div className="adm-roster-avatars">
-                    {ADMIN_MEMBERS.slice(0, 4).map(m => (
-                      <img key={m.id} src={m.img} alt={m.name} className="adm-roster-av" />
-                    ))}
-                    <span className="adm-roster-extra">+12k</span>
-                  </div>
-                  <button className="adm-view-roster-btn">VIEW FULL ROSTER</button>
-                </div>
-              </div>
-
             </div>
           )}
 
@@ -745,7 +717,19 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                           <img src={m.img} alt={m.name} className="adm-member-avatar" />
                           <div>
                             <p className="adm-member-name">{m.name}</p>
-                            <p className="adm-member-mutual">{m.mutual} mutual connections</p>
+                            {m.location && (
+                              <span className="gd-member-location"><PinIcon /> {m.location}</span>
+                            )}
+                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                              <div className="prof-conn-shared-avatars">
+                                {m.sharedAvatars.slice(0, 3).map((src, i) => (
+                                  <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                                ))}
+                              </div>
+                              <span className="adm-member-mutual">
+                                {m.mutual > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -794,59 +778,97 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           {activeTab === 'about' && (
             <div className="adm-about-layout">
 
-              {/* Description */}
-              <div className="adm-about-card">
-                <div className="adm-about-card-head">
-                  <span className="adm-about-icon adm-about-icon--blue"><InfoCircleIcon /></span>
-                  <span className="adm-about-card-title">About this Group</span>
+              <div className="adm-about-main">
+                {/* Description */}
+                <div className="adm-about-card">
+                  <div className="adm-about-card-head">
+                    <span className="adm-about-icon adm-about-icon--blue"><InfoCircleIcon /></span>
+                    <span className="adm-about-card-title">About this Group</span>
+                  </div>
+                  <p className="adm-about-body">
+                    {group?.description || 'No description provided for this group yet.'}
+                  </p>
                 </div>
-                <p className="adm-about-body">
-                  {group?.description || 'No description provided for this group yet.'}
-                </p>
-              </div>
 
-              {/* Mission */}
-              <div className="adm-about-card">
-                <div className="adm-about-card-head">
-                  <span className="adm-about-icon adm-about-icon--purple"><TrendingUpIcon /></span>
-                  <span className="adm-about-card-title">Group Mission</span>
+                {/* Mission */}
+                <div className="adm-about-card">
+                  <div className="adm-about-card-head">
+                    <span className="adm-about-icon adm-about-icon--purple"><TrendingUpIcon /></span>
+                    <span className="adm-about-card-title">Group Mission</span>
+                  </div>
+                  <p className="adm-about-body">
+                    {group?.mission || 'No mission statement defined.'}
+                  </p>
                 </div>
-                <p className="adm-about-body">
-                  {group?.mission || 'No mission statement defined.'}
-                </p>
-              </div>
 
-              {/* Meta grid */}
-              <div className="adm-about-meta-grid">
-
-                <div className="adm-about-meta-card">
-                  <span className="adm-about-meta-label">Admin</span>
-                  <div className="adm-about-meta-val-row">
-                    <img src="https://i.pravatar.cc/28?img=3" alt="admin" className="adm-about-admin-av" />
-                    <span className="adm-about-meta-value">{group?.admin || 'Alex Vanguard'}</span>
+                {/* Meta grid */}
+                <div className="adm-about-meta-grid">
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Admin</span>
+                    <div className="adm-about-meta-val-row">
+                      <img src="https://i.pravatar.cc/28?img=3" alt="admin" className="adm-about-admin-av" />
+                      <span className="adm-about-meta-value">{group?.admin || 'Alex Vanguard'}</span>
+                    </div>
+                  </div>
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Privacy</span>
+                    <div className="adm-about-meta-val-row">
+                      {group?.privacy === 'private'
+                        ? <><LockIcon /><span className="adm-about-meta-value">Private</span></>
+                        : <><GlobeIcon /><span className="adm-about-meta-value">Public</span></>
+                      }
+                    </div>
+                  </div>
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Category</span>
+                    <span className="adm-about-meta-value">{group?.category || '—'}</span>
+                  </div>
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Created</span>
+                    <span className="adm-about-meta-value">{group?.createdAt || '—'}</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="adm-about-meta-card">
-                  <span className="adm-about-meta-label">Privacy</span>
-                  <div className="adm-about-meta-val-row">
-                    {group?.privacy === 'private'
-                      ? <><LockIcon /><span className="adm-about-meta-value">Private</span></>
-                      : <><GlobeIcon /><span className="adm-about-meta-value">Public</span></>
-                    }
+              {/* Group Info sidebar */}
+              <div className="adm-about-sidebar">
+                <div className="gd-card">
+                  <h3 className="gd-card-title">Group Info</h3>
+                  <div className="gd-info-rows">
+                    <div className="gd-info-row">
+                      {group?.privacy === 'private' ? <LockIcon /> : <GlobeIcon />}
+                      <div>
+                        <p className="gd-info-sub">{group?.privacy === 'private' ? 'Only members can see posts' : 'Anyone can view and join'}</p>
+                        <p className="gd-info-label">{group?.privacy === 'private' ? 'Private Group' : 'Public Group'}</p>
+                      </div>
+                    </div>
+                    <div className="gd-info-row">
+                      <UsersIcon />
+                      <div>
+                        <p className="gd-info-sub">Total members</p>
+                        <p className="gd-info-label">{group?.memberCount?.toLocaleString() || group?.members || '—'}</p>
+                      </div>
+                    </div>
+                    {group?.createdAt && (
+                      <div className="gd-info-row">
+                        <InfoCircleIcon />
+                        <div>
+                          <p className="gd-info-sub">Group history</p>
+                          <p className="gd-info-label">Created {group.createdAt}</p>
+                        </div>
+                      </div>
+                    )}
+                    {group?.admin && (
+                      <div className="gd-info-row">
+                        <OrganizerIcon />
+                        <div>
+                          <p className="gd-info-sub">Group Admin</p>
+                          <p className="gd-info-label">{group.admin}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <div className="adm-about-meta-card">
-                  <span className="adm-about-meta-label">Category</span>
-                  <span className="adm-about-meta-value">{group?.category || '—'}</span>
-                </div>
-
-                <div className="adm-about-meta-card">
-                  <span className="adm-about-meta-label">Created</span>
-                  <span className="adm-about-meta-value">{group?.createdAt || '—'}</span>
-                </div>
-
               </div>
 
             </div>
@@ -874,9 +896,19 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                           <img src={r.img} alt={r.name} className="adm-member-avatar" />
                           <div>
                             <p className="adm-member-name">{r.name}</p>
-                            <p className="adm-member-mutual">
-                              {r.mutual > 0 ? `${r.mutual} mutual connections` : 'New to your network'}
-                            </p>
+                            {r.location && (
+                              <span className="gd-member-location"><PinIcon /> {r.location}</span>
+                            )}
+                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                              <div className="prof-conn-shared-avatars">
+                                {r.sharedAvatars.slice(0, 3).map((src, i) => (
+                                  <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                                ))}
+                              </div>
+                              <span className="adm-member-mutual">
+                                {r.mutual > 0 ? `${r.mutual} mutual connections` : 'New to your network'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -896,37 +928,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           )}
         </div>
 
-        {/* Bottom row */}
-        <div className="adm-bottom-row">
-          <div className="adm-pending-card">
-            <div className="adm-pending-deco" />
-            <p className="adm-pending-label">{group?.privacy === 'private' ? 'PENDING REQUESTS' : 'OPEN MEMBERSHIP'}</p>
-            <h3 className="adm-pending-title">
-              {group?.privacy === 'private'
-                ? (pendingList.length > 0 ? `Review ${pendingList.length} Pending Requests` : 'All Requests Reviewed')
-                : 'Anyone Can Join Freely'}
-            </h3>
-            <p className="adm-pending-desc">
-              {group?.privacy === 'private'
-                ? (pendingList.length > 0
-                    ? 'New applications to join your group are waiting. Review them to maintain community growth.'
-                    : 'Great work — no pending join requests at this time.')
-                : 'This is a public group. Members can join without approval — no review required.'}
-            </p>
-            {group?.privacy === 'private' && pendingList.length > 0 && (
-              <div className="adm-pending-btns">
-                <button className="adm-goto-btn" onClick={() => switchTab('pending')}>Go to Requests</button>
-              </div>
-            )}
-          </div>
-
-          <div className="adm-insights-card">
-            <div className="adm-insights-icon-wrap"><InsightsIcon /></div>
-            <h3 className="adm-insights-title">Community Insights</h3>
-            <p className="adm-insights-desc">Your group saw a 14% increase in participation after the last event.</p>
-            <button className="adm-analytics-btn">View full analytics <ArrowRightIcon /></button>
-          </div>
-        </div>
 
       </div>
     </div>
@@ -1110,7 +1111,7 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 /* ── Nav ── */
 
 /* ── Mock data ── */
-const HUB_CATEGORIES = ['All Hubs', 'Technology', 'Design', 'Business', 'Education', 'Health', 'Science', 'Finance', 'Arts'];
+const HUB_CATEGORIES = ['All', 'Technology', 'Design', 'Business', 'Education', 'Health', 'Science', 'Finance', 'Arts'];
 
 const HUB_GROUPS = [
   { id: 1,  name: 'Neural Interface Labs',   category: 'Technology', members: '14.2k members', memberCount: 14200, memberAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],  coverImg: 'https://picsum.photos/seed/hub-neural/400/200',  iconText: 'NI', color: '#2563eb', tab: 'suggested', privacy: 'public',  createdAt: 'February 8, 2022',   admin: 'Lena Hartmann',    mission: 'Push the boundary between human cognition and machine intelligence.',     description: 'Neural Interface Labs is a research-driven community for engineers, neuroscientists, and AI practitioners exploring brain-computer interfaces, neural decoding, and next-gen human-machine interaction. We share papers, tools, and collaborate on open research.' },
@@ -1144,21 +1145,50 @@ function initials(name) {
    Group Detail Page
 ══════════════════════════ */
 const GD_MEMBERS = [
-  { id: 1, name: 'Sarah Jenkins',  title: 'UX Designer at Figma',          role: 'Admin',     joined: 'Oct 2023', mutual: 12, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],  img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
-  { id: 2, name: 'Marcus Thorne',  title: 'Backend Engineer at Vercel',     role: 'Moderator', joined: 'Nov 2023', mutual: 4,  sharedAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20'],                                   img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
-  { id: 3, name: 'Alex Rivera',    title: 'Product Manager at Notion',      role: 'Member',    joined: 'Jan 2024', mutual: 8,  sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'],  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
-  { id: 4, name: 'Elena Vance',    title: 'Graphic Designer · Freelance',   role: 'Member',    joined: 'Feb 2024', mutual: 2,  sharedAvatars: ['https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'],                                   img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
-  { id: 5, name: 'James Okafor',   title: 'DevOps Lead at AWS',             role: 'Member',    joined: 'Mar 2024', mutual: 5,  sharedAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'],  img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
-  { id: 6, name: 'Priya Sharma',   title: 'Data Scientist at Google',       role: 'Member',    joined: 'Apr 2024', mutual: 7,  sharedAvatars: ['https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=43'],  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
-  { id: 7, name: 'Tom Barker',     title: 'iOS Developer at Apple',         role: 'Member',    joined: 'May 2024', mutual: 0,  sharedAvatars: [],                                                                                                        img: 'https://i.pravatar.cc/40?img=21', isFriend: false },
-  { id: 8, name: 'Nina Petrova',   title: 'Cloud Architect at Microsoft',   role: 'Member',    joined: 'Jun 2024', mutual: 3,  sharedAvatars: ['https://i.pravatar.cc/28?img=45','https://i.pravatar.cc/28?img=49'],                                   img: 'https://i.pravatar.cc/40?img=25', isFriend: true  },
+  { id: 1, name: 'Sarah Jenkins',  title: 'UX Designer at Figma',          location: 'San Francisco, CA', role: 'Admin',     joined: 'Oct 2023', mutual: 12, sharedAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],  img: 'https://i.pravatar.cc/40?img=1',  isFriend: true  },
+  { id: 2, name: 'Marcus Thorne',  title: 'Backend Engineer at Vercel',     location: 'New York, NY',      role: 'Moderator', joined: 'Nov 2023', mutual: 4,  sharedAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20'],                                   img: 'https://i.pravatar.cc/40?img=3',  isFriend: false },
+  { id: 3, name: 'Alex Rivera',    title: 'Product Manager at Notion',      location: 'Austin, TX',        role: 'Member',    joined: 'Jan 2024', mutual: 8,  sharedAvatars: ['https://i.pravatar.cc/28?img=25','https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=44'],  img: 'https://i.pravatar.cc/40?img=5',  isFriend: true  },
+  { id: 4, name: 'Elena Vance',    title: 'Graphic Designer · Freelance',   location: 'Berlin, Germany',   role: 'Member',    joined: 'Feb 2024', mutual: 2,  sharedAvatars: ['https://i.pravatar.cc/28?img=47','https://i.pravatar.cc/28?img=48'],                                   img: 'https://i.pravatar.cc/40?img=9',  isFriend: false },
+  { id: 5, name: 'James Okafor',   title: 'DevOps Lead at AWS',             location: 'Seattle, WA',       role: 'Member',    joined: 'Mar 2024', mutual: 5,  sharedAvatars: ['https://i.pravatar.cc/28?img=51','https://i.pravatar.cc/28?img=53','https://i.pravatar.cc/28?img=56'],  img: 'https://i.pravatar.cc/40?img=12', isFriend: false },
+  { id: 6, name: 'Priya Sharma',   title: 'Data Scientist at Google',       location: 'Bangalore, India',  role: 'Member',    joined: 'Apr 2024', mutual: 7,  sharedAvatars: ['https://i.pravatar.cc/28?img=60','https://i.pravatar.cc/28?img=57','https://i.pravatar.cc/28?img=43'],  img: 'https://i.pravatar.cc/40?img=16', isFriend: true  },
+  { id: 7, name: 'Tom Barker',     title: 'iOS Developer at Apple',         location: 'Cupertino, CA',     role: 'Member',    joined: 'May 2024', mutual: 0,  sharedAvatars: [],                                                                                                        img: 'https://i.pravatar.cc/40?img=21', isFriend: false },
+  { id: 8, name: 'Nina Petrova',   title: 'Cloud Architect at Microsoft',   location: 'London, UK',        role: 'Member',    joined: 'Jun 2024', mutual: 3,  sharedAvatars: ['https://i.pravatar.cc/28?img=45','https://i.pravatar.cc/28?img=49'],                                   img: 'https://i.pravatar.cc/40?img=25', isFriend: true  },
 ];
 
 function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
-  const [detailTab,    setDetailTab]    = useState('about');
-  const [joinedLocal,  setJoinedLocal]  = useState(group.joined || false);
+  const [detailTab,      setDetailTab]      = useState('about');
+  const [joinedLocal,    setJoinedLocal]    = useState(group.joined || false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [gdFriendIds,  setGdFriendIds]  = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
+  const [gdFriendIds,    setGdFriendIds]    = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
+  const [showLeaveModal,   setShowLeaveModal]   = useState(false);
+  const [leaveReason,      setLeaveReason]      = useState('');
+  const [showReportModal,  setShowReportModal]  = useState(false);
+  const [reportSelected,   setReportSelected]   = useState('');
+  const [reportDone,       setReportDone]       = useState(false);
+
+  const GROUP_REPORT_REASONS = [
+    'Spam or misleading content',
+    'Hate speech or discrimination',
+    'Harassment or bullying',
+    'Violent or dangerous content',
+    'Misinformation',
+  ];
+
+  function handleReportSubmit() {
+    if (!reportSelected) return;
+    setReportDone(true);
+  }
+  function handleReportClose() {
+    setShowReportModal(false);
+    setReportSelected('');
+    setReportDone(false);
+  }
+
+  function handleLeaveConfirm() {
+    setJoinedLocal(false);
+    setShowLeaveModal(false);
+    setLeaveReason('');
+  }
 
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
@@ -1195,30 +1225,27 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
           <div className="gd-group-info">
             <h1 className="gd-title">{group.name}</h1>
             <p className="gd-meta">
-              {isPrivate ? <><LockIcon /> Private</> : <><GlobeIcon /> Public</>}
-              <span className="gd-meta-dot">·</span>
-              {group.category}
-              <span className="gd-meta-dot">·</span>
               {group.members}
             </p>
           </div>
           <div className="gd-header-actions">
             {isOwned ? (
               <button className="gd-manage-btn" onClick={onManage}>Manage Group</button>
+            ) : joinedLocal ? (
+              <button className="gd-leave-btn" onClick={() => setShowLeaveModal(true)}>Leave Group</button>
             ) : (
-              <button
-                className={`gd-join-btn${joinedLocal ? ' gd-join-btn--joined' : ''}`}
-                onClick={() => setJoinedLocal(v => !v)}
-              >
-                {joinedLocal ? 'Leave Group' : 'Join Group'}
-              </button>
+              <button className="gd-join-btn" onClick={() => setJoinedLocal(true)}>Join Group</button>
             )}
             <button className="gd-share-btn"><ShareIcon2 /> Share</button>
+            {!isOwned && (
+              <button className="gd-report-btn" onClick={() => setShowReportModal(true)}>Report</button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs + content card */}
+      <div className="gd-tab-card">
       <div className="gd-tab-row">
         <button className={`gd-tab${detailTab === 'about'   ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('about')}>About</button>
         <button className={`gd-tab${detailTab === 'posts'   ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('posts')}>Posts</button>
@@ -1232,41 +1259,79 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
         {detailTab === 'about' && (
           <>
             <div className="gd-main">
-              <div className="gd-card">
-                <h3 className="gd-card-title">About this Group</h3>
-                <p className="gd-card-text">{group.description || 'No description provided.'}</p>
-              </div>
-              {group.mission && (
-                <div className="gd-card">
-                  <h3 className="gd-card-title">Group Mission</h3>
-                  <p className="gd-card-text gd-mission-text">{group.mission}</p>
+              <div className="adm-about-main">
+
+                <div className="adm-about-card">
+                  <div className="adm-about-card-head">
+                    <span className="adm-about-icon adm-about-icon--blue"><InfoCircleIcon /></span>
+                    <span className="adm-about-card-title">About this Group</span>
+                  </div>
+                  <p className="adm-about-body">{group.description || 'No description provided for this group yet.'}</p>
                 </div>
-              )}
+
+                <div className="adm-about-card">
+                  <div className="adm-about-card-head">
+                    <span className="adm-about-icon adm-about-icon--purple"><TrendingUpIcon /></span>
+                    <span className="adm-about-card-title">Group Mission</span>
+                  </div>
+                  <p className="adm-about-body">{group.mission || 'No mission statement defined.'}</p>
+                </div>
+
+                <div className="adm-about-meta-grid">
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Admin</span>
+                    <div className="adm-about-meta-val-row">
+                      <img src="https://i.pravatar.cc/28?img=3" alt="admin" className="adm-about-admin-av" />
+                      <span className="adm-about-meta-value">{group.admin || '—'}</span>
+                    </div>
+                  </div>
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Privacy</span>
+                    <div className="adm-about-meta-val-row">
+                      {isPrivate
+                        ? <><LockIcon /><span className="adm-about-meta-value">Private</span></>
+                        : <><GlobeIcon /><span className="adm-about-meta-value">Public</span></>
+                      }
+                    </div>
+                  </div>
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Category</span>
+                    <span className="adm-about-meta-value">{group.category || '—'}</span>
+                  </div>
+                  <div className="adm-about-meta-card">
+                    <span className="adm-about-meta-label">Created</span>
+                    <span className="adm-about-meta-value">{group.createdAt || '—'}</span>
+                  </div>
+                </div>
+
+              </div>
             </div>
+
             <div className="gd-sidebar">
+
               <div className="gd-card">
                 <h3 className="gd-card-title">Group Info</h3>
                 <div className="gd-info-rows">
                   <div className="gd-info-row">
                     {isPrivate ? <LockIcon /> : <GlobeIcon />}
                     <div>
-                      <p className="gd-info-label">{isPrivate ? 'Private Group' : 'Public Group'}</p>
                       <p className="gd-info-sub">{isPrivate ? 'Only members can see posts' : 'Anyone can view and join'}</p>
+                      <p className="gd-info-label">{isPrivate ? 'Private Group' : 'Public Group'}</p>
                     </div>
                   </div>
                   <div className="gd-info-row">
                     <UsersIcon />
                     <div>
-                      <p className="gd-info-label">{group.members}</p>
                       <p className="gd-info-sub">Total members</p>
+                      <p className="gd-info-label">{group.members}</p>
                     </div>
                   </div>
                   {group.createdAt && (
                     <div className="gd-info-row">
                       <InfoCircleIcon />
                       <div>
-                        <p className="gd-info-label">Created {group.createdAt}</p>
                         <p className="gd-info-sub">Group history</p>
+                        <p className="gd-info-label">Created {group.createdAt}</p>
                       </div>
                     </div>
                   )}
@@ -1274,8 +1339,8 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     <div className="gd-info-row">
                       <OrganizerIcon />
                       <div>
-                        <p className="gd-info-label">{group.admin}</p>
                         <p className="gd-info-sub">Group Admin</p>
+                        <p className="gd-info-label">{group.admin}</p>
                       </div>
                     </div>
                   )}
@@ -1287,88 +1352,143 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
         {/* ── Posts tab ── */}
         {detailTab === 'posts' && (
-          <>
-            <div className="gd-main">
-              {GROUP_POSTS.map(p => (
-                <PostCard key={p._id} post={p} />
-              ))}
-            </div>
-            <div className="gd-sidebar">
-              <div className="gd-card">
-                <h3 className="gd-card-title">Group Info</h3>
-                <div className="gd-info-rows">
-                  <div className="gd-info-row">
-                    {isPrivate ? <LockIcon /> : <GlobeIcon />}
-                    <div>
-                      <p className="gd-info-label">{isPrivate ? 'Private Group' : 'Public Group'}</p>
-                      <p className="gd-info-sub">{isPrivate ? 'Only members can see posts' : 'Anyone can view and join'}</p>
-                    </div>
-                  </div>
-                  <div className="gd-info-row">
-                    <UsersIcon />
-                    <div>
-                      <p className="gd-info-label">{group.members}</p>
-                      <p className="gd-info-sub">Total members</p>
-                    </div>
-                  </div>
-                  {group.admin && (
-                    <div className="gd-info-row">
-                      <OrganizerIcon />
-                      <div>
-                        <p className="gd-info-label">{group.admin}</p>
-                        <p className="gd-info-sub">Group Admin</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
+          <div className="gd-main">
+            {GROUP_POSTS.map(p => (
+              <PostCard key={p._id} post={p} />
+            ))}
+          </div>
         )}
 
         {/* ── Members tab ── */}
         {detailTab === 'members' && (
           <div className="gd-members-section">
-            <div className="prof-conn-list">
-              {GD_MEMBERS.map(m => (
-                <div key={m.id} className="prof-conn-item">
-                  <div className="prof-conn-avatar-wrap">
-                    <img src={m.img} alt={m.name} className="prof-conn-avatar" />
-                  </div>
-                  <div className="prof-conn-info">
-                    <div className="prof-conn-name-row">
-                      <span className="prof-conn-name">{m.name}</span>
-                    </div>
-                    <span className="prof-conn-role">{m.title}</span>
-                    <div className="prof-conn-shared">
-                      <div className="prof-conn-shared-avatars">
-                        {m.sharedAvatars.map((src, i) => (
-                          <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
-                        ))}
-                        {m.mutual > 3 && <span className="prof-conn-shared-extra">+{m.mutual - 3}</span>}
+            <table className="adm-table">
+              <thead>
+                <tr>
+                  <th>MEMBER</th>
+                  <th>DATE JOINED</th>
+                  <th>ROLE</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {GD_MEMBERS.map(m => (
+                  <tr key={m.id}>
+                    <td>
+                      <div className="adm-member-cell">
+                        <img src={m.img} alt={m.name} className="adm-member-avatar" />
+                        <div>
+                          <p className="adm-member-name">{m.name}</p>
+                          {m.location && (
+                            <span className="gd-member-location"><PinIcon /> {m.location}</span>
+                          )}
+                          <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                            <div className="prof-conn-shared-avatars">
+                              {m.sharedAvatars.slice(0, 3).map((src, i) => (
+                                <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
+                              ))}
+                            </div>
+                            <span className="adm-member-mutual">
+                              {m.mutual > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="prof-conn-shared-text">
-                        {m.mutual > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="prof-conn-actions">
-                    {gdFriendIds.has(m.id) ? (
-                      <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
-                    ) : (
-                      <button
-                        className="prof-conn-btn prof-conn-btn--add"
-                        onClick={() => setGdFriendIds(s => new Set([...s, m.id]))}
-                      >Add Friend</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </td>
+                    <td className="adm-date-cell">{m.joined}</td>
+                    <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{m.role}</span></td>
+                    <td>
+                      <div className="adm-action-cell">
+                        {gdFriendIds.has(m.id) ? (
+                          <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                        ) : (
+                          <button
+                            className="prof-conn-btn prof-conn-btn--add"
+                            onClick={() => setGdFriendIds(s => new Set([...s, m.id]))}
+                          >Add Friend</button>
+                        )}
+                        <button className="prof-conn-btn prof-conn-btn--remove">Remove from Group</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
       </div>
+      </div>{/* /gd-tab-card */}
+
+      {/* Report Group Modal */}
+      {showReportModal && (
+        <div className="report-overlay" onClick={e => { if (e.target === e.currentTarget) handleReportClose(); }}>
+          <div className="report-modal">
+            <div className="report-modal-header">
+              <h2 className="report-modal-title">Report Group</h2>
+              <button className="report-close-btn" onClick={handleReportClose}>✕</button>
+            </div>
+            {reportDone ? (
+              <div className="report-success">
+                <div className="report-success-icon">✓</div>
+                <p>Thank you for your report. We'll review it and take action if it violates our community guidelines.</p>
+                <button className="report-success-close" onClick={handleReportClose}>Done</button>
+              </div>
+            ) : (
+              <>
+                <div className="report-modal-body">
+                  <h3 className="report-question">What's going on?</h3>
+                  <p className="report-subtitle">We'll check for all community guidelines, so don't worry about making the perfect choice.</p>
+                  <ul className="report-reasons">
+                    {GROUP_REPORT_REASONS.map(reason => (
+                      <li key={reason} className="report-reason-item">
+                        <label className="report-reason-label">
+                          <span className={`report-radio${reportSelected === reason ? ' report-radio--checked' : ''}`} />
+                          <input
+                            type="radio"
+                            name="group-report-reason"
+                            value={reason}
+                            checked={reportSelected === reason}
+                            onChange={() => setReportSelected(reason)}
+                            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span className="report-reason-text">{reason}</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="report-modal-footer">
+                  <button className="report-submit-btn" onClick={handleReportSubmit} disabled={!reportSelected}>Submit</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Leave Group Modal */}
+      {showLeaveModal && (
+        <div className="lgm-overlay" onClick={() => setShowLeaveModal(false)}>
+          <div className="lgm-box" onClick={e => e.stopPropagation()}>
+            <h2 className="lgm-title">Leave Group</h2>
+            <p className="lgm-desc">Are you sure you want to leave <strong>{group.name}</strong>? You'll lose access to all group content.</p>
+            <label className="lgm-label">Reason for leaving <span className="lgm-optional">(optional)</span></label>
+            <textarea
+              className="lgm-textarea"
+              placeholder="Tell us why you're leaving..."
+              value={leaveReason}
+              onChange={e => setLeaveReason(e.target.value)}
+              rows={3}
+            />
+            <div className="lgm-actions">
+              <button className="lgm-cancel-btn" onClick={() => setShowLeaveModal(false)}>Cancel</button>
+              <button className="lgm-confirm-btn" onClick={handleLeaveConfirm}>Leave Group</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1385,9 +1505,6 @@ function GroupHubCard({ group, onManage, onView }) {
       <div className="hub-card-cover">
         <img src={group.coverImg} alt={group.name} className="hub-card-cover-img" />
         <span className="hub-card-badge">{group.category}</span>
-        {isOwned && group.privacy === 'private' && group.pendingReqs > 0 && (
-          <span className="hub-card-pending" onClick={() => onManage?.()}>{group.pendingReqs} pending</span>
-        )}
       </div>
       <div className="hub-card-icon-wrap">
         <div className="hub-card-icon" style={{ background: group.color }}>{group.iconText}</div>
@@ -1534,7 +1651,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [detailGroup,    setDetailGroup]    = useState(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [hubTab,         setHubTab]         = useState('suggested');
-  const [hubCat,         setHubCat]         = useState('All Hubs');
+  const [hubCat,         setHubCat]         = useState('All');
 
   if (showCreate) {
     return (
@@ -1615,7 +1732,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
 
   const displayGroups = HUB_GROUPS
     .filter(g => g.tab === hubTab)
-    .filter(g => hubCat === 'All Hubs' || g.category === hubCat);
+    .filter(g => hubCat === 'All' || g.category === hubCat);
 
   return (
     <div className="grp-page">
@@ -1628,7 +1745,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         <div className="grp-hub-top">
           <div className="grp-hub-tabs">
             <button className={`grp-hub-tab${hubTab === 'suggested' ? ' grp-hub-tab--active' : ''}`} onClick={() => setHubTab('suggested')}>Suggested Groups</button>
-            <button className={`grp-hub-tab${hubTab === 'yours'     ? ' grp-hub-tab--active' : ''}`} onClick={() => setHubTab('yours')}>Your Groups</button>
+            <button className={`grp-hub-tab${hubTab === 'yours'     ? ' grp-hub-tab--active' : ''}`} onClick={() => setHubTab('yours')}>My Created Groups</button>
             <button className={`grp-hub-tab${hubTab === 'joined'    ? ' grp-hub-tab--active' : ''}`} onClick={() => setHubTab('joined')}>Joined Groups</button>
           </div>
           <button className="grp-hub-create-btn" onClick={() => setShowCreate(true)}>

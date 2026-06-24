@@ -39,7 +39,7 @@
   cursor: pointer; transition: background 0.18s, color 0.18s;
   flex-shrink: 0;
 }
-.br-back-btn:hover { background: #243049; color: #e2e8f0; }
+.br-back-btn:hover { background: rgba(37,99,235,0.18); border-color: rgba(96,165,250,0.35); color: #93c5fd; }
 
 .br-search-wrap {
   display: flex; align-items: center; gap: 8px;
