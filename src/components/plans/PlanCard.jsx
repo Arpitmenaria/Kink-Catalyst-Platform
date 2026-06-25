@@ -3,27 +3,9 @@ import { selectPlan } from '../../store/slices/plansSlice';
 import { useEffect, useState, useMemo } from 'react';
 
 const TIER_META = {
-  free: {
-    label: 'STARTER',
-    name: 'Free Tier',
-    button: 'Join for Free',
-    popular: false,
-    variant: 'outline',
-  },
-  gold: {
-    label: 'INFLUENCER',
-    name: 'Gold Tier',
-    button: 'Get Gold',
-    popular: true,
-    variant: 'wave',
-  },
-  platinum: {
-    label: 'PROFESSIONAL',
-    name: 'Platinum Tier',
-    button: 'Go Platinum',
-    popular: false,
-    variant: 'outline',
-  },
+  free:     { label: 'STARTER',      button: 'Join for Free', popular: false, variant: 'outline' },
+  gold:     { label: 'INFLUENCER',   button: 'Get Gold',      popular: true,  variant: 'wave'    },
+  platinum: { label: 'PROFESSIONAL', button: 'Go Platinum',   popular: false, variant: 'outline' },
 };
 
 const COUNTER_DELAYS = [500, 680, 860];
@@ -57,7 +39,8 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
   const { selecting } = useSelector((state) => state.plans);
   const [displayPrice, setDisplayPrice] = useState(0);
 
-  const meta        = TIER_META[plan.tier] ?? { label: plan.tier.toUpperCase(), name: `${plan.tier} Tier`, button: 'Select Plan', popular: false, variant: 'outline' };
+  const meta        = TIER_META[plan.tier] ?? { label: plan.tier.toUpperCase(), button: 'Select Plan', popular: false, variant: 'outline' };
+  const tierName    = plan.tier.charAt(0).toUpperCase() + plan.tier.slice(1) + ' Tier';
   const isGold      = plan.tier === 'gold';
   const isPlatinum  = plan.tier === 'platinum';
   const featureList = plan.features.flatMap((f) => f.split('\n')).filter(Boolean);
@@ -124,7 +107,7 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
       {meta.popular && <div className="popular-badge">Most Popular</div>}
 
       <p className="plan-label">{meta.label}</p>
-      <h3 className="plan-name">{meta.name}</h3>
+      <h3 className="plan-name">{tierName}</h3>
 
       <div className="plan-price">
         <span className="price-dollar">$</span>

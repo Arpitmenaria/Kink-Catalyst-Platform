@@ -110,11 +110,12 @@ export default function SignupForm() {
     if (error) dispatch(clearAuthState());
   }
 
-  const hasLength = form.password.length >= 8;
+  const hasLength   = form.password.length >= 8;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim());
 
   const isFormValid =
     form.fullName.trim() !== '' &&
-    form.email.trim() !== '' &&
+    isEmailValid &&
     hasLength;
 
   async function handleSubmit(e) {
@@ -219,6 +220,12 @@ export default function SignupForm() {
             </div>
 
             <ul className="req-list" style={{ marginBottom: '1rem' }}>
+              <li className="req-item">
+                <RequirementDot met={isEmailValid} />
+                <span className={isEmailValid ? 'req-text req-text--met' : 'req-text'}>
+                  Valid email address
+                </span>
+              </li>
               <li className="req-item">
                 <RequirementDot met={hasLength} />
                 <span className={hasLength ? 'req-text req-text--met' : 'req-text'}>

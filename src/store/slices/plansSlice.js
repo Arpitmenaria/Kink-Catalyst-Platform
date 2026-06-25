@@ -1,61 +1,33 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
-const STATIC_PLANS = [
-  {
-    _id: 'plan-free',
-    tier: 'free',
-    price: 0,
-    features: [
-      'Basic profile',
-      '5 posts per day',
-      'Standard feed',
-      'Connect with friends',
-    ],
-  },
-  {
-    _id: 'plan-gold',
-    tier: 'gold',
-    price: 9,
-    features: [
-      'Everything in Free',
-      'Unlimited posts',
-      'Priority feed ranking',
-      'Analytics dashboard',
-      'Custom profile badge',
-    ],
-  },
-  {
-    _id: 'plan-platinum',
-    tier: 'platinum',
-    price: 19,
-    features: [
-      'Everything in Gold',
-      '4x visibility boost',
-      'Advanced analytics',
-      'Early access to features',
-      'Dedicated support',
-    ],
-  },
-];
+import { apiRequest } from '../../services/api';
 
 export const fetchPlans = createAsyncThunk(
   'plans/fetchPlans',
-  async () => {
-    return STATIC_PLANS;
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await apiRequest('/api/auth/user/plans');
+      return Array.isArray(data) ? data : (data.data ?? data.plans ?? []);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const selectPlan = createAsyncThunk(
   'plans/selectPlan',
-  async (planId) => {
-    const plan = STATIC_PLANS.find(p => p._id === planId);
-    return {
-      planId,
-      data: {
-        token: 'mock-token',
-        user: { fullName: 'Demo User', id: 'mock-user-1', membership: plan?.tier ?? 'free' },
-      },
-    };
+  async (planId, { getState, rejectWithValue }) => {
+    try {
+      const { setupToken } = getState().auth;
+      const data = await apiRequest('/api/auth/user/select-plan', {
+        method: 'POST',
+        body: { planId },
+        token: setupToken,
+      });
+      const payload = data.data ?? data;
+      return { planId, data: { token: payload.token ?? null, user: payload.user ?? null } };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 

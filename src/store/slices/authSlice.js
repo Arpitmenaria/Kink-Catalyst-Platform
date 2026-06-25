@@ -1,36 +1,88 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { selectPlan } from './plansSlice';
+import { apiRequest } from '../../services/api';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async ({ email }) => {
-    await new Promise(r => setTimeout(r, 1400));
-    const name = email.split('@')[0].replace(/[._]/g, ' ');
-    const fullName = name.charAt(0).toUpperCase() + name.slice(1);
-    return { user: { fullName, id: 'mock-user-1', email }, token: 'mock-token' };
+  async ({ email, password }, { rejectWithValue }) => {
+    try {
+      const data = await apiRequest('/api/auth/user/login', {
+        method: 'POST',
+        body: { email, password },
+      });
+      const payload = data.data ?? data;
+      return { user: payload.user ?? null, token: payload.token ?? null };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async (credentials) => {
-    await new Promise(r => setTimeout(r, 1400));
-    return { data: { success: true }, credentials };
+  async (credentials, { rejectWithValue }) => {
+    try {
+      await apiRequest('/api/auth/user/register', {
+        method: 'POST',
+        body: {
+          fullName: credentials.fullName,
+          email: credentials.email,
+          password: credentials.password,
+          fcmToken: credentials.fcmToken ?? 'web_fcm_token',
+        },
+      });
+      return { credentials };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
-  async () => {
-    await new Promise(r => setTimeout(r, 1400));
-    return { setupToken: 'mock-setup-token', user: null, token: null };
+  async (otp, { getState, rejectWithValue }) => {
+    try {
+      const { registrationData } = getState().auth;
+      const data = await apiRequest('/api/auth/user/verify-otp', {
+        method: 'POST',
+        body: {
+          fullName: registrationData?.fullName,
+          email: registrationData?.email,
+          password: registrationData?.password,
+          otp,
+          fcmToken: registrationData?.fcmToken ?? 'web_fcm_token',
+        },
+      });
+      const payload = data.data ?? data;
+      return {
+        setupToken: payload.setupToken ?? null,
+        user: payload.user ?? null,
+        token: payload.token ?? null,
+      };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const resendOtp = createAsyncThunk(
   'auth/resendOtp',
-  async () => {
-    return {};
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { registrationData } = getState().auth;
+      await apiRequest('/api/auth/user/register', {
+        method: 'POST',
+        body: {
+          fullName: registrationData?.fullName,
+          email: registrationData?.email,
+          password: registrationData?.password,
+          fcmToken: registrationData?.fcmToken ?? 'web_fcm_token',
+        },
+      });
+      return {};
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 

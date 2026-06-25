@@ -119,6 +119,7 @@ export default function LoginForm() {
     resetTimer.current = setTimeout(() => setBtnState('idle'), 2200);
   }
 
+  const isFormValid = form.email.trim() !== '' && form.password.trim() !== '';
   const isIdle = btnState === 'idle';
 
   return (
@@ -198,7 +199,7 @@ export default function LoginForm() {
             <button
               type="submit"
               className={`submit-btn submit-btn--${btnState}`}
-              disabled={btnState !== 'idle'}
+              disabled={btnState !== 'idle' || !isFormValid}
             >
               {btnState === 'idle'    && 'Sign In'}
               {btnState === 'loading' && <LoadingContent />}
