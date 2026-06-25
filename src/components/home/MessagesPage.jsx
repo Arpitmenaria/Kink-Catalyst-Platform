@@ -505,6 +505,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [newMsgOpen,       setNewMsgOpen]      = useState(false);
   const [showAssets,       setShowAssets]      = useState(false);
   const [typingUser,       setTypingUser]      = useState(null);
+  const [lightboxUrl,      setLightboxUrl]     = useState(null);
 
   const messagesEndRef  = useRef(null);
   const typingTimerRef  = useRef(null);
@@ -713,7 +714,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                         {msg.type === 'video'
                           ? <video src={msg.mediaUrl} controls className="msg-img-placeholder" style={{ width: '100%', background: '#0d1424' }} />
                           : msg.mediaUrl
-                            ? <img src={msg.mediaUrl} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover' }} />
+                            ? <img src={msg.mediaUrl} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover', cursor: 'pointer' }} onClick={() => setLightboxUrl(msg.mediaUrl)} />
                             : <div className="msg-img-placeholder" />
                         }
                         <div className="msg-bubble-meta msg-bubble-meta--right">
@@ -845,6 +846,26 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             </div>
           </div>
         </>}
+
+        {/* ── Lightbox ── */}
+        {lightboxUrl && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setLightboxUrl(null)}
+          >
+            <button
+              onClick={() => setLightboxUrl(null)}
+              style={{ position: 'absolute', top: 18, right: 22, background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 38, height: 38, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+              aria-label="Close"
+            >✕</button>
+            <img
+              src={lightboxUrl}
+              alt=""
+              onClick={e => e.stopPropagation()}
+              style={{ maxWidth: '90vw', maxHeight: '88vh', borderRadius: 10, objectFit: 'contain', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+            />
+          </div>
+        )}
       </div>
     );
   }
