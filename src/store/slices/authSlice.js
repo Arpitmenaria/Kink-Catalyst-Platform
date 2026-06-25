@@ -2,6 +2,35 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { selectPlan } from './plansSlice';
 import { apiRequest } from '../../services/api';
 
+const TOKEN_KEY = 'auth_token';
+const USER_KEY  = 'auth_user';
+
+function saveSession(token, user) {
+  try {
+    localStorage.setItem(TOKEN_KEY, token ?? '');
+    localStorage.setItem(USER_KEY, JSON.stringify(user ?? null));
+  } catch (_) {}
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch (_) {}
+}
+
+function loadSession() {
+  try {
+    const token = localStorage.getItem(TOKEN_KEY) || null;
+    const user  = JSON.parse(localStorage.getItem(USER_KEY)) || null;
+    return { token, user };
+  } catch (_) {
+    return { token: null, user: null };
+  }
+}
+
+const { token: savedToken, user: savedUser } = loadSession();
+
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
@@ -89,10 +118,10 @@ export const resendOtp = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: null,
-    token: null,
+    user: savedUser,
+    token: savedToken,
     setupToken: null,
-    isAuthenticated: false,
+    isAuthenticated: !!(savedToken && savedUser),
     requiresPlanSelection: false,
     otpPending: false,
     registrationData: null,
@@ -114,6 +143,7 @@ const authSlice = createSlice({
       state.loading = false;
     },
     logout(state) {
+      clearSession();
       state.user = null;
       state.token = null;
       state.setupToken = null;
@@ -137,6 +167,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.token = action.payload.token;
         state.user = action.payload.user;
+        saveSession(action.payload.token, action.payload.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -205,6 +236,7 @@ const authSlice = createSlice({
         if (user) state.user = user;
         state.setupToken = null;
         state.requiresPlanSelection = false;
+        saveSession(token ?? state.token, user ?? state.user);
       });
   },
 });

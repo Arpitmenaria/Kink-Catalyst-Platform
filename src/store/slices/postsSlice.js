@@ -1,67 +1,124 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { apiRequest } from '../../services/api';
 
-const STATIC_REPORT_REASONS = [
-  'Spam or misleading',
-  'Nudity or sexual content',
-  'Hate speech or symbols',
-  'Violence or dangerous organizations',
-  'Bullying or harassment',
-  'Intellectual property violation',
-];
+function normalizePost(p) {
+  return {
+    ...p,
+    likes: Array.isArray(p.likes) ? p.likes : [],
+    comments: typeof p.comments === 'number'
+      ? new Array(p.comments).fill(null)
+      : (Array.isArray(p.comments) ? p.comments : []),
+    shares: typeof p.shares === 'number'
+      ? new Array(p.shares).fill(null)
+      : (Array.isArray(p.shares) ? p.shares : []),
+  };
+}
 
 export const fetchFeedPosts = createAsyncThunk(
   'posts/fetchFeed',
-  async () => []
+  async ({ page = 1, limit = 10 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts?page=${page}&limit=${limit}`, { token });
+      return (data.posts ?? []).map(normalizePost);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
 );
 
 export const likePost = createAsyncThunk(
   'posts/like',
-  async ({ postId, userId }) => {
-    return { postId, likes: null, userId };
+  async ({ postId, userId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/like`, { method: 'POST', token });
+      return { postId, liked: data.liked, likesCount: data.likesCount, userId };
+    } catch (err) {
+      return rejectWithValue({ postId, userId, message: err.message });
+    }
   }
 );
 
 export const commentPost = createAsyncThunk(
   'posts/comment',
-  async ({ postId, text }) => {
-    const comment = { _id: `c-${Date.now()}`, text, author: { fullName: 'You' }, createdAt: new Date().toISOString() };
-    return { postId, comment };
+  async ({ postId, text }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        body: { text },
+        token,
+      });
+      return { postId, comment: data.comment };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const createPost = createAsyncThunk(
   'posts/create',
-  async ({ caption, mediaFile }) => {
-    const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
-    return {
-      _id: `post-${Date.now()}`,
-      author: { fullName: 'You', avatar: '' },
-      caption,
-      media: mediaUrl ? [{ url: mediaUrl }] : [],
-      createdAt: new Date().toISOString(),
-      likes: [],
-      comments: [],
-      shares: [],
-    };
+  async ({ caption, mediaFile, visibility = 'anyone' }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const formData = new FormData();
+      if (caption?.trim()) formData.append('caption', caption.trim());
+      formData.append('visibility', visibility);
+      if (mediaFile) formData.append('media', mediaFile);
+
+      const data = await apiRequest('/api/posts', {
+        method: 'POST',
+        body: formData,
+        token,
+        isFormData: true,
+      });
+      return normalizePost(data.post);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const fetchReportReasons = createAsyncThunk(
   'posts/fetchReportReasons',
-  async () => STATIC_REPORT_REASONS
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await apiRequest('/api/posts/report-reasons');
+      return data.reasons ?? [];
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
 );
 
 export const reportPost = createAsyncThunk(
   'posts/report',
-  async ({ postId }) => {
-    return { postId };
+  async ({ postId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/posts/${postId}/report`, {
+        method: 'POST',
+        body: { reason },
+        token,
+      });
+      return { postId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
 export const sharePost = createAsyncThunk(
   'posts/share',
-  async (postId) => {
-    return { postId, shares: null };
+  async (postId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/share`, { method: 'POST', token });
+      return { postId, sharesCount: data.sharesCount };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 

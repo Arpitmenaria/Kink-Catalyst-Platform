@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import Toast from './components/Toast';
 import SignupPage from './components/signup/SignupPage';
 import LoginPage from './components/login/LoginPage';
 import ForgotPasswordPage from './components/forgot-password/ForgotPasswordPage';
@@ -11,17 +12,17 @@ export default function App() {
   const { planSelectionComplete } = useSelector((state) => state.plans);
   const { page } = useSelector((state) => state.ui);
 
-  if (otpPending) return <VerifyOtpPage />;
+  if (otpPending) return <><Toast /><VerifyOtpPage /></>;
 
   // Logged-in user who hasn't selected a plan yet (login → plan-setup flow)
-  if (requiresPlanSelection) return <PlansPage />;
+  if (requiresPlanSelection) return <><Toast /><PlansPage /></>;
 
   if (isAuthenticated) {
     const hasPlan = planSelectionComplete || !!user?.membership;
-    return hasPlan ? <HomePage /> : <PlansPage />;
+    return hasPlan ? <><Toast /><HomePage /></> : <><Toast /><PlansPage /></>;
   }
 
-  if (page === 'login')           return <LoginPage />;
-  if (page === 'forgot-password') return <ForgotPasswordPage />;
-  return <SignupPage />;
+  if (page === 'login')           return <><Toast /><LoginPage /></>;
+  if (page === 'forgot-password') return <><Toast /><ForgotPasswordPage /></>;
+  return <><Toast /><SignupPage /></>;
 }

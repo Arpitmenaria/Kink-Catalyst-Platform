@@ -1,4 +1,7 @@
-import { GALLERY_IMAGES, LIKED_PAGES } from './mockData';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchGallery, fetchLikedPages } from '../../store/slices/profileSlice';
+import SkeletonImg from '../SkeletonImg';
 
 function CalendarIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function PinIcon()      { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
@@ -7,6 +10,17 @@ function UsersIcon()    { return <svg width="11" height="11" viewBox="0 0 24 24"
 const EVENT_IMAGE = 'https://picsum.photos/seed/alumni-meet-event/320/130';
 
 export default function RightSidebar() {
+  const dispatch = useDispatch();
+  const { gallery, galleryTotal, likedPages, likedPagesTotal } = useSelector(s => s.profile);
+
+  useEffect(() => {
+    dispatch(fetchGallery());
+    dispatch(fetchLikedPages());
+  }, [dispatch]);
+
+  const displayedGallery = gallery.slice(0, 6);
+  const extraCount = galleryTotal > 6 ? galleryTotal - 6 : 0;
+
   return (
     <aside className="home-right-sidebar">
 
@@ -30,10 +44,10 @@ export default function RightSidebar() {
           <button className="section-link" style={{ marginLeft: 'auto' }}>View all</button>
         </div>
         <div className="gallery-grid">
-          {GALLERY_IMAGES.map((src, i) => (
-            <div key={i} className="gallery-thumb" style={{ overflow: 'hidden' }}>
-              <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              {i === 5 && <div className="gallery-more">+42</div>}
+          {displayedGallery.map((src, i) => (
+            <div key={i} className="gallery-thumb" style={{ overflow: 'hidden', position: 'relative' }}>
+              <SkeletonImg src={src} alt="" />
+              {i === 5 && extraCount > 0 && <div className="gallery-more">+{extraCount}</div>}
             </div>
           ))}
         </div>
@@ -44,15 +58,15 @@ export default function RightSidebar() {
         <div className="right-liked-header">
           <div>
             <p className="right-section-title">Liked Pages</p>
-            <p className="right-section-pages">18 Pages</p>
+            <p className="right-section-pages">{likedPagesTotal} Pages</p>
           </div>
           <button className="section-link">View all</button>
         </div>
         <div className="liked-pages-list">
-          {LIKED_PAGES.map(page => (
-            <div key={page.id} className="liked-page-item">
-              <div className="liked-page-icon" style={{ background: page.color }}>
-                {page.initial}
+          {likedPages.map(page => (
+            <div key={page.id ?? page._id} className="liked-page-item">
+              <div className="liked-page-icon" style={{ background: page.color ?? '#3b82f6' }}>
+                {page.initial ?? page.name?.[0]}
               </div>
               <div className="liked-page-info">
                 <p className="liked-page-name">{page.name}</p>

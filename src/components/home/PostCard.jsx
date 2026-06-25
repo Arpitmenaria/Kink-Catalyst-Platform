@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
 import { likePost, commentPost, sharePost } from '../../store/slices/postsSlice';
 import ReportModal from './ReportModal';
@@ -28,10 +29,11 @@ function getInitials(name = '') {
 }
 
 function timeAgo(dateStr) {
+  if (!dateStr) return '';
   const diff = (Date.now() - new Date(dateStr)) / 1000;
   if (diff < 60)    return 'just now';
   if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
@@ -46,40 +48,40 @@ function BookmarkIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" 
 function EmojiIcon()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function SendIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
 
-const MOCK_COMMENTS = [
-  {
-    id: 'c1',
-    initials: 'SB', color: '#3b82f6',
-    name: 'Samuel Bishop', time: '5 hours ago',
-    text: 'Removed demands expense account in outward tedious do. Particular way thoroughly unaffected projection.',
-    likes: 3,
-    replies: [
-      { id: 'c1r1', initials: 'DB', color: '#8b5cf6', name: 'Dennis Barrett', time: '2 hours ago',
-        text: 'See resolved goodness felicity shy civility domestic had but Drawings offended yet answered Jennings perceive.', likes: 5 },
-      { id: 'c1r2', initials: 'LF', color: '#ec4899', name: 'Lori Ferguson', time: '15 minutes ago',
-        text: 'Wishing calling is warrant settled was lucky.', likes: 0 },
-    ],
-  },
-  {
-    id: 'c2',
-    initials: 'JN', color: '#f59e0b',
-    name: 'Judy Nguyen', time: '4 minutes ago',
-    text: 'Removed demands expense account in outward tedious do. Particular way thoroughly unaffected.',
-    likes: 2,
-    replies: [
-      { id: 'c2r1', initials: 'RM', color: '#10b981', name: 'Rachel Moore', time: '2 minutes ago',
-        text: 'Totally agree with this perspective!', likes: 1 },
-    ],
-  },
-  {
-    id: 'c3',
-    initials: 'TK', color: '#6366f1',
-    name: 'Tom Keller', time: '1 hour ago',
-    text: 'Great post! Really inspired by this creative direction.',
-    likes: 7,
-    replies: [],
-  },
-];
+const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#ef4444'];
+function nameColor(name = '') {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+function nameInitials(name = '') {
+  return name.split(' ').map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 2);
+}
+function normalizeComment(c) {
+  if (!c || !c._id) return null;
+  const name = c.author?.fullName ?? 'Unknown';
+  return {
+    id: c._id,
+    initials: nameInitials(name),
+    color: nameColor(name),
+    name,
+    time: timeAgo(c.createdAt),
+    text: c.text ?? '',
+    likes: typeof c.likes === 'number' ? c.likes : (Array.isArray(c.likes) ? c.likes.length : 0),
+    replies: (c.replies ?? []).filter(Boolean).map(r => {
+      const rName = r.author?.fullName ?? 'Unknown';
+      return {
+        id: r._id ?? r.id,
+        initials: nameInitials(rName),
+        color: nameColor(rName),
+        name: rName,
+        time: timeAgo(r.createdAt),
+        text: r.text ?? '',
+        likes: typeof r.likes === 'number' ? r.likes : 0,
+      };
+    }),
+  };
+}
 
 export default function PostCard({ post }) {
   const dispatch = useDispatch();
@@ -95,7 +97,7 @@ export default function PostCard({ post }) {
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [reportOpen,      setReportOpen]      = useState(false);
   const [showComments,    setShowComments]    = useState(true);
-  const [expandedReplies, setExpandedReplies] = useState(new Set(['c1']));
+  const [expandedReplies, setExpandedReplies] = useState(new Set());
   const [likedComments,   setLikedComments]   = useState(new Set());
   const menuRef = useRef(null);
 
@@ -115,9 +117,12 @@ export default function PostCard({ post }) {
     });
   }
 
-  const userId = user?.id;
-  const authorName = post.author?.fullName || 'Unknown';
-  const mediaUrl   = post.media?.[0]?.url;
+  const userId = user?.id ?? user?._id;
+  const authorName  = post.author?.fullName || 'Unknown';
+  const rawAuthorAv = post.author?.avatar ?? '';
+  const authorAvatar = rawAuthorAv?.startsWith?.('http') ? rawAuthorAv : '';
+  const mediaUrl    = post.media?.[0]?.url?.startsWith?.('http') ? post.media[0].url : null;
+  const mediaType   = post.media?.[0]?.type ?? 'image';
 
   const likeCount    = isStatic ? post.likes    : (post.likes?.length    ?? 0);
   const commentCount = isStatic ? post.comments : (post.comments?.length ?? 0);
@@ -127,6 +132,10 @@ export default function PostCard({ post }) {
   const isLiked   = isStatic ? localLiked : (post.likes?.includes(userId) ?? false);
   const isLiking  = isStatic ? false : likingIds.includes(post._id);
   const isCommenting = isStatic ? false : commentingId === post._id;
+
+  const realComments = (post.comments ?? [])
+    .map(normalizeComment)
+    .filter(Boolean);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -169,9 +178,13 @@ export default function PostCard({ post }) {
       <article className="post-card">
         {/* Header */}
         <div className="post-header">
-          <div className="post-avatar" style={{ overflow: 'hidden', background: '#3b82f6' }}>
-            {post.author?.avatar
-              ? <img src={post.author.avatar} alt={authorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div className="post-avatar" style={{ overflow: 'hidden', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            {authorAvatar
+              ? <SkeletonImg
+                  src={authorAvatar}
+                  alt={authorName}
+                  fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>{getInitials(authorName)}</span>}
+                />
               : getInitials(authorName)
             }
           </div>
@@ -203,7 +216,18 @@ export default function PostCard({ post }) {
         {/* Media */}
         {mediaUrl && (
           <div className="post-image-wrap">
-            <img src={mediaUrl} alt="" className="post-image" />
+            {mediaType === 'video'
+              ? (
+                <video
+                  src={mediaUrl}
+                  className="post-image"
+                  controls
+                  style={{ height: '240px', width: '100%', display: 'block', objectFit: 'cover', background: '#0d1424' }}
+                />
+              ) : (
+                <SkeletonImg src={mediaUrl} alt="" className="post-image" imgStyle={{ height: '240px' }} />
+              )
+            }
           </div>
         )}
 
@@ -265,7 +289,7 @@ export default function PostCard({ post }) {
         {/* Comments section */}
         {showComments && (
           <div className="post-comments-section">
-            {MOCK_COMMENTS.map(c => (
+            {realComments.map(c => (
               <div key={c.id} className="pc-thread">
                 {/* Top-level comment */}
                 <div className="pc-comment">

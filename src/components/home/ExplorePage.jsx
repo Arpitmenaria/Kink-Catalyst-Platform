@@ -121,8 +121,11 @@ function Dropdown({ label, value, opts, onChange }) {
 
 export default function ExplorePage({ onBack }) {
   const { profile } = useSelector(s => s.profile);
+  const { posts }   = useSelector(s => s.posts);
   const avatarUrl   = profile?.avatar ?? ALEX_AVATAR;
   const displayName = profile?.fullName ?? 'Alex Rivera';
+  const totalPosts  = posts.length;
+  const totalFriends = profile?.followers?.length ?? profile?.followersCount ?? 0;
 
   const [difficulty, setDifficulty] = useState('All Levels');
   const [duration,   setDuration]   = useState('Any length');
@@ -181,11 +184,11 @@ export default function ExplorePage({ onBack }) {
 
         <div className="ep-topbar-center">
           <div className="ep-stat-pill">
-            <span className="ep-stat-num">326</span>
+            <span className="ep-stat-num">{totalPosts}</span>
             <span className="ep-stat-lbl">Total Posts</span>
           </div>
           <div className="ep-stat-pill">
-            <span className="ep-stat-num">300</span>
+            <span className="ep-stat-num">{totalFriends}</span>
             <span className="ep-stat-lbl">Total Friends</span>
           </div>
         </div>

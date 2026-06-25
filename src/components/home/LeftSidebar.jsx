@@ -1,6 +1,9 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { FRIEND_SUGGESTIONS, GROUPS, SIDEBAR_EVENTS, ALEX_AVATAR } from './mockData';
+import { useState, useEffect } from 'react';
+import SkeletonImg from '../SkeletonImg';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchSuggestions, followUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
+import { fetchUserProfile } from '../../store/slices/profileSlice';
+import { ALEX_AVATAR, SIDEBAR_EVENTS } from './mockData';
 import CreatePostModal from './CreatePostModal';
 import AnimatedNav from './AnimatedNav';
 
@@ -45,40 +48,51 @@ function MutualIcon() {
   );
 }
 
-function initials(name) {
+function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
 export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick }) {
+  const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
+  const { suggestions, followingIds, dismissedIds, groups } = useSelector((state) => state.users);
+
   const [createOpen,  setCreateOpen]  = useState(false);
   const [activeNavId, setActiveNavId] = useState('home');
-  const [addedIds,    setAddedIds]    = useState(new Set());
   const [poppingIds,  setPoppingIds]  = useState(new Set());
   const [removingIds, setRemovingIds] = useState(new Set());
-  const [dismissedIds,setDismissedIds]= useState(new Set());
+
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+    dispatch(fetchSuggestions(5));
+    dispatch(fetchGroups());
+  }, [dispatch]);
 
   function handleAddFriend(id) {
-    if (addedIds.has(id)) return;
-    setAddedIds(prev => new Set([...prev, id]));
+    if (!id) return;
+    const selfId = authUser?._id ?? authUser?.id;
+    if (selfId && id === selfId) return;
+    if (followingIds.includes(id)) return;
     setPoppingIds(prev => new Set([...prev, id]));
     setTimeout(() => setPoppingIds(prev => { const s = new Set(prev); s.delete(id); return s; }), 500);
+    dispatch(followUser(id));
   }
 
   function handleRemoveSuggestion(id) {
     setRemovingIds(prev => new Set([...prev, id]));
     setTimeout(() => {
-      setDismissedIds(prev => new Set([...prev, id]));
       setRemovingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+      dispatch(dismissSuggestion(id));
     }, 380);
   }
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
   const role           = profile?.role ?? 'Product Designer';
-  const followingCount = formatCount(profile?.following?.length ?? 1200);
-  const followersCount = formatCount(profile?.followers?.length ?? 8400);
-  const avatarUrl      = profile?.avatar ?? ALEX_AVATAR;
+  const followingCount = formatCount(profile?.following?.length ?? profile?.followingCount ?? 0);
+  const followersCount = formatCount(profile?.followers?.length ?? profile?.followersCount ?? 0);
+  const rawAvatar      = profile?.avatar ?? authUser?.avatar ?? '';
+  const avatarUrl      = rawAvatar?.startsWith?.('http') ? rawAvatar : ALEX_AVATAR;
 
   function handleNavNavigate(id) {
     if (id === 'create')   { setCreateOpen(true); return; }
@@ -91,6 +105,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     if (id === 'calendar')  onCalendarClick?.();
     if (id === 'minisites') onMinisitesClick?.();
   }
+
+  const visibleSuggestions = suggestions.filter(f => !dismissedIds.includes(f.id ?? f._id));
 
   return (
     <aside className="home-left-panel">
@@ -109,13 +125,17 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
 
         {/* Profile card */}
         <div className="profile-card">
-          <div className="profile-cover">
-            <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80&fit=crop" alt="cover" className="profile-cover-img" />
+          <div className="profile-cover" style={{ position: 'relative', overflow: 'hidden' }}>
+            <SkeletonImg src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80&fit=crop" alt="cover" className="profile-cover-img" />
           </div>
           <div className="profile-body">
             <div className="profile-avatar-wrap" onClick={onProfileClick} style={{ cursor: 'pointer' }}>
-              <div className="profile-avatar" style={{ overflow: 'hidden' }}>
-                <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div className="profile-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <SkeletonImg
+                  src={avatarUrl}
+                  alt={displayName}
+                  fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '1.4rem', fontWeight: 700, color: '#fff' }}>{displayName[0]?.toUpperCase()}</span>}
+                />
               </div>
             </div>
             <p className="profile-name">{displayName}</p>
@@ -142,39 +162,47 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <button className="section-link">View all</button>
           </div>
           <div className="friend-list">
-            {FRIEND_SUGGESTIONS.filter(f => !dismissedIds.has(f.id)).map(f => (
-              <div
-                key={f.id}
-                className={`friend-item${removingIds.has(f.id) ? ' friend-item--removing' : ''}`}
-              >
-                <div className="friend-item-top">
-                  <div className="friend-avatar" style={{ background: f.color, overflow: 'hidden' }}>
-                    {f.avatar
-                      ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : initials(f.name)
-                    }
+            {visibleSuggestions.map(f => {
+              const id = f.id ?? f._id;
+              const isFollowing = followingIds.includes(id);
+              return (
+                <div
+                  key={id}
+                  className={`friend-item${removingIds.has(id) ? ' friend-item--removing' : ''}`}
+                >
+                  <div className="friend-item-top">
+                    <div className="friend-avatar" style={{ background: f.avatarColor ?? '#3b82f6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      {f.avatar
+                        ? <SkeletonImg
+                            src={f.avatar}
+                            alt={f.name}
+                            fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>{initials(f.name)}</span>}
+                          />
+                        : initials(f.name)
+                      }
+                    </div>
+                    <div className="friend-info">
+                      <p className="friend-name">{f.name}</p>
+                      <p className="friend-sub"><MutualIcon />{f.mutualFriends ? `${f.mutualFriends} mutual friends` : (f.sub ?? '')}</p>
+                    </div>
                   </div>
-                  <div className="friend-info">
-                    <p className="friend-name">{f.name}</p>
-                    <p className="friend-sub"><MutualIcon />{f.sub}</p>
+                  <div className="friend-actions">
+                    <button
+                      className={`friend-add-btn${isFollowing ? ' friend-add-btn--added' : ''}${poppingIds.has(id) ? ' friend-add-btn--pop' : ''}`}
+                      onClick={() => handleAddFriend(id)}
+                    >
+                      {isFollowing ? '✓ Added' : 'Add Friend'}
+                    </button>
+                    <button
+                      className="friend-remove-btn"
+                      onClick={() => handleRemoveSuggestion(id)}
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
-                <div className="friend-actions">
-                  <button
-                    className={`friend-add-btn${addedIds.has(f.id) ? ' friend-add-btn--added' : ''}${poppingIds.has(f.id) ? ' friend-add-btn--pop' : ''}`}
-                    onClick={() => handleAddFriend(f.id)}
-                  >
-                    {addedIds.has(f.id) ? '✓ Added' : 'Add Friend'}
-                  </button>
-                  <button
-                    className="friend-remove-btn"
-                    onClick={() => handleRemoveSuggestion(f.id)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -185,9 +213,9 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <button className="section-link">View all</button>
           </div>
           <div className="group-list">
-            {GROUPS.map(g => (
-              <div key={g.id} className="group-item">
-                <div className="group-icon" style={{ background: g.color }}>
+            {groups.map(g => (
+              <div key={g.id ?? g._id} className="group-item">
+                <div className="group-icon" style={{ background: g.color ?? '#3b82f6' }}>
                   {g.name[0]}
                 </div>
                 <div className="friend-info">
@@ -199,7 +227,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
           </div>
         </div>
 
-        {/* Upcoming Events */}
+        {/* Upcoming Events — still using static data (no events API provided) */}
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Upcoming Events</span>

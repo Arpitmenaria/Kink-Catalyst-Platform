@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import SkeletonImg from '../SkeletonImg';
 import { ALEX_AVATAR } from './mockData';
 import { logout } from '../../store/slices/authSlice';
-
-const DEMO_NOTIFICATIONS = [
-  { id: 1, emoji: '💬', text: 'Alex liked your post', sub: '2 minutes ago', color: '#3b82f6', unread: true },
-  { id: 2, emoji: '📸', text: 'Maria commented on your photo', sub: '15 minutes ago', color: '#8b5cf6', unread: true },
-  { id: 3, emoji: '🎉', text: 'New event: Music Festival this Saturday', sub: '1 hour ago', color: '#f59e0b', unread: false },
-];
+import { showLogin } from '../../store/slices/uiSlice';
+import { fetchNotifications, markNotificationsRead } from '../../store/slices/notificationsSlice';
 
 function BellIcon() {
   return (
@@ -55,20 +52,37 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
+  const { notifications, unreadCount } = useSelector((state) => state.notifications);
+  const { posts }              = useSelector((state) => state.posts);
+
+  const totalPosts       = posts.length;
+  const totalConnections = profile?.followers?.length ?? profile?.followersCount ?? 0;
 
   const displayName = profile?.fullName || authUser?.fullName || 'Alex Rivera';
-  const avatarUrl   = profile?.avatar   ?? ALEX_AVATAR;
+  const rawAvatar   = profile?.avatar ?? authUser?.avatar ?? '';
+  const avatarUrl   = rawAvatar?.startsWith?.('http') ? rawAvatar : ALEX_AVATAR;
 
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [userOpen,   setUserOpen]   = useState(false);
-  const [notifs,     setNotifs]     = useState(DEMO_NOTIFICATIONS);
   const notifRef                    = useRef(null);
   const userRef                     = useRef(null);
-  const unreadCount                 = notifs.filter(n => n.unread).length;
+
+  useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
 
   useEffect(() => {
     if (!notifOpen) return;
@@ -90,7 +104,9 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
 
   function handleBell() {
     setNotifOpen(v => !v);
-    if (!notifOpen) setNotifs(ns => ns.map(n => ({ ...n, unread: false })));
+    if (!notifOpen && unreadCount > 0) {
+      dispatch(markNotificationsRead());
+    }
   }
 
   return (
@@ -101,12 +117,12 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
 
       <div className="navbar-center">
         <div className="navbar-stat-pill" onClick={onPostsClick} style={{ cursor: 'pointer' }}>
-          <span className="navbar-stat-num">326</span>
+          <span className="navbar-stat-num">{totalPosts}</span>
           <span className="navbar-stat-lbl">Total Posts</span>
         </div>
         <div className="navbar-divider" />
         <div className="navbar-stat-pill" onClick={onConnectionsClick} style={{ cursor: 'pointer' }}>
-          <span className="navbar-stat-num">2456</span>
+          <span className="navbar-stat-num">{totalConnections}</span>
           <span className="navbar-stat-lbl">Total Connections</span>
         </div>
       </div>
@@ -131,20 +147,23 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
             <div className="navbar-notif-dropdown">
               <div className="navbar-notif-header">
                 <span className="navbar-notif-title">Notifications</span>
-                <span className="navbar-notif-pill">{DEMO_NOTIFICATIONS.length} new</span>
+                <span className="navbar-notif-pill">{notifications.length} new</span>
               </div>
-              {notifs.map((n, i) => (
-                <div key={n.id} className="navbar-notif-item" style={{ '--ni': i }}>
-                  <div className="navbar-notif-icon" style={{ background: n.color + '22', color: n.color }}>
-                    {n.emoji}
+              {notifications.map((n, i) => (
+                <div key={n.id ?? n._id ?? i} className="navbar-notif-item" style={{ '--ni': i }}>
+                  <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>
+                    {n.emoji ?? '🔔'}
                   </div>
                   <div className="navbar-notif-body">
                     <p className="navbar-notif-text">{n.text}</p>
-                    <p className="navbar-notif-sub">{n.sub}</p>
+                    <p className="navbar-notif-sub">{timeAgo(n.createdAt)}</p>
                   </div>
                   {n.unread && <span className="navbar-notif-dot" />}
                 </div>
               ))}
+              {notifications.length === 0 && (
+                <p style={{ padding: '12px 16px', color: '#5c6a8c', fontSize: '13px' }}>No notifications yet.</p>
+              )}
             </div>
           )}
         </div>
@@ -152,8 +171,12 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
         <div className="navbar-user-wrap" ref={userRef}>
           <button className="navbar-user" onClick={() => setUserOpen(v => !v)}>
             <div className="navbar-avatar-wrap">
-              <div className="navbar-avatar" style={{ overflow: 'hidden' }} aria-hidden="true">
-                <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div className="navbar-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }} aria-hidden="true">
+                <SkeletonImg
+                  src={avatarUrl}
+                  alt={displayName}
+                  fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontWeight: 700 }}>{displayName[0]?.toUpperCase()}</span>}
+                />
               </div>
               <span className="navbar-online-dot" />
             </div>
@@ -167,8 +190,12 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
           {userOpen && (
             <div className="navbar-user-dropdown">
               <div className="navbar-user-dropdown-header" style={{ cursor: 'pointer' }} onClick={() => { setUserOpen(false); onProfileClick?.(); }}>
-                <div className="navbar-ud-avatar" style={{ overflow: 'hidden' }}>
-                  <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div className="navbar-ud-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <SkeletonImg
+                    src={avatarUrl}
+                    alt={displayName}
+                    fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontWeight: 700 }}>{displayName[0]?.toUpperCase()}</span>}
+                  />
                 </div>
                 <div>
                   <p className="navbar-ud-name">{displayName}</p>
@@ -180,7 +207,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                 <SettingsIcon /> Settings
               </button>
               <div className="navbar-ud-divider" />
-              <button className="navbar-ud-item navbar-ud-item--logout" onClick={() => dispatch(logout())}>
+              <button className="navbar-ud-item navbar-ud-item--logout" onClick={() => { dispatch(logout()); dispatch(showLogin()); }}>
                 <LogoutIcon /> Log Out
               </button>
             </div>

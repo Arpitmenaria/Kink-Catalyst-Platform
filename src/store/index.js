@@ -5,6 +5,9 @@ import uiReducer from './slices/uiSlice';
 import forgotPasswordReducer from './slices/forgotPasswordSlice';
 import postsReducer from './slices/postsSlice';
 import profileReducer from './slices/profileSlice';
+import usersReducer from './slices/usersSlice';
+import notificationsReducer from './slices/notificationsSlice';
+import toastReducer from './slices/toastSlice';
 
 const store = configureStore({
   reducer: {
@@ -14,6 +17,9 @@ const store = configureStore({
     forgotPassword: forgotPasswordReducer,
     posts: postsReducer,
     profile: profileReducer,
+    users: usersReducer,
+    notifications: notificationsReducer,
+    toast: toastReducer,
   },
 });
 

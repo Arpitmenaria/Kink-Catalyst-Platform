@@ -114,7 +114,10 @@ function ResourceCard({ item, idx }) {
 
 export default function BookmarkedResourcesPage({ onBack }) {
   const { profile } = useSelector(s => s.profile);
+  const { posts }   = useSelector(s => s.posts);
   const avatarUrl   = profile?.avatar ?? ALEX_AVATAR;
+  const totalPosts  = posts.length;
+  const totalFriends = profile?.followers?.length ?? profile?.followersCount ?? 0;
 
   const [activeTab, setActiveTab] = useState('All');
 
@@ -138,8 +141,8 @@ export default function BookmarkedResourcesPage({ onBack }) {
         </div>
 
         <div className="br-topbar-center">
-          <div className="br-stat-pill"><span className="br-stat-num">326</span><span className="br-stat-lbl">Total Posts</span></div>
-          <div className="br-stat-pill"><span className="br-stat-num">2456</span><span className="br-stat-lbl">Total Friends</span></div>
+          <div className="br-stat-pill"><span className="br-stat-num">{totalPosts}</span><span className="br-stat-lbl">Total Posts</span></div>
+          <div className="br-stat-pill"><span className="br-stat-num">{totalFriends}</span><span className="br-stat-lbl">Total Friends</span></div>
         </div>
 
         <div className="br-topbar-right">

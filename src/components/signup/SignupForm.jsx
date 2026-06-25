@@ -123,9 +123,10 @@ export default function SignupForm() {
     if (resetTimer.current) clearTimeout(resetTimer.current);
 
     setBtnState('loading');
+    const titleCase = str => str.trim().replace(/\b\w/g, c => c.toUpperCase());
     const result = await dispatch(
       registerUser({
-        fullName: form.fullName,
+        fullName: titleCase(form.fullName),
         email: form.email,
         password: form.password,
         fcmToken: 'web_fcm_token',
