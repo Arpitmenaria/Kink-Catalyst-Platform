@@ -20,18 +20,19 @@ const MAIN_ITEMS = [
   { id: 'home',      Icon: IconHome2,          label: 'Feed'      },
   { id: 'events',    Icon: IconCalendar,        label: 'Events'    },
   { id: 'friends',   Icon: IconUsers,           label: 'Groups'    },
-  { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages', badge: 3 },
+  { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages'  },
   { id: 'library',   Icon: IconGradCap,         label: 'Education' },
   { id: 'minisites', Icon: IconWorld,           label: 'Mini Sites'},
 ];
 
-export default function AnimatedNav({ activeId = 'home', avatarUrl, onNavigate }) {
+export default function AnimatedNav({ activeId = 'home', avatarUrl, onNavigate, unreadMessages = 0 }) {
   return (
     <nav className="anim-nav" aria-label="Main navigation">
       <ul className="anim-nav-list">
         {MAIN_ITEMS.map(item => {
           const { Icon } = item;
           const isActive = activeId === item.id;
+          const badge = item.id === 'messages' ? unreadMessages : 0;
           return (
             <li key={item.id}>
               <button
@@ -42,8 +43,8 @@ export default function AnimatedNav({ activeId = 'home', avatarUrl, onNavigate }
               >
                 <span className="nav-icon-box">
                   <Icon size={22} stroke={1.8} />
-                  {item.badge && (
-                    <span className="nav-badge">{item.badge}</span>
+                  {badge > 0 && (
+                    <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>
                   )}
                 </span>
                 <span className="nav-label">{item.label}</span>

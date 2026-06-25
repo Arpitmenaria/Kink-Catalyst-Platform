@@ -57,6 +57,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const { suggestions, followingIds, dismissedIds, groups } = useSelector((state) => state.users);
+  const { conversations } = useSelector((state) => state.messages);
+  const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   const [createOpen,  setCreateOpen]  = useState(false);
   const [activeNavId, setActiveNavId] = useState('home');
@@ -116,6 +118,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         activeId={activeNavId}
         avatarUrl={avatarUrl}
         onNavigate={handleNavNavigate}
+        unreadMessages={unreadMessages}
       />
 
       {createOpen && <CreatePostModal onClose={() => setCreateOpen(false)} onNavigateToEvents={onEventsClick} />}

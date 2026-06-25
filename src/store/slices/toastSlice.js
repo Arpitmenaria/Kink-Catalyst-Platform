@@ -2,15 +2,18 @@ import { createSlice } from '@reduxjs/toolkit';
 
 // Map action base-type → success message
 const SUCCESS = {
-  'profile/update':           'Profile updated successfully',
-  'profile/updateEducation':  'Education saved',
-  'profile/updateAvatar':     'Avatar updated',
-  'profile/updateCover':      'Cover photo updated',
-  'profile/removeConnection': 'Connection removed',
-  'profile/uploadPhoto':      'Photo uploaded',
-  'posts/create':             'Post shared!',
-  'posts/commentPost':        'Comment added',
-  'users/follow':             'Friend request sent',
+  'profile/update':                    'Profile updated successfully',
+  'profile/updateEducation':           'Education saved',
+  'profile/updateAvatar':              'Avatar updated',
+  'profile/updateCover':               'Cover photo updated',
+  'profile/removeConnection':          'Connection removed',
+  'profile/uploadPhoto':               'Photo uploaded',
+  'posts/create':                      'Post shared!',
+  'posts/commentPost':                 'Comment added',
+  'users/follow':                      'Friend request sent',
+  'messages/createGroup':              'Group created',
+  'messages/uploadAssets':             'Files uploaded',
+  'messages/reportConversation':       'Conversation reported',
 };
 
 // Map action base-type → error message (falls back to payload)

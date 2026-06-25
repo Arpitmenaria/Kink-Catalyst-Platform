@@ -470,6 +470,7 @@
 
 .msg-conv-panel-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #1e2238 transparent;

@@ -8,6 +8,7 @@ import profileReducer from './slices/profileSlice';
 import usersReducer from './slices/usersSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import toastReducer from './slices/toastSlice';
+import messagesReducer from './slices/messagesSlice';
 
 const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ const store = configureStore({
     users: usersReducer,
     notifications: notificationsReducer,
     toast: toastReducer,
+    messages: messagesReducer,
   },
 });
 

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './Navbar';
 import LeftSidebar from './LeftSidebar';
 import Feed from './Feed';
@@ -11,9 +12,19 @@ import CoursesPage from './CoursesPage';
 import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
 import MiniSitesPage from './MiniSitesPage';
+import { initSocket } from '../../services/socket';
+import store from '../../store';
 import './HomePage.css';
 
 export default function HomePage() {
+  const dispatch = useDispatch();
+  const { token } = useSelector(s => s.auth);
+
+  /* Init socket once at app level so notifications arrive on any screen */
+  useEffect(() => {
+    if (token) initSocket(token, store);
+  }, [token]);
+
   const [section,         setSection]         = useState('feed');
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);

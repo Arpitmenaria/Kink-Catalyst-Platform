@@ -1,0 +1,86 @@
+import { io } from 'socket.io-client';
+import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline } from '../store/slices/messagesSlice';
+
+const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
+
+let socket = null;
+let storeRef = null; // full Redux store — gives us dispatch + getState
+
+export function initSocket(token, store) {
+  if (socket?.connected) return;
+  storeRef = store;
+
+  socket = io(BASE_URL, {
+    auth: { token },
+    transports: ['websocket'],
+    reconnectionAttempts: 5,
+  });
+
+  socket.on('new_message', ({ conversationId, message }) => {
+    const state = storeRef.getState();
+    const msgId = message.id ?? message._id;
+    const convMessages = state.messages.messages[conversationId] ?? [];
+
+    // Already in state (added by sendMessage.fulfilled or notification) — skip
+    if (msgId && convMessages.find(m => m.id === msgId)) return;
+
+    // We have a pending (optimistic) message in this conversation → we are the sender.
+    // sendMessage.fulfilled will confirm it; skip processing new_message for the sender.
+    if (convMessages.some(m => m.pending)) return;
+
+    // No pending message from us → we are the recipient
+    storeRef.dispatch(receiveMessage({ convId: conversationId, message: { ...message, from: 'them' } }));
+  });
+
+  socket.on('new_message_notification', ({ conversationId, message }) => {
+    // Personal room (user:<id>) — always a message from someone else
+    storeRef.dispatch(receiveMessage({ convId: conversationId, message: { ...message, from: 'them' } }));
+  });
+
+  socket.on('messages_read', ({ conversationId }) => {
+    storeRef.dispatch(markMessagesRead({ convId: conversationId }));
+  });
+
+  socket.on('user_online', ({ userId }) => {
+    storeRef.dispatch(setUserOnline({ userId }));
+  });
+
+  socket.on('user_offline', ({ userId }) => {
+    storeRef.dispatch(setUserOffline({ userId }));
+  });
+
+  socket.on('error', ({ event, message }) => {
+    console.warn('[socket] error:', event, message);
+  });
+}
+
+export function disconnectSocket() {
+  socket?.disconnect();
+  socket = null;
+}
+
+export function joinConversation(convId) {
+  socket?.emit('join_conversation', convId);
+}
+
+export function leaveConversation(convId) {
+  socket?.emit('leave_conversation', convId);
+}
+
+export function emitTypingStart(convId) {
+  socket?.emit('typing_start', { conversationId: convId });
+}
+
+export function emitTypingStop(convId) {
+  socket?.emit('typing_stop', { conversationId: convId });
+}
+
+export function onUserTyping(cb) {
+  socket?.on('user_typing', cb);
+  return () => socket?.off('user_typing', cb);
+}
+
+export function onUserStoppedTyping(cb) {
+  socket?.on('user_stopped_typing', cb);
+  return () => socket?.off('user_stopped_typing', cb);
+}

@@ -2,7 +2,8 @@
    Globals / reset for home page
 ───────────────────────────────────────── */
 .home-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #0b0d17;
   font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-font-smoothing: antialiased;

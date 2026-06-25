@@ -1,7 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './MessagesPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import {
+  fetchConversations, fetchMessages, sendMessage, markRead,
+  startDM, createGroup, fetchAssets, uploadAssets,
+  toggleBlock, reportConversation, fetchOnlineUsers, clearUnread,
+} from '../../store/slices/messagesSlice';
+import { fetchSuggestions } from '../../store/slices/usersSlice';
+import {
+  joinConversation, leaveConversation,
+  emitTypingStart, emitTypingStop, onUserTyping, onUserStoppedTyping,
+} from '../../services/socket';
 
 /* ── App nav icons ── */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
@@ -37,24 +48,9 @@ function XlsxIcon()        { return <svg width="16" height="16" viewBox="0 0 24 
 function PptxIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; }
 
 const SA_TABS = [
-  { id: 'media', label: 'Media', count: 142 },
-  { id: 'links', label: 'Links', count: 58  },
-  { id: 'docs',  label: 'Docs',  count: 24  },
-];
-
-const MEDIA_ITEMS = Array.from({ length: 6 }, (_, i) => ({ id: String(i + 1) }));
-
-const LINKS_DATA = [
-  { id: '1', title: 'Figma – Modern UI Design System', domain: 'figma.com',       sharedBy: 'Sarah', time: '2 hours ago' },
-  { id: '2', title: 'React Documentation',             domain: 'react.dev',        sharedBy: 'Sarah', time: 'Oct 24'      },
-  { id: '3', title: 'Tailwind CSS Tips',               domain: 'tailwindcss.com',  sharedBy: 'Sarah', time: 'Oct 23'      },
-];
-
-const DOCS_DATA = [
-  { id: '1', name: 'Project Timeline – U4.pdf', size: '1.2 MB',  sharedBy: 'Sarah Jenkins', time: '2 hours ago', type: 'pdf'  },
-  { id: '2', name: 'Design Feedback.docx',       size: '850 KB',  sharedBy: 'Sarah Jenkins', time: 'Oct 22',      type: 'docx' },
-  { id: '3', name: 'Budget Estimates.xlsx',       size: '2.4 MB',  sharedBy: 'Sarah Jenkins', time: 'Oct 20',      type: 'xlsx' },
-  { id: '4', name: 'Pitch Deck Final.pptx',       size: '15.8 MB', sharedBy: 'Sarah Jenkins', time: 'Oct 18',      type: 'pptx' },
+  { id: 'media', label: 'Media' },
+  { id: 'links', label: 'Links' },
+  { id: 'docs',  label: 'Docs'  },
 ];
 
 const DOC_TYPE_META = {
@@ -64,23 +60,46 @@ const DOC_TYPE_META = {
   pptx: { icon: <PptxIcon />, color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
 };
 
-/* ── Upload Assets Modal ── */
-const UPLOADED_THUMBS = [
-  'linear-gradient(135deg,#1e3a5f,#2563eb)',
-  'linear-gradient(135deg,#1a1040,#7c3aed)',
-  'linear-gradient(135deg,#0f2a1e,#065f46)',
-  'linear-gradient(135deg,#0c2a2a,#0f766e)',
-  'linear-gradient(135deg,#1a1a2e,#374151)',
-];
+function initials(name) {
+  return (name ?? '').split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+}
 
-function UploadAssetsModal({ onClose }) {
-  const [dragging, setDragging] = useState(false);
+function formatDocSize(bytes) {
+  if (!bytes) return '';
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / 1024).toFixed(0)} KB`;
+}
+
+/* ── Upload Assets Modal ── */
+function UploadAssetsModal({ convId, onClose }) {
+  const dispatch   = useDispatch();
+  const [dragging,  setDragging]  = useState(false);
+  const [files,     setFiles]     = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  function handleFiles(incoming) {
+    setFiles(prev => [...prev, ...Array.from(incoming)]);
+  }
+
+  async function handleDone() {
+    if (files.length > 0 && convId) {
+      setUploading(true);
+      await dispatch(uploadAssets({ convId, files }));
+      setUploading(false);
+    }
+    onClose();
+  }
+
+  const totalBytes = files.reduce((s, f) => s + f.size, 0);
+  const totalLabel = totalBytes >= 1024 * 1024
+    ? `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
+    : `${(totalBytes / 1024).toFixed(0)} KB`;
 
   return (
     <div className="ua-overlay" onClick={onClose}>
       <div className="ua-modal" onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="ua-header">
           <h2 className="ua-title">Upload New Assets</h2>
           <button className="ua-close" onClick={onClose}>
@@ -88,12 +107,11 @@ function UploadAssetsModal({ onClose }) {
           </button>
         </div>
 
-        {/* Drop zone */}
         <div
           className={`ua-dropzone${dragging ? ' ua-dropzone--active' : ''}`}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
-          onDrop={e => { e.preventDefault(); setDragging(false); }}
+          onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
         >
           <div className="ua-cloud-icon">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -103,57 +121,75 @@ function UploadAssetsModal({ onClose }) {
           </div>
           <p className="ua-drop-title">Drag and drop your assets here</p>
           <p className="ua-drop-sub">Support for JPG, PNG, and MP4 up to 50MB</p>
-          <button className="ua-browse-btn">Browse Files</button>
+          <button className="ua-browse-btn" type="button" onClick={() => fileInputRef.current?.click()}>Browse Files</button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+            style={{ display: 'none' }}
+            onChange={e => handleFiles(e.target.files)}
+          />
         </div>
 
-        {/* Uploaded files */}
-        <div className="ua-uploaded-section">
-          <div className="ua-uploaded-header">
-            <span className="ua-uploaded-label">SUCCESSFULLY UPLOADED (5)</span>
-            <span className="ua-uploaded-size">2.4 MB total</span>
+        {files.length > 0 && (
+          <div className="ua-uploaded-section">
+            <div className="ua-uploaded-header">
+              <span className="ua-uploaded-label">SELECTED ({files.length})</span>
+              <span className="ua-uploaded-size">{totalLabel} total</span>
+            </div>
+            <div className="ua-thumbs">
+              {files.slice(0, 5).map((f, i) => (
+                <div key={i} className="ua-thumb" style={{ background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>
+                  {f.name.split('.').pop()?.toUpperCase()}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="ua-thumbs">
-            {UPLOADED_THUMBS.map((bg, i) => (
-              <div key={i} className="ua-thumb" style={{ background: bg }} />
-            ))}
-          </div>
-        </div>
+        )}
 
-        {/* Footer */}
         <div className="ua-footer">
           <button className="ua-cancel-btn" onClick={onClose}>Cancel</button>
-          <button className="ua-done-btn" onClick={onClose}>Done</button>
+          <button className="ua-done-btn" onClick={handleDone} disabled={uploading}>
+            {uploading ? 'Uploading…' : 'Done'}
+          </button>
         </div>
-
       </div>
     </div>
   );
 }
 
 function SharedAssetsView({ conv, onBack }) {
-  const [tab, setTab]         = useState('media');
+  const dispatch = useDispatch();
+  const { assets, assetsLoading } = useSelector(s => s.messages);
+
+  const [tab,        setTab]    = useState('media');
   const [uploadOpen, setUpload] = useState(false);
-  const usedGB  = 6.2;
-  const totalGB = 10;
-  const pct     = Math.round((usedGB / totalGB) * 100);
+
+  const convAssets = assets[conv.id] ?? {};
+  const items      = convAssets[tab] ?? [];
+  const storage    = convAssets.storage;
+  const usedGB     = storage?.usedGB  ?? 0;
+  const totalGB    = storage?.totalGB ?? 10;
+  const pct        = Math.round((usedGB / totalGB) * 100);
+
+  useEffect(() => {
+    dispatch(fetchAssets({ convId: conv.id, tab }));
+  }, [conv.id, tab, dispatch]);
 
   return (
     <div className="sa-wrap">
-      {/* Main area */}
       <div className="sa-main">
-        {/* Back link */}
         <button className="sa-back-btn" onClick={onBack}>
           <BackArrowIcon /> Back to Chat
         </button>
 
-        {/* Header */}
         <h1 className="sa-title">Shared Assets</h1>
         <p className="sa-subtitle">
           Assets shared in conversation with{' '}
           <span className="sa-conv-name">{conv.name}</span>
         </p>
 
-        {/* Tabs */}
         <div className="sa-tabs">
           {SA_TABS.map(t => (
             <button
@@ -161,42 +197,45 @@ function SharedAssetsView({ conv, onBack }) {
               className={`sa-tab${tab === t.id ? ' sa-tab--active' : ''}`}
               onClick={() => setTab(t.id)}
             >
-              {t.label} <span className="sa-tab-count">({t.count})</span>
+              {t.label} {convAssets.total != null && <span className="sa-tab-count">({convAssets.total})</span>}
             </button>
           ))}
         </div>
         <div className="sa-tab-underline" />
 
+        {assetsLoading && <p style={{ color: '#5c6a8c', fontSize: 13, padding: '16px 0' }}>Loading…</p>}
+
         {/* ── Media tab ── */}
-        {tab === 'media' && (
+        {!assetsLoading && tab === 'media' && (
           <div className="sa-media-grid">
-            {MEDIA_ITEMS.map(item => (
-              <div key={item.id} className="sa-media-thumb">
-                <div className="sa-media-img" />
+            {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13, gridColumn: '1/-1' }}>No media yet.</p>}
+            {items.map((item, i) => (
+              <div key={item.id ?? i} className="sa-media-thumb">
+                {item.type === 'video'
+                  ? <video src={item.url} className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                  : <img src={item.url} alt="" className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                }
               </div>
             ))}
           </div>
         )}
 
         {/* ── Links tab ── */}
-        {tab === 'links' && (
+        {!assetsLoading && tab === 'links' && (
           <div className="sa-list">
-            {LINKS_DATA.map(link => (
-              <div key={link.id} className="sa-link-item">
-                <div className="sa-link-icon">
-                  <LinkItemIcon />
-                </div>
+            {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13 }}>No links yet.</p>}
+            {items.map((link, i) => (
+              <div key={link.id ?? i} className="sa-link-item">
+                <div className="sa-link-icon"><LinkItemIcon /></div>
                 <div className="sa-link-body">
-                  <p className="sa-link-title">{link.title}</p>
-                  <p className="sa-link-domain">{link.domain}</p>
+                  <p className="sa-link-title">{link.title ?? link.url}</p>
+                  <p className="sa-link-domain">{link.domain ?? ''}</p>
                 </div>
                 <div className="sa-link-meta">
-                  <span className="sa-link-shared">Shared by <strong>{link.sharedBy}</strong></span>
+                  <span className="sa-link-shared">Shared by <strong>{link.sharedBy ?? ''}</strong></span>
                   <div className="sa-link-time-row">
-                    <span className="sa-link-time">{link.time}</span>
-                    <div className="sa-link-avatar" style={{ background: conv.color }}>
-                      {initials(conv.name)}
-                    </div>
+                    <span className="sa-link-time">{link.time ?? ''}</span>
+                    <div className="sa-link-avatar" style={{ background: conv.color }}>{initials(conv.name)}</div>
                   </div>
                 </div>
               </div>
@@ -205,39 +244,28 @@ function SharedAssetsView({ conv, onBack }) {
         )}
 
         {/* ── Docs tab ── */}
-        {tab === 'docs' && (
+        {!assetsLoading && tab === 'docs' && (
           <div className="sa-list">
-            {DOCS_DATA.map(doc => {
-              const meta = DOC_TYPE_META[doc.type];
+            {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13 }}>No documents yet.</p>}
+            {items.map((doc, i) => {
+              const ext  = doc.name?.split('.').pop()?.toLowerCase() ?? 'pdf';
+              const meta = DOC_TYPE_META[ext] ?? DOC_TYPE_META.pdf;
               return (
-                <div key={doc.id} className="sa-doc-item">
-                  <div className="sa-doc-icon" style={{ background: meta.bg, color: meta.color }}>
-                    {meta.icon}
-                  </div>
+                <div key={doc.id ?? i} className="sa-doc-item">
+                  <div className="sa-doc-icon" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
                   <div className="sa-doc-body">
                     <p className="sa-doc-name">{doc.name}</p>
-                    <p className="sa-doc-meta">{doc.size} • Shared by {doc.sharedBy} • {doc.time}</p>
+                    <p className="sa-doc-meta">{formatDocSize(doc.size)} • Shared by {doc.sharedBy ?? ''} • {doc.time ?? ''}</p>
                   </div>
-                  <button className="sa-doc-download" title="Download">
-                    <DocDownloadIcon />
-                  </button>
+                  <a className="sa-doc-download" href={doc.url} download title="Download"><DocDownloadIcon /></a>
                 </div>
               );
             })}
           </div>
         )}
-
-        {/* old placeholder kept below — will never render */}
-        {false && (
-          <div className="sa-empty-tab">
-            <p>24 shared documents</p>
-          </div>
-        )}
       </div>
 
-      {/* Right panel */}
       <div className="sa-right">
-        {/* Storage */}
         <div className="sa-panel">
           <div className="sa-panel-header">
             <span className="sa-panel-title">Storage Used</span>
@@ -252,11 +280,10 @@ function SharedAssetsView({ conv, onBack }) {
           </div>
           <div className="sa-storage-note">
             <InfoIcon />
-            <span>{conv.name.split(' ')[0]} has contributed <strong>2.4 GB</strong> to this share.</span>
+            <span>{conv.name.split(' ')[0]} has contributed <strong>{storage?.otherUserContribGB ?? 0} GB</strong> to this share.</span>
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="sa-panel">
           <p className="sa-quick-title">QUICK ACTIONS</p>
           <button className="sa-action-btn sa-action-btn--primary" onClick={() => setUpload(true)}>
@@ -268,61 +295,64 @@ function SharedAssetsView({ conv, onBack }) {
         </div>
       </div>
 
-      {uploadOpen && <UploadAssetsModal onClose={() => setUpload(false)} />}
+      {uploadOpen && <UploadAssetsModal convId={conv.id} onClose={() => setUpload(false)} />}
     </div>
   );
 }
+
 function CameraIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>; }
 function CheckSmIcon()     { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function GroupNewIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 
-const MODAL_CONTACTS = [
-  { id: '1', name: 'Sarah Jenkins',   role: 'Product Designer',    color: '#b45309' },
-  { id: '2', name: 'Marcus Chen',     role: 'Senior Engineer',     color: '#1d4ed8' },
-  { id: '3', name: 'Elena Rodriguez', role: 'Marketing Lead',      color: '#be185d' },
-  { id: '4', name: 'David Park',      role: 'Community Manager',   color: '#6d28d9' },
-];
+function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
+  const dispatch = useDispatch();
+  const { suggestions } = useSelector(s => s.users);
 
-function NewMessageModal({ onClose, onStartConversation }) {
-  const [view,        setView]        = useState('dm'); // 'dm' | 'group'
+  const [view,        setView]        = useState('dm');
   const [search,      setSearch]      = useState('');
   const [groupName,   setGroupName]   = useState('');
   const [description, setDescription] = useState('');
   const [selected,    setSelected]    = useState([]);
+  const [groupImg,    setGroupImg]    = useState(null);
+  const imgInputRef = useRef(null);
+
+  useEffect(() => {
+    dispatch(fetchSuggestions(20));
+  }, [dispatch]);
+
+  const contacts = suggestions.map(s => ({
+    id: s.id ?? s._id ?? '',
+    name: s.name ?? s.fullName ?? '',
+    role: s.role ?? s.bio ?? '',
+    color: s.color ?? '#3b82f6',
+  })).filter(c => c.id);
+
+  const filtered = contacts.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   function toggleContact(id) {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
-  const filtered = MODAL_CONTACTS.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
-
   function handleSelectDM(contact) {
-    onStartConversation?.(contact);
+    onStartDM?.(contact.id);
     onClose();
   }
 
-  function switchToGroup() {
-    setSearch('');
-    setSelected([]);
-    setView('group');
+  async function handleCreateGroupSubmit() {
+    if (!groupName.trim() || selected.length === 0) return;
+    await onCreateGroup?.({ name: groupName.trim(), description: description.trim(), memberIds: selected, image: groupImg });
+    onClose();
   }
 
-  function switchToDM() {
-    setSearch('');
-    setGroupName('');
-    setDescription('');
-    setSelected([]);
-    setView('dm');
-  }
+  function switchToGroup() { setSearch(''); setSelected([]); setView('group'); }
+  function switchToDM()    { setSearch(''); setGroupName(''); setDescription(''); setSelected([]); setView('dm'); }
 
   return (
     <div className="nm-overlay" onClick={onClose}>
       <div className="nm-modal" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
         <div className="nm-header">
           <div>
             <h2 className="nm-title">{view === 'dm' ? 'New Message' : 'Create Group'}</h2>
@@ -334,7 +364,6 @@ function NewMessageModal({ onClose, onStartConversation }) {
         </div>
 
         <div className="nm-body">
-          {/* ── DM view ── */}
           {view === 'dm' && (
             <>
               <button className="nm-group-link" onClick={switchToGroup}>
@@ -356,14 +385,8 @@ function NewMessageModal({ onClose, onStartConversation }) {
                 <span className="nm-contacts-title">Suggested</span>
                 <div className="nm-contact-list">
                   {filtered.map(c => (
-                    <div
-                      key={c.id}
-                      className="nm-contact-item"
-                      onClick={() => handleSelectDM(c)}
-                    >
-                      <div className="nm-contact-avatar" style={{ background: c.color }}>
-                        {initials(c.name)}
-                      </div>
+                    <div key={c.id} className="nm-contact-item" onClick={() => handleSelectDM(c)}>
+                      <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
                       <div className="nm-contact-info">
                         <p className="nm-contact-name">{c.name}</p>
                         <p className="nm-contact-role">{c.role}</p>
@@ -379,34 +402,31 @@ function NewMessageModal({ onClose, onStartConversation }) {
             </>
           )}
 
-          {/* ── Group view ── */}
           {view === 'group' && (
             <>
               <div className="nm-form-row">
-                <div className="nm-img-upload">
-                  <CameraIcon />
+                <div className="nm-img-upload" onClick={() => imgInputRef.current?.click()} style={{ cursor: 'pointer' }}>
+                  {groupImg
+                    ? <img src={URL.createObjectURL(groupImg)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                    : <CameraIcon />
+                  }
                   <span className="nm-img-badge"><CheckSmIcon /></span>
+                  <input
+                    ref={imgInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={e => e.target.files[0] && setGroupImg(e.target.files[0])}
+                  />
                 </div>
                 <div className="nm-form-fields">
                   <div className="nm-field">
                     <label className="nm-label">Group Name</label>
-                    <input
-                      className="nm-input"
-                      placeholder="Enter group name..."
-                      value={groupName}
-                      onChange={e => setGroupName(e.target.value)}
-                      autoFocus
-                    />
+                    <input className="nm-input" placeholder="Enter group name..." value={groupName} onChange={e => setGroupName(e.target.value)} autoFocus />
                   </div>
                   <div className="nm-field">
                     <label className="nm-label">Description (Optional)</label>
-                    <textarea
-                      className="nm-textarea"
-                      placeholder="What's this group about?"
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      rows={3}
-                    />
+                    <textarea className="nm-textarea" placeholder="What's this group about?" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
                   </div>
                 </div>
               </div>
@@ -417,37 +437,22 @@ function NewMessageModal({ onClose, onStartConversation }) {
                   <div className="nm-contacts-right">
                     <div className="nm-contact-search-wrap">
                       <SearchIcon />
-                      <input
-                        className="nm-contact-search"
-                        placeholder="Search contacts..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                      />
+                      <input className="nm-contact-search" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
-                    <button className="nm-select-all" onClick={() => setSelected(MODAL_CONTACTS.map(c => c.id))}>
-                      Select All
-                    </button>
+                    <button className="nm-select-all" onClick={() => setSelected(contacts.map(c => c.id))}>Select All</button>
                   </div>
                 </div>
                 <div className="nm-contact-list">
                   {filtered.map(c => {
                     const checked = selected.includes(c.id);
                     return (
-                      <div
-                        key={c.id}
-                        className={`nm-contact-item${checked ? ' nm-contact-item--selected' : ''}`}
-                        onClick={() => toggleContact(c.id)}
-                      >
-                        <div className="nm-contact-avatar" style={{ background: c.color }}>
-                          {initials(c.name)}
-                        </div>
+                      <div key={c.id} className={`nm-contact-item${checked ? ' nm-contact-item--selected' : ''}`} onClick={() => toggleContact(c.id)}>
+                        <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
                         <div className="nm-contact-info">
                           <p className="nm-contact-name">{c.name}</p>
                           <p className="nm-contact-role">{c.role}</p>
                         </div>
-                        <div className={`nm-checkbox${checked ? ' nm-checkbox--checked' : ''}`}>
-                          {checked && <CheckSmIcon />}
-                        </div>
+                        <div className={`nm-checkbox${checked ? ' nm-checkbox--checked' : ''}`}>{checked && <CheckSmIcon />}</div>
                       </div>
                     );
                   })}
@@ -457,14 +462,13 @@ function NewMessageModal({ onClose, onStartConversation }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="nm-footer">
           {view === 'dm' ? (
             <button className="nm-cancel-btn" onClick={onClose}>Cancel</button>
           ) : (
             <>
               <button className="nm-cancel-btn" onClick={switchToDM}>Back</button>
-              <button className="nm-create-btn" disabled={!groupName.trim() || selected.length === 0}>
+              <button className="nm-create-btn" disabled={!groupName.trim() || selected.length === 0} onClick={handleCreateGroupSubmit}>
                 Create Group <ArrowRightSmIcon />
               </button>
             </>
@@ -475,78 +479,142 @@ function NewMessageModal({ onClose, onStartConversation }) {
   );
 }
 
-const MSG_NAV = [
-  { id: 'feed',     label: 'Feed',     icon: <FeedNavIcon /> },
-  { id: 'event',    label: 'Event',    icon: <EventNavIcon /> },
-  { id: 'groups',   label: 'Groups',   icon: <GroupsNavIcon /> },
-  { id: 'calendar', label: 'Calendar', icon: <CalendarNavIcon /> },
-  { id: 'messages', label: 'Messages', icon: <MessagesNavIcon />, active: true },
-];
-
 const TABS = ['All', 'Unread', 'Groups', 'Online'];
 
-const CONVERSATIONS = [
-  { id: '1', name: 'Sarah Jenkins',   color: '#b45309', time: '10:42 AM', preview: "That sounds perfect! Let's...", online: true,  unread: false, badge: 0, role: 'Senior Product Designer' },
-  { id: '2', name: 'Marcus Chen',     color: '#1d4ed8', time: 'Yesterday', preview: 'Did you see the new design?',    online: true,  unread: true,  badge: 1, role: 'UI Designer' },
-  { id: '3', name: 'Elena Rodriguez', color: '#be185d', time: 'Mon',       preview: 'The group meeting is at 2PM.',  online: false, unread: true,  badge: 1, role: 'Project Manager' },
-  { id: '4', name: "Liam O'Connell",  color: '#6d28d9', time: 'Mar 12',    preview: 'Did you see the new community...', online: false, unread: false, badge: 0, role: 'Developer' },
-  { id: '5', name: 'Sofia Rodriguez', color: '#0e7490', time: 'Mar 10',    preview: 'That video was incredible!',    online: true,  unread: false, badge: 0, role: 'Content Creator' },
-];
-
-const MESSAGES_DATA = {
-  '1': [
-    { id: '1', from: 'them', text: 'Hey! Are you free to discuss the new project timeline later this afternoon?', time: '10:30 AM' },
-    { id: '2', from: 'me',   text: 'Absolutely! I just finished reviewing the drafts you sent over. They look incredible.', time: '10:32 AM', read: true },
-    { id: '3', from: 'me',   type: 'image', time: '10:33 AM', read: true },
-    { id: '4', from: 'them', text: "That sounds perfect! Let's jump on a call and finalize the details.", time: '10:35 AM' },
-  ],
-  '2': [
-    { id: '1', from: 'them', text: 'Did you see the new design? I just pushed the updates.', time: 'Yesterday' },
-  ],
-  '3': [
-    { id: '1', from: 'them', text: 'The group meeting is at 2PM. Don\'t forget!', time: 'Mon' },
-  ],
-};
-
-const QUICK_ONLINE = [
-  { id: '1', name: 'Sarah Jenkins',  color: '#b45309' },
-  { id: '2', name: 'Avery Sterling', color: '#0e7490' },
-  { id: '3', name: 'Sofia Rodriguez',color: '#be185d' },
-];
-
-function initials(name) {
-  return name.split(' ').map(w => w[0]).join('').toUpperCase();
-}
+const TAB_PARAM = { All: 'all', Unread: 'unread', Groups: 'groups', Online: 'online' };
 
 export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
-  const [tab, setTab]           = useState('All');
-  const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [search, setSearch]     = useState('');
-  const [activeConv, setActiveConv] = useState(null);
-  const [chatKey, setChatKey]   = useState(0);
-  const [inputMsg, setInputMsg] = useState('');
-  const [newMsgOpen, setNewMsgOpen] = useState(false);
-  const [showAssets, setShowAssets] = useState(false);
-  const messagesEndRef = useRef(null);
+  const dispatch = useDispatch();
+  const {
+    conversations, conversationsLoading,
+    messages: allMessages,
+    messagesLoading,
+    onlineUsers,
+    blockedConvIds,
+    sending,
+    assets: allAssets,
+  } = useSelector(s => s.messages);
+
+  const [tab,              setTab]             = useState('All');
+  const [createPostOpen,   setCreatePostOpen]  = useState(false);
+  const [search,           setSearch]          = useState('');
+  const [debouncedSearch,  setDebouncedSearch] = useState('');
+  const [activeConv,       setActiveConv]      = useState(null);
+  const [chatKey,          setChatKey]         = useState(0);
+  const [inputMsg,         setInputMsg]        = useState('');
+  const [newMsgOpen,       setNewMsgOpen]      = useState(false);
+  const [showAssets,       setShowAssets]      = useState(false);
+  const [typingUser,       setTypingUser]      = useState(null);
+
+  const messagesEndRef  = useRef(null);
+  const typingTimerRef  = useRef(null);
+  const isTypingRef     = useRef(false);
+  const imgInputRef     = useRef(null);
+  const fileInputRef    = useRef(null);
+
+  /* Fetch online users on mount */
+  useEffect(() => {
+    dispatch(fetchOnlineUsers());
+  }, [dispatch]);
+
+  /* Debounce search */
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  /* Fetch conversations on mount + whenever tab / search changes */
+  useEffect(() => {
+    dispatch(fetchConversations({ tab: TAB_PARAM[tab], search: debouncedSearch }));
+  }, [tab, debouncedSearch, dispatch]);
+
+  /* Join/leave socket room + typing listeners when conversation changes */
+  useEffect(() => {
+    if (!activeConv) return;
+    joinConversation(activeConv.id);
+
+    const offTyping = onUserTyping(() => {
+      setTypingUser(true);
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => setTypingUser(null), 3000);
+    });
+    const offStopped = onUserStoppedTyping(() => setTypingUser(null));
+
+    return () => {
+      leaveConversation(activeConv.id);
+      offTyping?.();
+      offStopped?.();
+    };
+  }, [activeConv?.id]); // eslint-disable-line
+
+  /* Auto-scroll on new messages */
+  const msgCount = allMessages[activeConv?.id]?.length ?? 0;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [msgCount]);
 
   function openConversation(conv) {
     setActiveConv(conv);
     setChatKey(k => k + 1);
     setShowAssets(false);
+    dispatch(clearUnread({ convId: conv.id })); // instant badge clear
+    dispatch(fetchMessages({ convId: conv.id }));
+    dispatch(markRead(conv.id));
+    dispatch(fetchAssets({ convId: conv.id, tab: 'media', limit: 3 })); // right panel preview
   }
 
-  useEffect(() => {
-    if (activeConv) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeConv]);
+  async function handleSend() {
+    if (!inputMsg.trim() || !activeConv || sending) return;
+    const text = inputMsg.trim();
+    setInputMsg('');
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      emitTypingStop(activeConv.id);
+      clearTimeout(typingTimerRef.current);
+    }
+    dispatch(sendMessage({ convId: activeConv.id, type: 'text', text }));
+  }
 
-  const filtered = CONVERSATIONS.filter(c => {
-    if (tab === 'Unread' && !c.unread) return false;
-    if (tab === 'Online' && !c.online) return false;
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  function handleSendFile(file, msgType) {
+    if (!file || !activeConv || sending) return;
+    dispatch(sendMessage({ convId: activeConv.id, type: msgType, file }));
+  }
 
-  const messages = activeConv ? (MESSAGES_DATA[activeConv.id] || []) : [];
+  function handleInputChange(e) {
+    setInputMsg(e.target.value);
+    if (!activeConv) return;
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      emitTypingStart(activeConv.id);
+    }
+    clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      emitTypingStop(activeConv.id);
+    }, 1500);
+  }
+
+  async function handleStartDM(userId) {
+    const result = await dispatch(startDM(userId));
+    if (startDM.fulfilled.match(result)) openConversation(result.payload);
+    setNewMsgOpen(false);
+  }
+
+  async function handleCreateGroup(groupData) {
+    const result = await dispatch(createGroup(groupData));
+    if (createGroup.fulfilled.match(result)) openConversation(result.payload);
+  }
+
+  function handleBlock() {
+    if (activeConv) dispatch(toggleBlock(activeConv.id));
+  }
+
+  function handleReport() {
+    if (activeConv) dispatch(reportConversation({ convId: activeConv.id, reason: 'Inappropriate content' }));
+  }
+
+  const messages  = activeConv ? (allMessages[activeConv.id] ?? []) : [];
+  const isBlocked = activeConv ? (blockedConvIds[activeConv.id] ?? false) : false;
 
   /* ── Chat view ── */
   if (activeConv) {
@@ -555,14 +623,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         <AnimatedNav
           activeId="messages"
           onNavigate={id => {
-            if (id === 'create')   { setCreatePostOpen(true); return; }
-            if (id === 'home')     onBack?.();
-            if (id === 'courses')  onCoursesClick?.();
-            if (id === 'library')  onLibraryClick?.();
-            if (id === 'events')   onEventsClick?.();
-            if (id === 'friends')  onGroupsClick?.();
+            if (id === 'create')    { setCreatePostOpen(true); return; }
+            if (id === 'home')      onBack?.();
+            if (id === 'courses')   onCoursesClick?.();
+            if (id === 'library')   onLibraryClick?.();
+            if (id === 'events')    onEventsClick?.();
+            if (id === 'friends')   onGroupsClick?.();
             if (id === 'calendar')  onCalendarClick?.();
-          if (id === 'minisites') onMinisitesClick?.();
+            if (id === 'minisites') onMinisitesClick?.();
           }}
         />
         {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
@@ -574,7 +642,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <button className="msg-compose-btn" title="New message" onClick={() => setNewMsgOpen(true)}><ComposeIcon /></button>
           </div>
           <div className="msg-conv-panel-list">
-            {CONVERSATIONS.map(conv => (
+            {conversations.map(conv => (
               <div
                 key={conv.id}
                 className={`msg-compact-item${activeConv.id === conv.id ? ' msg-compact-item--active' : ''}`}
@@ -587,11 +655,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <div className="msg-compact-body">
                   <div className="msg-compact-top">
                     <span className="msg-compact-name">{conv.name}</span>
-                    <span className="msg-compact-time">{conv.time}</span>
+                    <span className="msg-compact-time">{conv.lastMessage?.time ?? ''}</span>
                   </div>
                   <div className="msg-compact-bottom">
-                    <span className="msg-compact-preview">{conv.preview}</span>
-                    {conv.badge > 0 && <span className="msg-badge">{conv.badge}</span>}
+                    <span className="msg-compact-preview">{conv.lastMessage?.text ?? ''}</span>
+                    {conv.unreadCount > 0 && <span className="msg-badge">{conv.unreadCount}</span>}
                   </div>
                 </div>
               </div>
@@ -602,127 +670,180 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         {showAssets
           ? <SharedAssetsView conv={activeConv} onBack={() => setShowAssets(false)} />
           : <>
-        {/* Chat area */}
-        <div className="msg-chat-area" key={chatKey}>
-          {/* Chat header */}
-          <div className="msg-chat-header">
-            <div className="msg-chat-header-user">
-              <div className="msg-avatar-wrap">
-                <div className="msg-avatar msg-avatar--md" style={{ background: activeConv.color }}>{initials(activeConv.name)}</div>
-                {activeConv.online && <span className="msg-online-dot" />}
-              </div>
-              <div>
-                <p className="msg-chat-name">{activeConv.name}</p>
-                {activeConv.online
-                  ? <p className="msg-chat-status msg-chat-status--online">● Online</p>
-                  : <p className="msg-chat-status">Offline</p>
-                }
-              </div>
-            </div>
-            <button className="msg-chat-search-btn"><SearchIcon /></button>
-          </div>
-
-          {/* Messages */}
-          <div className="msg-chat-messages">
-            <div className="msg-date-sep"><span>TODAY</span></div>
-
-            {messages.map(msg => (
-              <div key={msg.id} className={`msg-bubble-row${msg.from === 'me' ? ' msg-bubble-row--me' : ''}`}>
-                {msg.from === 'them' && (
-                  <div className="msg-avatar msg-avatar--xs" style={{ background: activeConv.color, flexShrink: 0 }}>
-                    {initials(activeConv.name)}
-                  </div>
-                )}
-                <div className="msg-bubble-col">
-                  {msg.type === 'image' ? (
-                    <div className="msg-bubble-img-wrap">
-                      <div className="msg-img-placeholder" />
-                      <div className="msg-bubble-meta msg-bubble-meta--right">
-                        <span className="msg-bubble-time">{msg.time}</span>
-                        {msg.from === 'me' && msg.read && (
-                          <span className="msg-read-check"><ReadCheckIcon /></span>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`msg-bubble${msg.from === 'me' ? ' msg-bubble--sent' : ' msg-bubble--received'}`}>
-                      <p className="msg-bubble-text">{msg.text}</p>
-                    </div>
-                  )}
-                  {msg.type !== 'image' && (
-                    <div className={`msg-bubble-meta${msg.from === 'me' ? ' msg-bubble-meta--right' : ''}`}>
-                      <span className="msg-bubble-time">{msg.time}</span>
-                      {msg.from === 'me' && msg.read && (
-                        <span className="msg-read-check"><ReadCheckIcon /></span>
-                      )}
-                    </div>
-                  )}
+          {/* Chat area */}
+          <div className="msg-chat-area" key={chatKey}>
+            <div className="msg-chat-header">
+              <div className="msg-chat-header-user">
+                <div className="msg-avatar-wrap">
+                  <div className="msg-avatar msg-avatar--md" style={{ background: activeConv.color }}>{initials(activeConv.name)}</div>
+                  {activeConv.online && <span className="msg-online-dot" />}
+                </div>
+                <div>
+                  <p className="msg-chat-name">{activeConv.name}</p>
+                  {activeConv.online
+                    ? <p className="msg-chat-status msg-chat-status--online">● Online</p>
+                    : <p className="msg-chat-status">Offline</p>
+                  }
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+              <button className="msg-chat-search-btn"><SearchIcon /></button>
+            </div>
 
-          {/* Input bar */}
-          <div className="msg-input-bar">
-            <button className="msg-input-icon-btn"><AttachPlusIcon /></button>
-            <button className="msg-input-icon-btn"><ImageIcon /></button>
+            <div className="msg-chat-messages">
+              {messagesLoading && (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: '#5c6a8c', fontSize: 13 }}>Loading messages…</div>
+              )}
+
+              {!messagesLoading && <div className="msg-date-sep"><span>TODAY</span></div>}
+
+              {!messagesLoading && messages.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#5c6a8c', fontSize: 13 }}>No messages yet. Say hello!</div>
+              )}
+
+              {messages.map(msg => (
+                <div key={msg.id} className={`msg-bubble-row${msg.from === 'me' ? ' msg-bubble-row--me' : ''}`} style={msg.pending ? { opacity: 0.6 } : undefined}>
+                  {msg.from !== 'me' && (
+                    <div className="msg-avatar msg-avatar--xs" style={{ background: activeConv.color, flexShrink: 0 }}>
+                      {initials(activeConv.name)}
+                    </div>
+                  )}
+                  <div className="msg-bubble-col">
+                    {(msg.type === 'image' || msg.type === 'video') ? (
+                      <div className="msg-bubble-img-wrap">
+                        {msg.type === 'video'
+                          ? <video src={msg.mediaUrl} controls className="msg-img-placeholder" style={{ width: '100%', background: '#0d1424' }} />
+                          : msg.mediaUrl
+                            ? <img src={msg.mediaUrl} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover' }} />
+                            : <div className="msg-img-placeholder" />
+                        }
+                        <div className="msg-bubble-meta msg-bubble-meta--right">
+                          <span className="msg-bubble-time">{msg.pending ? '···' : msg.time}</span>
+                          {msg.from === 'me' && msg.read && !msg.pending && <span className="msg-read-check"><ReadCheckIcon /></span>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`msg-bubble${msg.from === 'me' ? ' msg-bubble--sent' : ' msg-bubble--received'}`}>
+                        <p className="msg-bubble-text">{msg.text}</p>
+                      </div>
+                    )}
+                    {msg.type !== 'image' && msg.type !== 'video' && (
+                      <div className={`msg-bubble-meta${msg.from === 'me' ? ' msg-bubble-meta--right' : ''}`}>
+                        <span className="msg-bubble-time">{msg.pending ? '···' : msg.time}</span>
+                        {msg.from === 'me' && msg.read && !msg.pending && <span className="msg-read-check"><ReadCheckIcon /></span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {typingUser && (
+                <div className="msg-bubble-row">
+                  <div className="msg-avatar msg-avatar--xs" style={{ background: activeConv.color, flexShrink: 0 }}>{initials(activeConv.name)}</div>
+                  <div className="msg-bubble msg-bubble--received" style={{ fontStyle: 'italic', color: '#94a3b8' }}>typing…</div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Hidden file inputs */}
             <input
-              className="msg-input"
-              type="text"
-              placeholder="Type a message..."
-              value={inputMsg}
-              onChange={e => setInputMsg(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && setInputMsg('')}
+              ref={imgInputRef}
+              type="file"
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleSendFile(f, f.type.startsWith('video') ? 'video' : 'image'); e.target.value = ''; }}
             />
-            <button className="msg-input-icon-btn"><EmojiIcon /></button>
-            <button className="msg-input-icon-btn"><MicIcon /></button>
-            <button className={`msg-send-btn${inputMsg ? ' msg-send-btn--active' : ''}`}>
-              <SendIcon />
-            </button>
-          </div>
-        </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+              style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleSendFile(f, 'file'); e.target.value = ''; }}
+            />
 
-        {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} onStartConversation={conv => { setNewMsgOpen(false); openConversation(conv); }} />}
-
-        {/* Contact info panel */}
-        <div className="msg-contact-panel" key={`panel-${chatKey}`}>
-          <div className="msg-contact-avatar-wrap">
-            <div className="msg-contact-avatar" style={{ background: activeConv.color }}>
-              {initials(activeConv.name)}
-            </div>
-            {activeConv.online && <span className="msg-contact-online-dot" />}
-          </div>
-          <p className="msg-contact-name">{activeConv.name}</p>
-          <p className="msg-contact-role">{activeConv.role}</p>
-
-          {/* Media section */}
-          <div className="msg-media-section">
-            <div className="msg-media-header">
-              <span className="msg-media-title">Media, Links, and Docs</span>
-              <button className="msg-see-all" onClick={() => setShowAssets(true)}>See All</button>
-            </div>
-            <div className="msg-media-grid">
-              <div className="msg-media-thumb msg-media-thumb--1" />
-              <div className="msg-media-thumb msg-media-thumb--2" />
-              <div className="msg-media-count">+12</div>
+            <div className="msg-input-bar">
+              <button className="msg-input-icon-btn" title="Attach file" onClick={() => !isBlocked && fileInputRef.current?.click()}><AttachPlusIcon /></button>
+              <button className="msg-input-icon-btn" title="Send image" onClick={() => !isBlocked && imgInputRef.current?.click()}><ImageIcon /></button>
+              <input
+                className="msg-input"
+                type="text"
+                placeholder={isBlocked ? 'You have blocked this conversation' : 'Type a message...'}
+                value={inputMsg}
+                onChange={handleInputChange}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                disabled={isBlocked || sending}
+              />
+              <button className="msg-input-icon-btn"><EmojiIcon /></button>
+              <button className="msg-input-icon-btn"><MicIcon /></button>
+              <button
+                className={`msg-send-btn${inputMsg.trim() ? ' msg-send-btn--active' : ''}`}
+                onClick={handleSend}
+                disabled={!inputMsg.trim() || sending || isBlocked}
+              >
+                <SendIcon />
+              </button>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="msg-contact-actions">
-            <button className="msg-action-item">
-              <span className="msg-action-icon msg-action-icon--red"><BlockIcon /></span>
-              <span className="msg-action-label">Block {activeConv.name.split(' ')[0]}</span>
-              <ChevronRightIcon />
-            </button>
-            <button className="msg-action-item">
-              <span className="msg-action-icon msg-action-icon--orange"><AlertIcon /></span>
-              <span className="msg-action-label">Report Conversation</span>
-              <ChevronRightIcon />
-            </button>
+          {newMsgOpen && (
+            <NewMessageModal
+              onClose={() => setNewMsgOpen(false)}
+              onStartDM={handleStartDM}
+              onCreateGroup={handleCreateGroup}
+            />
+          )}
+
+          {/* Contact info panel */}
+          <div className="msg-contact-panel" key={`panel-${chatKey}`}>
+            <div className="msg-contact-avatar-wrap">
+              <div className="msg-contact-avatar" style={{ background: activeConv.color }}>{initials(activeConv.name)}</div>
+              {activeConv.online && <span className="msg-contact-online-dot" />}
+            </div>
+            <p className="msg-contact-name">{activeConv.name}</p>
+            <p className="msg-contact-role">{activeConv.role}</p>
+
+            <div className="msg-media-section">
+              <div className="msg-media-header">
+                <span className="msg-media-title">Media, Links, and Docs</span>
+                <button className="msg-see-all" onClick={() => setShowAssets(true)}>See All</button>
+              </div>
+              {(() => {
+                const convAssets = allAssets[activeConv.id] ?? {};
+                const mediaItems = convAssets.media ?? [];
+                const total = convAssets.total ?? 0;
+                const preview = mediaItems.slice(0, 2);
+                const remaining = total > 2 ? total - 2 : 0;
+                if (total === 0 && mediaItems.length === 0) return null;
+                return (
+                  <div className="msg-media-grid">
+                    {preview.map((item, i) => (
+                      item.url
+                        ? <img key={item.id ?? i} src={item.url} alt="" className={`msg-media-thumb msg-media-thumb--${i + 1}`} style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: 6 }} />
+                        : <div key={i} className={`msg-media-thumb msg-media-thumb--${i + 1}`} />
+                    ))}
+                    {preview.length === 0 && <div className="msg-media-thumb msg-media-thumb--1" />}
+                    {remaining > 0 && <div className="msg-media-count">+{remaining}</div>}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="msg-contact-actions">
+              <button className="msg-action-item" onClick={handleBlock}>
+                <span className="msg-action-icon msg-action-icon--red"><BlockIcon /></span>
+                <span className="msg-action-label">
+                  {isBlocked ? `Unblock ${activeConv.name.split(' ')[0]}` : `Block ${activeConv.name.split(' ')[0]}`}
+                </span>
+                <ChevronRightIcon />
+              </button>
+              <button className="msg-action-item" onClick={handleReport}>
+                <span className="msg-action-icon msg-action-icon--orange"><AlertIcon /></span>
+                <span className="msg-action-label">Report Conversation</span>
+                <ChevronRightIcon />
+              </button>
+            </div>
           </div>
-        </div>
         </>}
       </div>
     );
@@ -745,7 +866,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         }}
       />
 
-      {newMsgOpen && <NewMessageModal onClose={() => setNewMsgOpen(false)} onStartConversation={conv => { setNewMsgOpen(false); openConversation(conv); }} />}
+      {newMsgOpen && (
+        <NewMessageModal
+          onClose={() => setNewMsgOpen(false)}
+          onStartDM={handleStartDM}
+          onCreateGroup={handleCreateGroup}
+        />
+      )}
 
       <div className="msg-main">
         <div className="msg-header">
@@ -760,11 +887,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
         <div className="msg-tabs">
           {TABS.map(t => (
-            <button
-              key={t}
-              className={`msg-tab${tab === t ? ' msg-tab--active' : ''}`}
-              onClick={() => setTab(t)}
-            >
+            <button key={t} className={`msg-tab${tab === t ? ' msg-tab--active' : ''}`} onClick={() => setTab(t)}>
               {t}
             </button>
           ))}
@@ -782,10 +905,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
 
         <div className="msg-list">
-          {filtered.map(conv => (
+          {conversationsLoading && conversations.length === 0 && (
+            <p style={{ color: '#5c6a8c', fontSize: 13, padding: '16px 0' }}>Loading…</p>
+          )}
+          {!conversationsLoading && conversations.length === 0 && (
+            <p style={{ color: '#5c6a8c', fontSize: 13, padding: '16px 0' }}>No conversations yet.</p>
+          )}
+          {conversations.map(conv => (
             <div
               key={conv.id}
-              className={`msg-conv${conv.unread ? ' msg-conv--unread' : ''}`}
+              className={`msg-conv${conv.unreadCount > 0 ? ' msg-conv--unread' : ''}`}
               onClick={() => openConversation(conv)}
             >
               <div className="msg-avatar-wrap">
@@ -796,14 +925,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <div className="msg-conv-top">
                   <span className="msg-conv-name">{conv.name}</span>
                   <div className="msg-conv-meta">
-                    <span className="msg-conv-time">{conv.time}</span>
-                    {conv.unread && <span className="msg-unread-dot" />}
+                    <span className="msg-conv-time">{conv.lastMessage?.time ?? ''}</span>
+                    {conv.unreadCount > 0 && <span className="msg-unread-dot" />}
                   </div>
                 </div>
                 <div className="msg-conv-bottom">
-                  <span className="msg-conv-preview">{conv.preview}</span>
+                  <span className="msg-conv-preview">{conv.lastMessage?.text ?? ''}</span>
                   <span className="msg-checks">
-                    {conv.badge > 0 ? <DoubleCheckIcon /> : <CheckIcon />}
+                    {conv.unreadCount > 0 ? <DoubleCheckIcon /> : <CheckIcon />}
                   </span>
                 </div>
               </div>
@@ -819,7 +948,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <button className="msg-view-all">View All</button>
           </div>
           <div className="msg-online-list">
-            {QUICK_ONLINE.map(u => (
+            {onlineUsers.slice(0, 5).map(u => (
               <div key={u.id} className="msg-online-item">
                 <div className="msg-online-avatar" style={{ background: u.color }}>{initials(u.name)}</div>
                 <span className="msg-online-dot msg-online-dot--sm" />

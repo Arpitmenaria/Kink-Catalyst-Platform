@@ -67,6 +67,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const { profile }            = useSelector((state) => state.profile);
   const { notifications, unreadCount } = useSelector((state) => state.notifications);
   const { posts }              = useSelector((state) => state.posts);
+  const { conversations }      = useSelector((state) => state.messages);
+  const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   const totalPosts       = posts.length;
   const totalConnections = profile?.followers?.length ?? profile?.followersCount ?? 0;
@@ -131,7 +133,9 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
         {/* Messages */}
         <button className="navbar-icon-btn" aria-label="Messages" onClick={onMessagesClick}>
           <ChatBubbleIcon />
-          <span className="notif-badge notif-badge--green">2</span>
+          {unreadMessages > 0 && (
+            <span className="notif-badge notif-badge--green">{unreadMessages > 99 ? '99+' : unreadMessages}</span>
+          )}
         </button>
 
         {/* Notifications */}
