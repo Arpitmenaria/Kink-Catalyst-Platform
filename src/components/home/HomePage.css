@@ -2,14 +2,20 @@
    Globals / reset for home page
 ───────────────────────────────────────── */
 .home-page {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   background: #0b0d17;
   font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   display: flex;
   flex-direction: column;
   color: #c8cfe0;
+}
+
+/* Messages page needs a fixed viewport height so each panel scrolls independently */
+.home-page--chat {
+  height: 100vh;
+  min-height: unset;
+  overflow: hidden;
 }
 
 /* ─────────────────────────────────────────

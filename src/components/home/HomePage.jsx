@@ -33,7 +33,7 @@ export default function HomePage() {
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
 
   return (
-    <div className="home-page">
+    <div className={`home-page${section === 'messages' ? ' home-page--chat' : ''}`}>
       <Navbar onMessagesClick={() => setSection('messages')} onProfileClick={() => setSection('profile')} onConnectionsClick={() => goToProfileTab('Connections')} onPostsClick={() => goToProfileTab('Feed')} />
       <div className="home-body">
         {section === 'minisites' ? (
