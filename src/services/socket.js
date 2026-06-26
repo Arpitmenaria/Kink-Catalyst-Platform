@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline } from '../store/slices/messagesSlice';
+import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
 
 const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
 
@@ -47,6 +48,31 @@ export function initSocket(token, store) {
 
   socket.on('user_offline', ({ userId }) => {
     storeRef.dispatch(setUserOffline({ userId }));
+  });
+
+  socket.on('follow_update', (data) => {
+    const myId = storeRef.getState().auth.user?._id ?? storeRef.getState().auth.user?.id;
+    if (!myId) return;
+    if (data.followerId === myId) {
+      // I followed/unfollowed someone → my followingCount changed
+      storeRef.dispatch(updateFollowCounts({ followingCount: data.followingCount }));
+    } else if (data.followingId === myId) {
+      // Someone followed/unfollowed me → my followerCount changed
+      storeRef.dispatch(updateFollowCounts({ followerCount: data.followerCount }));
+    }
+  });
+
+  socket.on('connection_count_update', (data) => {
+    // Targeted only at the user who was followed/unfollowed — update both counts
+    storeRef.dispatch(updateFollowCounts({
+      followerCount: data.followerCount,
+      followingCount: data.followingCount,
+    }));
+  });
+
+  socket.on('reconnect', () => {
+    // Resync authoritative counts after reconnect (per API contract)
+    storeRef.dispatch(fetchMe());
   });
 
   socket.on('error', ({ event, message }) => {

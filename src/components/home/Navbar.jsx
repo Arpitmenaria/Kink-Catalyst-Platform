@@ -71,7 +71,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   const totalPosts       = posts.length;
-  const totalConnections = profile?.followers?.length ?? profile?.followersCount ?? 0;
+  // followerCount/followingCount updated live via socket; connectionCount from /api/auth/me resync
+  const totalConnections = authUser?.followerCount ?? authUser?.connectionCount ?? profile?.followers?.length ?? profile?.followersCount ?? 0;
 
   const displayName = profile?.fullName || authUser?.fullName || 'Alex Rivera';
   const rawAvatar   = profile?.avatar ?? authUser?.avatar ?? '';

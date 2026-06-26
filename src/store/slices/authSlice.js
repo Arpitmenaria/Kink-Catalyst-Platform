@@ -2,6 +2,19 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { selectPlan } from './plansSlice';
 import { apiRequest } from '../../services/api';
 
+export const fetchMe = createAsyncThunk(
+  'auth/fetchMe',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      if (!token) return rejectWithValue('no token');
+      return await apiRequest('/api/auth/me', { token });
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const TOKEN_KEY = 'auth_token';
 const USER_KEY  = 'auth_user';
 
@@ -154,6 +167,14 @@ const authSlice = createSlice({
       state.error = null;
       state.successMessage = null;
     },
+    // Sync update from socket follow_update / connection_count_update events
+    updateFollowCounts(state, action) {
+      if (!state.user) return;
+      const { followerCount, followingCount } = action.payload;
+      if (followerCount !== undefined) state.user.followerCount = followerCount;
+      if (followingCount !== undefined) state.user.followingCount = followingCount;
+      saveSession(state.token, state.user);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -226,6 +247,17 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── Fetch Me (resync on load / reconnect) ─
+      .addCase(fetchMe.fulfilled, (state, action) => {
+        if (!state.user) return;
+        const d = action.payload;
+        if (d.connectionCount !== undefined) state.user.connectionCount = d.connectionCount;
+        if (d.postCount      !== undefined) state.user.postCount       = d.postCount;
+        if (d.followerCount  !== undefined) state.user.followerCount   = d.followerCount;
+        if (d.followingCount !== undefined) state.user.followingCount  = d.followingCount;
+        saveSession(state.token, state.user);
+      })
+
       // ── Select Plan ───────────────────────────
       .addCase(selectPlan.fulfilled, (state, action) => {
         const { token, user } = action.payload.data ?? {};
@@ -241,5 +273,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthState, resetToSignup, logout } = authSlice.actions;
+export const { clearAuthState, resetToSignup, logout, updateFollowCounts } = authSlice.actions;
 export default authSlice.reducer;

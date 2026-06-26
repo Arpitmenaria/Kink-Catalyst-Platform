@@ -14,6 +14,42 @@ function normalizePost(p) {
   };
 }
 
+// /api/users/me/posts field mapping → PostCard shape
+function normalizeMyPost(p) {
+  return {
+    ...p,
+    // author.name → author.fullName (PostCard reads fullName)
+    author: p.author
+      ? { ...p.author, fullName: p.author.fullName ?? p.author.name ?? '' }
+      : p.author,
+    // content → caption (PostCard reads caption)
+    caption: p.caption ?? p.content ?? '',
+    // Build media array from all possible shapes the API may send
+    media: p.media ?? (() => {
+      const items = [];
+      // Explicit video field(s)
+      if (p.video) items.push({ url: p.video, type: 'video' });
+      if (Array.isArray(p.videos)) p.videos.filter(Boolean).forEach(url => items.push({ url, type: 'video' }));
+      // images[] — detect video URLs by extension
+      if (Array.isArray(p.images)) {
+        p.images.filter(Boolean).forEach(url => {
+          const isVid = /\.(mp4|webm|ogg|mov|avi)(\?|$)/i.test(url);
+          items.push({ url, type: isVid ? 'video' : 'image' });
+        });
+      }
+      return items;
+    })(),
+    // likes is a number from this API — keep as-is for PostCard's isStatic path
+    likes: typeof p.likes === 'number' ? p.likes : (Array.isArray(p.likes) ? p.likes : 0),
+    comments: typeof p.comments === 'number'
+      ? new Array(p.comments).fill(null)
+      : (Array.isArray(p.comments) ? p.comments : []),
+    shares: typeof p.shares === 'number'
+      ? new Array(p.shares).fill(null)
+      : (Array.isArray(p.shares) ? p.shares : []),
+  };
+}
+
 export const fetchFeedPosts = createAsyncThunk(
   'posts/fetchFeed',
   async ({ page = 1, limit = 10 } = {}, { getState, rejectWithValue }) => {
@@ -21,6 +57,24 @@ export const fetchFeedPosts = createAsyncThunk(
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts?page=${page}&limit=${limit}`, { token });
       return (data.posts ?? []).map(normalizePost);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const fetchMyPosts = createAsyncThunk(
+  'posts/fetchMyPosts',
+  async ({ page = 1, limit = 10 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/me/posts?page=${page}&limit=${limit}`, { token });
+      return {
+        posts: (data.posts ?? []).map(normalizeMyPost),
+        total: data.total ?? 0,
+        page: data.page ?? page,
+        hasMore: data.hasMore ?? false,
+      };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -128,6 +182,10 @@ const postsSlice = createSlice({
     posts: [],
     loading: false,
     error: null,
+    myPosts: [],
+    myPostsTotal: 0,
+    myPostsLoading: false,
+    myPostsHasMore: false,
     likingIds: [],
     commentingId: null,
     sharingId: null,
@@ -152,6 +210,17 @@ const postsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+
+      // ── Fetch My Posts (profile feed) ─────────
+      .addCase(fetchMyPosts.pending, (state) => { state.myPostsLoading = true; })
+      .addCase(fetchMyPosts.fulfilled, (state, action) => {
+        const { posts, total, page, hasMore } = action.payload;
+        state.myPostsLoading = false;
+        state.myPosts = page === 1 ? posts : [...state.myPosts, ...posts];
+        state.myPostsTotal = total;
+        state.myPostsHasMore = hasMore;
+      })
+      .addCase(fetchMyPosts.rejected, (state) => { state.myPostsLoading = false; })
 
       // ── Like (optimistic toggle) ────────────
       .addCase(likePost.pending, (state, action) => {
@@ -211,7 +280,11 @@ const postsSlice = createSlice({
       })
       .addCase(createPost.fulfilled, (state, action) => {
         state.creating = false;
-        if (action.payload) state.posts.unshift(action.payload);
+        if (action.payload) {
+          state.posts.unshift(action.payload);
+          state.myPosts.unshift(action.payload);
+          state.myPostsTotal += 1;
+        }
       })
       .addCase(createPost.rejected, (state) => {
         state.creating = false;

@@ -3,12 +3,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { fetchSuggestions, followUser, dismissSuggestion } from '../../store/slices/usersSlice';
+import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion } from '../../store/slices/usersSlice';
 import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
   fetchConnections, removeConnection, fetchPhotos,
   fetchFollowers, fetchFollowing,
 } from '../../store/slices/profileSlice';
+import { fetchMyPosts } from '../../store/slices/postsSlice';
 import { ALEX_AVATAR, SIDEBAR_EVENTS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
@@ -62,6 +63,10 @@ function CheckIcon() {
 }
 function PersonAddIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>;
+}
+
+function initials(name = '') {
+  return name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
 function MutualIcon() {
@@ -903,18 +908,23 @@ export default function ProfilePage({
   const dispatch = useDispatch();
   const { user: authUser }  = useSelector(s => s.auth);
   const { profile, gallery, galleryTotal, followers, following } = useSelector(s => s.profile);
-  const { posts }           = useSelector(s => s.posts);
+  const { followingIds: reduxFollowingIds } = useSelector(s => s.users);
+  const { myPosts, myPostsTotal, myPostsLoading } = useSelector(s => s.posts);
 
   const rawProfileAvatar = profile?.avatar ?? '';
   const avatarUrl        = rawProfileAvatar?.startsWith?.('http') ? rawProfileAvatar : ALEX_AVATAR;
 
   const followersCount = profile?.followersCount ?? profile?.followers?.length ?? 0;
   const followingCount = profile?.followingCount ?? profile?.following?.length ?? 0;
-  const totalPosts     = posts.length;
+  const totalPosts     = authUser?.postCount ?? myPostsTotal;
   const displayName    = profile?.fullName || authUser?.fullName || 'Alex Rivera';
   const role           = profile?.role || 'Lead Developer';
 
   const [activeTab,       setActiveTab]       = useState(initialTab || 'Feed');
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+    dispatch(fetchMyPosts({ page: 1, limit: 10 }));
+  }, [dispatch]);
   useEffect(() => {
     if (initialTab) { setActiveTab(initialTab); onInitTabConsumed?.(); }
   }, [initialTab]);
@@ -932,14 +942,23 @@ export default function ProfilePage({
     if (profile?.coverPhoto?.startsWith?.('http')) setCoverUrl(profile.coverPhoto);
   }, [profile?.coverPhoto]);
 
-  // Seed followingIds from API data (isFollowing field)
+  // Seed followingIds from API data + Redux (already-followed users)
   useEffect(() => {
-    const ids = new Set([
+    setFollowingIds(new Set([
+      ...reduxFollowingIds,
       ...followers.filter(p => p.following).map(p => p.id),
       ...following.map(p => p.id),
-    ]);
-    if (ids.size) setFollowingIds(ids);
+    ]));
   }, [followers, following]);
+
+  // Keep in sync when Redux followingIds changes (follow/unfollow from sidebar)
+  useEffect(() => {
+    setFollowingIds(prev => {
+      const next = new Set(prev);
+      reduxFollowingIds.forEach(id => next.add(id));
+      return next;
+    });
+  }, [reduxFollowingIds]);
   const coverInputRef = useRef(null);
   const avatarInputRef = useRef(null);
   const displayAvatar = localAvatar ?? avatarUrl;
@@ -1086,7 +1105,13 @@ export default function ProfilePage({
                   <button className="creator-post-btn"  onClick={() => handleCreatorClick('photo')}>Post</button>
                 </div>
               </div>
-              {posts.map(post => (
+              {myPostsLoading && myPosts.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#5c6a8c', fontSize: 14 }}>Loading posts…</div>
+              )}
+              {!myPostsLoading && myPosts.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#5c6a8c', fontSize: 14 }}>No posts yet.</div>
+              )}
+              {myPosts.map(post => (
                 <PostCard key={post._id} post={post} />
               ))}
             </div>
@@ -1117,10 +1142,10 @@ export default function ProfilePage({
             <div className="fp-header">
               <div className="fp-tabs">
                 <button className={`fp-tab${followPanel === 'followers' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('followers'); dispatch(fetchFollowers()); }}>
-                  Followers <span className="fp-tab-count">{(profile?.followersCount ?? 0).toLocaleString()}</span>
+                  Followers <span className="fp-tab-count">{(authUser?.followerCount ?? profile?.followersCount ?? 0).toLocaleString()}</span>
                 </button>
                 <button className={`fp-tab${followPanel === 'following' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('following'); dispatch(fetchFollowing()); }}>
-                  Following <span className="fp-tab-count">{(profile?.followingCount ?? 0).toLocaleString()}</span>
+                  Following <span className="fp-tab-count">{(authUser?.followingCount ?? profile?.followingCount ?? 0).toLocaleString()}</span>
                 </button>
               </div>
               <button className="fp-close" onClick={() => setFollowPanel(null)}>
@@ -1135,7 +1160,14 @@ export default function ProfilePage({
               {list.length === 0 && <p className="fp-empty">No results found</p>}
               {list.map(person => (
                 <div className="fp-person" key={person.id}>
-                  <img className="fp-avatar" src={person.avatar} alt={person.name} />
+                  {person.avatar?.startsWith?.('http')
+                    ? <img className="fp-avatar" src={person.avatar} alt={person.name} />
+                    : (
+                      <div className="fp-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+                        {initials(person.name)}
+                      </div>
+                    )
+                  }
                   <div className="fp-info">
                     <span className="fp-name">{person.name}</span>
                     <span className="fp-role">{person.role}</span>
@@ -1148,11 +1180,21 @@ export default function ProfilePage({
                   </div>
                   <button
                     className={`fp-follow-btn${followingIds.has(person.id) ? ' fp-follow-btn--following' : ''}`}
-                    onClick={() => setFollowingIds(prev => {
-                      const s = new Set(prev);
-                      s.has(person.id) ? s.delete(person.id) : s.add(person.id);
-                      return s;
-                    })}
+                    onClick={() => {
+                      const isFollowing = followingIds.has(person.id);
+                      // Optimistic UI update
+                      setFollowingIds(prev => {
+                        const s = new Set(prev);
+                        isFollowing ? s.delete(person.id) : s.add(person.id);
+                        return s;
+                      });
+                      // Real API call
+                      if (isFollowing) {
+                        dispatch(unfollowUser(person.id));
+                      } else {
+                        dispatch(followUser(person.id));
+                      }
+                    }}
                   >
                     {followingIds.has(person.id) ? 'Following' : '+ Follow'}
                   </button>

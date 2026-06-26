@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
+import { updateFollowCounts } from './authSlice';
 
 export const fetchSuggestions = createAsyncThunk(
   'users/fetchSuggestions',
@@ -26,10 +27,26 @@ export const fetchSuggestions = createAsyncThunk(
 
 export const followUser = createAsyncThunk(
   'users/follow',
-  async (userId, { getState, rejectWithValue }) => {
+  async (userId, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      await apiRequest(`/api/users/${userId}/follow`, { method: 'POST', token });
+      const data = await apiRequest(`/api/users/${userId}/follow`, { method: 'POST', token });
+      // followingCount = my updated following count (REST is source of truth)
+      if (data.followingCount !== undefined) dispatch(updateFollowCounts({ followingCount: data.followingCount }));
+      return { userId };
+    } catch (err) {
+      return rejectWithValue({ userId, message: err.message });
+    }
+  }
+);
+
+export const unfollowUser = createAsyncThunk(
+  'users/unfollow',
+  async (userId, { getState, dispatch, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/${userId}/follow`, { method: 'DELETE', token });
+      if (data.followingCount !== undefined) dispatch(updateFollowCounts({ followingCount: data.followingCount }));
       return { userId };
     } catch (err) {
       return rejectWithValue({ userId, message: err.message });
@@ -99,10 +116,20 @@ const usersSlice = createSlice({
       })
       .addCase(followUser.rejected, (state, action) => {
         const msg = action.payload?.message ?? '';
-        // Keep disabled for permanent errors (user not found / self-follow); re-enable only for network errors
         if (!/user not found|cannot follow yourself/i.test(msg)) {
           const userId = action.meta.arg;
           state.followingIds = state.followingIds.filter(id => id !== userId);
+        }
+      })
+
+      // ── Unfollow ──────────────────────────────
+      .addCase(unfollowUser.pending, (state, action) => {
+        state.followingIds = state.followingIds.filter(id => id !== action.meta.arg);
+      })
+      .addCase(unfollowUser.rejected, (state, action) => {
+        const msg = action.payload?.message ?? '';
+        if (!/you are not following|user not found/i.test(msg)) {
+          if (!state.followingIds.includes(action.meta.arg)) state.followingIds.push(action.meta.arg);
         }
       })
 

@@ -14,15 +14,19 @@ import ProfilePage from './ProfilePage';
 import MiniSitesPage from './MiniSitesPage';
 import { initSocket } from '../../services/socket';
 import store from '../../store';
+import { fetchMe } from '../../store/slices/authSlice';
 import './HomePage.css';
 
 export default function HomePage() {
   const dispatch = useDispatch();
   const { token } = useSelector(s => s.auth);
 
-  /* Init socket once at app level so notifications arrive on any screen */
+  /* Init socket + resync counts on app load */
   useEffect(() => {
-    if (token) initSocket(token, store);
+    if (token) {
+      initSocket(token, store);
+      dispatch(fetchMe());
+    }
   }, [token]);
 
   const [section,         setSection]         = useState('feed');

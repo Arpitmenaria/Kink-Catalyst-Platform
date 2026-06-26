@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchSuggestions, followUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
+import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
 import { ALEX_AVATAR, SIDEBAR_EVENTS } from './mockData';
 import CreatePostModal from './CreatePostModal';
@@ -63,7 +63,6 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const [createOpen,  setCreateOpen]  = useState(false);
   const [activeNavId, setActiveNavId] = useState('home');
   const [poppingIds,  setPoppingIds]  = useState(new Set());
-  const [removingIds, setRemovingIds] = useState(new Set());
 
   useEffect(() => {
     dispatch(fetchUserProfile());
@@ -81,18 +80,15 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     dispatch(followUser(id));
   }
 
-  function handleRemoveSuggestion(id) {
-    setRemovingIds(prev => new Set([...prev, id]));
-    setTimeout(() => {
-      setRemovingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-      dispatch(dismissSuggestion(id));
-    }, 380);
+  function handleUnfollow(id) {
+    if (!id) return;
+    dispatch(unfollowUser(id));
   }
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
   const role           = profile?.role ?? 'Product Designer';
-  const followingCount = formatCount(profile?.following?.length ?? profile?.followingCount ?? 0);
-  const followersCount = formatCount(profile?.followers?.length ?? profile?.followersCount ?? 0);
+  const followingCount = formatCount(authUser?.followingCount ?? profile?.following?.length ?? profile?.followingCount ?? 0);
+  const followersCount = formatCount(authUser?.followerCount  ?? profile?.followers?.length ?? profile?.followersCount ?? 0);
   const rawAvatar      = profile?.avatar ?? authUser?.avatar ?? '';
   const avatarUrl      = rawAvatar?.startsWith?.('http') ? rawAvatar : ALEX_AVATAR;
 
@@ -171,7 +167,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
               return (
                 <div
                   key={id}
-                  className={`friend-item${removingIds.has(id) ? ' friend-item--removing' : ''}`}
+                  className="friend-item"
                 >
                   <div className="friend-item-top">
                     <div className="friend-avatar" style={{ background: f.avatarColor ?? '#3b82f6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -196,12 +192,14 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                     >
                       {isFollowing ? '✓ Added' : 'Add Friend'}
                     </button>
-                    <button
-                      className="friend-remove-btn"
-                      onClick={() => handleRemoveSuggestion(id)}
-                    >
-                      Remove
-                    </button>
+                    {isFollowing && (
+                      <button
+                        className="friend-remove-btn"
+                        onClick={() => handleUnfollow(id)}
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               );
