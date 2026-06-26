@@ -1,8 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import PostCard from './PostCard';
+import {
+  fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
+  changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
+  fetchPendingRequests, acceptGroupRequest, rejectGroupRequest,
+  fetchAdminDashboard, sendFriendRequest,
+} from '../../store/slices/groupsSlice';
+import { startDM } from '../../store/slices/messagesSlice';
 
 
 /* ── UI icons ── */
@@ -371,13 +379,35 @@ const GROUP_POSTS = [
 
 
 
+function normalizeRole(role) {
+  if (!role) return 'Member';
+  const lower = role.toLowerCase();
+  if (lower === 'admin' || lower === 'group_admin') return 'Admin';
+  if (lower === 'moderator' || lower === 'mod') return 'Moderator';
+  return 'Member';
+}
+
+function apiRole(displayRole) {
+  const map = { Admin: 'group_admin', Moderator: 'moderator', Member: 'member' };
+  return map[displayRole] ?? displayRole.toLowerCase();
+}
+
 /* ══════════════════════════
    Group Admin Dashboard
 ══════════════════════════ */
 function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onModerationClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+  const dispatch = useDispatch();
+  const groupId = group?._id ?? group?.id;
+  const { user: authUser } = useSelector(s => s.auth);
+  const { friendRequestIds } = useSelector(s => s.groups);
+  const rdxMembers  = useSelector(s => s.groups.groupMembers[groupId]  ?? []);
+  const rdxPending  = useSelector(s => s.groups.pendingRequests[groupId] ?? null);
+  const rdxPosts    = useSelector(s => s.groups.groupPosts[groupId]    ?? null);
+  const rdxStats    = useSelector(s => s.groups.adminDashboard[groupId]?.stats ?? null);
+
   const [activeTab,      setActiveTab]      = useState('about');
   const [searchQuery,    setSearchQuery]    = useState('');
-  const [memberRoles,    setMemberRoles]    = useState({ 1: 'Admin', 2: 'Moderator', 3: 'Member', 4: 'Member', 5: 'Member', 6: 'Member' });
+  const [memberRoles,    setMemberRoles]    = useState({});
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [filterRole,     setFilterRole]     = useState('');
   const [filterJoined,   setFilterJoined]   = useState('');
@@ -388,22 +418,54 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const [openPndDrop,    setOpenPndDrop]    = useState(null);
   const pendingFilterRef = useRef(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [pendingList,    setPendingList]    = useState(INIT_PENDING);
-  const [friendIds,      setFriendIds]      = useState(() => new Set(ADMIN_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
-  const [removedMbrs,    setRemovedMbrs]    = useState(new Set());
-  const [coverImg,       setCoverImg]       = useState(null);
-  const [groupImg,       setGroupImg]       = useState(null);
+  const [friendIds,      setFriendIds]      = useState(new Set());
+  const [coverImg,       setCoverImg]       = useState(group?.coverImg ?? null);
+  const [coverImgFile,   setCoverImgFile]   = useState(null);
+  const [groupImg,       setGroupImg]       = useState(group?.groupImg ?? null);
+  const [groupImgFile,   setGroupImgFile]   = useState(null);
   const coverInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
+  useEffect(() => {
+    if (!groupId) return;
+    dispatch(fetchGroupMembers({ groupId }));
+    dispatch(fetchGroupPosts({ groupId, page: 1 }));
+    if (group?.privacy === 'private') dispatch(fetchPendingRequests({ groupId }));
+    dispatch(fetchAdminDashboard(groupId));
+  }, [dispatch, groupId]);
+
+  useEffect(() => {
+    if (rdxMembers.length === 0) return;
+    const roles = {};
+    const friends = new Set();
+    rdxMembers.forEach(m => {
+      const id = m._id ?? m.id;
+      roles[id] = normalizeRole(m.role);
+      if (m.isFriend) friends.add(id);
+    });
+    setMemberRoles(roles);
+    setFriendIds(friends);
+  }, [rdxMembers]);
+
+  const baseMembers = rdxMembers.length > 0 ? rdxMembers : ADMIN_MEMBERS;
+  const pendingList = rdxPending ?? (rdxPending === null ? INIT_PENDING : []);
+
   function handleCoverChange(e) {
     const file = e.target.files[0];
-    if (file) setCoverImg(URL.createObjectURL(file));
+    if (file) {
+      setCoverImg(URL.createObjectURL(file));
+      setCoverImgFile(file);
+      dispatch(updateGroup({ groupId, coverImg: file }));
+    }
     e.target.value = '';
   }
   function handlePhotoChange(e) {
     const file = e.target.files[0];
-    if (file) setGroupImg(URL.createObjectURL(file));
+    if (file) {
+      setGroupImg(URL.createObjectURL(file));
+      setGroupImgFile(file);
+      dispatch(updateGroup({ groupId, groupImg: file }));
+    }
     e.target.value = '';
   }
 
@@ -420,8 +482,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   }
 
   function switchTab(tab) { setActiveTab(tab); setSearchQuery(''); setFilterRole(''); setFilterJoined(''); }
-  function acceptRequest(id) { setPendingList(p => p.filter(r => r.id !== id)); }
-  function rejectRequest(id) { setPendingList(p => p.filter(r => r.id !== id)); }
+  function handleAccept(requestId) { dispatch(acceptGroupRequest({ groupId, requestId })); }
+  function handleReject(requestId) { dispatch(rejectGroupRequest({ groupId, requestId })); }
 
   useEffect(() => {
     if (!openMbrDrop) return;
@@ -440,16 +502,17 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const hasMbrFilter = filterRole || filterJoined;
   const hasPndFilter = filterMutual || filterDate;
 
-  const filteredMembers = ADMIN_MEMBERS.filter(m =>
-    !removedMbrs.has(m.id) &&
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    (!filterRole   || memberRoles[m.id] === filterRole) &&
-    (!filterJoined || m.joined.includes(filterJoined))
-  );
+  const filteredMembers = baseMembers.filter(m => {
+    const id = m._id ?? m.id;
+    const role = memberRoles[id] ?? normalizeRole(m.role);
+    return (m.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) &&
+      (!filterRole   || role === filterRole) &&
+      (!filterJoined || (m.joined ?? '').includes(filterJoined));
+  });
   const filteredPending = pendingList.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) &&
     (!filterMutual || (filterMutual === 'Has Mutual' ? r.mutual > 0 : r.mutual === 0)) &&
-    (!filterDate   || r.requestedOn.includes(filterDate))
+    (!filterDate   || (r.requestedOn ?? '').includes(filterDate))
   );
 
   return (
@@ -465,7 +528,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           {/* Banner */}
           <div className="adm-cover">
             <img
-              src={coverImg || `https://picsum.photos/seed/adm-cover-${group?.id || 'default'}/1200/300`}
+              src={coverImg || group?.coverImg || `https://picsum.photos/seed/adm-cover-${group?._id || group?.id || 'default'}/1200/300`}
               alt="Group cover"
               className="adm-cover-img"
             />
@@ -482,7 +545,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           <div className="adm-profile-row">
             <div className="adm-group-photo-area">
               <img
-                src={groupImg || `https://picsum.photos/seed/adm-gp-${group?.id || 'default'}/120/120`}
+                src={groupImg || group?.groupImg || `https://picsum.photos/seed/adm-gp-${group?._id || group?.id || 'default'}/120/120`}
                 alt={group?.name}
                 className="adm-group-photo-img"
               />
@@ -508,22 +571,22 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         <div className="adm-stats-row">
           <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('members')}>
             <p className="adm-stat-label">Total Members</p>
-            <p className="adm-stat-value">{(group?.memberCount ?? ADMIN_MEMBERS.length).toLocaleString()}</p>
+            <p className="adm-stat-value">{(rdxStats?.memberCount ?? group?.memberCount ?? baseMembers.length).toLocaleString()}</p>
             <span className="adm-stat-pill adm-stat-pill--green">+12% this month</span>
           </div>
           {group?.privacy === 'private' && (
             <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('pending')}>
               <p className="adm-stat-label">Pending Requests</p>
-              <p className="adm-stat-value">{pendingList.length}</p>
-              <span className={`adm-stat-pill ${pendingList.length > 0 ? 'adm-stat-pill--amber' : 'adm-stat-pill--green'}`}>
-                {pendingList.length > 0 ? 'Needs Review' : 'All Clear'}
+              <p className="adm-stat-value">{rdxStats?.pendingCount ?? pendingList.length}</p>
+              <span className={`adm-stat-pill ${(rdxStats?.pendingCount ?? pendingList.length) > 0 ? 'adm-stat-pill--amber' : 'adm-stat-pill--green'}`}>
+                {(rdxStats?.pendingCount ?? pendingList.length) > 0 ? 'Needs Review' : 'All Clear'}
               </span>
             </div>
           )}
-          <div className="adm-stat-card adm-stat-card--clickable" onClick={onModerationClick}>
-            <p className="adm-stat-label">Moderation Flags</p>
-            <p className="adm-stat-value">3</p>
-            <span className="adm-stat-pill adm-stat-pill--red">Action Required</span>
+          <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('posts')}>
+            <p className="adm-stat-label">Total Posts</p>
+            <p className="adm-stat-value">{(rdxStats?.postsCount ?? 0).toLocaleString()}</p>
+            <span className="adm-stat-pill adm-stat-pill--green">Published</span>
           </div>
         </div>
 
@@ -535,10 +598,10 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                 About
               </button>
               <button className={`adm-tab${activeTab === 'posts'   ? ' adm-tab--active' : ''}`} onClick={() => switchTab('posts')}>
-                Posts <span className="adm-tab-count">{ADMIN_POSTS.length}</span>
+                Posts
               </button>
               <button className={`adm-tab${activeTab === 'members' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('members')}>
-                Members <span className="adm-tab-count">{(group?.memberCount ?? ADMIN_MEMBERS.length).toLocaleString()}</span>
+                Members <span className="adm-tab-count">{(group?.memberCount ?? baseMembers.length).toLocaleString()}</span>
               </button>
               {group?.privacy === 'private' && (
                 <button className={`adm-tab${activeTab === 'pending' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('pending')}>
@@ -690,9 +753,10 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           {activeTab === 'posts' && (
             <div className="gd-body">
               <div className="gd-main">
-                {GROUP_POSTS.map(p => (
+                {(rdxPosts ?? GROUP_POSTS).map(p => (
                   <PostCard key={p._id} post={p} />
                 ))}
+                {rdxPosts?.length === 0 && <p className="adm-empty">No posts in this group yet.</p>}
               </div>
             </div>
           )}
@@ -710,11 +774,20 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMembers.map(m => (
-                    <tr key={m.id}>
+                  {filteredMembers.map(m => {
+                    const mid = m._id ?? m.id;
+                    const role = memberRoles[mid] ?? normalizeRole(m.role);
+                    const isFriendOrRequested = friendIds.has(mid) || friendRequestIds.includes(mid);
+                    const isSelfRow = mid === (authUser?._id ?? authUser?.id);
+                    const isMemberAdmin = role === 'Admin';
+                    return (
+                    <tr key={mid}>
                       <td>
                         <div className="adm-member-cell">
-                          <img src={m.img} alt={m.name} className="adm-member-avatar" />
+                          {m.img
+                            ? <img src={m.img} alt={m.name} className="adm-member-avatar" />
+                            : <div className="adm-member-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>{initials(m.name ?? '')}</div>
+                          }
                           <div>
                             <p className="adm-member-name">{m.name}</p>
                             {m.location && (
@@ -722,12 +795,12 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             )}
                             <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
                               <div className="prof-conn-shared-avatars">
-                                {m.sharedAvatars.slice(0, 3).map((src, i) => (
+                                {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
                                 ))}
                               </div>
                               <span className="adm-member-mutual">
-                                {m.mutual > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
+                                {(m.mutual ?? 0) > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
                               </span>
                             </div>
                           </div>
@@ -736,35 +809,50 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                       <td className="adm-date-cell">{m.joined}</td>
                       <td>
                         <RoleSelect
-                          value={memberRoles[m.id]}
-                          memberId={m.id}
+                          value={role}
+                          memberId={mid}
                           openId={openDropdownId}
                           onToggle={setOpenDropdownId}
-                          onChange={role => setMemberRoles(p => ({ ...p, [m.id]: role }))}
+                          onChange={newRole => {
+                            setMemberRoles(p => ({ ...p, [mid]: newRole }));
+                            dispatch(changeMemberRole({ groupId, memberId: mid, role: apiRole(newRole) }));
+                          }}
                         />
                       </td>
                       <td>
                         <div className="adm-action-cell">
-                          {friendIds.has(m.id) ? (
-                            <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                          {!isSelfRow && (isFriendOrRequested ? (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--msg"
+                              onClick={() => {
+                                dispatch(startDM(mid));
+                                onMessagesClick?.();
+                              }}
+                            >Chat</button>
                           ) : (
                             <button
                               className="prof-conn-btn prof-conn-btn--add"
-                              onClick={() => setFriendIds(s => new Set([...s, m.id]))}
+                              onClick={() => {
+                                dispatch(sendFriendRequest(mid));
+                                setFriendIds(s => new Set([...s, mid]));
+                              }}
                             >Add Friend</button>
+                          ))}
+                          {!isSelfRow && !isMemberAdmin && (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--remove"
+                              onClick={() => dispatch(removeMember({ groupId, memberId: mid }))}
+                            >Remove</button>
                           )}
-                          <button
-                            className="prof-conn-btn prof-conn-btn--remove"
-                            onClick={() => setRemovedMbrs(s => new Set([...s, m.id]))}
-                          >Remove from Group</button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               <div className="adm-table-footer">
-                <span className="adm-showing">Showing {filteredMembers.length} of {(group?.memberCount ?? ADMIN_MEMBERS.length).toLocaleString()} members</span>
+                <span className="adm-showing">Showing {filteredMembers.length} of {(group?.memberCount ?? baseMembers.length).toLocaleString()} members</span>
                 <div className="adm-pagination">
                   <button className="adm-pg-btn"><ChevronLeftIcon /></button>
                   <button className="adm-pg-btn adm-pg-btn--active">1</button>
@@ -876,7 +964,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
           {/* Pending Requests table */}
           {activeTab === 'pending' && (
-            pendingList.length === 0 ? (
+            filteredPending.length === 0 ? (
               <p className="adm-empty">No pending requests — you&apos;re all caught up.</p>
             ) : (
               <table className="adm-table">
@@ -889,11 +977,16 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPending.map(r => (
-                    <tr key={r.id}>
+                  {filteredPending.map(r => {
+                    const rid = r._id ?? r.id;
+                    return (
+                    <tr key={rid}>
                       <td>
                         <div className="adm-member-cell">
-                          <img src={r.img} alt={r.name} className="adm-member-avatar" />
+                          {r.img
+                            ? <img src={r.img} alt={r.name} className="adm-member-avatar" />
+                            : <div className="adm-member-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>{initials(r.name ?? '')}</div>
+                          }
                           <div>
                             <p className="adm-member-name">{r.name}</p>
                             {r.location && (
@@ -901,12 +994,12 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             )}
                             <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
                               <div className="prof-conn-shared-avatars">
-                                {r.sharedAvatars.slice(0, 3).map((src, i) => (
+                                {(r.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
                                 ))}
                               </div>
                               <span className="adm-member-mutual">
-                                {r.mutual > 0 ? `${r.mutual} mutual connections` : 'New to your network'}
+                                {(r.mutual ?? 0) > 0 ? `${r.mutual} mutual connections` : 'New to your network'}
                               </span>
                             </div>
                           </div>
@@ -916,12 +1009,13 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                       <td className="adm-bio-cell">{r.bio}</td>
                       <td>
                         <div className="adm-req-actions">
-                          <button className="adm-accept-btn" onClick={() => acceptRequest(r.id)}>Accept</button>
-                          <button className="adm-reject-btn" onClick={() => rejectRequest(r.id)}>Reject</button>
+                          <button className="adm-accept-btn" onClick={() => handleAccept(rid)}>Accept</button>
+                          <button className="adm-reject-btn" onClick={() => handleReject(rid)}>Reject</button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )
@@ -938,25 +1032,47 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
    Create Group Page
 ══════════════════════════ */
 function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onCreateGroup, onLibraryClick, onCoursesClick, onMinisitesClick }) {
-  const [groupName,     setGroupName]     = useState('');
-  const [mission,       setMission]       = useState('');
-  const [description,   setDescription]   = useState('');
-  const [category,      setCategory]      = useState('Technology & Software');
-  const [privacy,       setPrivacy]       = useState('public');
+  const dispatch = useDispatch();
+  const { creating, createError } = useSelector(s => s.groups);
+  const [groupName,      setGroupName]      = useState('');
+  const [mission,        setMission]        = useState('');
+  const [description,    setDescription]    = useState('');
+  const [category,       setCategory]       = useState('Technology & Software');
+  const [privacy,        setPrivacy]        = useState('public');
   const [adminApproval,  setAdminApproval]  = useState(true);
   const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [coverImg,      setCoverImg]      = useState('');
-  const [groupImg,      setGroupImg]      = useState('');
+  const [coverImg,       setCoverImg]       = useState('');
+  const [coverImgFile,   setCoverImgFile]   = useState(null);
+  const [groupImg,       setGroupImg]       = useState('');
+  const [groupImgFile,   setGroupImgFile]   = useState(null);
   const coverInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
   function handleCoverChange(e) {
     const f = e.target.files?.[0];
-    if (f) setCoverImg(URL.createObjectURL(f));
+    if (f) { setCoverImgFile(f); setCoverImg(URL.createObjectURL(f)); }
   }
   function handlePhotoChange(e) {
     const f = e.target.files?.[0];
-    if (f) setGroupImg(URL.createObjectURL(f));
+    if (f) { setGroupImgFile(f); setGroupImg(URL.createObjectURL(f)); }
+  }
+
+  function handleCreate() {
+    if (!groupName.trim() || creating) return;
+    dispatch(createGroup({
+      name: groupName.trim(),
+      mission,
+      description,
+      category,
+      privacy,
+      adminApproval,
+      coverImg: coverImgFile,
+      groupImg: groupImgFile,
+    })).then(action => {
+      if (createGroup.fulfilled.match(action)) {
+        onCreateGroup?.(action.payload);
+      }
+    });
   }
 
   function navClick(id) {
@@ -1099,8 +1215,11 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 
         {/* Action buttons */}
         <div className="cg-form-actions">
-          <button className="cg-cancel-btn" onClick={onBack}>Cancel</button>
-          <button className="cg-create-btn" onClick={onCreateGroup}>Create Group</button>
+          {createError && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 8px 0 0' }}>{createError}</p>}
+          <button className="cg-cancel-btn" onClick={onBack} disabled={creating}>Cancel</button>
+          <button className="cg-create-btn" onClick={handleCreate} disabled={!groupName.trim() || creating}>
+            {creating ? 'Creating...' : 'Create Group'}
+          </button>
         </div>
 
       </div>
@@ -1156,8 +1275,16 @@ const GD_MEMBERS = [
 ];
 
 function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+  const dispatch = useDispatch();
+  const groupId = group?._id ?? group?.id;
+  const { user: authUser } = useSelector(s => s.auth);
+  const { joiningIds, leavingIds, friendRequestIds } = useSelector(s => s.groups);
+  const rdxPosts   = useSelector(s => s.groups.groupPosts[groupId]   ?? null);
+  const rdxMembers = useSelector(s => s.groups.groupMembers[groupId] ?? null);
+
   const [detailTab,      setDetailTab]      = useState('about');
   const [joinedLocal,    setJoinedLocal]    = useState(group.joined || false);
+  const [pendingLocal,   setPendingLocal]   = useState(group.pending || false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [gdFriendIds,    setGdFriendIds]    = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
   const [showLeaveModal,   setShowLeaveModal]   = useState(false);
@@ -1165,6 +1292,21 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const [showReportModal,  setShowReportModal]  = useState(false);
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
+
+  const isJoining = joiningIds.includes(groupId);
+  const isLeaving = leavingIds.includes(groupId);
+
+  useEffect(() => {
+    if (!groupId) return;
+    dispatch(fetchGroupPosts({ groupId, page: 1 }));
+    dispatch(fetchGroupMembers({ groupId }));
+  }, [dispatch, groupId]);
+
+  useEffect(() => {
+    if (rdxMembers) {
+      setGdFriendIds(new Set(rdxMembers.filter(m => m.isFriend).map(m => m._id ?? m.id)));
+    }
+  }, [rdxMembers]);
 
   const GROUP_REPORT_REASONS = [
     'Spam or misleading content',
@@ -1176,6 +1318,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
   function handleReportSubmit() {
     if (!reportSelected) return;
+    dispatch(reportGroup({ groupId, reason: reportSelected }));
     setReportDone(true);
   }
   function handleReportClose() {
@@ -1185,7 +1328,9 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   }
 
   function handleLeaveConfirm() {
+    dispatch(leaveGroup(groupId));
     setJoinedLocal(false);
+    setPendingLocal(false);
     setShowLeaveModal(false);
     setLeaveReason('');
   }
@@ -1202,7 +1347,8 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     if (id === 'minisites') onMinisitesClick?.();
   }
 
-  const isOwned = group.tab === 'yours';
+  const myId = authUser?._id ?? authUser?.id;
+  const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
   const isPrivate = group.privacy === 'private';
 
   return (
@@ -1231,10 +1377,30 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
           <div className="gd-header-actions">
             {isOwned ? (
               <button className="gd-manage-btn" onClick={onManage}>Manage Group</button>
+            ) : pendingLocal ? (
+              <button className="gd-leave-btn" disabled>Pending Approval</button>
             ) : joinedLocal ? (
-              <button className="gd-leave-btn" onClick={() => setShowLeaveModal(true)}>Leave Group</button>
+              <button className="gd-leave-btn" onClick={() => setShowLeaveModal(true)} disabled={isLeaving}>
+                {isLeaving ? 'Leaving...' : 'Leave Group'}
+              </button>
             ) : (
-              <button className="gd-join-btn" onClick={() => setJoinedLocal(true)}>Join Group</button>
+              <button
+                className="gd-join-btn"
+                onClick={() => {
+                  setJoinedLocal(true);
+                  dispatch(joinGroup(groupId)).then(action => {
+                    if (joinGroup.fulfilled.match(action)) {
+                      setJoinedLocal(action.payload.joined);
+                      setPendingLocal(action.payload.pending ?? false);
+                    } else if (joinGroup.rejected.match(action)) {
+                      setJoinedLocal(false);
+                    }
+                  });
+                }}
+                disabled={isJoining}
+              >
+                {isJoining ? 'Joining...' : 'Join Group'}
+              </button>
             )}
             <button className="gd-share-btn"><ShareIcon2 /> Share</button>
             {!isOwned && (
@@ -1353,9 +1519,9 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
         {/* ── Posts tab ── */}
         {detailTab === 'posts' && (
           <div className="gd-main">
-            {GROUP_POSTS.map(p => (
-              <PostCard key={p._id} post={p} />
-            ))}
+            {rdxPosts === null && <p style={{ padding: 24, color: '#94a3b8' }}>Loading posts...</p>}
+            {rdxPosts?.map(p => <PostCard key={p._id} post={p} />)}
+            {rdxPosts?.length === 0 && <p style={{ padding: 24, color: '#94a3b8' }}>No posts in this group yet.</p>}
           </div>
         )}
 
@@ -1372,11 +1538,25 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                 </tr>
               </thead>
               <tbody>
-                {GD_MEMBERS.map(m => (
-                  <tr key={m.id}>
+                {rdxMembers === null && (
+                  <tr><td colSpan={4} style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>Loading members...</td></tr>
+                )}
+                {rdxMembers?.length === 0 && (
+                  <tr><td colSpan={4} style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>No members found.</td></tr>
+                )}
+                {(rdxMembers ?? []).map(m => {
+                  const mid = m._id ?? m.id;
+                  const isSelf = mid === myId;
+                  const isAdmin = m.role === 'Admin' || m.role === 'group_admin';
+                  const isFriendOrRequested = gdFriendIds.has(mid) || friendRequestIds.includes(mid);
+                  return (
+                  <tr key={mid}>
                     <td>
                       <div className="adm-member-cell">
-                        <img src={m.img} alt={m.name} className="adm-member-avatar" />
+                        {m.img
+                          ? <img src={m.img} alt={m.name} className="adm-member-avatar" />
+                          : <div className="adm-member-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>{initials(m.name ?? '')}</div>
+                        }
                         <div>
                           <p className="adm-member-name">{m.name}</p>
                           {m.location && (
@@ -1384,34 +1564,50 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                           )}
                           <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
                             <div className="prof-conn-shared-avatars">
-                              {m.sharedAvatars.slice(0, 3).map((src, i) => (
+                              {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                 <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
                               ))}
                             </div>
                             <span className="adm-member-mutual">
-                              {m.mutual > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
+                              {(m.mutual ?? 0) > 0 ? `${m.mutual} mutual connections` : 'New to your network'}
                             </span>
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="adm-date-cell">{m.joined}</td>
-                    <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{m.role}</span></td>
+                    <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{normalizeRole(m.role)}</span></td>
                     <td>
                       <div className="adm-action-cell">
-                        {gdFriendIds.has(m.id) ? (
-                          <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                        {!isSelf && (isFriendOrRequested ? (
+                          <button
+                            className="prof-conn-btn prof-conn-btn--msg"
+                            onClick={() => {
+                              dispatch(startDM(mid));
+                              onMessagesClick?.();
+                            }}
+                          >Chat</button>
                         ) : (
                           <button
                             className="prof-conn-btn prof-conn-btn--add"
-                            onClick={() => setGdFriendIds(s => new Set([...s, m.id]))}
+                            onClick={() => {
+                              dispatch(sendFriendRequest(mid));
+                              setGdFriendIds(s => new Set([...s, mid]));
+                            }}
                           >Add Friend</button>
+                        ))}
+                        {/* Only group admin can remove; cannot remove themselves or another admin */}
+                        {isOwned && !isSelf && !isAdmin && (
+                          <button
+                            className="prof-conn-btn prof-conn-btn--remove"
+                            onClick={() => dispatch(removeMember({ groupId, memberId: mid }))}
+                          >Remove</button>
                         )}
-                        <button className="prof-conn-btn prof-conn-btn--remove">Remove from Group</button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1496,18 +1692,40 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 function OrganizerIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
 
 /* ── Group Hub Card ── */
-function GroupHubCard({ group, onManage, onView }) {
-  const [joined, setJoined] = useState(group.joined || false);
-  const isOwned = group.tab === 'yours';
+function GroupHubCard({ group, onManage, onView, isOwned }) {
+  const dispatch = useDispatch();
+  const { joiningIds } = useSelector(s => s.groups);
+  const groupId = group._id ?? group.id;
+  const [joined,  setJoined]  = useState(group.joined  || false);
+  const [pending, setPending] = useState(group.pending || false);
+  const isJoining = joiningIds.includes(groupId);
+
+  function handleJoin(e) {
+    e.stopPropagation();
+    if (joined || pending || isJoining) return;
+    setJoined(true);
+    dispatch(joinGroup(groupId)).then(action => {
+      if (joinGroup.fulfilled.match(action)) {
+        setJoined(action.payload.joined);
+        setPending(action.payload.pending ?? false);
+      } else if (joinGroup.rejected.match(action)) {
+        setJoined(false);
+      }
+    });
+  }
+
+  const btnLabel = isJoining ? 'Joining...' : pending ? 'Pending' : joined ? 'Joined' : 'Join Group';
+  const coverSrc = group.coverImg || group.coverUrl || `https://picsum.photos/seed/hub-${groupId}/400/200`;
+  const pendingReqs = group.pendingReqs ?? group.pendingCount ?? 0;
 
   return (
     <div className={`hub-card${isOwned ? '' : ' hub-card--clickable'}`} onClick={isOwned ? undefined : onView}>
       <div className="hub-card-cover">
-        <img src={group.coverImg} alt={group.name} className="hub-card-cover-img" />
+        <img src={coverSrc} alt={group.name} className="hub-card-cover-img" />
         <span className="hub-card-badge">{group.category}</span>
       </div>
       <div className="hub-card-icon-wrap">
-        <div className="hub-card-icon" style={{ background: group.color }}>{group.iconText}</div>
+        <div className="hub-card-icon" style={{ background: group.color ?? '#3b82f6' }}>{group.iconText ?? (group.name?.[0] ?? '?')}</div>
       </div>
       <div className="hub-card-body">
         <p className="hub-card-name">{group.name}</p>
@@ -1516,22 +1734,22 @@ function GroupHubCard({ group, onManage, onView }) {
           <>
             <div className="hub-card-stats">
               <div className="hub-card-stat">
-                <span className="hub-card-stat-value">{group.memberCount.toLocaleString()}</span>
+                <span className="hub-card-stat-value">{(group.memberCount ?? 0).toLocaleString()}</span>
                 <span className="hub-card-stat-label">Active Members</span>
               </div>
               {group.privacy === 'private' && (
                 <>
                   <div className="hub-card-stat-div" />
                   <div className="hub-card-stat">
-                    <span className={`hub-card-stat-value${group.pendingReqs > 0 ? ' hub-card-stat-value--alert' : ''}`}>
-                      {group.pendingReqs}
+                    <span className={`hub-card-stat-value${pendingReqs > 0 ? ' hub-card-stat-value--alert' : ''}`}>
+                      {pendingReqs}
                     </span>
                     <span className="hub-card-stat-label">Pending Requests</span>
                   </div>
                 </>
               )}
             </div>
-            <button className="hub-card-manage" onClick={() => onManage?.()}>
+            <button className="hub-card-manage" onClick={e => { e.stopPropagation(); onManage?.(); }}>
               Manage Group
             </button>
           </>
@@ -1543,13 +1761,14 @@ function GroupHubCard({ group, onManage, onView }) {
                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
                 ))}
               </div>
-              <span className="prof-conn-shared-text">{group.members}</span>
+              <span className="prof-conn-shared-text">{group.members ?? group.memberCount?.toLocaleString()}</span>
             </div>
             <button
-              className={`hub-card-join${joined ? ' hub-card-join--joined' : ''}`}
-              onClick={e => { e.stopPropagation(); setJoined(v => !v); }}
+              className={`hub-card-join${(joined || pending) ? ' hub-card-join--joined' : ''}`}
+              onClick={handleJoin}
+              disabled={isJoining || joined || pending}
             >
-              {joined ? 'Joined' : 'Join Group'}
+              {btnLabel}
             </button>
           </>
         )}
@@ -1642,6 +1861,11 @@ function CreateGroupModal({ onClose }) {
    Main Component
 ══════════════════════════ */
 export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+  const dispatch = useDispatch();
+  const { groups, groupsLoading, groupsTab } = useSelector(s => s.groups);
+  const { user: authUser } = useSelector(s => s.auth);
+  const myId = authUser?._id ?? authUser?.id;
+
   const [modalOpen,      setModalOpen]      = useState(false);
   const [showCreate,     setShowCreate]     = useState(false);
   const [showAdmin,      setShowAdmin]      = useState(false);
@@ -1652,6 +1876,10 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [hubTab,         setHubTab]         = useState('suggested');
   const [hubCat,         setHubCat]         = useState('All');
+
+  useEffect(() => {
+    dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
+  }, [dispatch, hubTab, hubCat]);
 
   if (showCreate) {
     return (
@@ -1664,7 +1892,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onLibraryClick={onLibraryClick}
         onCoursesClick={onCoursesClick}
         onMinisitesClick={onMinisitesClick}
-        onCreateGroup={() => { setShowCreate(false); setAdminGroup(null); setShowAdmin(true); }}
+        onCreateGroup={createdGroup => { setShowCreate(false); setAdminGroup(createdGroup); setShowAdmin(true); }}
       />
     );
   }
@@ -1730,9 +1958,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     if (id === 'minisites') onMinisitesClick?.();
   }
 
-  const displayGroups = HUB_GROUPS
-    .filter(g => g.tab === hubTab)
-    .filter(g => hubCat === 'All' || g.category === hubCat);
+  // Show API groups only when they belong to the current tab
+  const displayGroups = (groupsTab === hubTab) ? groups : [];
 
   return (
     <div className="grp-page">
@@ -1768,20 +1995,41 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
 
         {/* Group cards grid */}
         <div className="grp-hub-grid">
-          {displayGroups.map(g => (
-            <GroupHubCard
-              key={g.id}
-              group={g}
-              onView={() => { setDetailGroup(g); setShowDetail(true); }}
-              onManage={g.tab === 'yours' ? () => { setAdminGroup(g); setShowAdmin(true); } : undefined}
-            />
-          ))}
-          {displayGroups.length === 0 && (
-            <p className="grp-hub-empty">No groups found in this category.</p>
+          {groupsLoading && (
+            <p className="grp-hub-empty">Loading groups...</p>
+          )}
+          {!groupsLoading && displayGroups.map(g => {
+            const gOwned = !!myId && (g.admin === myId || g.admin?._id === myId);
+            return (
+              <GroupHubCard
+                key={g._id ?? g.id}
+                group={g}
+                isOwned={gOwned}
+                onView={() => { setDetailGroup(g); setShowDetail(true); }}
+                onManage={gOwned ? () => { setAdminGroup(g); setShowAdmin(true); } : undefined}
+              />
+            );
+          })}
+          {!groupsLoading && displayGroups.length === 0 && (
+            <div className="grp-hub-empty-state">
+              <p className="grp-hub-empty-title">
+                {hubTab === 'yours'   ? 'You haven\'t created any groups yet' :
+                 hubTab === 'joined'  ? 'You haven\'t joined any groups yet'  :
+                                        'No groups found'}
+              </p>
+              <p className="grp-hub-empty-sub">
+                {hubTab === 'yours'  ? 'Create your first group to build a community around your interests.' :
+                 hubTab === 'joined' ? 'Explore suggested groups and join ones that match your interests.'    :
+                                       'Try a different category or check back later.'}
+              </p>
+              {hubTab !== 'suggested' && (
+                <button className="grp-hub-empty-cta" onClick={() => hubTab === 'yours' ? setShowCreate(true) : setHubTab('suggested')}>
+                  {hubTab === 'yours' ? 'Create Group' : 'Browse Suggested'}
+                </button>
+              )}
+            </div>
           )}
         </div>
-
-        {/* Status bar */}
 
       </main>
 

@@ -2254,6 +2254,41 @@
   padding: 48px 0;
 }
 
+.grp-hub-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+}
+.grp-hub-empty-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e2235;
+  margin: 0 0 8px;
+}
+.grp-hub-empty-sub {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 20px;
+  max-width: 340px;
+  line-height: 1.5;
+}
+.grp-hub-empty-cta {
+  padding: 9px 22px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.grp-hub-empty-cta:hover { background: #1d4ed8; }
+
 /* Status footer */
 .grp-hub-footer {
   display: flex;

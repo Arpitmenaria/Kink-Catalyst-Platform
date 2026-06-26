@@ -14,8 +14,31 @@ function normalizePost(p) {
   };
 }
 
+const VIDEO_EXT = /\.(mp4|webm|ogg|mov|avi|mkv)(\?|#|$)/i;
+
+function detectMediaType(url = '', hint = null) {
+  if (hint === 'video') return 'video';
+  if (VIDEO_EXT.test(url)) return 'video';
+  return 'image';
+}
+
 // /api/users/me/posts field mapping → PostCard shape
 function normalizeMyPost(p) {
+  // Build media array, normalizing video type regardless of what the API sends
+  let rawMedia = [];
+  if (Array.isArray(p.media) && p.media.length > 0) {
+    // API already sent media[] — re-check type for each item
+    rawMedia = p.media;
+  } else {
+    // Build from flat fields
+    if (p.video) rawMedia.push({ url: p.video, type: 'video' });
+    if (Array.isArray(p.videos)) p.videos.filter(Boolean).forEach(url => rawMedia.push({ url, type: 'video' }));
+    if (Array.isArray(p.images)) p.images.filter(Boolean).forEach(url => rawMedia.push({ url }));
+  }
+  const media = rawMedia
+    .filter(item => item?.url)
+    .map(item => ({ ...item, type: detectMediaType(item.url, item.type) }));
+
   return {
     ...p,
     // author.name → author.fullName (PostCard reads fullName)
@@ -24,21 +47,7 @@ function normalizeMyPost(p) {
       : p.author,
     // content → caption (PostCard reads caption)
     caption: p.caption ?? p.content ?? '',
-    // Build media array from all possible shapes the API may send
-    media: p.media ?? (() => {
-      const items = [];
-      // Explicit video field(s)
-      if (p.video) items.push({ url: p.video, type: 'video' });
-      if (Array.isArray(p.videos)) p.videos.filter(Boolean).forEach(url => items.push({ url, type: 'video' }));
-      // images[] — detect video URLs by extension
-      if (Array.isArray(p.images)) {
-        p.images.filter(Boolean).forEach(url => {
-          const isVid = /\.(mp4|webm|ogg|mov|avi)(\?|$)/i.test(url);
-          items.push({ url, type: isVid ? 'video' : 'image' });
-        });
-      }
-      return items;
-    })(),
+    media,
     // likes is a number from this API — keep as-is for PostCard's isStatic path
     likes: typeof p.likes === 'number' ? p.likes : (Array.isArray(p.likes) ? p.likes : 0),
     comments: typeof p.comments === 'number'

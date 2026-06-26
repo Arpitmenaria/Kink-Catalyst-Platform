@@ -6,7 +6,7 @@ import CreatePostModal from './CreatePostModal';
 import {
   fetchConversations, fetchMessages, sendMessage, markRead,
   startDM, createGroup, fetchAssets, uploadAssets,
-  toggleBlock, reportConversation, fetchOnlineUsers, clearUnread,
+  toggleBlock, reportConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
 } from '../../store/slices/messagesSlice';
 import { fetchSuggestions } from '../../store/slices/usersSlice';
 import {
@@ -493,6 +493,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     blockedConvIds,
     sending,
     assets: allAssets,
+    pendingOpenConvId,
   } = useSelector(s => s.messages);
 
   const [tab,              setTab]             = useState('All');
@@ -517,6 +518,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   useEffect(() => {
     dispatch(fetchOnlineUsers());
   }, [dispatch]);
+
+  /* Auto-open conversation started via Chat button from Groups / Profile */
+  useEffect(() => {
+    if (!pendingOpenConvId || conversations.length === 0) return;
+    const conv = conversations.find(c => c.id === pendingOpenConvId);
+    if (conv) {
+      setActiveConv(conv);
+      dispatch(clearPendingOpenConv());
+    }
+  }, [pendingOpenConvId, conversations, dispatch]);
 
   /* Debounce search */
   useEffect(() => {

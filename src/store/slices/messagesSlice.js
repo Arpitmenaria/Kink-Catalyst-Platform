@@ -227,6 +227,7 @@ const messagesSlice = createSlice({
     assets: {},           // { [convId]: { media|docs|links: [], storage, total } }
     assetsLoading: false,
     blockedConvIds: {},   // { [convId]: boolean }
+    pendingOpenConvId: null, // set by startDM so MessagesPage auto-opens that conversation
     error: null,
   },
   reducers: {
@@ -235,6 +236,9 @@ const messagesSlice = createSlice({
       const { convId } = action.payload;
       const conv = state.conversations.find(c => c.id === convId);
       if (conv) conv.unreadCount = 0;
+    },
+    clearPendingOpenConv(state) {
+      state.pendingOpenConvId = null;
     },
     // Socket: push incoming message
     receiveMessage(state, action) {
@@ -346,6 +350,7 @@ const messagesSlice = createSlice({
       .addCase(startDM.fulfilled, (s, a) => {
         const conv = a.payload;
         if (!s.conversations.find(c => c.id === conv.id)) s.conversations.unshift(conv);
+        s.pendingOpenConvId = conv.id;
       })
 
       .addCase(createGroup.fulfilled, (s, a) => { s.conversations.unshift(a.payload); })
@@ -376,5 +381,5 @@ const messagesSlice = createSlice({
   },
 });
 
-export const { clearUnread, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
+export const { clearUnread, clearPendingOpenConv, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
 export default messagesSlice.reducer;
