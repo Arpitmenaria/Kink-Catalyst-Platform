@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createPost } from '../../store/slices/postsSlice';
+import { createGroupPost } from '../../store/slices/groupsSlice';
+import { showToast } from '../../store/slices/toastSlice';
 import './CreatePost.css';
 
 function getInitials(name = '') {
@@ -62,7 +64,7 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId }) {
   const dispatch = useDispatch();
   const { user: authUser } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
@@ -112,8 +114,30 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     setError('');
   }
 
+  const CAPTION_MAX = 2000;
+  const PHOTO_MAX_MB = 10;
+  const VIDEO_MAX_MB = 200;
+  const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const ALLOWED_VIDEO = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'];
+
+  function validateFile(file, type) {
+    const allowed = type === 'photo' ? ALLOWED_IMAGE : ALLOWED_VIDEO;
+    const maxMB   = type === 'photo' ? PHOTO_MAX_MB : VIDEO_MAX_MB;
+    if (!allowed.includes(file.type)) {
+      return type === 'photo'
+        ? 'Only JPG, PNG, GIF or WebP images are allowed.'
+        : 'Only MP4, WebM, OGG or MOV videos are allowed.';
+    }
+    if (file.size > maxMB * 1024 * 1024) {
+      return `File is too large. Maximum size is ${maxMB} MB.`;
+    }
+    return null;
+  }
+
   function handleFileSelect(file) {
     if (!file) return;
+    const err = validateFile(file, tab);
+    if (err) { setError(err); return; }
     if (mediaPreview) URL.revokeObjectURL(mediaPreview);
     setMediaFile(file);
     setMediaPreview(URL.createObjectURL(file));
@@ -132,19 +156,49 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     if (mediaPreview) URL.revokeObjectURL(mediaPreview);
     setMediaFile(null);
     setMediaPreview(null);
+    setError('');
   }
 
   async function handlePost() {
-    if (!caption.trim() && !mediaFile) {
-      setError('Add a caption or media to post.');
+    // Caption length
+    if (caption.length > CAPTION_MAX) {
+      setError(`Caption is too long. Maximum ${CAPTION_MAX} characters.`);
       return;
     }
+    // Require caption OR media
+    if (!caption.trim() && !mediaFile) {
+      setError('Write something or add a photo / video before posting.');
+      return;
+    }
+    // Photo tab — require a file
+    if (tab === 'photo' && !mediaFile && !caption.trim()) {
+      setError('Select a photo or write a caption.');
+      return;
+    }
+    // Video tab — require a file
+    if (tab === 'video' && !mediaFile) {
+      setError('Select a video to post.');
+      return;
+    }
+    // Re-validate file in case state drifted
+    if (mediaFile) {
+      const err = validateFile(mediaFile, tab);
+      if (err) { setError(err); return; }
+    }
+
     setError('');
-    const result = await dispatch(createPost({ caption: caption.trim(), mediaFile }));
+    const thunk = groupId
+      ? createGroupPost({ groupId, caption: caption.trim(), media: mediaFile ? [mediaFile] : [] })
+      : createPost({ caption: caption.trim(), mediaFile });
+    const result = await dispatch(thunk);
     if (!result.error) {
+      const post = result.payload?.post ?? result.payload;
+      if (groupId && post?.status === 'pending') {
+        dispatch(showToast({ message: 'Post submitted — waiting for admin approval.', type: 'success' }));
+      }
       onClose();
     } else {
-      setError(result.payload || 'Failed to create post.');
+      setError(result.payload || 'Failed to create post. Please try again.');
     }
   }
 
@@ -217,13 +271,25 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
           </div>
 
           {/* Caption */}
-          <textarea
-            className="cp-textarea"
-            placeholder="What's on your mind?"
-            value={caption}
-            onChange={e => setCaption(e.target.value)}
-            rows={3}
-          />
+          <div style={{ position: 'relative' }}>
+            <textarea
+              className={`cp-textarea${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
+              placeholder="What's on your mind?"
+              value={caption}
+              onChange={e => { setCaption(e.target.value); if (error) setError(''); }}
+              rows={3}
+              maxLength={CAPTION_MAX + 50}
+            />
+            {caption.length > CAPTION_MAX - 100 && (
+              <span style={{
+                position: 'absolute', bottom: 8, right: 10,
+                fontSize: 11,
+                color: caption.length > CAPTION_MAX ? '#ef4444' : 'rgba(255,255,255,0.35)',
+              }}>
+                {caption.length}/{CAPTION_MAX}
+              </span>
+            )}
+          </div>
 
           {/* Media upload / preview */}
           {tab === 'photo' || tab === 'video' ? (

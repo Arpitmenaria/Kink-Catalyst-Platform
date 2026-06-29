@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import { CustomDatePicker, CustomTimePicker } from './DateTimePicker';
+import {
+  fetchEvents, fetchEventDetail, createEvent, deleteEvent,
+  bookEvent, cancelBooking, saveEvent, unsaveEvent,
+  fetchMyBooked, fetchMySaved, fetchMyCreated,
+  fetchComments, postComment, likeComment,
+} from '../../store/slices/eventsSlice';
+import { showToast } from '../../store/slices/toastSlice';
+import { joinEventRoom, leaveEventRoom } from '../../services/socket';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
@@ -259,8 +268,164 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [step, setStep] = useState(1);
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [coverImageFile, setCoverImageFile] = useState(null);
+  const [coverImagePreview, setCoverImagePreview] = useState('');
+
+  // Redux
+  const dispatch = useDispatch();
+  const { user: authUser } = useSelector(s => s.auth);
+  const {
+    events: rdxEvents, eventsLoading,
+    bookedEvents, bookedLoading,
+    savedEvents, savedLoading,
+    createdEvents, createdLoading,
+    eventDetail,
+    comments: evtComments, commentsLoading,
+    bookingLoading, createLoading,
+  } = useSelector(s => s.events);
+
+  // Fetch on tab / category change
+  useEffect(() => {
+    if (discTab === 'upcoming') {
+      dispatch(fetchEvents({
+        tab: 'upcoming',
+        category: discCat !== 'All' ? discCat : '',
+        eventType: filters.eventType !== 'all' ? filters.eventType : '',
+        location: filters.location,
+      }));
+    } else if (discTab === 'booked') {
+      dispatch(fetchMyBooked());
+    } else if (discTab === 'favorites') {
+      dispatch(fetchMySaved());
+    } else if (discTab === 'created') {
+      dispatch(fetchMyCreated());
+    }
+  }, [discTab, discCat]); // eslint-disable-line
+
+  // Sync savedIds from Redux (for heart animation state)
+  useEffect(() => {
+    const ids = new Set([
+      ...rdxEvents.filter(e => e.isSaved).map(e => e.id),
+      ...bookedEvents.filter(e => e.isSaved).map(e => e.id),
+      ...savedEvents.map(e => e.id),
+    ]);
+    setSavedIds(ids);
+  }, [rdxEvents, bookedEvents, savedEvents]);
+
+  // Sync goingIds from Redux
+  useEffect(() => {
+    const ids = new Set([
+      ...rdxEvents.filter(e => e.isBooked).map(e => e.id),
+      ...bookedEvents.map(e => e.id),
+    ]);
+    setGoingIds(ids);
+  }, [rdxEvents, bookedEvents]);
+
+  // Join socket room + fetch detail when event selected
+  useEffect(() => {
+    if (!selectedEvent?.id) return;
+    dispatch(fetchEventDetail(selectedEvent.id));
+    joinEventRoom(selectedEvent.id);
+    return () => { leaveEventRoom(selectedEvent.id); };
+  }, [selectedEvent?.id]); // eslint-disable-line
+
+  // Fetch comments when discussion tab opens
+  useEffect(() => {
+    if (evDetailTab === 'discussion' && selectedEvent?.id) {
+      dispatch(fetchComments({ eventId: selectedEvent.id }));
+    }
+  }, [evDetailTab, selectedEvent?.id]); // eslint-disable-line
+
+  // Sync local comments from Redux
+  useEffect(() => {
+    if (selectedEvent?.id) {
+      setComments(evtComments[selectedEvent.id] ?? []);
+    }
+  }, [evtComments, selectedEvent?.id]); // eslint-disable-line
+
+  function handleCoverChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverImageFile(file);
+    setCoverImagePreview(URL.createObjectURL(file));
+  }
+
+  function handlePublish(asDraft = false) {
+    // Required field validation
+    const publishErrors = [];
+    if (!form.title.trim())    publishErrors.push('Event title is required.');
+    if (!form.category)        publishErrors.push('Event category is required.');
+    if (!form.eventType)       publishErrors.push('Event type (online / offline) is required.');
+    if (!form.startDate)       publishErrors.push('Start date is required.');
+    if (form.eventType === 'offline' && locationTab === 'physical' && !venue.city.trim()) {
+      publishErrors.push('City is required for offline events.');
+    }
+    if (form.eventType === 'online' && locationTab === 'online' && !virtual.link.trim()) {
+      publishErrors.push('Meeting link is required for online events.');
+    }
+    if (publishErrors.length > 0) {
+      dispatch(showToast({ message: publishErrors[0], type: 'error' }));
+      // Jump to the step that has the first error
+      if (!form.title.trim() || !form.category || !form.eventType || !form.startDate) setStep(1);
+      else if (form.eventType === 'offline' && !venue.city.trim()) setStep(3);
+      else if (form.eventType === 'online' && !virtual.link.trim()) setStep(3);
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('title', form.title.trim());
+    if (form.tagline) fd.append('tagline', form.tagline);
+    if (form.description) {
+      fd.append('description', form.description);
+      fd.append('about', form.description);
+    }
+    fd.append('category', form.category);
+    fd.append('eventType', form.eventType);
+    fd.append('pricingType', pricingType);
+    fd.append('status', asDraft ? 'draft' : 'published');
+    fd.append('startDate', form.startDate);
+    if (form.endDate) fd.append('endDate', form.endDate);
+    fd.append('isAllDay', form.isAllDay ? 'true' : 'false');
+    if (!form.isAllDay) {
+      if (form.startTime) fd.append('startTime', form.startTime);
+      if (form.endTime)   fd.append('endTime',   form.endTime);
+    }
+    if (coverImageFile) fd.append('coverImage', coverImageFile);
+    if (locationTab === 'physical') {
+      fd.append('location', JSON.stringify({ venue: venue.name, street: venue.street, city: venue.city, state: venue.state, country: venue.country, pinCode: venue.pinCode }));
+      if (parking) fd.append('parking', parking);
+      fd.append('organizer', JSON.stringify(organizer));
+    } else {
+      if (virtual.link)         fd.append('virtualLink', virtual.link);
+      if (virtual.instructions) fd.append('virtualInstructions', virtual.instructions);
+    }
+    if (tickets.length > 0) {
+      fd.append('tickets', JSON.stringify(tickets.map(t => ({
+        name: t.name, description: t.description ?? '', price: parseFloat(t.price) || 0,
+        seats: parseInt(t.seats) || 0, maxPerUser: parseInt(t.maxPerUser) || 1, iconType: t.iconType,
+      }))));
+    }
+    fd.append('registration', JSON.stringify({
+      ticketPrice: parseFloat(registration.ticketPrice) || 0,
+      totalSeats:  parseInt(registration.totalSeats) || 0,
+      maxPerUser:  parseInt(registration.maxPerUser) || 4,
+      deadline:    registration.deadline,
+    }));
+
+    dispatch(createEvent(fd)).then(action => {
+      if (createEvent.fulfilled.match(action)) {
+        dispatch(showToast({ message: asDraft ? 'Event saved as draft.' : 'Event published successfully!', type: 'success' }));
+        setShowCreate(false);
+        setStep(1);
+        dispatch(fetchMyCreated());
+      } else if (createEvent.rejected.match(action)) {
+        dispatch(showToast({ message: action.payload ?? 'Failed to publish event.', type: 'error' }));
+      }
+    });
+  }
 
   function toggleSave(id) {
+    const wasSaved = savedIds.has(id);
     setSavedIds(p => {
       const n = new Set(p);
       const adding = !n.has(id);
@@ -275,6 +440,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       }
       return n;
     });
+    if (wasSaved) dispatch(unsaveEvent(id));
+    else dispatch(saveEvent(id));
   }
 
   // Step 1 state
@@ -304,6 +471,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [virtual, setVirtual] = useState({ link: '', instructions: '' });
 
   const [dateErrors, setDateErrors] = useState({ startDate: '', endDate: '', endTime: '' });
+  const [stepErrors, setStepErrors] = useState({});
   const todayStr = new Date().toISOString().split('T')[0];
 
   function handleChange(e) {
@@ -358,21 +526,59 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }
 
   function handleBack() {
+    setStepErrors({});
     setAnimDir('back');
     if (step === 1) { setShowCreate(false); setStep(1); }
     else setStep(s => s - 1);
   }
 
+  function validateStep(s) {
+    const errs = {};
+    if (s === 1) {
+      if (!form.title.trim())  errs.title     = 'Event title is required.';
+      if (!form.category)      errs.category  = 'Please select a category.';
+      if (!form.startDate)     errs.startDate = 'Start date is required.';
+      if (dateErrors.startDate) errs.startDate = dateErrors.startDate;
+      if (dateErrors.endDate)   errs.endDate   = dateErrors.endDate;
+      if (dateErrors.endTime)   errs.endTime   = dateErrors.endTime;
+    }
+    if (s === 2) {
+      if (pricingType === 'paid' && tickets.length === 0) {
+        errs.tickets = 'Add at least one ticket type for a paid event.';
+      }
+      if (pricingType === 'paid' && tickets.some(t => !t.name.trim())) {
+        errs.tickets = 'All ticket types must have a name.';
+      }
+      if (pricingType === 'paid' && tickets.some(t => parseFloat(t.price) < 0)) {
+        errs.tickets = 'Ticket price cannot be negative.';
+      }
+    }
+    if (s === 3) {
+      if (form.eventType === 'offline' || locationTab === 'physical') {
+        if (!venue.city.trim()) errs.city = 'City is required for offline events.';
+      }
+      if (locationTab === 'online' || form.eventType === 'online') {
+        if (!virtual.link.trim()) errs.virtualLink = 'Meeting link is required for online events.';
+      }
+    }
+    return errs;
+  }
+
   function handleNext() {
+    const errs = validateStep(step);
+    if (Object.keys(errs).length > 0) {
+      setStepErrors(errs);
+      return;
+    }
+    setStepErrors({});
     setAnimDir('forward');
     if (step < 4) setStep(s => s + 1);
   }
 
-  const ALL_EVENTS = [...DISC_EVENTS, ...BOOKED_EVENTS];
-  const baseEvents = discTab === 'booked' ? BOOKED_EVENTS
-    : discTab === 'favorites' ? ALL_EVENTS.filter(ev => savedIds.has(ev.id))
-    : discTab === 'created'   ? CREATED_EVENTS
-    : DISC_EVENTS;
+  const baseEvents = discTab === 'booked'    ? bookedEvents
+    : discTab === 'favorites' ? savedEvents
+    : discTab === 'created'   ? createdEvents
+    : rdxEvents;
   const filteredEvents = baseEvents.filter(ev => {
     if (discCat !== 'All' && !ev.category.toLowerCase().includes(discCat.toLowerCase())) return false;
     if (filters.categories.size > 0) {
@@ -384,7 +590,19 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   });
 
   function openFilter() { setPendingF({ ...filters, categories: new Set(filters.categories), amenities: new Set(filters.amenities) }); setShowFilter(true); }
-  function applyFilters() { setFilters({ ...pendingF, categories: new Set(pendingF.categories), amenities: new Set(pendingF.amenities) }); setShowFilter(false); }
+  function applyFilters() {
+    const applied = { ...pendingF, categories: new Set(pendingF.categories), amenities: new Set(pendingF.amenities) };
+    setFilters(applied);
+    setShowFilter(false);
+    if (discTab === 'upcoming') {
+      dispatch(fetchEvents({
+        tab: 'upcoming',
+        category: discCat !== 'All' ? discCat : '',
+        eventType: applied.eventType !== 'all' ? applied.eventType : '',
+        location: applied.location,
+      }));
+    }
+  }
   function resetFilters() { const def = { eventType: 'all', categories: new Set(), location: '', radius: 25, amenities: new Set() }; setPendingF(def); }
   function togglePendingCat(cat) { setPendingF(p => { const s = new Set(p.categories); s.has(cat) ? s.delete(cat) : s.add(cat); return { ...p, categories: s }; }); }
   function togglePendingAmenity(a) { setPendingF(p => { const s = new Set(p.amenities); s.has(a) ? s.delete(a) : s.add(a); return { ...p, amenities: s }; }); }
@@ -453,7 +671,30 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               ) : (
                 <button
                   className={`ev-detail-going-btn${goingIds.has(selectedEvent.id) ? ' ev-detail-going-btn--active' : ''}`}
-                  onClick={() => setGoingIds(s => { const n = new Set(s); n.has(selectedEvent.id) ? n.delete(selectedEvent.id) : n.add(selectedEvent.id); return n; })}
+                  disabled={bookingLoading}
+                  onClick={() => {
+                    const isGoing = goingIds.has(selectedEvent.id);
+                    setGoingIds(s => { const n = new Set(s); isGoing ? n.delete(selectedEvent.id) : n.add(selectedEvent.id); return n; });
+                    if (isGoing) {
+                      dispatch(cancelBooking(selectedEvent.id)).then(action => {
+                        if (cancelBooking.rejected.match(action)) {
+                          setGoingIds(s => { const n = new Set(s); n.add(selectedEvent.id); return n; });
+                          dispatch(showToast({ message: action.payload ?? 'Failed to cancel booking.', type: 'error' }));
+                        } else {
+                          dispatch(showToast({ message: 'Booking cancelled.', type: 'success' }));
+                        }
+                      });
+                    } else {
+                      dispatch(bookEvent({ eventId: selectedEvent.id })).then(action => {
+                        if (bookEvent.rejected.match(action)) {
+                          setGoingIds(s => { const n = new Set(s); n.delete(selectedEvent.id); return n; });
+                          dispatch(showToast({ message: action.payload ?? 'Booking failed.', type: 'error' }));
+                        } else {
+                          dispatch(showToast({ message: 'Booking confirmed!', type: 'success' }));
+                        }
+                      });
+                    }
+                  }}
                 >
                   {goingIds.has(selectedEvent.id) && <CheckIcon />}
                   {goingIds.has(selectedEvent.id) ? 'Going' : 'Going?'}
@@ -564,7 +805,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
                   {/* Compose */}
                   <div className="ev-disc-compose">
-                    <img src="https://i.pravatar.cc/36?img=2" alt="you" className="ev-disc-compose-av" />
+                    {authUser?.avatar
+                      ? <img src={authUser.avatar} alt="you" className="ev-disc-compose-av" />
+                      : <div className="ev-disc-compose-av" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 12 }}>{(authUser?.fullName ?? 'U')[0]}</div>
+                    }
                     <input
                       className="ev-disc-compose-input"
                       placeholder="Write a comment…"
@@ -572,16 +816,33 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       onChange={e => setComment(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && comment.trim()) {
-                          setComments(c => [{ id: Date.now(), name: 'You', avatar: 'https://i.pravatar.cc/36?img=2', time: 'Just now', text: comment.trim(), likes: 0 }, ...c]);
+                          const text = comment.trim();
+                          const temp = { id: `temp_${Date.now()}`, name: authUser?.fullName ?? 'You', avatar: authUser?.avatar ?? null, time: 'Just now', text, likes: 0 };
+                          setComments(c => [temp, ...c]);
                           setComment('');
+                          dispatch(postComment({ eventId: selectedEvent.id, text })).then(action => {
+                            if (postComment.fulfilled.match(action)) {
+                              setComments(c => [action.payload.comment, ...c.filter(x => x.id !== temp.id)]);
+                            } else {
+                              setComments(c => c.filter(x => x.id !== temp.id));
+                            }
+                          });
                         }
                       }}
                     />
                     <button className="ev-disc-send-btn" onClick={() => {
-                      if (comment.trim()) {
-                        setComments(c => [{ id: Date.now(), name: 'You', avatar: 'https://i.pravatar.cc/36?img=2', time: 'Just now', text: comment.trim(), likes: 0 }, ...c]);
-                        setComment('');
-                      }
+                      if (!comment.trim()) return;
+                      const text = comment.trim();
+                      const temp = { id: `temp_${Date.now()}`, name: authUser?.fullName ?? 'You', avatar: authUser?.avatar ?? null, time: 'Just now', text, likes: 0 };
+                      setComments(c => [temp, ...c]);
+                      setComment('');
+                      dispatch(postComment({ eventId: selectedEvent.id, text })).then(action => {
+                        if (postComment.fulfilled.match(action)) {
+                          setComments(c => [action.payload.comment, ...c.filter(x => x.id !== temp.id)]);
+                        } else {
+                          setComments(c => c.filter(x => x.id !== temp.id));
+                        }
+                      });
                     }}><SendIcon /></button>
                   </div>
 
@@ -597,7 +858,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           </div>
                           <div className="ev-disc-comment-meta">
                             <span>{c.time}</span>
-                            <button className="ev-disc-like-btn"><ThumbUpIcon /> {c.likes > 0 ? c.likes : 'Like'}</button>
+                            <button className="ev-disc-like-btn" onClick={() => dispatch(likeComment({ eventId: selectedEvent.id, commentId: c.id }))}><ThumbUpIcon /> {c.likes > 0 ? c.likes : 'Like'}</button>
                             <button className="ev-disc-reply-btn">Reply</button>
                           </div>
                         </div>
@@ -665,7 +926,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </button>
               <button className={`ev-disc-tab${discTab === 'created' ? ' ev-disc-tab--active' : ''}`} onClick={() => { setDiscTab('created'); setSelectedEvent(null); }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
-                My Created Events<span className="ev-fav-count">{CREATED_EVENTS.length}</span>
+                My Created Events{createdEvents.length > 0 && <span className="ev-fav-count">{createdEvents.length}</span>}
               </button>
             </div>
             <div className="ev-disc-topbar-right">
@@ -968,14 +1229,15 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 {/* Title + Tagline */}
                 <div className="ev-field-row">
                   <div className="ev-field">
-                    <label className="ev-label">Event Title</label>
+                    <label className="ev-label">Event Title <span style={{ color: '#ef4444' }}>*</span></label>
                     <input
-                      className="ev-input"
+                      className={`ev-input${stepErrors.title ? ' ev-input--error' : ''}`}
                       name="title"
                       value={form.title}
-                      onChange={handleChange}
+                      onChange={e => { handleChange(e); if (stepErrors.title) setStepErrors(p => ({ ...p, title: '' })); }}
                       placeholder="e.g. Summer Music Festival 2024"
                     />
+                    {stepErrors.title && <span className="ev-field-error">{stepErrors.title}</span>}
                   </div>
                   <div className="ev-field">
                     <label className="ev-label">Short Tagline</label>
@@ -1021,9 +1283,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                   <div className="ev-date-grid">
                     <div className="ev-field">
-                      <label className="ev-label ev-label--small">Start Date</label>
-                      <CustomDatePicker name="startDate" value={form.startDate} min={todayStr} onChange={handleChange} placeholder="Pick start date" hasError={!!dateErrors.startDate} />
-                      {dateErrors.startDate && <span className="ev-field-error">{dateErrors.startDate}</span>}
+                      <label className="ev-label ev-label--small">Start Date <span style={{ color: '#ef4444' }}>*</span></label>
+                      <CustomDatePicker name="startDate" value={form.startDate} min={todayStr} onChange={e => { handleChange(e); if (stepErrors.startDate) setStepErrors(p => ({ ...p, startDate: '' })); }} placeholder="Pick start date" hasError={!!dateErrors.startDate || !!stepErrors.startDate} />
+                      {(dateErrors.startDate || stepErrors.startDate) && <span className="ev-field-error">{dateErrors.startDate || stepErrors.startDate}</span>}
                     </div>
                     <div className="ev-field">
                       <label className="ev-label ev-label--small">End Date</label>
@@ -1045,14 +1307,15 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 {/* Category + Event Type */}
                 <div className="ev-field-row">
                   <div className="ev-field">
-                    <label className="ev-label">Event Category</label>
-                    <div className="ev-select-wrap">
-                      <select className="ev-select" name="category" value={form.category} onChange={handleChange}>
+                    <label className="ev-label">Event Category <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div className={`ev-select-wrap${stepErrors.category ? ' ev-select-wrap--error' : ''}`}>
+                      <select className="ev-select" name="category" value={form.category} onChange={e => { handleChange(e); if (stepErrors.category) setStepErrors(p => ({ ...p, category: '' })); }}>
                         <option value="">Select a category</option>
                         {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <ChevronDownIcon />
                     </div>
+                    {stepErrors.category && <span className="ev-field-error">{stepErrors.category}</span>}
                   </div>
                   <div className="ev-field">
                     <label className="ev-label">Event Type</label>
@@ -1070,6 +1333,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       ))}
                     </div>
                   </div>
+                </div>
+                {/* Cover Image */}
+                <div className="ev-field">
+                  <label className="ev-label">Cover Image</label>
+                  <label className="ev-cover-upload-label" style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '14px 18px', background: 'rgba(255,255,255,0.03)' }}>
+                    {coverImagePreview
+                      ? <img src={coverImagePreview} alt="cover preview" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 6 }} />
+                      : <div style={{ width: 80, height: 50, background: 'rgba(255,255,255,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 22 }}>+</div>
+                    }
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{coverImagePreview ? 'Change cover image' : 'Upload cover image'}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Recommended: 1200 × 628 px · JPG, PNG, WebP</p>
+                    </div>
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCoverChange} />
+                  </label>
                 </div>
               </div>
             </>
@@ -1174,6 +1452,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <button type="button" className="ev-add-ticket-btn" onClick={() => setShowNewForm(true)}>
                     <PlusIcon /> Add Another Ticket Type
                   </button>
+                  {stepErrors.tickets && <p className="ev-field-error" style={{ marginTop: 8 }}>{stepErrors.tickets}</p>}
                 </div>
 
                 {/* Right: registration settings */}
@@ -1252,8 +1531,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         </div>
                         <div className="ev-field-row">
                           <div className="ev-field">
-                            <label className="ev-label ev-label--small">City</label>
-                            <input className="ev-input" value={venue.city} onChange={e => setVenue(p => ({ ...p, city: e.target.value }))} placeholder="City" />
+                            <label className="ev-label ev-label--small">City <span style={{ color: '#ef4444' }}>*</span></label>
+                            <input
+                              className={`ev-input${stepErrors.city ? ' ev-input--error' : ''}`}
+                              value={venue.city}
+                              onChange={e => { setVenue(p => ({ ...p, city: e.target.value })); if (stepErrors.city) setStepErrors(p => ({ ...p, city: '' })); }}
+                              placeholder="City"
+                            />
+                            {stepErrors.city && <span className="ev-field-error">{stepErrors.city}</span>}
                           </div>
                           <div className="ev-field">
                             <label className="ev-label ev-label--small">State / Province</label>
@@ -1332,8 +1617,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </div>
                     <div className="ev-loc-section-body">
                       <div className="ev-field">
-                        <label className="ev-label ev-label--small">Meeting Link / Platform</label>
-                        <input className="ev-input" value={virtual.link} onChange={e => setVirtual(p => ({ ...p, link: e.target.value }))} placeholder="zoom.us//123456789" />
+                        <label className="ev-label ev-label--small">Meeting Link / Platform <span style={{ color: '#ef4444' }}>*</span></label>
+                        <input
+                          className={`ev-input${stepErrors.virtualLink ? ' ev-input--error' : ''}`}
+                          value={virtual.link}
+                          onChange={e => { setVirtual(p => ({ ...p, link: e.target.value })); if (stepErrors.virtualLink) setStepErrors(p => ({ ...p, virtualLink: '' })); }}
+                          placeholder="https://zoom.us/j/..."
+                        />
+                        {stepErrors.virtualLink && <span className="ev-field-error">{stepErrors.virtualLink}</span>}
                       </div>
                       <div className="ev-field">
                         <label className="ev-label ev-label--small">Instructions for Joiners</label>
@@ -1452,8 +1743,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
 
                 {/* Publish actions */}
-                <button type="button" className="ev-publish-btn">Publish Event</button>
-                <button type="button" className="ev-draft-btn">Save as Draft</button>
+                <button type="button" className="ev-publish-btn" disabled={createLoading} onClick={() => handlePublish(false)}>
+                  {createLoading ? 'Publishing…' : 'Publish Event'}
+                </button>
+                <button type="button" className="ev-draft-btn" disabled={createLoading} onClick={() => handlePublish(true)}>
+                  Save as Draft
+                </button>
                 <p className="ev-publish-notice">By publishing, you agree to our <span>Terms of Service</span> and <span>Event Guidelines.</span></p>
               </div>
             </div>
@@ -1469,8 +1764,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <ArrowLeftIcon /> Back
               </button>
             )}
-            <button className="ev-next-btn" onClick={handleNext}>
-              {step < 4 ? 'Next Step' : 'Publish'} <ArrowRightIcon />
+            <button className="ev-next-btn" disabled={step === 4 && createLoading} onClick={step < 4 ? handleNext : () => handlePublish(false)}>
+              {step < 4 ? 'Next Step' : (createLoading ? 'Publishing…' : 'Publish')} <ArrowRightIcon />
             </button>
           </div>
         </div>

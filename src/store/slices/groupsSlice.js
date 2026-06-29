@@ -249,6 +249,21 @@ export const fetchAdminDashboard = createAsyncThunk(
   }
 );
 
+// 16-b. POST /api/groups/:id/posts — create post in group
+export const createGroupPost = createAsyncThunk(
+  'groups/createGroupPost',
+  async ({ groupId, caption, media = [] }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const form = new FormData();
+      if (caption) form.append('caption', caption);
+      Array.from(media).forEach(file => form.append('media', file));
+      const data = await apiRequest(`/api/groups/${groupId}/posts`, { method: 'POST', token, body: form, isFormData: true });
+      return { groupId, post: data.post ?? data };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
 // 16. POST /api/users/:userId/friend-request
 export const sendFriendRequest = createAsyncThunk(
   'groups/sendFriendRequest',
@@ -401,6 +416,12 @@ const groupsSlice = createSlice({
         s.adminDashboard[groupId] = { group, stats };
       })
       .addCase(fetchAdminDashboard.rejected, s => { s.adminLoading = false; })
+
+      .addCase(createGroupPost.fulfilled, (s, a) => {
+        const { groupId, post } = a.payload;
+        const normalized = normalizeGroupPost(post);
+        if (s.groupPosts[groupId]) s.groupPosts[groupId].unshift(normalized);
+      })
 
       .addCase(sendFriendRequest.pending, (s, a) => {
         if (!s.friendRequestIds.includes(a.meta.arg)) s.friendRequestIds.push(a.meta.arg);

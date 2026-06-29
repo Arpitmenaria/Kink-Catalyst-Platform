@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline } from '../store/slices/messagesSlice';
+import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
 
 const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
@@ -70,6 +71,22 @@ export function initSocket(token, store) {
     }));
   });
 
+  socket.on('event:seats_updated', data => {
+    storeRef.dispatch(seatsUpdated(data));
+  });
+
+  socket.on('event:attending_updated', data => {
+    storeRef.dispatch(attendingUpdated(data));
+  });
+
+  socket.on('event:new_comment', ({ eventId, comment }) => {
+    storeRef.dispatch(commentReceived({ eventId, comment }));
+  });
+
+  socket.on('event:comment_liked', data => {
+    storeRef.dispatch(commentLikeUpdated(data));
+  });
+
   socket.on('reconnect', () => {
     // Resync authoritative counts after reconnect (per API contract)
     storeRef.dispatch(fetchMe());
@@ -109,4 +126,12 @@ export function onUserTyping(cb) {
 export function onUserStoppedTyping(cb) {
   socket?.on('user_stopped_typing', cb);
   return () => socket?.off('user_stopped_typing', cb);
+}
+
+export function joinEventRoom(eventId) {
+  socket?.emit('join:event', { eventId });
+}
+
+export function leaveEventRoom(eventId) {
+  socket?.emit('leave:event', { eventId });
 }

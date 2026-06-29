@@ -1,0 +1,514 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { apiRequest } from '../../services/api';
+
+const MONTHS      = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const MONTH_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS        = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function fmtFullDate(startDate, startTime) {
+  if (!startDate) return '';
+  const d = new Date(startDate + (startTime ? 'T' + startTime : 'T00:00'));
+  if (isNaN(d)) return startDate;
+  const timeStr = startTime ? ` at ${startTime}` : '';
+  return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTH_FULL[d.getMonth()]} ${d.getFullYear()}${timeStr}`;
+}
+
+function normalizeEvent(e) {
+  const d     = e.startDate ? new Date(e.startDate + 'T00:00') : null;
+  const valid = d && !isNaN(d);
+  const loc   = e.location;
+  const locLabel = typeof loc === 'string' ? loc
+    : (loc?.label ?? [loc?.city, loc?.state, loc?.country].filter(Boolean).join(', ') ?? '');
+  return {
+    id:          e.id ?? e._id ?? '',
+    day:         valid ? String(d.getDate()).padStart(2, '0') : '',
+    month:       valid ? MONTHS[d.getMonth()] : '',
+    monthFull:   valid ? MONTH_FULL[d.getMonth()] : '',
+    fullDate:    fmtFullDate(e.startDate, e.startTime),
+    img:         e.coverImage ?? '',
+    category:    e.category ?? '',
+    catColor:    e.categoryColor ?? '#3b82f6',
+    location:    locLabel,
+    locationObj: typeof loc === 'object' && loc !== null ? loc : null,
+    title:       e.title ?? '',
+    tagline:     e.tagline ?? '',
+    desc:        e.description ?? '',
+    about:       e.about ?? e.description ?? '',
+    attending:   e.attendingCount != null ? Number(e.attendingCount).toLocaleString() : '0',
+    attendingCount: e.attendingCount ?? 0,
+    seats:       e.seatsLeft != null ? `${e.seatsLeft} seats left` : null,
+    seatsLeft:   e.seatsLeft ?? null,
+    totalSeats:  e.totalSeats ?? null,
+    soldOut:     e.soldOut ?? false,
+    responded:   e.attendingCount != null ? Number(e.attendingCount).toLocaleString() : '0',
+    venue:       (typeof loc === 'object' && loc?.venue) ? loc.venue : locLabel,
+    isSaved:     e.isSaved ?? false,
+    isBooked:    e.isBooked ?? false,
+    tickets:     e.tickets ?? [],
+    registration: e.registration ?? null,
+    organizer:   e.organizer ?? null,
+    parking:     e.parking ?? null,
+    virtualLink: e.virtualLink ?? null,
+    virtualInstructions: e.virtualInstructions ?? null,
+    eventType:   e.eventType ?? 'offline',
+    startDate:   e.startDate ?? '',
+    endDate:     e.endDate ?? '',
+    startTime:   e.startTime ?? '',
+    endTime:     e.endTime ?? '',
+    isAllDay:    e.isAllDay ?? false,
+    createdBy:   e.createdBy ?? null,
+    createdAt:   e.createdAt ?? '',
+  };
+}
+
+function normalizeComment(c) {
+  return {
+    id:        c.id ?? c._id ?? '',
+    userId:    c.userId ?? '',
+    name:      c.name ?? '',
+    avatar:    c.avatar ?? null,
+    text:      c.text ?? '',
+    likes:     c.likes ?? 0,
+    time:      c.time ?? '',
+    createdAt: c.createdAt ?? '',
+  };
+}
+
+function patchEventInList(arr, eventId, patch) {
+  return arr.map(e => e.id === eventId ? { ...e, ...patch } : e);
+}
+
+// 1. GET /api/events
+export const fetchEvents = createAsyncThunk(
+  'events/fetchEvents',
+  async ({ tab = 'upcoming', category = '', eventType = '', location = '', search = '', page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const params = new URLSearchParams({ tab, page, limit });
+      if (category && category !== 'All') params.set('category', category);
+      if (eventType && eventType !== 'all') params.set('eventType', eventType);
+      if (location) params.set('location', location);
+      if (search) params.set('search', search);
+      const data = await apiRequest(`/api/events?${params}`, { token });
+      return { tab, events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 2. GET /api/events/:id
+export const fetchEventDetail = createAsyncThunk(
+  'events/fetchEventDetail',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}`, { token });
+      return normalizeEvent(data.data ?? data);
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 3. POST /api/events
+export const createEvent = createAsyncThunk(
+  'events/createEvent',
+  async (payload, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const isFormData = payload instanceof FormData;
+      const body = isFormData ? payload : (() => {
+        const form = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+          if (v == null) return;
+          if (v instanceof File) form.append(k, v);
+          else if (typeof v === 'object') form.append(k, JSON.stringify(v));
+          else form.append(k, String(v));
+        });
+        return form;
+      })();
+      const data = await apiRequest('/api/events', { method: 'POST', token, body, isFormData: true });
+      return data;
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 4. PUT /api/events/:id
+export const updateEvent = createAsyncThunk(
+  'events/updateEvent',
+  async ({ eventId, ...payload }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const form = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v == null) return;
+        if (v instanceof File) form.append(k, v);
+        else if (typeof v === 'object') form.append(k, JSON.stringify(v));
+        else form.append(k, String(v));
+      });
+      const data = await apiRequest(`/api/events/${eventId}`, { method: 'PUT', token, body: form, isFormData: true });
+      return { eventId, ...data };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 5. DELETE /api/events/:id
+export const deleteEvent = createAsyncThunk(
+  'events/deleteEvent',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/events/${eventId}`, { method: 'DELETE', token });
+      return { eventId };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 6. POST /api/events/:id/book
+export const bookEvent = createAsyncThunk(
+  'events/bookEvent',
+  async ({ eventId, ticketId, quantity = 1 }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const body = { quantity };
+      if (ticketId) body.ticketId = ticketId;
+      const data = await apiRequest(`/api/events/${eventId}/book`, { method: 'POST', token, body });
+      return { eventId, ...data };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 7. DELETE /api/events/:id/book
+export const cancelBooking = createAsyncThunk(
+  'events/cancelBooking',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/events/${eventId}/book`, { method: 'DELETE', token });
+      return { eventId };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 8. POST /api/events/:id/save
+export const saveEvent = createAsyncThunk(
+  'events/saveEvent',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/save`, { method: 'POST', token });
+      return { eventId, saved: data.saved ?? true };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 9. DELETE /api/events/:id/save
+export const unsaveEvent = createAsyncThunk(
+  'events/unsaveEvent',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/save`, { method: 'DELETE', token });
+      return { eventId, saved: data.saved ?? false };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 10. GET /api/events/my/booked
+export const fetchMyBooked = createAsyncThunk(
+  'events/fetchMyBooked',
+  async ({ page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/my/booked?page=${page}&limit=${limit}`, { token });
+      return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 11. GET /api/events/my/saved
+export const fetchMySaved = createAsyncThunk(
+  'events/fetchMySaved',
+  async ({ page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/my/saved?page=${page}&limit=${limit}`, { token });
+      return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 12. GET /api/events/my/created
+export const fetchMyCreated = createAsyncThunk(
+  'events/fetchMyCreated',
+  async ({ page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/my/created?page=${page}&limit=${limit}`, { token });
+      return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 13. GET /api/events/:id/comments
+export const fetchComments = createAsyncThunk(
+  'events/fetchComments',
+  async ({ eventId, page = 1, limit = 20 }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/comments?page=${page}&limit=${limit}`, { token });
+      return { eventId, comments: (data.data ?? []).map(normalizeComment), total: data.total ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 14. POST /api/events/:id/comments
+export const postComment = createAsyncThunk(
+  'events/postComment',
+  async ({ eventId, text }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/comments`, { method: 'POST', token, body: { text } });
+      return { eventId, comment: normalizeComment(data.data ?? {}) };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 15. POST /api/events/:id/comments/:commentId/like
+export const likeComment = createAsyncThunk(
+  'events/likeComment',
+  async ({ eventId, commentId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/comments/${commentId}/like`, { method: 'POST', token });
+      return { eventId, commentId, likes: data.likes ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+const eventsSlice = createSlice({
+  name: 'events',
+  initialState: {
+    events: [],
+    eventsTab: '',
+    eventsTotal: 0,
+    eventsLoading: false,
+
+    bookedEvents: [],
+    bookedTotal: 0,
+    bookedLoading: false,
+
+    savedEvents: [],
+    savedTotal: 0,
+    savedLoading: false,
+
+    createdEvents: [],
+    createdTotal: 0,
+    createdLoading: false,
+
+    eventDetail: null,
+    detailLoading: false,
+
+    comments: {},       // { [eventId]: comment[] }
+    commentsTotal: {},
+    commentsLoading: false,
+
+    bookingLoading: false,
+    createLoading: false,
+    updateLoading: false,
+    deleteLoading: false,
+
+    error: null,
+  },
+  reducers: {
+    // Socket: event:seats_updated
+    seatsUpdated(state, action) {
+      const { eventId, seatsLeft, soldOut } = action.payload;
+      const patch = { seatsLeft, soldOut, seats: seatsLeft != null ? `${seatsLeft} seats left` : null };
+      state.events        = patchEventInList(state.events,        eventId, patch);
+      state.bookedEvents  = patchEventInList(state.bookedEvents,  eventId, patch);
+      state.savedEvents   = patchEventInList(state.savedEvents,   eventId, patch);
+      state.createdEvents = patchEventInList(state.createdEvents, eventId, patch);
+      if (state.eventDetail?.id === eventId) Object.assign(state.eventDetail, patch);
+    },
+    // Socket: event:attending_updated
+    attendingUpdated(state, action) {
+      const { eventId, attendingCount } = action.payload;
+      const cnt   = Number(attendingCount).toLocaleString();
+      const patch = { attendingCount, attending: cnt, responded: cnt };
+      state.events        = patchEventInList(state.events,        eventId, patch);
+      state.bookedEvents  = patchEventInList(state.bookedEvents,  eventId, patch);
+      state.savedEvents   = patchEventInList(state.savedEvents,   eventId, patch);
+      state.createdEvents = patchEventInList(state.createdEvents, eventId, patch);
+      if (state.eventDetail?.id === eventId) Object.assign(state.eventDetail, patch);
+    },
+    // Socket: event:new_comment
+    commentReceived(state, action) {
+      const { eventId, comment } = action.payload;
+      const normalized = normalizeComment(comment);
+      if (!state.comments[eventId]) state.comments[eventId] = [];
+      if (!state.comments[eventId].find(c => c.id === normalized.id)) {
+        state.comments[eventId].unshift(normalized);
+      }
+    },
+    // Socket: event:comment_liked
+    commentLikeUpdated(state, action) {
+      const { commentId, likes } = action.payload;
+      Object.keys(state.comments).forEach(evId => {
+        const idx = state.comments[evId].findIndex(c => c.id === commentId);
+        if (idx !== -1) state.comments[evId][idx].likes = likes;
+      });
+    },
+  },
+  extraReducers: builder => {
+    builder
+      // fetchEvents
+      .addCase(fetchEvents.pending, s => { s.eventsLoading = true; s.events = []; s.eventsTab = ''; })
+      .addCase(fetchEvents.fulfilled, (s, a) => {
+        s.eventsLoading = false;
+        s.events = a.payload.events;
+        s.eventsTab = a.payload.tab;
+        s.eventsTotal = a.payload.total;
+      })
+      .addCase(fetchEvents.rejected, (s, a) => { s.eventsLoading = false; s.error = a.payload; })
+
+      // fetchEventDetail
+      .addCase(fetchEventDetail.pending, s => { s.detailLoading = true; })
+      .addCase(fetchEventDetail.fulfilled, (s, a) => { s.detailLoading = false; s.eventDetail = a.payload; })
+      .addCase(fetchEventDetail.rejected, s => { s.detailLoading = false; })
+
+      // createEvent
+      .addCase(createEvent.pending, s => { s.createLoading = true; })
+      .addCase(createEvent.fulfilled, s => { s.createLoading = false; })
+      .addCase(createEvent.rejected, (s, a) => { s.createLoading = false; s.error = a.payload; })
+
+      // updateEvent
+      .addCase(updateEvent.pending, s => { s.updateLoading = true; })
+      .addCase(updateEvent.fulfilled, s => { s.updateLoading = false; })
+      .addCase(updateEvent.rejected, s => { s.updateLoading = false; })
+
+      // deleteEvent
+      .addCase(deleteEvent.pending, s => { s.deleteLoading = true; })
+      .addCase(deleteEvent.fulfilled, (s, a) => {
+        const { eventId } = a.payload;
+        s.deleteLoading = false;
+        s.createdEvents = s.createdEvents.filter(e => e.id !== eventId);
+        s.events        = s.events.filter(e => e.id !== eventId);
+      })
+      .addCase(deleteEvent.rejected, s => { s.deleteLoading = false; })
+
+      // bookEvent — optimistic
+      .addCase(bookEvent.pending, (s, a) => {
+        s.bookingLoading = true;
+        const { eventId } = a.meta.arg;
+        s.events       = patchEventInList(s.events,       eventId, { isBooked: true });
+        s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isBooked: true });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isBooked = true;
+      })
+      .addCase(bookEvent.fulfilled, (s, a) => {
+        s.bookingLoading = false;
+        s.events = patchEventInList(s.events, a.payload.eventId, { isBooked: true });
+        if (s.eventDetail?.id === a.payload.eventId) s.eventDetail.isBooked = true;
+      })
+      .addCase(bookEvent.rejected, (s, a) => {
+        s.bookingLoading = false;
+        const { eventId } = a.meta.arg;
+        s.events       = patchEventInList(s.events,       eventId, { isBooked: false });
+        s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isBooked: false });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isBooked = false;
+      })
+
+      // cancelBooking — optimistic
+      .addCase(cancelBooking.pending, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events       = patchEventInList(s.events, eventId, { isBooked: false });
+        s.bookedEvents = s.bookedEvents.filter(e => e.id !== eventId);
+        if (s.eventDetail?.id === eventId) s.eventDetail.isBooked = false;
+      })
+      .addCase(cancelBooking.rejected, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events = patchEventInList(s.events, eventId, { isBooked: true });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isBooked = true;
+      })
+
+      // saveEvent — optimistic
+      .addCase(saveEvent.pending, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events       = patchEventInList(s.events,       eventId, { isSaved: true });
+        s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isSaved: true });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isSaved = true;
+      })
+      .addCase(saveEvent.rejected, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events       = patchEventInList(s.events,       eventId, { isSaved: false });
+        s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isSaved: false });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isSaved = false;
+      })
+
+      // unsaveEvent — optimistic
+      .addCase(unsaveEvent.pending, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events       = patchEventInList(s.events,       eventId, { isSaved: false });
+        s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isSaved: false });
+        s.savedEvents  = s.savedEvents.filter(e => e.id !== eventId);
+        if (s.eventDetail?.id === eventId) s.eventDetail.isSaved = false;
+      })
+      .addCase(unsaveEvent.rejected, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events       = patchEventInList(s.events,       eventId, { isSaved: true });
+        s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isSaved: true });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isSaved = true;
+      })
+
+      // fetchMyBooked
+      .addCase(fetchMyBooked.pending, s => { s.bookedLoading = true; s.bookedEvents = []; })
+      .addCase(fetchMyBooked.fulfilled, (s, a) => {
+        s.bookedLoading = false;
+        s.bookedEvents = a.payload.events;
+        s.bookedTotal  = a.payload.total;
+      })
+      .addCase(fetchMyBooked.rejected, s => { s.bookedLoading = false; })
+
+      // fetchMySaved
+      .addCase(fetchMySaved.pending, s => { s.savedLoading = true; s.savedEvents = []; })
+      .addCase(fetchMySaved.fulfilled, (s, a) => {
+        s.savedLoading = false;
+        s.savedEvents = a.payload.events;
+        s.savedTotal  = a.payload.total;
+      })
+      .addCase(fetchMySaved.rejected, s => { s.savedLoading = false; })
+
+      // fetchMyCreated
+      .addCase(fetchMyCreated.pending, s => { s.createdLoading = true; s.createdEvents = []; })
+      .addCase(fetchMyCreated.fulfilled, (s, a) => {
+        s.createdLoading = false;
+        s.createdEvents = a.payload.events;
+        s.createdTotal  = a.payload.total;
+      })
+      .addCase(fetchMyCreated.rejected, s => { s.createdLoading = false; })
+
+      // fetchComments
+      .addCase(fetchComments.pending, s => { s.commentsLoading = true; })
+      .addCase(fetchComments.fulfilled, (s, a) => {
+        const { eventId, comments, total } = a.payload;
+        s.commentsLoading = false;
+        s.comments[eventId] = comments;
+        s.commentsTotal[eventId] = total;
+      })
+      .addCase(fetchComments.rejected, s => { s.commentsLoading = false; })
+
+      // postComment — fulfilled replaces temp
+      .addCase(postComment.fulfilled, (s, a) => {
+        const { eventId, comment } = a.payload;
+        if (!s.comments[eventId]) s.comments[eventId] = [];
+        s.comments[eventId] = [comment, ...s.comments[eventId].filter(c => !String(c.id).startsWith('temp_'))];
+      })
+
+      // likeComment
+      .addCase(likeComment.fulfilled, (s, a) => {
+        const { eventId, commentId, likes } = a.payload;
+        const idx = (s.comments[eventId] ?? []).findIndex(c => c.id === commentId);
+        if (idx !== -1) s.comments[eventId][idx].likes = likes;
+      });
+  },
+});
+
+export const { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } = eventsSlice.actions;
+export default eventsSlice.reducer;

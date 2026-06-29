@@ -548,7 +548,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   return (
     <div className="adm-page">
       <AnimatedNav activeId="friends" onNavigate={navClick} />
-      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} groupId={groupId} />}
 
       <div className="adm-content">
 
