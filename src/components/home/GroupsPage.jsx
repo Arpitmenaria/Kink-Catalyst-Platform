@@ -11,6 +11,7 @@ import {
   fetchAdminDashboard, sendFriendRequest,
 } from '../../store/slices/groupsSlice';
 import { startDM } from '../../store/slices/messagesSlice';
+import { showToast } from '../../store/slices/toastSlice';
 
 
 /* ── UI icons ── */
@@ -482,8 +483,23 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   }
 
   function switchTab(tab) { setActiveTab(tab); setSearchQuery(''); setFilterRole(''); setFilterJoined(''); }
-  function handleAccept(requestId) { dispatch(acceptGroupRequest({ groupId, requestId })); }
-  function handleReject(requestId) { dispatch(rejectGroupRequest({ groupId, requestId })); }
+  function handleAccept(requestId) {
+    dispatch(acceptGroupRequest({ groupId, requestId })).then(action => {
+      if (acceptGroupRequest.fulfilled.match(action)) {
+        // Re-fetch so new member appears in table and stats reflect updated counts
+        dispatch(fetchGroupMembers({ groupId }));
+        dispatch(fetchAdminDashboard(groupId));
+      }
+    });
+  }
+  function handleReject(requestId) {
+    dispatch(rejectGroupRequest({ groupId, requestId })).then(action => {
+      if (rejectGroupRequest.fulfilled.match(action)) {
+        // Re-fetch stats so pendingCount stays accurate
+        dispatch(fetchAdminDashboard(groupId));
+      }
+    });
+  }
 
   useEffect(() => {
     if (!openMbrDrop) return;
@@ -514,6 +530,20 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     (!filterMutual || (filterMutual === 'Has Mutual' ? r.mutual > 0 : r.mutual === 0)) &&
     (!filterDate   || (r.requestedOn ?? '').includes(filterDate))
   );
+
+  // Resolve admin name + avatar from members list (API returns admin as ID only)
+  const admId = group?.admin?._id ?? group?.admin;
+  const admMember = baseMembers.find(m => (m._id ?? m.id) === admId)
+                 ?? baseMembers.find(m => m.role === 'Admin' || m.role === 'group_admin');
+  const admName   = admMember?.name ?? (typeof group?.admin === 'string' && group?.admin?.length < 30 ? group?.admin : '—');
+  const admAvatar = admMember?.img ?? null;
+
+  function fmtDate(raw) {
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (isNaN(d)) return raw;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
   return (
     <div className="adm-page">
@@ -841,7 +871,13 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                           {!isSelfRow && !isMemberAdmin && (
                             <button
                               className="prof-conn-btn prof-conn-btn--remove"
-                              onClick={() => dispatch(removeMember({ groupId, memberId: mid }))}
+                              onClick={() => {
+                                dispatch(removeMember({ groupId, memberId: mid })).then(action => {
+                                  if (removeMember.fulfilled.match(action)) {
+                                    dispatch(fetchAdminDashboard(groupId));
+                                  }
+                                });
+                              }}
                             >Remove</button>
                           )}
                         </div>
@@ -894,8 +930,11 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   <div className="adm-about-meta-card">
                     <span className="adm-about-meta-label">Admin</span>
                     <div className="adm-about-meta-val-row">
-                      <img src="https://i.pravatar.cc/28?img=3" alt="admin" className="adm-about-admin-av" />
-                      <span className="adm-about-meta-value">{group?.admin || 'Alex Vanguard'}</span>
+                      {admAvatar
+                        ? <img src={admAvatar} alt={admName} className="adm-about-admin-av" />
+                        : <div className="adm-about-admin-av" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>{initials(admName)}</div>
+                      }
+                      <span className="adm-about-meta-value">{admName}</span>
                     </div>
                   </div>
                   <div className="adm-about-meta-card">
@@ -913,7 +952,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   </div>
                   <div className="adm-about-meta-card">
                     <span className="adm-about-meta-label">Created</span>
-                    <span className="adm-about-meta-value">{group?.createdAt || '—'}</span>
+                    <span className="adm-about-meta-value">{fmtDate(group?.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -942,16 +981,16 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                         <InfoCircleIcon />
                         <div>
                           <p className="gd-info-sub">Group history</p>
-                          <p className="gd-info-label">Created {group.createdAt}</p>
+                          <p className="gd-info-label">Created {fmtDate(group.createdAt)}</p>
                         </div>
                       </div>
                     )}
-                    {group?.admin && (
+                    {admName && admName !== '—' && (
                       <div className="gd-info-row">
                         <OrganizerIcon />
                         <div>
                           <p className="gd-info-sub">Group Admin</p>
-                          <p className="gd-info-label">{group.admin}</p>
+                          <p className="gd-info-label">{admName}</p>
                         </div>
                       </div>
                     )}
@@ -1351,6 +1390,21 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
   const isPrivate = group.privacy === 'private';
 
+  // Resolve admin name + avatar from members list (API returns admin as ID only)
+  const adminId = group.admin?._id ?? group.admin;
+  const adminMember = rdxMembers?.find(m => (m._id ?? m.id) === adminId)
+                   ?? rdxMembers?.find(m => m.role === 'Admin' || m.role === 'group_admin');
+  const adminName   = adminMember?.name ?? (typeof group.admin === 'string' && group.admin.length < 30 ? group.admin : '—');
+  const adminAvatar = adminMember?.img ?? null;
+
+  // Format ISO date → "Jun 26, 2026"
+  function fmtDate(raw) {
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (isNaN(d)) return raw;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   return (
     <div className="gd-page">
       <AnimatedNav activeId="friends" onNavigate={navClick} />
@@ -1359,7 +1413,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
       {/* Cover */}
       <div className="gd-cover-section">
         <div className="gd-cover">
-          <img src={group.coverImg} alt={group.name} className="gd-cover-img" />
+          <img src={group.coverImg || `https://picsum.photos/seed/gd-${group._id ?? group.id}/1200/300`} alt={group.name} className="gd-cover-img" />
           <button className="gd-cover-back-btn" onClick={onBack} title="Back to Groups">
             <BackArrowIcon />
           </button>
@@ -1367,7 +1421,10 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
         {/* Profile row */}
         <div className="gd-profile-row">
-          <div className="gd-group-icon" style={{ background: group.color }}>{group.iconText}</div>
+          {group.groupImg
+            ? <img src={group.groupImg} alt={group.name} className="gd-group-icon gd-group-icon--img" />
+            : <div className="gd-group-icon" style={{ background: group.color }}>{group.iconText}</div>
+          }
           <div className="gd-group-info">
             <h1 className="gd-title">{group.name}</h1>
             <p className="gd-meta">
@@ -1390,10 +1447,15 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                   setJoinedLocal(true);
                   dispatch(joinGroup(groupId)).then(action => {
                     if (joinGroup.fulfilled.match(action)) {
+                      const isPending = action.payload.pending ?? false;
                       setJoinedLocal(action.payload.joined);
-                      setPendingLocal(action.payload.pending ?? false);
+                      setPendingLocal(isPending);
+                      if (isPending) {
+                        dispatch(showToast({ message: 'Join request sent! Waiting for admin approval.', type: 'success' }));
+                      }
                     } else if (joinGroup.rejected.match(action)) {
                       setJoinedLocal(false);
+                      dispatch(showToast({ message: action.payload?.message ?? 'Failed to join group.', type: 'error' }));
                     }
                   });
                 }}
@@ -1447,8 +1509,11 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                   <div className="adm-about-meta-card">
                     <span className="adm-about-meta-label">Admin</span>
                     <div className="adm-about-meta-val-row">
-                      <img src="https://i.pravatar.cc/28?img=3" alt="admin" className="adm-about-admin-av" />
-                      <span className="adm-about-meta-value">{group.admin || '—'}</span>
+                      {adminAvatar
+                        ? <img src={adminAvatar} alt={adminName} className="adm-about-admin-av" />
+                        : <div className="adm-about-admin-av" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>{initials(adminName)}</div>
+                      }
+                      <span className="adm-about-meta-value">{adminName}</span>
                     </div>
                   </div>
                   <div className="adm-about-meta-card">
@@ -1466,7 +1531,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                   </div>
                   <div className="adm-about-meta-card">
                     <span className="adm-about-meta-label">Created</span>
-                    <span className="adm-about-meta-value">{group.createdAt || '—'}</span>
+                    <span className="adm-about-meta-value">{fmtDate(group.createdAt)}</span>
                   </div>
                 </div>
 
@@ -1497,16 +1562,16 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                       <InfoCircleIcon />
                       <div>
                         <p className="gd-info-sub">Group history</p>
-                        <p className="gd-info-label">Created {group.createdAt}</p>
+                        <p className="gd-info-label">Created {fmtDate(group.createdAt)}</p>
                       </div>
                     </div>
                   )}
-                  {group.admin && (
+                  {adminName && adminName !== '—' && (
                     <div className="gd-info-row">
                       <OrganizerIcon />
                       <div>
                         <p className="gd-info-sub">Group Admin</p>
-                        <p className="gd-info-label">{group.admin}</p>
+                        <p className="gd-info-label">{adminName}</p>
                       </div>
                     </div>
                   )}
@@ -1700,16 +1765,27 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
   const [pending, setPending] = useState(group.pending || false);
   const isJoining = joiningIds.includes(groupId);
 
+  // Sync when group prop refreshes (e.g. after re-fetch on back from detail)
+  useEffect(() => {
+    setJoined(group.joined  || false);
+    setPending(group.pending || false);
+  }, [group.joined, group.pending]);
+
   function handleJoin(e) {
     e.stopPropagation();
     if (joined || pending || isJoining) return;
     setJoined(true);
     dispatch(joinGroup(groupId)).then(action => {
       if (joinGroup.fulfilled.match(action)) {
+        const isPending = action.payload.pending ?? false;
         setJoined(action.payload.joined);
-        setPending(action.payload.pending ?? false);
+        setPending(isPending);
+        if (isPending) {
+          dispatch(showToast({ message: 'Join request sent! Waiting for admin approval.', type: 'success' }));
+        }
       } else if (joinGroup.rejected.match(action)) {
         setJoined(false);
+        dispatch(showToast({ message: action.payload?.message ?? 'Failed to join group.', type: 'error' }));
       }
     });
   }
@@ -1725,7 +1801,10 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
         <span className="hub-card-badge">{group.category}</span>
       </div>
       <div className="hub-card-icon-wrap">
-        <div className="hub-card-icon" style={{ background: group.color ?? '#3b82f6' }}>{group.iconText ?? (group.name?.[0] ?? '?')}</div>
+        {group.groupImg
+          ? <img src={group.groupImg} alt={group.name} className="hub-card-icon hub-card-icon--img" />
+          : <div className="hub-card-icon" style={{ background: group.color ?? '#3b82f6' }}>{group.iconText ?? (group.name?.[0] ?? '?')}</div>
+        }
       </div>
       <div className="hub-card-body">
         <p className="hub-card-name">{group.name}</p>
@@ -1934,7 +2013,11 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     return (
       <GroupDetailPage
         group={detailGroup}
-        onBack={() => setShowDetail(false)}
+        onBack={() => {
+          setShowDetail(false);
+          // Re-fetch so hub reflects any join/leave done inside detail page
+          dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
+        }}
         onManage={() => { setAdminGroup(detailGroup); setShowDetail(false); setShowAdmin(true); }}
         onFeedClick={onBack}
         onEventsClick={onEventsClick}

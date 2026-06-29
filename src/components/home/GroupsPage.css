@@ -2397,6 +2397,9 @@
   color: #fff;
   letter-spacing: 0.5px;
 }
+.hub-card-icon--img {
+  object-fit: cover;
+}
 
 .hub-card-body {
   display: flex;
@@ -3052,6 +3055,9 @@
   margin-top: -40px;
   flex-shrink: 0;
   letter-spacing: 1px;
+}
+.gd-group-icon--img {
+  object-fit: cover;
 }
 
 .gd-group-info {
