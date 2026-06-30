@@ -336,6 +336,33 @@
   gap: 20px;
   align-items: flex-start;
 }
+.prof-cover-back-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  z-index: 2;
+}
+
+.prof-cover-back-btn:hover {
+  background: rgba(15, 23, 42, 0.8);
+  transform: scale(1.06);
+}
+
+.prof-cover-back-btn:active {
+  transform: scale(0.94);
+}
 
 .prof-conn-layout .prof-conn-tab,
 .prof-conn-layout .ev-tab,
