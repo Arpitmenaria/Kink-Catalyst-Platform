@@ -9,7 +9,7 @@ function PhotosIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" f
 function VideoIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
 function EventIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 
-export default function Feed({ onEventsClick, onProfileClick, onCreateEvent }) {
+export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onUserClick }) {
   const dispatch = useDispatch();
   const { posts, loading } = useSelector(s => s.posts);
   const { user } = useSelector(s => s.auth);
@@ -73,7 +73,7 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent }) {
           <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>No posts yet.</div>
         )}
         {posts.map(post => (
-          <PostCard key={post._id} post={post} />
+          <PostCard key={post._id} post={post} onUserClick={onUserClick} />
         ))}
       </div>
     </main>

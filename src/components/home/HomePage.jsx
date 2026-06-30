@@ -11,6 +11,7 @@ import CalendarPage from './CalendarPage';
 import CoursesPage from './CoursesPage';
 import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
+import UserProfilePage from './UserProfilePage';
 import MiniSitesPage from './MiniSitesPage';
 import { initSocket } from '../../services/socket';
 import store from '../../store';
@@ -19,7 +20,7 @@ import './HomePage.css';
 
 export default function HomePage() {
   const dispatch = useDispatch();
-  const { token } = useSelector(s => s.auth);
+  const { token, user } = useSelector(s => s.auth);
 
   /* Init socket + resync counts on app load */
   useEffect(() => {
@@ -32,9 +33,31 @@ export default function HomePage() {
   const [section,         setSection]         = useState('feed');
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
+  const [viewedUserId,    setViewedUserId]    = useState(null);
 
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
+
+  // Open someone's profile. If it's the logged-in user, send them to their
+  // own editable ProfilePage instead of the read-only UserProfilePage.
+  function goToUserProfile(userId) {
+    if (!userId) return;
+    if (userId === user?._id) {
+      setSection('profile');
+      return;
+    }
+    setViewedUserId(userId);
+    setSection('userProfile');
+  }
+
+  // Jump into Messages with a specific person pre-selected (used by the
+  // "Message" button on UserProfilePage). MessagesPage needs to accept an
+  // `initialUserId` prop and auto-open/create that conversation — wire that
+  // up inside MessagesPage if it doesn't already support deep-linking.
+  function goToMessagesWithUser(userId) {
+    setViewedUserId(userId);
+    setSection('messages');
+  }
 
   return (
     <div className={`home-page${section === 'messages' ? ' home-page--chat' : ''}`}>
@@ -64,6 +87,12 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             initialTab={profileInitTab}
             onInitTabConsumed={() => setProfileInitTab(null)}
+          />
+        ) : section === 'userProfile' ? (
+          <UserProfilePage
+            userId={viewedUserId}
+            onBack={() => setSection('feed')}
+            onMessageUser={goToMessagesWithUser}
           />
         ) : section === 'library' ? (
           <LibraryPage
@@ -106,6 +135,7 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onCalendarClick={() => setSection('calendar')}
             onMinisitesClick={() => setSection('minisites')}
+            initialUserId={viewedUserId}
           />
         ) : section === 'groups' ? (
           <GroupsPage
@@ -139,7 +169,12 @@ export default function HomePage() {
               onProfileClick={() => setSection('profile')}
               onMinisitesClick={() => setSection('minisites')}
             />
-            <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} onCreateEvent={goToEventsCreate} />
+            <Feed
+              onEventsClick={() => setSection('events')}
+              onProfileClick={() => setSection('profile')}
+              onCreateEvent={goToEventsCreate}
+              onUserClick={goToUserProfile}
+            />
             <RightSidebar />
           </>
         )}

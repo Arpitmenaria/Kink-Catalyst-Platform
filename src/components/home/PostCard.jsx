@@ -83,7 +83,7 @@ function normalizeComment(c) {
   };
 }
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId } = useSelector(s => s.posts);
@@ -118,11 +118,17 @@ export default function PostCard({ post }) {
   }
 
   const userId = user?.id ?? user?._id;
-  const authorName  = post.author?.fullName || 'Unknown';
-  const rawAuthorAv = post.author?.avatar ?? '';
-  const authorAvatar = rawAuthorAv?.startsWith?.('http') ? rawAuthorAv : '';
+  const authorId      = post.author?._id ?? post.author?.id;
+  const authorName    = post.author?.fullName || 'Unknown';
+  const rawAuthorAv   = post.author?.avatar ?? '';
+  const authorAvatar  = rawAuthorAv?.startsWith?.('http') ? rawAuthorAv : '';
   const mediaUrl    = post.media?.[0]?.url?.startsWith?.('http') ? post.media[0].url : null;
   const mediaType   = post.media?.[0]?.type ?? 'image';
+
+  function handleAuthorClick() {
+    console.log('Author clicked:', authorId, authorName);
+    onUserClick(1);
+  }
 
   const likeCount    = isStatic ? post.likes    : (post.likes?.length    ?? 0);
   const commentCount = isStatic ? post.comments : (post.comments?.length ?? 0);
@@ -178,7 +184,11 @@ export default function PostCard({ post }) {
       <article className="post-card">
         {/* Header */}
         <div className="post-header">
-          <div className="post-avatar" style={{ overflow: 'hidden', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div
+            className="post-avatar"
+            style={{ overflow: 'hidden', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: authorId ? 'pointer' : 'default' }}
+            onClick={handleAuthorClick}
+          >
             {authorAvatar
               ? <SkeletonImg
                   src={authorAvatar}
@@ -189,7 +199,13 @@ export default function PostCard({ post }) {
             }
           </div>
           <div className="post-meta">
-            <p className="post-author">{authorName}</p>
+            <p
+              className="post-author"
+              style={{ cursor: authorId ? 'pointer' : 'default' }}
+              onClick={handleAuthorClick}
+            >
+              {authorName}
+            </p>
             <p className="post-time">{timeAgo(post.createdAt)} · <GlobeIcon /></p>
           </div>
           <div className="post-menu-wrap" ref={menuRef}>
