@@ -1408,7 +1408,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   return (
     <div className="gd-page">
       <AnimatedNav activeId="friends" onNavigate={navClick} />
-      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
+      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} groupId={groupId} />}
 
       {/* Cover */}
       <div className="gd-cover-section">
@@ -1584,9 +1584,38 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
         {/* ── Posts tab ── */}
         {detailTab === 'posts' && (
           <div className="gd-main">
+            {/* Create post compose box — only for members */}
+            {(joinedLocal || isOwned) && !pendingLocal && (
+              <div className="gd-compose-box" onClick={() => setCreatePostOpen(true)}>
+                <div className="gd-compose-avatar">
+                  {authUser?.profileImage
+                    ? <img src={authUser.profileImage} alt={authUser.name} className="gd-compose-av-img" />
+                    : <div className="gd-compose-av-placeholder">{(authUser?.name ?? 'U')[0].toUpperCase()}</div>
+                  }
+                </div>
+                <div className="gd-compose-input-fake">
+                  <span>Write something to the group...</span>
+                </div>
+                <div className="gd-compose-actions">
+                  <button type="button" className="gd-compose-btn" onClick={e => { e.stopPropagation(); setCreatePostOpen(true); }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    Photo
+                  </button>
+                  <button type="button" className="gd-compose-btn" onClick={e => { e.stopPropagation(); setCreatePostOpen(true); }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                    Video
+                  </button>
+                </div>
+              </div>
+            )}
+
             {rdxPosts === null && <p style={{ padding: 24, color: '#94a3b8' }}>Loading posts...</p>}
             {rdxPosts?.map(p => <PostCard key={p._id} post={p} />)}
-            {rdxPosts?.length === 0 && <p style={{ padding: 24, color: '#94a3b8' }}>No posts in this group yet.</p>}
+            {rdxPosts?.length === 0 && (
+              <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>
+                {(joinedLocal || isOwned) ? 'No posts yet. Be the first to post!' : 'Join this group to see and create posts.'}
+              </p>
+            )}
           </div>
         )}
 

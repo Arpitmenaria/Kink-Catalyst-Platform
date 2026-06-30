@@ -1455,35 +1455,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   {stepErrors.tickets && <p className="ev-field-error" style={{ marginTop: 8 }}>{stepErrors.tickets}</p>}
                 </div>
 
-                {/* Right: registration settings */}
-                <div className="ev-s2-right">
-                  <p className="ev-s2-section-title">Registration Settings</p>
-
-                  <div className="ev-panel-field">
-                    <label className="ev-label ev-label--small">Ticket Price ($)</label>
-                    <input className="ev-input" name="ticketPrice" type="number" min="0" value={registration.ticketPrice} onChange={handleRegistrationChange} />
-                  </div>
-
-                  <div className="ev-panel-field">
-                    <label className="ev-label ev-label--small">Total Seats</label>
-                    <input className="ev-input" name="totalSeats" type="number" min="1" value={registration.totalSeats} onChange={handleRegistrationChange} placeholder="e.g. 50" />
-                  </div>
-
-                  <div className="ev-panel-field">
-                    <label className="ev-label ev-label--small">Max Tickets Per User</label>
-                    <div className="ev-select-wrap">
-                      <select className="ev-select" name="maxPerUser" value={registration.maxPerUser} onChange={handleRegistrationChange}>
-                        {MAX_PER_USER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                      <ChevronDownIcon />
-                    </div>
-                  </div>
-
-                  <div className="ev-panel-field">
-                    <label className="ev-label ev-label--small">Registration Deadline</label>
-                    <CustomDatePicker name="deadline" value={registration.deadline} min={todayStr} onChange={handleRegistrationChange} placeholder="Pick deadline date" />
-                  </div>
-                </div>
               </div>
             </>
           )}
