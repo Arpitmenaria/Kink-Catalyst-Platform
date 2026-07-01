@@ -81,7 +81,7 @@ const MOCK_COMMENTS = [
   },
 ];
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId } = useSelector(s => s.posts);
@@ -116,8 +116,14 @@ export default function PostCard({ post }) {
   }
 
   const userId = user?.id;
+  const authorId   = post.author?._id;
   const authorName = post.author?.fullName || 'Unknown';
   const mediaUrl   = post.media?.[0]?.url;
+
+  function handleAuthorClick() {
+    if (!authorId || !onUserClick) return;
+    onUserClick(authorId);
+  }
 
   const likeCount    = isStatic ? post.likes    : (post.likes?.length    ?? 0);
   const commentCount = isStatic ? post.comments : (post.comments?.length ?? 0);
@@ -169,14 +175,24 @@ export default function PostCard({ post }) {
       <article className="post-card">
         {/* Header */}
         <div className="post-header">
-          <div className="post-avatar" style={{ overflow: 'hidden', background: '#3b82f6' }}>
+          <div
+            className="post-avatar"
+            style={{ overflow: 'hidden', background: '#3b82f6', cursor: authorId ? 'pointer' : 'default' }}
+            onClick={handleAuthorClick}
+          >
             {post.author?.avatar
               ? <img src={post.author.avatar} alt={authorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : getInitials(authorName)
             }
           </div>
           <div className="post-meta">
-            <p className="post-author">{authorName}</p>
+            <p
+              className="post-author"
+              style={{ cursor: authorId ? 'pointer' : 'default' }}
+              onClick={handleAuthorClick}
+            >
+              {authorName}
+            </p>
             <p className="post-time">{timeAgo(post.createdAt)} · <GlobeIcon /></p>
           </div>
           <div className="post-menu-wrap" ref={menuRef}>

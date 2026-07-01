@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
@@ -40,7 +40,7 @@ function WhatsAppIcon()    { return <svg width="15" height="15" viewBox="0 0 24 
 /* ── Discovery mock data ── */
 const DISC_CATEGORIES = ['All', 'Music', 'Tech', 'Business', 'Art', 'Workshop', 'Social'];
 
-const BOOKED_EVENTS = [
+export const BOOKED_EVENTS = [
   {
     id: 'b1', day: '05', month: 'OCT', monthFull: 'October',
     fullDate: 'Sunday 5 October 2025 at 09:00',
@@ -76,7 +76,7 @@ const BOOKED_EVENTS = [
   },
 ];
 
-const DISC_EVENTS = [
+export const DISC_EVENTS = [
   {
     id: 'd1', day: '24', month: 'OCT', monthFull: 'October',
     fullDate: 'Thursday 24 October 2025 at 21:00',
@@ -161,7 +161,7 @@ function BellIcon()        { return <svg width="16" height="16" viewBox="0 0 24 
 function UnfollowIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>; }
 function FlagIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
 
-const CREATED_EVENTS = [
+export const CREATED_EVENTS = [
   {
     id: 'c1', day: '15', month: 'JUL', monthFull: 'July',
     fullDate: 'Wednesday 15 July 2026 at 18:00',
@@ -189,9 +189,9 @@ const CREATED_EVENTS = [
 ];
 
 const DISCUSSION_COMMENTS = [
-  { id: 1, name: 'Priya Nair',    avatar: 'https://i.pravatar.cc/36?img=5',  time: '2 hours ago',  text: 'Super excited for this! Will there be recordings available for those who miss a session?', likes: 14 },
-  { id: 2, name: 'Rohan Mehta',   avatar: 'https://i.pravatar.cc/36?img=12', time: '5 hours ago',  text: 'Attended last year — absolute top-tier event. The networking alone is worth it.', likes: 31 },
-  { id: 3, name: 'Sneha Kapoor',  avatar: 'https://i.pravatar.cc/36?img=20', time: '1 day ago',    text: 'Will there be a beginner-friendly track this year? First-time attendee here!', likes: 8 },
+  { id: 1, _id: 'priya-nair',  name: 'Priya Nair',    avatar: 'https://i.pravatar.cc/36?img=5',  time: '2 hours ago',  text: 'Super excited for this! Will there be recordings available for those who miss a session?', likes: 14 },
+  { id: 2, _id: 'rohan-mehta', name: 'Rohan Mehta',   avatar: 'https://i.pravatar.cc/36?img=12', time: '5 hours ago',  text: 'Attended last year — absolute top-tier event. The networking alone is worth it.', likes: 31 },
+  { id: 3, _id: 'sneha-kapoor', name: 'Sneha Kapoor',  avatar: 'https://i.pravatar.cc/36?img=20', time: '1 day ago',    text: 'Will there be a beginner-friendly track this year? First-time attendee here!', likes: 8 },
 ];
 
 const RESPONDED_AVATARS = [
@@ -239,11 +239,27 @@ const HEART_BURST_PATHS = [
   { dx:  -8, dy: -58, rot: -18 },
 ];
 
-export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate }) {
+export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate, initialEventId, onInitEventConsumed, onUserClick }) {
   const [showCreate,    setShowCreate]    = useState(startCreate || false);
   const [discTab,       setDiscTab]       = useState('upcoming');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [evDetailTab,   setEvDetailTab]   = useState('about');
+  const [eventFromHome, setEventFromHome] = useState(false);
+
+  useEffect(() => {
+    if (!initialEventId) return;
+    const found =
+      BOOKED_EVENTS.find(e => e.id === initialEventId) ??
+      CREATED_EVENTS.find(e => e.id === initialEventId) ??
+      DISC_EVENTS.find(e => e.id === initialEventId);
+    if (found) {
+      const sourceTab = BOOKED_EVENTS.includes(found) ? 'booked' : CREATED_EVENTS.includes(found) ? 'created' : 'upcoming';
+      setSelectedEvent({ ...found, _sourceTab: sourceTab });
+      setEvDetailTab('about');
+      setEventFromHome(true);
+    }
+    onInitEventConsumed?.();
+  }, [initialEventId]);
   const [goingIds,      setGoingIds]      = useState(new Set());
   const [comment,       setComment]       = useState('');
   const [comments,      setComments]      = useState(DISCUSSION_COMMENTS);
@@ -415,7 +431,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           {/* Cover image */}
           <div className="ev-detail-cover">
             <img src={selectedEvent.img} alt={selectedEvent.title} className="ev-detail-cover-img" />
-            <button className="ev-detail-cover-back-btn" onClick={() => setSelectedEvent(null)} title="Back to Events">
+            <button className="ev-detail-cover-back-btn" onClick={() => eventFromHome ? onBack?.() : setSelectedEvent(null)} title="Back to Events">
               <BackArrowIcon />
             </button>
           </div>
@@ -589,10 +605,22 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-disc-comments">
                     {comments.map(c => (
                       <div key={c.id} className="ev-disc-comment">
-                        <img src={c.avatar} alt={c.name} className="ev-disc-comment-av" />
+                        <img
+                          src={c.avatar}
+                          alt={c.name}
+                          className="ev-disc-comment-av"
+                          style={{ cursor: c._id ? 'pointer' : 'default' }}
+                          onClick={() => onUserClick?.(c._id)}
+                        />
                         <div className="ev-disc-comment-body">
                           <div className="ev-disc-comment-bubble">
-                            <span className="ev-disc-comment-name">{c.name}</span>
+                            <span
+                              className="ev-disc-comment-name"
+                              style={{ cursor: c._id ? 'pointer' : 'default' }}
+                              onClick={() => onUserClick?.(c._id)}
+                            >
+                              {c.name}
+                            </span>
                             <p className="ev-disc-comment-text">{c.text}</p>
                           </div>
                           <div className="ev-disc-comment-meta">

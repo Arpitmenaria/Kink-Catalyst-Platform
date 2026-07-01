@@ -2,10 +2,29 @@
 export const ALEX_AVATAR   = 'https://i.pravatar.cc/150?img=68';
 export const ELENA_AVATAR  = 'https://i.pravatar.cc/150?img=47';
 
+/* ── Users (keyed by _id, used by UserProfilePage) ── */
+export const MOCK_USERS = {
+  'elena-moretti': {
+    _id: 'elena-moretti',
+    fullName: 'Elena Moretti',
+    avatar: ELENA_AVATAR,
+    coverUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop',
+    role: 'Creative Director',
+    location: 'Milan, Italy',
+    joinedAt: '2021-09-02',
+  },
+  'sarah-chen':  { _id: 'sarah-chen',  fullName: 'Sarah Chen', avatar: 'https://i.pravatar.cc/150?img=44' },
+  'marcus-tye-b': { _id: 'marcus-tye-b', fullName: 'Marcus Tye', avatar: 'https://i.pravatar.cc/150?img=51' },
+  'marcus-tye-c': { _id: 'marcus-tye-c', fullName: 'Marcus Tye', avatar: 'https://i.pravatar.cc/150?img=52' },
+  'priya-nair':  { _id: 'priya-nair',  fullName: 'Priya Nair',  avatar: 'https://i.pravatar.cc/150?img=5' },
+  'rohan-mehta': { _id: 'rohan-mehta', fullName: 'Rohan Mehta', avatar: 'https://i.pravatar.cc/150?img=12' },
+  'sneha-kapoor': { _id: 'sneha-kapoor', fullName: 'Sneha Kapoor', avatar: 'https://i.pravatar.cc/150?img=20' },
+};
+
 export const FRIEND_SUGGESTIONS = [
-  { id: 1, name: 'Sarah Chen',  sub: '4 mutual friends', color: '#0ea5e9', avatar: 'https://i.pravatar.cc/150?img=44' },
-  { id: 2, name: 'Marcus Tye',  sub: '2 mutual friends', color: '#f97316', avatar: 'https://i.pravatar.cc/150?img=51' },
-  { id: 3, name: 'Marcus Tye',  sub: '2 mutual friends', color: '#8b5cf6', avatar: 'https://i.pravatar.cc/150?img=52' },
+  { id: 1, _id: 'sarah-chen',   name: 'Sarah Chen',  sub: '4 mutual friends', color: '#0ea5e9', avatar: 'https://i.pravatar.cc/150?img=44' },
+  { id: 2, _id: 'marcus-tye-b', name: 'Marcus Tye',  sub: '2 mutual friends', color: '#f97316', avatar: 'https://i.pravatar.cc/150?img=51' },
+  { id: 3, _id: 'marcus-tye-c', name: 'Marcus Tye',  sub: '2 mutual friends', color: '#8b5cf6', avatar: 'https://i.pravatar.cc/150?img=52' },
 ];
 
 export const GROUPS = [
@@ -40,7 +59,7 @@ export const LIKED_PAGES = [
 export const MOCK_POSTS = [
   {
     _id: 'p1',
-    author: { fullName: 'Elena Moretti', avatar: ELENA_AVATAR },
+    author: { _id: 'elena-moretti', fullName: 'Elena Moretti', avatar: ELENA_AVATAR },
     caption: "Exploring the intersection of architectural minimalism and digital landscapes. This weekend's creative retreat was absolutely transformative.",
     media: [{ url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&q=90&fit=crop' }],
     title: 'Celebration new album song launched',
@@ -54,7 +73,7 @@ export const MOCK_POSTS = [
   },
   {
     _id: 'p2',
-    author: { fullName: 'Elena Moretti', avatar: ELENA_AVATAR },
+    author: { _id: 'elena-moretti', fullName: 'Elena Moretti', avatar: ELENA_AVATAR },
     caption: "Exploring the intersection of architectural minimalism and digital landscapes. This weekend's creative retreat was absolutely transformative.",
     media: [{ url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=90&fit=crop' }],
     createdAt: new Date(Date.now() - 18000000).toISOString(),

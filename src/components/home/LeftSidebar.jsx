@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { FRIEND_SUGGESTIONS, GROUPS, SIDEBAR_EVENTS, ALEX_AVATAR } from './mockData';
+import { FRIEND_SUGGESTIONS, ALEX_AVATAR } from './mockData';
 import CreatePostModal from './CreatePostModal';
 import AnimatedNav from './AnimatedNav';
+import { HUB_GROUPS } from './GroupsPage';
+import { DISC_EVENTS, BOOKED_EVENTS } from './EventsPage';
+
+const YOUR_GROUPS = HUB_GROUPS.filter(g => g.tab === 'joined');
+const UPCOMING_EVENTS = [...DISC_EVENTS, ...BOOKED_EVENTS].slice(0, 3);
 
 function membershipLabel(tier = '') {
   const map = { platinum: 'Platinum Member', gold: 'Gold Member', free: 'Free Member' };
@@ -49,7 +54,7 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick }) {
+export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick, onGroupClick, onEventClick, onUserClick }) {
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const [createOpen,  setCreateOpen]  = useState(false);
@@ -148,14 +153,18 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                 className={`friend-item${removingIds.has(f.id) ? ' friend-item--removing' : ''}`}
               >
                 <div className="friend-item-top">
-                  <div className="friend-avatar" style={{ background: f.color, overflow: 'hidden' }}>
+                  <div
+                    className="friend-avatar"
+                    style={{ background: f.color, overflow: 'hidden', cursor: 'pointer' }}
+                    onClick={() => onUserClick?.(f._id)}
+                  >
                     {f.avatar
                       ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : initials(f.name)
                     }
                   </div>
                   <div className="friend-info">
-                    <p className="friend-name">{f.name}</p>
+                    <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(f._id)}>{f.name}</p>
                     <p className="friend-sub"><MutualIcon />{f.sub}</p>
                   </div>
                 </div>
@@ -185,8 +194,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <button className="section-link">View all</button>
           </div>
           <div className="group-list">
-            {GROUPS.map(g => (
-              <div key={g.id} className="group-item">
+            {YOUR_GROUPS.map(g => (
+              <div key={g.id} className="group-item" style={{ cursor: 'pointer' }} onClick={() => onGroupClick?.(g.id)}>
                 <div className="group-icon" style={{ background: g.color }}>
                   {g.name[0]}
                 </div>
@@ -206,14 +215,14 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <button className="section-link">View all</button>
           </div>
           <div className="event-list">
-            {SIDEBAR_EVENTS.map(e => (
-              <div key={e.id} className="sidebar-event-item">
+            {UPCOMING_EVENTS.map(e => (
+              <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
                 <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
-                  <img src={e.img} alt={e.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div className="friend-info">
-                  <p className="friend-name">{e.name}</p>
-                  <p className="friend-sub">{e.date}</p>
+                  <p className="friend-name">{e.title}</p>
+                  <p className="friend-sub">{e.month} {e.day}</p>
                 </div>
               </div>
             ))}

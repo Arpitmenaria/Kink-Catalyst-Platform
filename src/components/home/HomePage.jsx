@@ -10,6 +10,7 @@ import CalendarPage from './CalendarPage';
 import CoursesPage from './CoursesPage';
 import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
+import UserProfilePage from './UserProfilePage';
 import MiniSitesPage from './MiniSitesPage';
 import './HomePage.css';
 
@@ -17,9 +18,32 @@ export default function HomePage() {
   const [section,         setSection]         = useState('feed');
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
+  const [viewedUserId,    setViewedUserId]    = useState(null);
+  const [viewedGroupId,   setViewedGroupId]   = useState(null);
+  const [viewedEventId,   setViewedEventId]   = useState(null);
+  const [profileReturnSection, setProfileReturnSection] = useState('feed');
 
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
+
+  function goToUserProfile(userId) {
+    if (!userId) return;
+    setViewedUserId(userId);
+    setProfileReturnSection(section);
+    setSection('userProfile');
+  }
+
+  function goToGroup(groupId) {
+    if (!groupId) return;
+    setViewedGroupId(groupId);
+    setSection('groups');
+  }
+
+  function goToEvent(eventId) {
+    if (!eventId) return;
+    setViewedEventId(eventId);
+    setSection('events');
+  }
 
   return (
     <div className="home-page">
@@ -49,6 +73,12 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             initialTab={profileInitTab}
             onInitTabConsumed={() => setProfileInitTab(null)}
+          />
+        ) : section === 'userProfile' ? (
+          <UserProfilePage
+            userId={viewedUserId}
+            onBack={() => setSection(profileReturnSection)}
+            onMessageUser={() => setSection('messages')}
           />
         ) : section === 'library' ? (
           <LibraryPage
@@ -81,6 +111,9 @@ export default function HomePage() {
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}
             startCreate={eventsCreate}
+            initialEventId={viewedEventId}
+            onInitEventConsumed={() => setViewedEventId(null)}
+            onUserClick={goToUserProfile}
           />
         ) : section === 'messages' ? (
           <MessagesPage
@@ -101,6 +134,8 @@ export default function HomePage() {
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}
+            initialGroupId={viewedGroupId}
+            onInitGroupConsumed={() => setViewedGroupId(null)}
           />
         ) : section === 'calendar' ? (
           <CalendarPage
@@ -123,8 +158,11 @@ export default function HomePage() {
               onCalendarClick={() => setSection('calendar')}
               onProfileClick={() => setSection('profile')}
               onMinisitesClick={() => setSection('minisites')}
+              onGroupClick={goToGroup}
+              onEventClick={goToEvent}
+              onUserClick={goToUserProfile}
             />
-            <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} onCreateEvent={goToEventsCreate} />
+            <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} onCreateEvent={goToEventsCreate} onUserClick={goToUserProfile} />
             <RightSidebar />
           </>
         )}
