@@ -18,7 +18,7 @@ function initials(name = '') {
 
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
 
-export default function UserProfilePage({ userId, onBack, onMessageUser }) {
+export default function UserProfilePage({ userId, onBack, onMessageUser, onEventsClick, onGroupsClick, onLibraryClick, onMinisitesClick }) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
 
@@ -34,7 +34,14 @@ export default function UserProfilePage({ userId, onBack, onMessageUser }) {
       <AnimatedNav
         activeId="home"
         avatarUrl={ALEX_AVATAR}
-        onNavigate={(id) => { if (id === 'home') onBack?.(); }}
+        onNavigate={(id) => {
+          if (id === 'home')      onBack?.();
+          if (id === 'events')    onEventsClick?.();
+          if (id === 'friends')   onGroupsClick?.();
+          if (id === 'messages')  onMessageUser?.(userId);
+          if (id === 'library')   onLibraryClick?.();
+          if (id === 'minisites') onMinisitesClick?.();
+        }}
       />
 
       <div className="prof-main">
@@ -100,6 +107,14 @@ export default function UserProfilePage({ userId, onBack, onMessageUser }) {
         </div>
 
         <div className="prof-content" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          {viewedUser?.bio && (
+            <div className="about-card" style={{ marginBottom: 16 }}>
+              <div className="about-card-header">
+                <span className="about-card-label">About</span>
+              </div>
+              <p className="about-bio-text">{viewedUser.bio}</p>
+            </div>
+          )}
           <div className="prof-feed">
             {viewedPosts.length === 0 && (
               <div style={{ textAlign: 'center', padding: '32px', color: '#5c6a8c', fontSize: 14 }}>

@@ -145,6 +145,68 @@ export const DISC_EVENTS = [
   },
 ];
 
+const EVENT_GALLERY_POOL = [
+  'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&q=80&fit=crop',
+  'https://images.unsplash.com/photo-1559223607-b4d0555ae227?w=1200&q=80&fit=crop',
+];
+
+function getEventImages(ev) {
+  if (!ev) return [];
+  if (Array.isArray(ev.images) && ev.images.length) return ev.images;
+  const base = ev.img?.split('?')[0];
+  const fillers = EVENT_GALLERY_POOL.filter(url => !url.startsWith(base));
+  return [ev.img, ...fillers.slice(0, 4)];
+}
+
+function ChevronLeftIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
+function ChevronRightIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
+
+function EventCarousel({ images, alt }) {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    if (!images || images.length <= 1) return;
+    const timer = setInterval(() => {
+      setIdx(i => (i + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [images]);
+
+  if (!images || images.length === 0) return null;
+
+  function prev(e) { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); }
+  function next(e) { e.stopPropagation(); setIdx(i => (i + 1) % images.length); }
+
+  return (
+    <>
+      <img src={images[idx]} alt={alt} className="ev-detail-cover-img" />
+      {images.length > 1 && (
+        <>
+          <button className="ev-carousel-arrow ev-carousel-arrow--prev" onClick={prev} title="Previous photo"><ChevronLeftIcon /></button>
+          <button className="ev-carousel-arrow ev-carousel-arrow--next" onClick={next} title="Next photo"><ChevronRightIcon /></button>
+          <div className="ev-carousel-dots">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                className={`ev-carousel-dot${i === idx ? ' ev-carousel-dot--active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setIdx(i); }}
+                title={`Photo ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 const REVIEW_FRIENDS = [
   { id: '1', name: 'Alex Johnson',  color: '#7c3aed' },
   { id: '2', name: 'Sarah Miller',  color: '#0891b2' },
@@ -430,7 +492,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
           {/* Cover image */}
           <div className="ev-detail-cover">
-            <img src={selectedEvent.img} alt={selectedEvent.title} className="ev-detail-cover-img" />
+            <EventCarousel key={selectedEvent.id} images={getEventImages(selectedEvent)} alt={selectedEvent.title} />
             <button className="ev-detail-cover-back-btn" onClick={() => eventFromHome ? onBack?.() : setSelectedEvent(null)} title="Back to Events">
               <BackArrowIcon />
             </button>

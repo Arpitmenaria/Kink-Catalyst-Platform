@@ -933,8 +933,10 @@
 
 .friend-add-btn--added {
   background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #fff !important;
 }
-.friend-add-btn--added:hover { background: #15803d !important; }
+.friend-add-btn--added:hover { background: #15803d !important; border-color: #15803d !important; }
 
 @keyframes friendAddPop {
   0%   { transform: scale(1); }

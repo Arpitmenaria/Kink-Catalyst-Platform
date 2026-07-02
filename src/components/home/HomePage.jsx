@@ -79,6 +79,10 @@ export default function HomePage() {
             userId={viewedUserId}
             onBack={() => setSection(profileReturnSection)}
             onMessageUser={() => setSection('messages')}
+            onEventsClick={() => setSection('events')}
+            onGroupsClick={() => setSection('groups')}
+            onLibraryClick={() => setSection('library')}
+            onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'library' ? (
           <LibraryPage
