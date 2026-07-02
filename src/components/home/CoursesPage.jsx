@@ -3,9 +3,12 @@ import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import ExplorePage from './ExplorePage';
 import LearningActivityPage from './LearningActivityPage';
-import CourseReaderPage from './CourseReaderPage';
+import CourseDetailPage from './CourseDetailPage';
+import HistoryPage from './HistoryPage';
 import CreatePostModal from './CreatePostModal';
 import { ALEX_AVATAR } from './mockData';
+import { COURSES, RESOURCES, CATEGORIES, categoryLabel, categoryColor, priceLabel } from './educationData';
+import useEducationProgress from './useEducationProgress';
 import './CoursesPage.css';
 
 /* ── Icons ── */
@@ -19,71 +22,50 @@ function VideoIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fi
 function BookIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>; }
 function CheckCircleIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>; }
 function TimerIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
-function DownloadIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
 function ExternalLinkIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>; }
+function BackArrowIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 
-/* ── Mock data ── */
-const STAT_CARDS = [
-  { Icon: BookIcon,       label: 'COURSES ENROLLED', value: '12',  color: '#3b82f6' },
-  { Icon: CheckCircleIcon,label: 'COMPLETED',         value: '5',   color: '#10b981' },
-  { Icon: TimerIcon,      label: 'HOURS SPENT',       value: '48h', color: '#8b5cf6' },
-];
+const RESOURCE_ICON = { Article: FileIcon, Video: VideoIcon, Guide: BookIcon, Document: FileIcon };
 
-const ONGOING_COURSES = [
-  { id: 1, title: 'Mastering UI Design',  progress: 45, img: 'https://images.unsplash.com/photo-1561736778-92e52a7769ef?w=600&q=80&fit=crop' },
-  { id: 2, title: 'Product Management',   progress: 68, img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80&fit=crop' },
-  { id: 3, title: 'Advanced React',       progress: 22, img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&q=80&fit=crop' },
-];
-
-const CATEGORIES = ['All Topics', 'Technology', 'Business', 'Leadership', 'Finance', 'Marketing', 'Design'];
-
-const CATEGORY_COLOR = {
-  Design: '#3b82f6', Development: '#10b981', Business: '#f59e0b',
-  Technology: '#8b5cf6', Marketing: '#ec4899', Finance: '#06b6d4',
-};
-
-const EXPLORE_COURSES = [
-  { id: 1, title: 'Advanced UI Design Systems',     category: 'Design',      instructor: 'Alex Rivera',   rating: 4.9, duration: '12h 30m', img: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=400&q=80&fit=crop' },
-  { id: 2, title: 'Full-Stack Web Architecture',    category: 'Development', instructor: 'Leo Zhang',     rating: 4.8, duration: '18h 45m', img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80&fit=crop' },
-  { id: 3, title: 'Product Management Elite',       category: 'Business',    instructor: 'Sophia Bloom',  rating: 4.7, duration: '8h 15m',  img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80&fit=crop' },
-  { id: 4, title: 'Blockchain for Everyone',        category: 'Technology',  instructor: 'Dr. Kai Vance', rating: 4.9, duration: '10h 6m',  img: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&q=80&fit=crop' },
-];
-
-const RECOMMENDED = [
-  { id: 1, title: 'Data-Driven Marketing Strategy',  category: 'Marketing', instructor: 'Dr. Sarah Jenkins', rating: 4.8, price: '$89.99',  img: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=400&q=80&fit=crop' },
-  { id: 2, title: 'Financial Analysis for Business', category: 'Finance',   instructor: 'Marcus Thorne',     rating: 4.3, price: '$124.50', img: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80&fit=crop' },
-  { id: 3, title: 'Advanced Python Development',     category: 'Technology',instructor: 'Aria Chen',         rating: 4.7, price: '$75.00',  img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&q=80&fit=crop' },
-];
-
-const RESOURCES = [
-  { id: 1, Icon: FileIcon,  title: 'UI Design Handbook 2024', desc: 'Essential principles and case studies for modern design systems.', action: 'Download PDF', type: 'pdf' },
-  { id: 2, Icon: VideoIcon, title: 'Tech Trends Webinar',     desc: 'Recorded session with industry experts on the future of AI technology.', action: 'Watch Video', type: 'video' },
-];
+const CATEGORY_TABS = ['All Topics', ...CATEGORIES.map(c => c.label)];
 
 /* ── Category badge ── */
-function CategoryBadge({ label }) {
-  const color = CATEGORY_COLOR[label] ?? '#6b7399';
+function CategoryBadge({ categoryId }) {
+  const color = categoryColor(categoryId);
   return (
     <span className="cs-cat-badge" style={{ color, background: color + '22', borderColor: color + '44' }}>
-      {label}
+      {categoryLabel(categoryId)}
+    </span>
+  );
+}
+
+/* ── Price badge ── */
+function PriceBadge({ course }) {
+  const free = course.isFree;
+  const color = free ? '#10b981' : '#f59e0b';
+  return (
+    <span className="cs-cat-badge" style={{ color, background: color + '22', borderColor: color + '44' }}>
+      {priceLabel(course)}
     </span>
   );
 }
 
 export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
-  const { user: authUser } = useSelector(s => s.auth);
   const { profile }        = useSelector(s => s.profile);
   const avatarUrl          = profile?.avatar ?? ALEX_AVATAR;
+  const progress = useEducationProgress();
 
   const [activeCategory,   setActiveCategory]   = useState('All Topics');
   const [wishlist,         setWishlist]         = useState(new Set());
   const [showExplore,      setShowExplore]      = useState(false);
   const [showActivity,     setShowActivity]     = useState(false);
-  const [activeCourse,     setActiveCourse]     = useState(null);
+  const [activeCourseId,   setActiveCourseId]   = useState(null);
+  const [showHistory,      setShowHistory]      = useState(false);
   const [createPostOpen,   setCreatePostOpen]   = useState(false);
 
-  if (activeCourse)  return <CourseReaderPage course={activeCourse} onBack={() => setActiveCourse(null)} />;
-  if (showExplore)   return <ExplorePage onBack={() => setShowExplore(false)} />;
+  if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
+  if (showHistory) return <HistoryPage onBack={() => setShowHistory(false)} />;
+  if (showExplore)   return <ExplorePage onBack={() => setShowExplore(false)} onOpenCourse={id => { setShowExplore(false); setActiveCourseId(id); }} />;
   if (showActivity)  return (
     <LearningActivityPage
       onBack={() => setShowActivity(false)}
@@ -114,9 +96,25 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
     });
   }
 
-  const filteredExplore = activeCategory === 'All Topics'
-    ? EXPLORE_COURSES
-    : EXPLORE_COURSES.filter(c => c.category === activeCategory);
+  const ongoingCourses = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100);
+  const completedCount = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) === 100).length;
+
+  const STAT_CARDS = [
+    { Icon: BookIcon,       label: 'COURSES ENROLLED', value: String(progress.enrolledCourseIds.size), color: '#3b82f6' },
+    { Icon: CheckCircleIcon,label: 'COMPLETED',         value: String(completedCount),                  color: '#10b981' },
+    { Icon: TimerIcon,      label: 'HOURS SPENT',       value: '48h',                                   color: '#8b5cf6' },
+  ];
+
+  const filteredExplore = (activeCategory === 'All Topics'
+    ? COURSES
+    : COURSES.filter(c => categoryLabel(c.category) === activeCategory)
+  ).slice(0, 4);
+
+  const recommended = COURSES
+    .filter(c => !filteredExplore.some(fc => fc.id === c.id))
+    .slice(0, 3);
+
+  const popularResources = RESOURCES.slice(0, 3);
 
   return (
     <>
@@ -125,19 +123,32 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
 
       <div className="courses-main">
 
+        <button className="cs-back-btn" onClick={onBack} title="Back to Feed">
+          <BackArrowIcon />
+        </button>
+
         {/* ── Stats row ── */}
         <div className="cs-stats-row">
-          {STAT_CARDS.map(({ Icon, label, value, color }) => (
-            <div key={label} className="cs-stat-card">
-              <div className="cs-stat-icon" style={{ color, background: color + '18' }}>
-                <Icon />
+          {STAT_CARDS.map(({ Icon, label, value, color }) => {
+            const isCompleted = label === 'COMPLETED';
+            return (
+              <div
+                key={label}
+                className="cs-stat-card"
+                style={isCompleted ? { cursor: 'pointer' } : undefined}
+                onClick={isCompleted ? () => setShowHistory(true) : undefined}
+                title={isCompleted ? 'View learning history' : undefined}
+              >
+                <div className="cs-stat-icon" style={{ color, background: color + '18' }}>
+                  <Icon />
+                </div>
+                <div className="cs-stat-body">
+                  <p className="cs-stat-label">{label}</p>
+                  <p className="cs-stat-value">{value}</p>
+                </div>
               </div>
-              <div className="cs-stat-body">
-                <p className="cs-stat-label">{label}</p>
-                <p className="cs-stat-value">{value}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── Ongoing Courses ── */}
@@ -147,25 +158,31 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
             <button className="cs-link" onClick={() => setShowActivity(true)}>See all activity</button>
           </div>
           <div className="cs-ongoing-grid">
-            {ONGOING_COURSES.map((c, i) => (
-              <div key={c.id} className="cs-ongoing-card" style={{ '--ci': i }}>
-                <div className="cs-ongoing-thumb">
-                  <img src={c.img} alt={c.title} />
-                  <span className="cs-ongoing-badge">ONGOING</span>
-                </div>
-                <div className="cs-ongoing-body">
-                  <p className="cs-ongoing-title">{c.title}</p>
-                  <div className="cs-progress-row">
-                    <span className="cs-progress-label">Progress</span>
-                    <span className="cs-progress-pct">{c.progress}%</span>
+            {ongoingCourses.length === 0 && (
+              <div style={{ color: '#5c6a8c', fontSize: 14, padding: '12px 0' }}>No ongoing courses yet — enroll in one below to get started.</div>
+            )}
+            {ongoingCourses.map((c, i) => {
+              const pct = progress.getCourseProgressPct(c.id, c);
+              return (
+                <div key={c.id} className="cs-ongoing-card" style={{ '--ci': i }}>
+                  <div className="cs-ongoing-thumb">
+                    <img src={c.img} alt={c.title} />
+                    <span className="cs-ongoing-badge">ONGOING</span>
                   </div>
-                  <div className="cs-progress-track">
-                    <div className="cs-progress-fill" style={{ width: `${c.progress}%` }} />
+                  <div className="cs-ongoing-body">
+                    <p className="cs-ongoing-title">{c.title}</p>
+                    <div className="cs-progress-row">
+                      <span className="cs-progress-label">Progress</span>
+                      <span className="cs-progress-pct">{pct}%</span>
+                    </div>
+                    <div className="cs-progress-track">
+                      <div className="cs-progress-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <button className="cs-resume-btn" onClick={() => setActiveCourseId(c.id)}><PlayIcon /> Resume</button>
                   </div>
-                  <button className="cs-resume-btn" onClick={() => setActiveCourse(c)}><PlayIcon /> Resume</button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -177,7 +194,7 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
           </div>
 
           <div className="cs-tabs-row">
-            {CATEGORIES.map(cat => (
+            {CATEGORY_TABS.map(cat => (
               <button
                 key={cat}
                 className={`cs-tab${activeCategory === cat ? ' cs-tab--active' : ''}`}
@@ -189,25 +206,34 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
           </div>
 
           <div className="cs-explore-grid">
-            {filteredExplore.map((c, i) => (
-              <div key={c.id} className="cs-explore-card" style={{ '--ci': i }}>
-                <div className="cs-explore-thumb">
-                  <img src={c.img} alt={c.title} />
-                  <CategoryBadge label={c.category} />
-                </div>
-                <div className="cs-explore-body">
-                  <p className="cs-explore-title">{c.title}</p>
-                  <div className="cs-explore-meta">
-                    <span className="cs-meta-item"><UserIcon /> {c.instructor}</span>
-                    <span className="cs-meta-item cs-meta-rating"><StarIcon /> {c.rating}</span>
+            {filteredExplore.map((c, i) => {
+              const enrolled = progress.isEnrolled(c.id);
+              return (
+                <div key={c.id} className="cs-explore-card" style={{ '--ci': i }}>
+                  <div className="cs-explore-thumb" onClick={() => setActiveCourseId(c.id)} style={{ cursor: 'pointer' }}>
+                    <img src={c.img} alt={c.title} />
+                    <CategoryBadge categoryId={c.category} />
                   </div>
-                  <div className="cs-explore-footer">
-                    <span className="cs-duration"><ClockIcon /> {c.duration}</span>
-                    <button className="cs-enroll-btn">Enroll Now</button>
+                  <div className="cs-explore-body">
+                    <p className="cs-explore-title" onClick={() => setActiveCourseId(c.id)} style={{ cursor: 'pointer' }}>{c.title}</p>
+                    <div className="cs-explore-meta">
+                      <span className="cs-meta-item"><UserIcon /> {c.instructor}</span>
+                      <span className="cs-meta-item cs-meta-rating"><StarIcon /> {c.rating}</span>
+                      <PriceBadge course={c} />
+                    </div>
+                    <div className="cs-explore-footer">
+                      <span className="cs-duration"><ClockIcon /> {c.duration}</span>
+                      <button
+                        className={`cs-enroll-btn${enrolled ? ' cs-enroll-btn--done' : ''}`}
+                        onClick={() => enrolled ? progress.unenrollCourse(c.id) : progress.enrollCourse(c.id)}
+                      >
+                        {enrolled ? 'Enrolled ✓' : 'Enroll Now'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -217,20 +243,21 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
             <h2 className="cs-section-title">Recommended for You</h2>
           </div>
           <div className="cs-rec-grid">
-            {RECOMMENDED.map((c, i) => (
+            {recommended.map((c, i) => (
               <div key={c.id} className="cs-rec-card" style={{ '--ci': i }}>
-                <div className="cs-rec-thumb">
+                <div className="cs-rec-thumb" onClick={() => setActiveCourseId(c.id)} style={{ cursor: 'pointer' }}>
                   <img src={c.img} alt={c.title} />
-                  <CategoryBadge label={c.category} />
+                  <CategoryBadge categoryId={c.category} />
                 </div>
                 <div className="cs-rec-body">
-                  <p className="cs-rec-title">{c.title}</p>
+                  <p className="cs-rec-title" onClick={() => setActiveCourseId(c.id)} style={{ cursor: 'pointer' }}>{c.title}</p>
                   <div className="cs-rec-meta">
                     <span className="cs-meta-item"><UserIcon /> {c.instructor}</span>
                     <span className="cs-meta-item cs-meta-rating"><StarIcon /> {c.rating}</span>
+                    <PriceBadge course={c} />
                   </div>
                   <div className="cs-rec-footer">
-                    <span className="cs-price">{c.price}</span>
+                    <span className="cs-duration"><ClockIcon /> {c.duration}</span>
                     <button
                       className={`cs-wish-btn${wishlist.has(c.id) ? ' cs-wish-btn--active' : ''}`}
                       onClick={() => toggleWishlist(c.id)}
@@ -238,7 +265,6 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
                     >
                       <HeartIcon />
                     </button>
-                    <button className="cs-cart-btn">Add to Cart</button>
                   </div>
                 </div>
               </div>
@@ -250,24 +276,27 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
         <section className="cs-section cs-section--last">
           <div className="cs-section-head">
             <h2 className="cs-section-title">Popular Resources</h2>
-            <button className="cs-link">View All</button>
+            <button className="cs-link" onClick={() => onLibraryClick?.()}>View All</button>
           </div>
           <div className="cs-resources-grid">
-            {RESOURCES.map((r, i) => (
-              <div key={r.id} className="cs-resource-card" style={{ '--ci': i }}>
-                <div className="cs-resource-icon">
-                  <r.Icon />
+            {popularResources.map((r, i) => {
+              const Icon = RESOURCE_ICON[r.type] ?? FileIcon;
+              return (
+                <div key={r.id} className="cs-resource-card" style={{ '--ci': i }}>
+                  <div className="cs-resource-icon">
+                    <Icon />
+                  </div>
+                  <div className="cs-resource-body">
+                    <p className="cs-resource-title">{r.title}</p>
+                    <p className="cs-resource-desc">{r.desc}</p>
+                    <button className="cs-resource-action" onClick={() => onLibraryClick?.()}>
+                      <ExternalLinkIcon />
+                      View Resource
+                    </button>
+                  </div>
                 </div>
-                <div className="cs-resource-body">
-                  <p className="cs-resource-title">{r.title}</p>
-                  <p className="cs-resource-desc">{r.desc}</p>
-                  <button className={`cs-resource-action cs-resource-action--${r.type}`}>
-                    {r.type === 'pdf' ? <DownloadIcon /> : <ExternalLinkIcon />}
-                    {r.action}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

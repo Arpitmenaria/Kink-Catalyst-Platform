@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { ALEX_AVATAR } from './mockData';
+import { COURSES, CATEGORIES, priceLabel } from './educationData';
+import useEducationProgress from './useEducationProgress';
 import './ExplorePage.css';
 
 /* ── Icons ── */
@@ -13,7 +15,6 @@ function GridIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" f
 function ListIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>; }
 function ChevLeft()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 function ChevRight()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
-function UserIcon()   { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
 function BackIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 
 /* ── Mock data ── */
@@ -23,24 +24,9 @@ const DIFFICULTY_COLOR = {
   BEGINNER:     { bg: '#065f46', text: '#6ee7b7' },
 };
 
-const ALL_COURSES = [
-  { id: 1,  title: 'Advanced Design Systems & Scalable UI Frameworks', difficulty: 'ADVANCED',     instructor: 'Arjun Ivatury',   instructorImg: null,  duration: '12h 30m', rating: 4.9, reviews: '1.2k', category: 'Design',      img: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=600&q=80&fit=crop' },
-  { id: 2,  title: 'Full-Stack Web Architecture with Modern Frameworks', difficulty: 'INTERMEDIATE', instructor: 'Sarah Linden',    instructorImg: null,  duration: '24h 45m', rating: 4.8, reviews: '850',  category: 'Development', img: 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=600&q=80&fit=crop' },
-  { id: 3,  title: 'Data Science for Business & Analytics Professionals', difficulty: 'BEGINNER',    instructor: 'Marcus Kane',     instructorImg: null,  duration: '8h 15m',  rating: 4.7, reviews: '2.4k', category: 'Technology',  img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80&fit=crop' },
-  { id: 4,  title: 'Modern Branding Strategies for Digital Products',    difficulty: 'INTERMEDIATE', instructor: 'Elena Wong',      instructorImg: null,  duration: '15h 20m', rating: 4.9, reviews: '540',  category: 'Marketing',   img: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&q=80&fit=crop' },
-  { id: 5,  title: 'Growth Marketing Mastery & Funnel Optimization',    difficulty: 'ADVANCED',     instructor: 'James Doe',       instructorImg: null,  duration: '18h 00m', rating: 5.0, reviews: '105',  category: 'Marketing',   img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80&fit=crop' },
-  { id: 6,  title: 'Python for Machine Learning & AI Development',      difficulty: 'INTERMEDIATE', instructor: 'Aria Chen',       instructorImg: null,  duration: '20h 10m', rating: 4.8, reviews: '970',  category: 'Technology',  img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80&fit=crop' },
-  { id: 7,  title: 'Financial Modeling for Business Leaders',           difficulty: 'BEGINNER',     instructor: 'Marcus Thorne',   instructorImg: null,  duration: '6h 45m',  rating: 4.6, reviews: '320',  category: 'Finance',     img: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80&fit=crop' },
-  { id: 8,  title: 'UX Research Methods & Usability Testing',          difficulty: 'BEGINNER',     instructor: 'Sophie Moreau',   instructorImg: null,  duration: '10h 30m', rating: 4.7, reviews: '610',  category: 'Design',      img: 'https://images.unsplash.com/photo-1561736778-92e52a7769ef?w=600&q=80&fit=crop' },
-  { id: 9,  title: 'Blockchain & Decentralized Finance Fundamentals',   difficulty: 'ADVANCED',     instructor: 'Dr. Kai Vance',   instructorImg: null,  duration: '14h 00m', rating: 4.9, reviews: '430',  category: 'Technology',  img: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=600&q=80&fit=crop' },
-  { id: 10, title: 'Leadership & Team Management for Tech Leads',       difficulty: 'INTERMEDIATE', instructor: 'Dr. Sarah Jenkins',instructorImg: null, duration: '9h 20m',  rating: 4.8, reviews: '760',  category: 'Business',    img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80&fit=crop' },
-  { id: 11, title: 'React Performance Patterns & Optimization',         difficulty: 'ADVANCED',     instructor: 'Leo Zhang',       instructorImg: null,  duration: '11h 15m', rating: 4.9, reviews: '1.1k', category: 'Development', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&q=80&fit=crop' },
-  { id: 12, title: 'Product Management: From Ideation to Launch',       difficulty: 'INTERMEDIATE', instructor: 'Sophia Bloom',    instructorImg: null,  duration: '16h 50m', rating: 4.7, reviews: '890',  category: 'Business',    img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&q=80&fit=crop' },
-];
-
 const DIFFICULTY_OPTS = ['All Levels', 'Beginner', 'Intermediate', 'Advanced'];
 const DURATION_OPTS   = ['Any length', 'Under 5h', '5h – 10h', '10h – 20h', '20h+'];
-const CATEGORY_OPTS   = ['All Categories', 'Design', 'Development', 'Technology', 'Business', 'Finance', 'Marketing'];
+const CATEGORY_OPTS   = ['All Categories', ...CATEGORIES.map(c => c.label)];
 
 const PAGE_SIZE = 8;
 
@@ -64,16 +50,18 @@ function InstructorAvatar({ name }) {
   );
 }
 
-function CourseCard({ course, idx }) {
-  const [enrolled, setEnrolled] = useState(false);
+function CourseCard({ course, idx, onOpenCourse }) {
+  const progress = useEducationProgress();
+  const enrolled = progress.isEnrolled(course.id);
   return (
     <div className="ep-card" style={{ '--ci': idx }}>
-      <div className="ep-card-thumb">
+      <div className="ep-card-thumb" onClick={() => onOpenCourse?.(course.id)} style={{ cursor: 'pointer' }}>
         <img src={course.img} alt={course.title} loading="lazy" />
         <DiffBadge level={course.difficulty} />
+        <span className={`ep-price-badge${course.isFree ? ' ep-price-badge--free' : ''}`}>{priceLabel(course)}</span>
       </div>
       <div className="ep-card-body">
-        <h3 className="ep-card-title">{course.title}</h3>
+        <h3 className="ep-card-title" onClick={() => onOpenCourse?.(course.id)} style={{ cursor: 'pointer' }}>{course.title}</h3>
         <div className="ep-card-instructor">
           <InstructorAvatar name={course.instructor} />
           <span className="ep-instructor-name">{course.instructor}</span>
@@ -84,7 +72,7 @@ function CourseCard({ course, idx }) {
         </div>
         <button
           className={`ep-enroll-btn${enrolled ? ' ep-enroll-btn--done' : ''}`}
-          onClick={() => setEnrolled(e => !e)}
+          onClick={() => enrolled ? progress.unenrollCourse(course.id) : progress.enrollCourse(course.id)}
         >
           {enrolled ? 'Enrolled ✓' : 'Enroll Now'}
         </button>
@@ -119,7 +107,7 @@ function Dropdown({ label, value, opts, onChange }) {
   );
 }
 
-export default function ExplorePage({ onBack }) {
+export default function ExplorePage({ onBack, onOpenCourse }) {
   const { profile } = useSelector(s => s.profile);
   const avatarUrl   = profile?.avatar ?? ALEX_AVATAR;
   const displayName = profile?.fullName ?? 'Alex Rivera';
@@ -132,9 +120,9 @@ export default function ExplorePage({ onBack }) {
 
   const TOTAL_PAGES = 12;
 
-  const filtered = ALL_COURSES.filter(c => {
+  const filtered = COURSES.filter(c => {
     const diffOk = difficulty === 'All Levels'    || c.difficulty === difficulty.toUpperCase();
-    const catOk  = category   === 'All Categories'|| c.category  === category;
+    const catOk  = category   === 'All Categories'|| CATEGORIES.find(cat => cat.label === category)?.id === c.category;
     const durMap = { 'Under 5h': [0,5], '5h – 10h': [5,10], '10h – 20h': [10,20], '20h+': [20,999] };
     let durOk = true;
     if (duration !== 'Any length') {
@@ -252,7 +240,7 @@ export default function ExplorePage({ onBack }) {
         ) : (
           <div className={`ep-grid${viewMode === 'list' ? ' ep-grid--list' : ''}`}>
             {pageItems.map((c, i) => (
-              <CourseCard key={c.id} course={c} idx={i} />
+              <CourseCard key={c.id} course={c} idx={i} onOpenCourse={onOpenCourse} />
             ))}
           </div>
         )}

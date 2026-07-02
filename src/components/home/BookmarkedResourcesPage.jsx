@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { ALEX_AVATAR } from './mockData';
+import { RESOURCES } from './educationData';
+import useEducationProgress from './useEducationProgress';
+import ResourceDetailPage from './ResourceDetailPage';
 import './BookmarkedResourcesPage.css';
 
 /* ── Icons ── */
@@ -12,67 +15,22 @@ function BookmarkFill() { return <svg width="14" height="14" viewBox="0 0 24 24"
 
 /* ── Data ── */
 const TYPE_META = {
-  VIDEO:    { color: '#8b5cf6', bg: '#8b5cf620' },
-  DOCUMENT: { color: '#64748b', bg: '#64748b20' },
-  ARTICLE:  { color: '#06b6d4', bg: '#06b6d420' },
-  GUIDE:    { color: '#10b981', bg: '#10b98120' },
+  Video:    { color: '#8b5cf6', bg: '#8b5cf620' },
+  Document: { color: '#64748b', bg: '#64748b20' },
+  Article:  { color: '#06b6d4', bg: '#06b6d420' },
+  Guide:    { color: '#10b981', bg: '#10b98120' },
 };
 
-const ALL_BOOKMARKS = [
-  {
-    id: 1, type: 'VIDEO',    tags: ['DEVELOPMENT', 'JS'],
-    title: 'Advanced React Patterns',
-    desc:  'Master complex component structures, custom hooks, and state management strategies for scalable applications.',
-    author: 'Mark Kovich',   authorColor: '#3b82f6',
-    img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&q=80&fit=crop',
-  },
-  {
-    id: 2, type: 'DOCUMENT', tags: ['AI', 'REPORT'],
-    title: 'Future of AI in Education 2024',
-    desc:  'An in-depth whitepaper exploring the latest trends and future impact of artificial intelligence on learning.',
-    author: 'Robert Fisher', authorColor: '#10b981',
-    img: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&q=80&fit=crop',
-  },
-  {
-    id: 3, type: 'VIDEO',    tags: ['DEVELOPMENT', 'JS'],
-    title: 'Advanced React Patterns',
-    desc:  'Master complex component structures, custom hooks, and state management strategies for scalable applications.',
-    author: 'Mark Kovich',   authorColor: '#3b82f6',
-    img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80&fit=crop',
-  },
-  {
-    id: 4, type: 'ARTICLE',  tags: ['DESIGN', 'ACCESSIBILITY'],
-    title: 'Principles of Web Accessibility',
-    desc:  'Learn the fundamental guidelines for creating digital experiences that are inclusive for all users, from WCAG basics to advanced patterns.',
-    author: 'Sarah Jenkins', authorColor: '#f59e0b',
-    img: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=600&q=80&fit=crop',
-  },
-  {
-    id: 5, type: 'GUIDE',    tags: ['UX RESEARCH', 'STRATEGY'],
-    title: 'Effective User Interviewing',
-    desc:  'A comprehensive guide on how to ask the right questions and extract valuable insights from your target audience.',
-    author: 'Elena Lu',      authorColor: '#8b5cf6',
-    img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&q=80&fit=crop',
-  },
-  {
-    id: 6, type: 'DOCUMENT', tags: ['AI', 'REPORT'],
-    title: 'Future of AI in Education 2024',
-    desc:  'An in-depth whitepaper exploring the latest trends and future impact of artificial intelligence on learning.',
-    author: 'Robert Fisher', authorColor: '#10b981',
-    img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80&fit=crop',
-  },
-];
-
 const TAB_FILTERS = ['All', 'Articles', 'Guides', 'Videos', 'Documents'];
-const TYPE_MAP    = { Articles: 'ARTICLE', Guides: 'GUIDE', Videos: 'VIDEO', Documents: 'DOCUMENT' };
+const TYPE_MAP    = { Articles: 'Article', Guides: 'Guide', Videos: 'Video', Documents: 'Document' };
 
 function InstructorAvatar({ name, color }) {
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return <span className="br-author-avatar" style={{ background: color }}>{initials}</span>;
 }
 
-function ResourceCard({ item, idx }) {
-  const meta = TYPE_META[item.type] ?? TYPE_META.ARTICLE;
+function ResourceCard({ item, idx, onUnsave, onView }) {
+  const meta = TYPE_META[item.type] ?? TYPE_META.Article;
   return (
     <div className="br-card" style={{ '--ci': idx }}>
       {/* Thumbnail */}
@@ -81,12 +39,12 @@ function ResourceCard({ item, idx }) {
         <span className="br-type-badge" style={{ background: meta.bg, color: meta.color }}>
           {item.type}
         </span>
-        {item.type === 'VIDEO' && (
+        {item.type === 'Video' && (
           <div className="br-play-overlay">
             <div className="br-play-btn"><PlayIcon /></div>
           </div>
         )}
-        <button className="br-bookmark-btn" aria-label="Bookmarked">
+        <button className="br-bookmark-btn" aria-label="Remove bookmark" onClick={() => onUnsave(item.id)}>
           <BookmarkFill />
         </button>
       </div>
@@ -101,11 +59,13 @@ function ResourceCard({ item, idx }) {
         <h3 className="br-title">{item.title}</h3>
         <p className="br-desc">{item.desc}</p>
         <div className="br-footer">
-          <div className="br-author">
-            <InstructorAvatar name={item.author} color={item.authorColor} />
-            <span className="br-author-name">{item.author}</span>
-          </div>
-          <button className="br-view-btn">View Resource</button>
+          {item.author && (
+            <div className="br-author">
+              <InstructorAvatar name={item.author} color={item.authorColor} />
+              <span className="br-author-name">{item.author}</span>
+            </div>
+          )}
+          <button className="br-view-btn" onClick={() => onView(item)}>View Resource</button>
         </div>
       </div>
     </div>
@@ -115,12 +75,17 @@ function ResourceCard({ item, idx }) {
 export default function BookmarkedResourcesPage({ onBack }) {
   const { profile } = useSelector(s => s.profile);
   const avatarUrl   = profile?.avatar ?? ALEX_AVATAR;
+  const progress = useEducationProgress();
 
   const [activeTab, setActiveTab] = useState('All');
+  const [activeResourceId, setActiveResourceId] = useState(null);
 
+  if (activeResourceId) return <ResourceDetailPage resourceId={activeResourceId} onBack={() => setActiveResourceId(null)} />;
+
+  const savedResources = RESOURCES.filter(r => progress.isSaved(r.id));
   const filtered = activeTab === 'All'
-    ? ALL_BOOKMARKS
-    : ALL_BOOKMARKS.filter(r => r.type === TYPE_MAP[activeTab]);
+    ? savedResources
+    : savedResources.filter(r => r.type === TYPE_MAP[activeTab]);
 
   return (
     <div className="br-page">
@@ -183,7 +148,7 @@ export default function BookmarkedResourcesPage({ onBack }) {
         ) : (
           <div className="br-grid">
             {filtered.map((item, i) => (
-              <ResourceCard key={item.id} item={item} idx={i} />
+              <ResourceCard key={item.id} item={item} idx={i} onUnsave={progress.toggleSaveResource} onView={res => setActiveResourceId(res.id)} />
             ))}
           </div>
         )}
