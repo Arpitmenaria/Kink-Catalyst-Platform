@@ -22,8 +22,9 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
 
-  const viewedUser  = MOCK_USERS[userId];
-  const viewedPosts = MOCK_POSTS.filter(p => p.author?._id === userId);
+  const viewedUser  = typeof userId === 'object' && userId !== null ? userId : MOCK_USERS[userId];
+  const resolvedId  = viewedUser?._id ?? userId;
+  const viewedPosts = MOCK_POSTS.filter(p => p.author?._id === resolvedId);
 
   const displayName = viewedUser?.fullName ?? 'User';
   const avatarUrl   = viewedUser?.avatar ?? ALEX_AVATAR;
@@ -38,7 +39,7 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
           if (id === 'home')      onBack?.();
           if (id === 'events')    onEventsClick?.();
           if (id === 'friends')   onGroupsClick?.();
-          if (id === 'messages')  onMessageUser?.(userId);
+          if (id === 'messages')  onMessageUser?.(resolvedId);
           if (id === 'library')   onLibraryClick?.();
           if (id === 'minisites') onMinisitesClick?.();
         }}
@@ -99,7 +100,7 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
             <button
               className="prof-edit-btn"
               style={{ background: '#1a2338', border: '1px solid #1e2a42', color: '#cbd5e1' }}
-              onClick={() => onMessageUser?.(userId)}
+              onClick={() => onMessageUser?.(resolvedId)}
             >
               <MsgIcon /> Message
             </button>

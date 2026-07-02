@@ -179,7 +179,7 @@ function MutualIcon() {
   return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 }
 
-function FriendSuggestionsPanel() {
+function FriendSuggestionsPanel({ onUserClick }) {
   const [addedIds,     setAddedIds]     = useState(new Set());
   const [poppingIds,   setPoppingIds]   = useState(new Set());
   const [removingIds,  setRemovingIds]  = useState(new Set());
@@ -209,14 +209,18 @@ function FriendSuggestionsPanel() {
       {FRIEND_SUGGESTIONS.filter(f => !dismissedIds.has(f.id)).map(f => (
         <div key={f.id} className={`prof-sugg-item${removingIds.has(f.id) ? ' prof-sugg-item--removing' : ''}`}>
           <div className="prof-sugg-item-top">
-            <div className="prof-sugg-avatar" style={{ background: f.color, overflow: 'hidden' }}>
+            <div
+              className="prof-sugg-avatar"
+              style={{ background: f.color, overflow: 'hidden', cursor: 'pointer' }}
+              onClick={() => onUserClick?.(f._id)}
+            >
               {f.avatar
                 ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : f.name.split(' ').map(w => w[0]).join('').toUpperCase()
               }
             </div>
             <div className="prof-sugg-info">
-              <p className="prof-sugg-name">{f.name}</p>
+              <p className="prof-sugg-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(f._id)}>{f.name}</p>
               <p className="prof-sugg-sub"><MutualIcon />{f.sub}</p>
             </div>
           </div>
@@ -237,7 +241,7 @@ function FriendSuggestionsPanel() {
   );
 }
 
-function ConnectionsTab() {
+function ConnectionsTab({ onUserClick }) {
   const [removed,   setRemoved]   = useState(new Set());
   const [viewMode,  setViewMode]  = useState('list');
   const [search,    setSearch]    = useState('');
@@ -256,6 +260,10 @@ function ConnectionsTab() {
   }, [openDrop]);
 
   const hasFilter = filterLoc || filterInd;
+
+  function openConnProfile(conn) {
+    onUserClick?.({ _id: `conn-${conn.id}`, fullName: conn.name, avatar: conn.avatar, role: conn.role, location: conn.location });
+  }
 
   const visible = MOCK_CONNECTIONS.filter(c =>
     !removed.has(c.id) &&
@@ -375,13 +383,13 @@ function ConnectionsTab() {
         <div className="prof-conn-list">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
-              <div className="prof-conn-avatar-wrap">
+              <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
                 <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
                 <span className={`prof-conn-status-dot${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
               <div className="prof-conn-info">
                 <div className="prof-conn-name-row">
-                  <span className="prof-conn-name">{conn.name}</span>
+                  <span className="prof-conn-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</span>
                   {conn.online
                     ? <span className="prof-conn-online-badge">Online</span>
                     : <span className="prof-conn-last-active">{conn.lastActive}</span>
@@ -412,11 +420,11 @@ function ConnectionsTab() {
         <div className="prof-conn-grid">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">
-              <div className="prof-conn-card-avatar-wrap">
+              <div className="prof-conn-card-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
                 <img src={conn.avatar} alt={conn.name} className="prof-conn-card-avatar" />
                 <span className={`prof-conn-status-dot prof-conn-status-dot--card${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
-              <p className="prof-conn-card-name">{conn.name}</p>
+              <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</p>
               <p className="prof-conn-card-role">{conn.role}</p>
               {conn.online
                 ? <span className="prof-conn-online-badge">Online</span>
@@ -444,7 +452,7 @@ function ConnectionsTab() {
 
       <button className="prof-conn-load-more">View all connections</button>
     </div>
-    <FriendSuggestionsPanel />
+    <FriendSuggestionsPanel onUserClick={onUserClick} />
     </div>
   );
 }
@@ -821,7 +829,7 @@ function AboutTab() {
 export default function ProfilePage({
   onBack, onCoursesClick, onLibraryClick, onEventsClick, onEventsCreateClick,
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
-  initialTab, onInitTabConsumed,
+  initialTab, onInitTabConsumed, onUserClick,
 }) {
   const { user: authUser }  = useSelector(s => s.auth);
   const { profile }         = useSelector(s => s.profile);
@@ -986,7 +994,7 @@ export default function ProfilePage({
           )}
 
           {activeTab === 'About'       && <AboutTab />}
-          {activeTab === 'Connections' && <ConnectionsTab />}
+          {activeTab === 'Connections' && <ConnectionsTab onUserClick={onUserClick} />}
           {activeTab === 'Photos'      && <MediaTab />}
           {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} />}
 

@@ -73,6 +73,7 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             initialTab={profileInitTab}
             onInitTabConsumed={() => setProfileInitTab(null)}
+            onUserClick={goToUserProfile}
           />
         ) : section === 'userProfile' ? (
           <UserProfilePage
