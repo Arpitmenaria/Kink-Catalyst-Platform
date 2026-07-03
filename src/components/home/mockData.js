@@ -2,6 +2,9 @@
 export const ALEX_AVATAR   = 'https://i.pravatar.cc/150?img=68';
 export const ELENA_AVATAR  = 'https://i.pravatar.cc/150?img=47';
 
+/* ── Profile page tabs (used by ProfilePage + UserProfilePage) ── */
+export const PROFILE_TABS = ['Feed', 'About', 'Connections', 'Photos', 'Events'];
+
 /* ── Users (keyed by _id, used by UserProfilePage) ── */
 export const MOCK_USERS = {
   'elena-moretti': {

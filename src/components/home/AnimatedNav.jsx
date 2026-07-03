@@ -21,7 +21,7 @@ const MAIN_ITEMS = [
   { id: 'events',    Icon: IconCalendar,        label: 'Events'    },
   { id: 'friends',   Icon: IconUsers,           label: 'Groups'    },
   { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages', badge: 3 },
-  { id: 'library',   Icon: IconGradCap,         label: 'Education' },
+  { id: 'courses',   Icon: IconGradCap,         label: 'Education' },
   { id: 'minisites', Icon: IconWorld,           label: 'Mini Sites'},
 ];
 

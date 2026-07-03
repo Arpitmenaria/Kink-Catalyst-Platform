@@ -81,9 +81,12 @@ export default function HomePage() {
             onBack={() => setSection(profileReturnSection)}
             onMessageUser={() => setSection('messages')}
             onEventsClick={() => setSection('events')}
+            onEventsCreateClick={goToEventsCreate}
             onGroupsClick={() => setSection('groups')}
+            onCoursesClick={() => setSection('courses')}
             onLibraryClick={() => setSection('library')}
             onMinisitesClick={() => setSection('minisites')}
+            onUserClick={goToUserProfile}
           />
         ) : section === 'library' ? (
           <LibraryPage
@@ -168,7 +171,7 @@ export default function HomePage() {
               onUserClick={goToUserProfile}
             />
             <Feed onEventsClick={() => setSection('events')} onProfileClick={() => setSection('profile')} onCreateEvent={goToEventsCreate} onUserClick={goToUserProfile} />
-            <RightSidebar />
+            <RightSidebar onCoursesClick={() => setSection('courses')} />
           </>
         )}
       </div>

@@ -122,7 +122,7 @@ export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, on
   return (
     <>
     <div className="library-page">
-      <AnimatedNav activeId="library" avatarUrl={avatarUrl} onNavigate={handleNav} />
+      <AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={handleNav} />
 
       <div className="library-main">
 

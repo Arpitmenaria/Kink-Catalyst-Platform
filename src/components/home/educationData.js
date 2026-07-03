@@ -176,6 +176,7 @@ const RICH_MODULES = {
           rightSections: [
             { heading: 'Establishing a Type Scale', body: 'A type scale defines the set of font sizes available within a system. Rather than choosing sizes arbitrarily, a modular scale — such as the Major Third (1.25) or Perfect Fourth (1.333) — ensures each step in the scale bears a harmonic relationship to the next.' },
             { heading: 'Weight & Hierarchy', body: 'Font weight is one of the most powerful tools for establishing visual hierarchy. A system that uses weight strategically can guide the reader\'s eye through a layout, surfacing the most important information first and allowing supporting content to recede.' },
+            { heading: 'Line-Height & Rhythm', body: 'Vertical rhythm comes from consistent line-height ratios across every text style in the system. Pairing each font size with a deliberate line-height keeps paragraphs, headings, and UI labels feeling like part of the same grid, even when they sit far apart on the page.' },
           ],
           callout: { type: 'KEY CONCEPT', text: '"A type system is not a set of rules — it is a vocabulary. The richer the vocabulary, the more precisely you can express design intent."' },
         },
@@ -192,6 +193,7 @@ const RICH_MODULES = {
           rightSections: [
             { heading: 'Design Tokens & Atomic Elements', body: 'At the most granular level, we find design tokens — the sub-atomic particles of our UI. These are the values for colors, spacing, and typography that ensure every component speaks the same visual language. By abstracting these values, we create a single source of truth that simplifies maintenance and enables multi-platform theming with ease.' },
             { heading: 'Atomic Components', body: 'Atomic components are the smallest functional units of our interface, such as buttons, inputs, and icons. They are designed to be context-agnostic, meaning they can function reliably regardless of where they are placed. This modularity is what allows for the rapid assembly of complex views while maintaining a high degree of UI integrity.' },
+            { heading: 'Theming & Multi-Platform Tokens', body: 'Because tokens are abstracted away from any single value, the same token set can drive a light theme, a dark theme, or a completely different brand — just by swapping the underlying values. This is what makes a token-based system scale cleanly across web, iOS, and Android without triplicating design decisions.' },
           ],
           callout: { type: 'PRO TIP', text: '"Always document the \'Why\' behind a component, not just the \'What\'. Usage guidelines are as critical as the code itself."' },
         },
@@ -208,6 +210,7 @@ const RICH_MODULES = {
           rightSections: [
             { heading: 'Organism Composition', body: 'Organisms are complex UI components assembled from groups of molecules and atoms. A navigation bar, a product card, or a data table are organisms. They represent distinct sections of an interface that can be placed into page templates.' },
             { heading: 'Template & Page Patterns', body: 'Templates place organisms into a layout, defining the skeletal structure of a page. Pages are specific instances of templates, populated with real representative content. The transition from template to page is where the quality of the design system is fully tested.' },
+            { heading: 'Documentation & Governance', body: 'A design system is only as strong as its documentation. Every component needs clear usage guidelines, do/don\'t examples, and an owner responsible for reviewing proposed changes — otherwise the system quietly drifts out of sync with the product it is meant to serve.' },
           ],
           callout: { type: 'NOTE', text: '"In practice, the atomic hierarchy is a mental model, not a strict taxonomy. What matters most is that your team shares a consistent vocabulary for describing complexity."' },
         },
@@ -231,6 +234,7 @@ const RICH_MODULES = {
           rightSections: [
             { heading: 'Managing High-Influence Stakeholders', body: 'Stakeholders with high influence and high interest — your core partners — require proactive, frequent communication. They should be involved in major decisions, previewed on roadmap changes, and engaged in discovery when possible.' },
             { heading: 'Communicating with Executives', body: 'Executives typically fall in the high-influence, lower-day-to-day-interest quadrant. Your communication with this group should be concise, outcome-focused, and tied to business metrics. Lead with impact, not activity.' },
+            { heading: 'Working with Low-Influence, High-Interest Groups', body: 'This group — often internal advocates or highly engaged users — rarely holds decision-making power but can become valuable allies. Keep them informed and give them a channel to be heard, even when their requests don\'t make the roadmap.' },
           ],
           callout: { type: 'PRO TIP', text: '"Never let your stakeholder map become static. Influence and interest shift as organizations evolve. Revisit it quarterly."' },
         },
@@ -247,6 +251,7 @@ const RICH_MODULES = {
           rightSections: [
             { heading: 'Informed Consent', body: 'Participants must clearly understand what they are agreeing to before a session begins. This means plain-language explanations of how data will be used, who will see it, how long it will be retained, and the participant\'s right to withdraw at any time without consequence.' },
             { heading: 'Handling Sensitive Data', body: 'When research surfaces sensitive information — financial stress, health concerns, workplace conflict — the researcher has a heightened duty of care. Data should be anonymized as soon as practically possible, stored securely, and shared only on a strict need-to-know basis.' },
+            { heading: 'Compensating Participants Fairly', body: 'Compensation should reflect the time and effort a session actually takes, not the minimum a team can get away with paying. Fair compensation also reduces bias in who is willing to participate, leading to a more representative pool of research findings.' },
           ],
           callout: { type: 'KEY CONCEPT', text: '"The goal of ethical research is not just to protect the organization from liability — it is to honor the humanity of every participant who trusted you."' },
         },
@@ -270,6 +275,7 @@ const RICH_MODULES = {
           rightSections: [
             { heading: 'Reading the Flamegraph', body: 'Each bar in the flamegraph represents a component that rendered during the recorded interaction. Width corresponds to render time. A wide bar is not inherently problematic — it may simply be a complex component that renders quickly. The colors indicate relative render time within the commit: gray means the component did not render in that commit.' },
             { heading: 'Why Did This Render?', body: 'The "Why did this render?" feature, available when the "Record why each component rendered while profiling" setting is enabled, is one of the most valuable tools in the performance engineer\'s arsenal. It surfaces the exact prop or state change that triggered a render, eliminating hours of manual debugging.' },
+            { heading: 'Interpreting Commit Timings', body: 'The commit duration shown at the top of each flamegraph bar is the total time React spent applying that batch of changes to the DOM. Tracking this number across interactions — rather than staring at any single flamegraph — is what reveals whether a performance fix actually moved the needle.' },
           ],
           callout: { type: 'PRO TIP', text: '"Always profile in production mode. React development mode intentionally adds overhead that can misrepresent real-world performance characteristics."' },
         },

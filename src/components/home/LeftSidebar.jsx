@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { FRIEND_SUGGESTIONS, ALEX_AVATAR } from './mockData';
+import { FRIEND_SUGGESTIONS, ALEX_AVATAR, GALLERY_IMAGES } from './mockData';
 import CreatePostModal from './CreatePostModal';
 import AnimatedNav from './AnimatedNav';
 import { HUB_GROUPS } from './GroupsPage';
@@ -224,6 +224,22 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                   <p className="friend-name">{e.title}</p>
                   <p className="friend-sub">{e.month} {e.day}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gallery */}
+        <div className="right-card">
+          <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
+            <p className="right-section-title">Gallery</p>
+            <button className="section-link" style={{ marginLeft: 'auto' }}>View all</button>
+          </div>
+          <div className="gallery-grid">
+            {GALLERY_IMAGES.map((src, i) => (
+              <div key={i} className="gallery-thumb" style={{ overflow: 'hidden' }}>
+                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {i === 5 && <div className="gallery-more">+42</div>}
               </div>
             ))}
           </div>

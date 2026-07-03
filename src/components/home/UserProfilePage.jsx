@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
-import { MOCK_POSTS, MOCK_USERS, ALEX_AVATAR } from './mockData';
+import ReportModal from './ReportModal';
+import { MOCK_POSTS, MOCK_USERS, ALEX_AVATAR, PROFILE_TABS } from './mockData';
+import { AboutTab, ConnectionsTab, MediaTab, EventsTab, FollowPanel } from './ProfilePage';
 import './ProfilePage.css';
 
 function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
@@ -11,6 +13,7 @@ function CalIcon()          { return <svg width="14" height="14" viewBox="0 0 24
 function MsgIcon()          { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function PersonAddIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>; }
 function CheckIcon()        { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
+function ReportIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>; }
 
 function initials(name = '') {
   return name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -18,9 +21,14 @@ function initials(name = '') {
 
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
 
-export default function UserProfilePage({ userId, onBack, onMessageUser, onEventsClick, onGroupsClick, onLibraryClick, onMinisitesClick }) {
+export default function UserProfilePage({ userId, onBack, onMessageUser, onEventsClick, onEventsCreateClick, onGroupsClick, onCoursesClick, onLibraryClick, onMinisitesClick, onUserClick }) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('Feed');
+  const [followPanel, setFollowPanel] = useState(null); // 'followers' | 'following' | null
+  const [followSearch, setFollowSearch] = useState('');
+  const [followingIds, setFollowingIds] = useState(new Set([11, 12, 13, 14, 15, 16, 1, 3, 5, 7]));
 
   const viewedUser  = typeof userId === 'object' && userId !== null ? userId : MOCK_USERS[userId];
   const resolvedId  = viewedUser?._id ?? userId;
@@ -30,20 +38,20 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
   const avatarUrl   = viewedUser?.avatar ?? ALEX_AVATAR;
   const coverUrl    = viewedUser?.coverUrl ?? DEFAULT_COVER;
 
+  function handleNav(id) {
+    if (id === 'home')      onBack?.();
+    if (id === 'events')    onEventsClick?.();
+    if (id === 'friends')   onGroupsClick?.();
+    if (id === 'messages')  onMessageUser?.(resolvedId);
+    if (id === 'courses')   onCoursesClick?.();
+    if (id === 'library')   onLibraryClick?.();
+    if (id === 'minisites') onMinisitesClick?.();
+  }
+
   return (
+    <>
     <div className="prof-page">
-      <AnimatedNav
-        activeId="home"
-        avatarUrl={ALEX_AVATAR}
-        onNavigate={(id) => {
-          if (id === 'home')      onBack?.();
-          if (id === 'events')    onEventsClick?.();
-          if (id === 'friends')   onGroupsClick?.();
-          if (id === 'messages')  onMessageUser?.(resolvedId);
-          if (id === 'library')   onLibraryClick?.();
-          if (id === 'minisites') onMinisitesClick?.();
-        }}
-      />
+      <AnimatedNav activeId="home" avatarUrl={ALEX_AVATAR} onNavigate={handleNav} />
 
       <div className="prof-main">
         <div className="prof-cover">
@@ -82,6 +90,22 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
                 </>
               )}
             </div>
+            <div className="prof-counts-row">
+              <button className="prof-count-item" onClick={() => { setFollowSearch(''); setFollowPanel('followers'); }}>
+                <span className="prof-count-num">8,400</span>
+                <span className="prof-count-lbl">Followers</span>
+              </button>
+              <span className="prof-count-div" />
+              <button className="prof-count-item" onClick={() => { setFollowSearch(''); setFollowPanel('following'); }}>
+                <span className="prof-count-num">1,200</span>
+                <span className="prof-count-lbl">Following</span>
+              </button>
+              <span className="prof-count-div" />
+              <button className="prof-count-item">
+                <span className="prof-count-num">{viewedPosts.length}</span>
+                <span className="prof-count-lbl">Posts</span>
+              </button>
+            </div>
           </div>
 
           <div className="prof-actions">
@@ -102,32 +126,66 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
               style={{ background: '#1a2338', border: '1px solid #1e2a42', color: '#cbd5e1' }}
               onClick={() => onMessageUser?.(resolvedId)}
             >
-              <MsgIcon /> Message
+              <MsgIcon /> Chat
+            </button>
+            <button
+              className="prof-edit-btn"
+              style={{ background: '#1a2338', border: '1px solid #1e2a42', color: '#ef4444' }}
+              onClick={() => setReportOpen(true)}
+            >
+              <ReportIcon /> Report
             </button>
           </div>
         </div>
 
-        <div className="prof-content" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-          {viewedUser?.bio && (
-            <div className="about-card" style={{ marginBottom: 16 }}>
-              <div className="about-card-header">
-                <span className="about-card-label">About</span>
-              </div>
-              <p className="about-bio-text">{viewedUser.bio}</p>
+        <div className="prof-tabs">
+          {PROFILE_TABS.map(tab => (
+            <button
+              key={tab}
+              className={`prof-tab${activeTab === tab ? ' prof-tab--active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+              {tab === 'Connections' && <span className="prof-tab-badge">300</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className={`prof-content${(activeTab === 'Connections' || activeTab === 'Events' || activeTab === 'Photos') ? ' prof-content--wide' : ''}`}>
+          {activeTab === 'Feed' && (
+            <div className="prof-feed">
+              {viewedPosts.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#5c6a8c', fontSize: 14 }}>
+                  No posts yet.
+                </div>
+              )}
+              {viewedPosts.map(post => (
+                <PostCard key={post._id} post={post} />
+              ))}
             </div>
           )}
-          <div className="prof-feed">
-            {viewedPosts.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '32px', color: '#5c6a8c', fontSize: 14 }}>
-                No posts yet.
-              </div>
-            )}
-            {viewedPosts.map(post => (
-              <PostCard key={post._id} post={post} />
-            ))}
-          </div>
+
+          {activeTab === 'About'       && <AboutTab />}
+          {activeTab === 'Connections' && <ConnectionsTab hideSearch onUserClick={onUserClick} />}
+          {activeTab === 'Photos'      && <MediaTab />}
+          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} />}
         </div>
       </div>
     </div>
+
+    {followPanel && (
+      <FollowPanel
+        followPanel={followPanel}
+        setFollowPanel={setFollowPanel}
+        followSearch={followSearch}
+        setFollowSearch={setFollowSearch}
+        followingIds={followingIds}
+        setFollowingIds={setFollowingIds}
+        onClose={() => setFollowPanel(null)}
+      />
+    )}
+
+    {reportOpen && <ReportModal userId={resolvedId} onClose={() => setReportOpen(false)} />}
+    </>
   );
 }

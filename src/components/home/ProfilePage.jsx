@@ -3,11 +3,11 @@ import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { MOCK_POSTS, ALEX_AVATAR, FRIEND_SUGGESTIONS, SIDEBAR_EVENTS, GALLERY_IMAGES } from './mockData';
+import { MOCK_POSTS, ALEX_AVATAR, FRIEND_SUGGESTIONS, SIDEBAR_EVENTS, GALLERY_IMAGES, PROFILE_TABS } from './mockData';
 import './ProfilePage.css';
 
 const COVER_URL = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
-const TABS = ['Feed', 'About', 'Connections', 'Photos', 'Events'];
+const TABS = PROFILE_TABS;
 
 const DEMO_FOLLOWERS = [
   { id: 1,  name: 'Elena Moretti',    role: 'UX Designer at Figma',          mutual: 12, avatar: 'https://i.pravatar.cc/150?img=47', following: true  },
@@ -241,7 +241,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
   );
 }
 
-function ConnectionsTab({ onUserClick }) {
+export function ConnectionsTab({ onUserClick, hideSearch }) {
   const [removed,   setRemoved]   = useState(new Set());
   const [viewMode,  setViewMode]  = useState('list');
   const [search,    setSearch]    = useState('');
@@ -302,16 +302,18 @@ function ConnectionsTab({ onUserClick }) {
 
       {/* ── Filter bar ── */}
       <div className="prof-conn-filter-bar" ref={filterBarRef}>
-        <div className="prof-conn-search-wrap">
-          <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input
-            className="prof-conn-search"
-            type="text"
-            placeholder="Search connections..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+        {!hideSearch && (
+          <div className="prof-conn-search-wrap">
+            <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              className="prof-conn-search"
+              type="text"
+              placeholder="Search connections..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        )}
         <button
           className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
           onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
@@ -529,7 +531,7 @@ function GalleryPanel() {
   );
 }
 
-function MediaTab() {
+export function MediaTab() {
   return (
     <div className="prof-conn-layout">
     <div className="media-tab">
@@ -584,7 +586,7 @@ function UpcomingEventsPanel() {
   );
 }
 
-function EventsTab({ onEventsClick, onCreateEvent }) {
+export function EventsTab({ onEventsClick, onCreateEvent }) {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [openMenuId,    setOpenMenuId]    = useState(null);
 
@@ -650,7 +652,7 @@ function EventsTab({ onEventsClick, onCreateEvent }) {
 
 const BIO_LIMIT = 180;
 
-function AboutTab() {
+export function AboutTab() {
   const [bio,         setBio]         = useState(DEFAULT_BIO);
   const [editingBio,  setEditingBio]  = useState(false);
   const [draftBio,    setDraftBio]    = useState(DEFAULT_BIO);
@@ -821,6 +823,62 @@ function AboutTab() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+export function FollowPanel({ followPanel, setFollowPanel, followSearch, setFollowSearch, followingIds, setFollowingIds, onClose }) {
+  const list = (followPanel === 'followers' ? DEMO_FOLLOWERS : DEMO_FOLLOWING)
+    .filter(p => p.name.toLowerCase().includes(followSearch.toLowerCase()) || p.role.toLowerCase().includes(followSearch.toLowerCase()));
+  return (
+    <div className="fp-overlay" onClick={onClose}>
+      <div className="fp-panel" onClick={e => e.stopPropagation()}>
+        <div className="fp-header">
+          <div className="fp-tabs">
+            <button className={`fp-tab${followPanel === 'followers' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('followers'); }}>
+              Followers <span className="fp-tab-count">8,400</span>
+            </button>
+            <button className={`fp-tab${followPanel === 'following' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('following'); }}>
+              Following <span className="fp-tab-count">1,200</span>
+            </button>
+          </div>
+          <button className="fp-close" onClick={onClose}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div className="fp-search-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="fp-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input className="fp-search" placeholder={`Search ${followPanel}…`} value={followSearch} onChange={e => setFollowSearch(e.target.value)} autoFocus />
+        </div>
+        <div className="fp-list">
+          {list.length === 0 && <p className="fp-empty">No results found</p>}
+          {list.map(person => (
+            <div className="fp-person" key={person.id}>
+              <img className="fp-avatar" src={person.avatar} alt={person.name} />
+              <div className="fp-info">
+                <span className="fp-name">{person.name}</span>
+                <span className="fp-role">{person.role}</span>
+                {person.mutual > 0 && (
+                  <span className="fp-mutual">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    {person.mutual} mutual connections
+                  </span>
+                )}
+              </div>
+              <button
+                className={`fp-follow-btn${followingIds.has(person.id) ? ' fp-follow-btn--following' : ''}`}
+                onClick={() => setFollowingIds(prev => {
+                  const s = new Set(prev);
+                  s.has(person.id) ? s.delete(person.id) : s.add(person.id);
+                  return s;
+                })}
+              >
+                {followingIds.has(person.id) ? 'Following' : '+ Follow'}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1009,61 +1067,17 @@ export default function ProfilePage({
     </div>
     {createPostOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreatePostOpen(false)} onNavigateToEvents={onEventsClick} />}
 
-    {followPanel && (() => {
-      const list = (followPanel === 'followers' ? DEMO_FOLLOWERS : DEMO_FOLLOWING)
-        .filter(p => p.name.toLowerCase().includes(followSearch.toLowerCase()) || p.role.toLowerCase().includes(followSearch.toLowerCase()));
-      return (
-        <div className="fp-overlay" onClick={() => setFollowPanel(null)}>
-          <div className="fp-panel" onClick={e => e.stopPropagation()}>
-            <div className="fp-header">
-              <div className="fp-tabs">
-                <button className={`fp-tab${followPanel === 'followers' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('followers'); }}>
-                  Followers <span className="fp-tab-count">8,400</span>
-                </button>
-                <button className={`fp-tab${followPanel === 'following' ? ' fp-tab--active' : ''}`} onClick={() => { setFollowSearch(''); setFollowPanel('following'); }}>
-                  Following <span className="fp-tab-count">1,200</span>
-                </button>
-              </div>
-              <button className="fp-close" onClick={() => setFollowPanel(null)}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div className="fp-search-wrap">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="fp-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input className="fp-search" placeholder={`Search ${followPanel}…`} value={followSearch} onChange={e => setFollowSearch(e.target.value)} autoFocus />
-            </div>
-            <div className="fp-list">
-              {list.length === 0 && <p className="fp-empty">No results found</p>}
-              {list.map(person => (
-                <div className="fp-person" key={person.id}>
-                  <img className="fp-avatar" src={person.avatar} alt={person.name} />
-                  <div className="fp-info">
-                    <span className="fp-name">{person.name}</span>
-                    <span className="fp-role">{person.role}</span>
-                    {person.mutual > 0 && (
-                      <span className="fp-mutual">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        {person.mutual} mutual connections
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className={`fp-follow-btn${followingIds.has(person.id) ? ' fp-follow-btn--following' : ''}`}
-                    onClick={() => setFollowingIds(prev => {
-                      const s = new Set(prev);
-                      s.has(person.id) ? s.delete(person.id) : s.add(person.id);
-                      return s;
-                    })}
-                  >
-                    {followingIds.has(person.id) ? 'Following' : '+ Follow'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    })()}
+    {followPanel && (
+      <FollowPanel
+        followPanel={followPanel}
+        setFollowPanel={setFollowPanel}
+        followSearch={followSearch}
+        setFollowSearch={setFollowSearch}
+        followingIds={followingIds}
+        setFollowingIds={setFollowingIds}
+        onClose={() => setFollowPanel(null)}
+      />
+    )}
     </>
   );
 }

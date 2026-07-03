@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchReportReasons, reportPost } from '../../store/slices/postsSlice';
+import { fetchReportReasons, reportPost, reportUser } from '../../store/slices/postsSlice';
 
-export default function ReportModal({ postId, onClose }) {
+export default function ReportModal({ postId, userId, onClose }) {
   const dispatch = useDispatch();
   const { reportReasons, reasonsLoading, reportSubmitting } = useSelector(s => s.posts);
   const [selected, setSelected] = useState('');
@@ -20,7 +20,8 @@ export default function ReportModal({ postId, onClose }) {
 
   async function handleSubmit() {
     if (!selected || reportSubmitting) return;
-    const result = await dispatch(reportPost({ postId, reason: selected }));
+    const action = userId ? reportUser({ userId, reason: selected }) : reportPost({ postId, reason: selected });
+    const result = await dispatch(action);
     if (!result.error) setDone(true);
   }
 
@@ -32,7 +33,7 @@ export default function ReportModal({ postId, onClose }) {
     <div className="report-overlay" onClick={handleOverlay}>
       <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
         <div className="report-modal-header">
-          <h2 className="report-modal-title" id="report-title">Report</h2>
+          <h2 className="report-modal-title" id="report-title">{userId ? 'Report User' : 'Report'}</h2>
           <button className="report-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
