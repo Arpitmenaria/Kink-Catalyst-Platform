@@ -14,7 +14,8 @@
       "Bash(node -e ' *)",
       "Bash(npx eslint *)",
       "Bash(git stash *)",
-      "Bash(lsof -ti:5173)"
+      "Bash(lsof -ti:5173)",
+      "Bash(xargs -I{} ps -p {} -o pid,command)"
     ]
   },
   "enableAllProjectMcpServers": true,

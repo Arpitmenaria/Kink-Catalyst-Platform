@@ -14,6 +14,7 @@ function NoteIcon()       { return <svg width="14" height="14" viewBox="0 0 24 2
 function PlayCircleIcon() { return <svg className="cdp-chapter-video-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>; }
 function StarIcon()       { return <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>; }
 function ClockIcon()      { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+function SparkIcon()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>; }
 
 const CALLOUT_STYLE = {
   'PRO TIP':     { border: '#06b6d4', bg: '#06b6d408', label: '#06b6d4', Icon: BulbIcon },
@@ -89,18 +90,23 @@ export default function CourseDetailPage({ courseId, onBack }) {
           </button>
         </div>
 
-        <div className="cr-topbar-center cdp-header-progress">
-          <div className="cr-progress-track">
-            <div className="cr-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <span className="cr-page-label">{pct}% complete</span>
+        <div className="cr-topbar-center">
+          {!progress.isEnrolled(courseId) && (
+            <button className="cdp-enroll-cta" onClick={() => progress.enrollCourse(courseId)}>
+              <SparkIcon />
+              Enroll this course
+              <span className="cdp-enroll-cta-price">{priceLabel(course)}</span>
+            </button>
+          )}
         </div>
 
         <div className="cr-topbar-right">
           <span className="cdp-meta-item cdp-meta-item--rating"><StarIcon /> {course.rating}</span>
           <span className="cdp-meta-item"><ClockIcon /> {course.duration}</span>
           <span className="cr-chapter-pill">{course.instructor}</span>
-          <span className={`cdp-price-badge cdp-price-badge--highlight${course.isFree ? ' cdp-price-badge--free' : ''}`}>{priceLabel(course)}</span>
+          <span className={`cdp-price-badge cdp-price-badge--highlight${course.isFree ? ' cdp-price-badge--free' : ''}`}>
+            <SparkIcon /> Enroll this course <span className="cdp-enroll-cta-price">{priceLabel(course)}</span>
+          </span>
         </div>
       </header>
 

@@ -5,6 +5,7 @@ import ExplorePage from './ExplorePage';
 import LearningActivityPage from './LearningActivityPage';
 import CourseDetailPage from './CourseDetailPage';
 import HistoryPage from './HistoryPage';
+import EnrolledCoursesPage from './EnrolledCoursesPage';
 import CreatePostModal from './CreatePostModal';
 import { ALEX_AVATAR } from './mockData';
 import { COURSES, RESOURCES, CATEGORIES, categoryLabel, categoryColor, priceLabel, RESOURCE_TYPE_COLOR } from './educationData';
@@ -21,7 +22,6 @@ function BookIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fil
 function CheckCircleIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>; }
 function TimerIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function ExternalLinkIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>; }
-function BackArrowIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 
 const CATEGORY_TABS = ['All Topics', ...CATEGORIES.map(c => c.label)];
 
@@ -39,11 +39,14 @@ function CategoryBadge({ categoryId, inline }) {
 }
 
 /* ── Price badge ── */
-function PriceBadge({ course }) {
+function PriceBadge({ course, inline }) {
   const free = course.isFree;
   const color = free ? '#10b981' : '#f59e0b';
   return (
-    <span className="cs-cat-badge" style={{ color, background: color + '22', borderColor: color + '44' }}>
+    <span
+      className="cs-cat-badge"
+      style={{ color, background: color + '22', borderColor: color + '44', ...(inline ? { position: 'static' } : null) }}
+    >
       {priceLabel(course)}
     </span>
   );
@@ -70,10 +73,12 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
   const [showActivity,     setShowActivity]     = useState(false);
   const [activeCourseId,   setActiveCourseId]   = useState(null);
   const [showHistory,      setShowHistory]      = useState(false);
+  const [showEnrolled,     setShowEnrolled]     = useState(false);
   const [createPostOpen,   setCreatePostOpen]   = useState(false);
 
   if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
   if (showHistory) return <HistoryPage onBack={() => setShowHistory(false)} />;
+  if (showEnrolled) return <EnrolledCoursesPage onBack={() => setShowEnrolled(false)} />;
   if (showExplore)   return <ExplorePage onBack={() => setShowExplore(false)} onOpenCourse={id => { setShowExplore(false); setActiveCourseId(id); }} />;
   if (showActivity)  return (
     <LearningActivityPage
@@ -112,7 +117,6 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
     { Icon: BookIcon,       label: 'COURSES ENROLLED', value: String(progress.enrolledCourseIds.size), color: '#3b82f6' },
     { Icon: CheckCircleIcon,label: 'COMPLETED',         value: String(completedCount),                  color: '#10b981' },
     { Icon: TimerIcon,      label: 'HOURS SPENT',       value: '48h',                                   color: '#8b5cf6' },
-    { Icon: HeartIcon,      label: 'FAVOURITES',        value: String(wishlist.size),                   color: '#ef4444' },
   ];
 
   const filteredExplore = (activeCategory === 'All Topics'
@@ -133,21 +137,19 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
 
       <div className="courses-main">
 
-        <button className="cs-back-btn" onClick={onBack} title="Back to Feed">
-          <BackArrowIcon />
-        </button>
-
         {/* ── Stats row ── */}
         <div className="cs-stats-row">
           {STAT_CARDS.map(({ Icon, label, value, color }) => {
             const isCompleted = label === 'COMPLETED';
+            const isEnrolled = label === 'COURSES ENROLLED';
+            const clickable = isCompleted || isEnrolled;
             return (
               <div
                 key={label}
                 className="cs-stat-card"
-                style={isCompleted ? { cursor: 'pointer' } : undefined}
-                onClick={isCompleted ? () => setShowHistory(true) : undefined}
-                title={isCompleted ? 'View learning history' : undefined}
+                style={clickable ? { cursor: 'pointer' } : undefined}
+                onClick={isCompleted ? () => setShowHistory(true) : isEnrolled ? () => setShowEnrolled(true) : undefined}
+                title={isCompleted ? 'View learning history' : isEnrolled ? 'View enrolled courses' : undefined}
               >
                 <div className="cs-stat-icon" style={{ color, background: color + '18' }}>
                   <Icon />
@@ -181,6 +183,9 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
                   </div>
                   <div className="cs-ongoing-body">
                     <p className="cs-ongoing-title">{c.title}</p>
+                    <div className="cs-ongoing-price-row">
+                      <PriceBadge course={c} inline />
+                    </div>
                     <div className="cs-progress-row">
                       <span className="cs-progress-label">Progress</span>
                       <span className="cs-progress-pct">{pct}%</span>
@@ -229,15 +234,14 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
                     <div className="cs-explore-meta">
                       <span className="cs-meta-item"><UserIcon /> {c.instructor}</span>
                       <span className="cs-meta-item cs-meta-rating"><StarIcon /> {c.rating}</span>
-                      <PriceBadge course={c} />
                     </div>
-                    <div className="cs-explore-footer">
+                    <div className="cs-explore-footer cs-explore-footer--stacked">
                       <span className="cs-duration"><ClockIcon /> {c.duration}</span>
                       <button
-                        className={`cs-enroll-btn${enrolled ? ' cs-enroll-btn--done' : ''}`}
+                        className={`cs-enroll-btn${enrolled ? ' cs-enroll-btn--done' : ' cs-enroll-btn--cta'}`}
                         onClick={() => enrolled ? progress.unenrollCourse(c.id) : progress.enrollCourse(c.id)}
                       >
-                        {enrolled ? 'Enrolled ✓' : 'Enroll Now'}
+                        {enrolled ? 'Enrolled ✓' : <>Enroll this course <span className="cs-enroll-btn-price">{priceLabel(c)}</span></>}
                       </button>
                     </div>
                   </div>
@@ -254,7 +258,9 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
             <button className="cs-link" onClick={() => setShowExplore(true)}>View All</button>
           </div>
           <div className="cs-rec-grid">
-            {recommended.map((c, i) => (
+            {recommended.map((c, i) => {
+              const enrolled = progress.isEnrolled(c.id);
+              return (
               <div key={c.id} className="cs-rec-card" style={{ '--ci': i }}>
                 <div className="cs-rec-thumb" onClick={() => setActiveCourseId(c.id)} style={{ cursor: 'pointer' }}>
                   <img src={c.img} alt={c.title} />
@@ -265,21 +271,29 @@ export default function CoursesPage({ onBack, onMessagesClick, onEventsClick, on
                   <div className="cs-rec-meta">
                     <span className="cs-meta-item"><UserIcon /> {c.instructor}</span>
                     <span className="cs-meta-item cs-meta-rating"><StarIcon /> {c.rating}</span>
-                    <PriceBadge course={c} />
                   </div>
-                  <div className="cs-rec-footer">
-                    <span className="cs-duration"><ClockIcon /> {c.duration}</span>
+                  <div className="cs-rec-footer cs-rec-footer--stacked">
+                    <div className="cs-rec-footer-row">
+                      <span className="cs-duration"><ClockIcon /> {c.duration}</span>
+                      <button
+                        className={`cs-wish-btn${wishlist.has(c.id) ? ' cs-wish-btn--active' : ''}`}
+                        onClick={() => toggleWishlist(c.id)}
+                        aria-label="Wishlist"
+                      >
+                        <HeartIcon />
+                      </button>
+                    </div>
                     <button
-                      className={`cs-wish-btn${wishlist.has(c.id) ? ' cs-wish-btn--active' : ''}`}
-                      onClick={() => toggleWishlist(c.id)}
-                      aria-label="Wishlist"
+                      className={`cs-enroll-btn${enrolled ? ' cs-enroll-btn--done' : ' cs-enroll-btn--cta'}`}
+                      onClick={() => enrolled ? progress.unenrollCourse(c.id) : progress.enrollCourse(c.id)}
                     >
-                      <HeartIcon />
+                      {enrolled ? 'Enrolled ✓' : <>Enroll this course <span className="cs-enroll-btn-price">{priceLabel(c)}</span></>}
                     </button>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

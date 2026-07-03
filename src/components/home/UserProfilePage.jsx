@@ -165,10 +165,10 @@ export default function UserProfilePage({ userId, onBack, onMessageUser, onEvent
             </div>
           )}
 
-          {activeTab === 'About'       && <AboutTab />}
+          {activeTab === 'About'       && <AboutTab readOnly />}
           {activeTab === 'Connections' && <ConnectionsTab hideSearch onUserClick={onUserClick} />}
-          {activeTab === 'Photos'      && <MediaTab />}
-          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} />}
+          {activeTab === 'Photos'      && <MediaTab readOnly />}
+          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} readOnly />}
         </div>
       </div>
     </div>

@@ -230,6 +230,15 @@
 }
 .hp-item-meta svg { flex-shrink: 0; }
 
+.hp-item-detail {
+  font-size: 11px;
+  color: #475569;
+  margin: 3px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hp-item-badge {
   flex-shrink: 0;
   font-size: 10px;

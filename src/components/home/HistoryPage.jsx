@@ -1,4 +1,4 @@
-import { getCourseById, getResourceById, RESOURCE_TYPE_COLOR } from './educationData';
+import { getCourseById, getResourceById, RESOURCE_TYPE_COLOR, categoryLabel } from './educationData';
 import useEducationProgress from './useEducationProgress';
 import CourseDetailPage from './CourseDetailPage';
 import ResourceDetailPage from './ResourceDetailPage';
@@ -115,6 +115,10 @@ export default function HistoryPage({ onBack }) {
                   const target = entry.type === 'course' ? getCourseById(entry.courseId) : getResourceById(entry.resourceId);
                   const typeLabel = entry.type === 'course' ? 'Course' : target?.type ?? 'Resource';
                   const badgeColor = entry.type === 'course' ? '#3b82f6' : (RESOURCE_TYPE_COLOR[target?.type] ?? '#818cf8');
+                  const detailParts = entry.type === 'course'
+                    ? [target?.instructor, target?.duration, target && categoryLabel(target.category)]
+                    : [target?.author?.name, target && categoryLabel(target.category)];
+                  const detailLine = detailParts.filter(Boolean).join(' · ');
                   return (
                     <button key={i} className="hp-item" onClick={() => openEntry(entry)}>
                       <img src={entry.img} alt="" className="hp-item-img" />
@@ -124,6 +128,7 @@ export default function HistoryPage({ onBack }) {
                           {entry.type === 'course' ? <CourseIcon /> : <ArticleIcon />}
                           {timeAgo(entry.viewedAt)}
                         </p>
+                        {detailLine && <p className="hp-item-detail">{detailLine}</p>}
                       </div>
                       <span
                         className="hp-item-badge"

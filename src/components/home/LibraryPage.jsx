@@ -1,29 +1,19 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
-import BookmarkedResourcesPage from './BookmarkedResourcesPage';
 import ResourceDetailPage from './ResourceDetailPage';
-import HistoryPage from './HistoryPage';
 import CreatePostModal from './CreatePostModal';
 import { ALEX_AVATAR } from './mockData';
 import { RESOURCES, CATEGORIES } from './educationData';
 import useEducationProgress from './useEducationProgress';
+import './CoursesPage.css';
 import './LibraryPage.css';
 
 /* ── Icons ── */
+function BackArrowIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 function FilterIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>; }
 function BookmarkIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>; }
-function BookOpenIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>; }
-function CheckCircleIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>; }
-function TimerIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function SearchIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
-
-/* ── Static data ── */
-const STAT_CARDS = [
-  { Icon: BookOpenIcon,    label: 'COURSES ENROLLED', value: '12',  color: '#3b82f6' },
-  { Icon: CheckCircleIcon, label: 'COMPLETED',         value: '5',   color: '#10b981' },
-  { Icon: TimerIcon,       label: 'HOURS SPENT',       value: '48h', color: '#8b5cf6' },
-];
 
 const TAB_TYPES = ['All', 'Articles', 'Guides', 'Videos', 'Documents'];
 
@@ -78,14 +68,10 @@ export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, on
   const [activeTab,     setActiveTab]     = useState('All');
   const [selCategories, setSelCategories] = useState(new Set());
   const [searchQuery,   setSearchQuery]   = useState('');
-  const [showBookmarks, setShowBookmarks] = useState(false);
   const [activeResourceId, setActiveResourceId] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
 
   if (activeResourceId) return <ResourceDetailPage resourceId={activeResourceId} onBack={() => setActiveResourceId(null)} />;
-  if (showHistory) return <HistoryPage onBack={() => setShowHistory(false)} />;
-  if (showBookmarks) return <BookmarkedResourcesPage onBack={() => setShowBookmarks(false)} />;
 
   function handleNav(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
@@ -126,36 +112,14 @@ export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, on
 
       <div className="library-main">
 
+        <button className="cs-back-btn" onClick={() => onCoursesClick?.()} title="Back to Courses">
+          <BackArrowIcon />
+        </button>
+
         {/* ── Page header ── */}
         <div className="lib-header">
-          <h1 className="lib-title">Education Library</h1>
+          <h1 className="lib-title">Popular Resources</h1>
           <p className="lib-subtitle">Explore thousands of curated resources for your growth.</p>
-        </div>
-
-        {/* ── Stats row ── */}
-        <div className="lib-stats-row">
-          {STAT_CARDS.map(({ Icon, label, value, color }, i) => {
-            const isEnrolled = label === 'COURSES ENROLLED';
-            const isCompleted = label === 'COMPLETED';
-            const clickable = isEnrolled || isCompleted;
-            return (
-              <div
-                key={label}
-                className={`lib-stat-card${clickable ? ' lib-stat-card--link' : ''}`}
-                style={{ '--si': i }}
-                onClick={isEnrolled ? () => onCoursesClick?.() : isCompleted ? () => setShowHistory(true) : undefined}
-                title={isEnrolled ? 'View enrolled courses' : isCompleted ? 'View learning history' : undefined}
-              >
-                <div className="lib-stat-icon" style={{ color, background: color + '18' }}>
-                  <Icon />
-                </div>
-                <div className="lib-stat-body">
-                  <p className="lib-stat-label">{label}</p>
-                  <p className="lib-stat-value">{value}</p>
-                </div>
-              </div>
-            );
-          })}
         </div>
 
         {/* ── Search ── */}
@@ -180,9 +144,6 @@ export default function LibraryPage({ onBack, onMessagesClick, onEventsClick, on
               {tab}
             </button>
           ))}
-          <button className="lib-tab lib-tab--saved" onClick={() => setShowBookmarks(true)}>
-            🔖 Saved{progress.savedResourceIds.size > 0 ? ` (${progress.savedResourceIds.size})` : ''}
-          </button>
         </div>
 
         {/* ── Two-column: filters + grid ── */}

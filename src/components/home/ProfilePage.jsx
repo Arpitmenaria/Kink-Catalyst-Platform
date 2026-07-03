@@ -531,19 +531,21 @@ function GalleryPanel() {
   );
 }
 
-export function MediaTab() {
+export function MediaTab({ readOnly }) {
   return (
     <div className="prof-conn-layout">
     <div className="media-tab">
       <div className="media-header">
         <h2 className="media-title">Photos</h2>
-        <button className="media-create-btn"><PlusIcon /> Create album</button>
+        {!readOnly && <button className="media-create-btn"><PlusIcon /> Create album</button>}
       </div>
       <div className="media-grid">
-        <button className="media-add-slot">
-          <div className="media-add-icon"><CameraIcon /></div>
-          <span className="media-add-label">Add photo</span>
-        </button>
+        {!readOnly && (
+          <button className="media-add-slot">
+            <div className="media-add-icon"><CameraIcon /></div>
+            <span className="media-add-label">Add photo</span>
+          </button>
+        )}
         {MEDIA_PHOTOS.map(photo => (
           <MediaCard key={photo.id} photo={photo} />
         ))}
@@ -586,7 +588,7 @@ function UpcomingEventsPanel() {
   );
 }
 
-export function EventsTab({ onEventsClick, onCreateEvent }) {
+export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [openMenuId,    setOpenMenuId]    = useState(null);
 
@@ -595,7 +597,9 @@ export function EventsTab({ onEventsClick, onCreateEvent }) {
     <div className="ev-tab">
       <div className="ev-header">
         <h2 className="ev-title">Discover Events</h2>
-        <button className="ev-create-btn" onClick={onCreateEvent ?? onEventsClick}><PlusIcon /> Create events</button>
+        {!readOnly && (
+          <button className="ev-create-btn" onClick={onCreateEvent ?? onEventsClick}><PlusIcon /> Create events</button>
+        )}
       </div>
 
       {bannerVisible && (
@@ -652,7 +656,7 @@ export function EventsTab({ onEventsClick, onCreateEvent }) {
 
 const BIO_LIMIT = 180;
 
-export function AboutTab() {
+export function AboutTab({ readOnly }) {
   const [bio,         setBio]         = useState(DEFAULT_BIO);
   const [editingBio,  setEditingBio]  = useState(false);
   const [draftBio,    setDraftBio]    = useState(DEFAULT_BIO);
@@ -686,7 +690,7 @@ export function AboutTab() {
       <div className="about-card about-card--hoverable">
         <div className="about-card-header">
           <span className="about-card-label">Overview</span>
-          {!editingBio && (
+          {!editingBio && !readOnly && (
             <button className="about-edit-pencil" onClick={handleEdit} title="Edit overview">
               <EditIcon />
             </button>
@@ -732,19 +736,21 @@ export function AboutTab() {
             className={`about-info-tab-btn${infoTab === 'education' ? ' about-info-tab-btn--active' : ''}`}
             onClick={() => setInfoTab('education')}
           >Education</button>
-          <button
-            className="about-info-tab-edit"
-            title={`Edit ${infoTab === 'personal' ? 'Personal Information' : 'Education'}`}
-            onClick={() => {
-              if (infoTab === 'personal') {
-                setPersonalDraft({ ...personalValues });
-                setEditingPersonal(true);
-              } else {
-                setEduDraft(eduItems.map(i => ({ ...i })));
-                setEditingEdu(true);
-              }
-            }}
-          ><EditIcon /></button>
+          {!readOnly && (
+            <button
+              className="about-info-tab-edit"
+              title={`Edit ${infoTab === 'personal' ? 'Personal Information' : 'Education'}`}
+              onClick={() => {
+                if (infoTab === 'personal') {
+                  setPersonalDraft({ ...personalValues });
+                  setEditingPersonal(true);
+                } else {
+                  setEduDraft(eduItems.map(i => ({ ...i })));
+                  setEditingEdu(true);
+                }
+              }}
+            ><EditIcon /></button>
+          )}
         </div>
 
         {infoTab === 'personal' && (
