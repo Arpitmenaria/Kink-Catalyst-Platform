@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
+import { fetchSuggestions, followUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
-import { ALEX_AVATAR, GALLERY_IMAGES } from './mockData';
+import { fetchEvents } from '../../store/slices/eventsSlice';
 import CreatePostModal from './CreatePostModal';
 import AnimatedNav from './AnimatedNav';
-import { HUB_GROUPS } from './GroupsPage';
-import { DISC_EVENTS, BOOKED_EVENTS } from './EventsPage';
-
-const YOUR_GROUPS = HUB_GROUPS.filter(g => g.tab === 'joined');
-const UPCOMING_EVENTS = [...DISC_EVENTS, ...BOOKED_EVENTS].slice(0, 3);
 
 function membershipLabel(tier = '') {
   const map = { platinum: 'Platinum Member', gold: 'Gold Member', free: 'Free Member' };
@@ -63,6 +58,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const { profile } = useSelector((state) => state.profile);
   const { suggestions, followingIds, dismissedIds, groups } = useSelector((state) => state.users);
   const { conversations } = useSelector((state) => state.messages);
+  const { events: upcomingEvents } = useSelector((state) => state.events);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   const [createOpen,  setCreateOpen]  = useState(false);
@@ -73,6 +69,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     dispatch(fetchUserProfile());
     dispatch(fetchSuggestions(5));
     dispatch(fetchGroups());
+    dispatch(fetchEvents({ tab: 'upcoming', limit: 3 }));
   }, [dispatch]);
 
   function handleAddFriend(id) {
@@ -85,17 +82,17 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     dispatch(followUser(id));
   }
 
-  function handleUnfollow(id) {
+  function handleDismiss(id) {
     if (!id) return;
-    dispatch(unfollowUser(id));
+    dispatch(dismissSuggestion(id));
   }
 
-  const displayName    = profile?.fullName ?? authUser?.fullName ?? 'Alex Rivera';
-  const role           = profile?.role ?? 'Product Designer';
+  const displayName    = profile?.fullName ?? authUser?.fullName ?? 'You';
+  const role           = profile?.role ?? '';
   const followingCount = formatCount(authUser?.followingCount ?? profile?.following?.length ?? profile?.followingCount ?? 0);
   const followersCount = formatCount(authUser?.followerCount  ?? profile?.followers?.length ?? profile?.followersCount ?? 0);
   const rawAvatar      = profile?.avatar ?? authUser?.avatar ?? '';
-  const avatarUrl      = rawAvatar?.startsWith?.('http') ? rawAvatar : ALEX_AVATAR;
+  const avatarUrl      = rawAvatar?.startsWith?.('http') ? rawAvatar : '';
 
   function handleNavNavigate(id) {
     if (id === 'create')   { setCreateOpen(true); return; }
@@ -201,14 +198,13 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                     >
                       {isFollowing ? '✓ Added' : 'Add Friend'}
                     </button>
-                    {isFollowing && (
-                      <button
-                        className="friend-remove-btn"
-                        onClick={() => handleUnfollow(id)}
-                      >
-                        Remove
-                      </button>
-                    )}
+                    <button
+                      className={`friend-remove-btn${isFollowing ? ' friend-remove-btn--hidden' : ''}`}
+                      onClick={() => handleDismiss(id)}
+                      tabIndex={isFollowing ? -1 : 0}
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
               );
@@ -220,7 +216,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Your Groups</span>
-            <button className="section-link">View all</button>
+            <button className="section-link" onClick={onGroupsClick}>View all</button>
           </div>
           <div className="group-list">
             {groups.map(g => (
@@ -237,14 +233,17 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
           </div>
         </div>
 
-        {/* Upcoming Events — still using static data (no events API provided) */}
+        {/* Upcoming Events */}
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Upcoming Events</span>
-            <button className="section-link">View all</button>
+            <button className="section-link" onClick={onEventsClick}>View all</button>
           </div>
           <div className="event-list">
-            {UPCOMING_EVENTS.map(e => (
+            {upcomingEvents.length === 0 && (
+              <p style={{ fontSize: 12, color: '#4a5270', margin: 0 }}>No upcoming events.</p>
+            )}
+            {upcomingEvents.map(e => (
               <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
                 <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
                   <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -253,22 +252,6 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                   <p className="friend-name">{e.title}</p>
                   <p className="friend-sub">{e.month} {e.day}</p>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Gallery */}
-        <div className="right-card">
-          <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
-            <p className="right-section-title">Gallery</p>
-            <button className="section-link" style={{ marginLeft: 'auto' }}>View all</button>
-          </div>
-          <div className="gallery-grid">
-            {GALLERY_IMAGES.map((src, i) => (
-              <div key={i} className="gallery-thumb" style={{ overflow: 'hidden' }}>
-                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {i === 5 && <div className="gallery-more">+42</div>}
               </div>
             ))}
           </div>

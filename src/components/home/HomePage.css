@@ -956,12 +956,14 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
   margin-top: 7px;
 }
 
+.friend-add-btn { transition: background 0.15s, transform 0.15s, flex-grow 0.3s ease; }
+
 .friend-remove-btn {
-  flex: 1;
+  flex: 1 1 0%;
+  margin-left: 6px;
   padding: 6px 0;
   border-radius: 6px;
   background: rgba(239,68,68,0.15);
@@ -971,10 +973,22 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+  overflow: hidden;
+  transition: background 0.15s, color 0.15s, transform 0.15s,
+              flex-grow 0.3s ease, flex-basis 0.3s ease, margin-left 0.3s ease,
+              padding 0.3s ease, opacity 0.25s ease;
 }
 .friend-remove-btn:hover { background: rgba(239,68,68,0.28); color: #f87171; }
 .friend-remove-btn:active { transform: scale(0.97); }
+
+.friend-remove-btn--hidden {
+  flex: 0 0 0%;
+  margin-left: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
 
 @keyframes friendSlideOut {
   0%   { opacity: 1; transform: translateX(0)   scaleY(1);   max-height: 80px; margin-bottom: 0; }
@@ -1625,49 +1639,6 @@
   overflow: hidden;
 }
 
-/* Event card */
-.event-card-image {
-  height: 110px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0ea5e9 100%);
-}
-
-.event-card-body {
-  padding: 12px 14px 14px;
-}
-
-.event-card-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #e0e6f8;
-  margin: 0 0 8px;
-}
-
-.event-card-detail {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: #5c6a8c;
-  margin: 0 0 5px;
-}
-
-.event-attend-btn {
-  margin-top: 10px;
-  width: 100%;
-  padding: 8px;
-  background: #2563eb;
-  border: none;
-  border-radius: 7px;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.event-attend-btn:hover { background: #1d4ed8; }
-
 /* Gallery */
 .right-section-title {
   font-size: 12.5px;
@@ -1717,66 +1688,26 @@
   color: #fff;
 }
 
-/* Liked pages */
-.right-liked-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px 8px;
-}
-
-.right-section-pages {
-  font-size: 11px;
-  color: #4a5270;
-  margin: 2px 0 0;
-}
-
-.liked-pages-list {
+.gallery-add-first-btn {
+  width: 100%;
+  padding: 22px 14px;
+  border: 2px dashed #1e2a42;
+  border-radius: 12px;
+  background: #111827;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 4px 14px 14px;
-}
-
-.liked-page-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.liked-page-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.liked-page-info { flex: 1; min-width: 0; }
-
-.liked-page-name {
+  gap: 8px;
+  cursor: pointer;
+  color: #7a86a8;
   font-size: 12.5px;
   font-weight: 600;
-  color: #d0d6ec;
-  margin: 0 0 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-family: inherit;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
-
-.liked-page-sub {
-  font-size: 11px;
-  color: #4a5270;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
+.gallery-add-first-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #141928; }
+.gallery-add-first-btn:disabled { opacity: 0.6; cursor: default; }
 
 /* ═══════════════════════════════════════════
    Right Sidebar — Premium Animations
@@ -1786,21 +1717,6 @@
 @keyframes rightCardIn {
   from { opacity: 0; transform: translateY(22px) scale(0.95); }
   to   { opacity: 1; transform: translateY(0)     scale(1);   }
-}
-
-@keyframes rightItemIn {
-  from { opacity: 0; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(0);    }
-}
-
-@keyframes rightKenBurns {
-  from { transform: scale(1);    }
-  to   { transform: scale(1.07); }
-}
-
-@keyframes rightImgSweep {
-  from { transform: skewX(-18deg) translateX(-120%); }
-  to   { transform: skewX(-18deg) translateX(320%);  }
 }
 
 @keyframes rightBtnWave {
@@ -1816,11 +1732,6 @@
 @keyframes rightMorePulse {
   0%, 100% { background: rgba(0,0,0,0.52); }
   50%       { background: rgba(0,0,0,0.68); }
-}
-
-@keyframes rightLikedIn {
-  from { opacity: 0; transform: translateX(12px); }
-  to   { opacity: 1; transform: translateX(0);    }
 }
 
 /* ── Card stagger entrances ── */
@@ -1842,43 +1753,6 @@
     0 8px 26px rgba(99, 102, 241, 0.13),
     0 0 0 1px rgba(99, 102, 241, 0.07);
 }
-
-/* ── Event card image — Ken Burns + shimmer ── */
-.event-card-image {
-  position: relative;
-  overflow: hidden;
-}
-
-.event-card-image img {
-  animation: rightKenBurns 9s ease-in-out infinite alternate;
-  will-change: transform;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* shimmer layer */
-.event-card-image::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-  transform: skewX(-18deg) translateX(-120%);
-  pointer-events: none;
-}
-
-.right-card:hover .event-card-image::after {
-  animation: rightImgSweep 0.7s ease forwards;
-}
-
-/* ── Event body items stagger ── */
-.event-card-title   { animation: rightItemIn 0.3s ease 0.20s both; }
-.event-card-detail:nth-of-type(1) { animation: rightItemIn 0.3s ease 0.26s both; }
-.event-card-detail:nth-of-type(2) { animation: rightItemIn 0.3s ease 0.32s both; }
-
-/* ── Going/Not Going button wave ── */
-.event-attend-btn:hover { background: #1d4ed8; }
 
 /* ── Gallery thumbs stagger ── */
 .gallery-thumb { overflow: hidden; }
@@ -1911,32 +1785,6 @@
   background: rgba(99, 102, 241, 0.7);
   font-size: 14px;
 }
-
-/* ── Liked pages stagger + hover ── */
-.liked-page-item {
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.liked-page-item:nth-child(1) { animation: rightLikedIn 0.32s ease 0.30s both; }
-.liked-page-item:nth-child(2) { animation: rightLikedIn 0.32s ease 0.38s both; }
-.liked-page-item:nth-child(3) { animation: rightLikedIn 0.32s ease 0.46s both; }
-.liked-page-item:nth-child(4) { animation: rightLikedIn 0.32s ease 0.54s both; }
-
-.liked-page-item:hover { transform: translateX(3px); }
-
-.liked-page-icon {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
-}
-
-.liked-page-item:hover .liked-page-icon {
-  transform: scale(1.14) rotate(-5deg);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-}
-
-.liked-page-name {
-  transition: color 0.18s ease;
-}
-.liked-page-item:hover .liked-page-name { color: #e0e6f8; }
 
 /* ─────────────────────────────────────────
    Responsive

@@ -1,13 +1,33 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
 
+function findComment(comments, commentId) {
+  for (const c of comments) {
+    if ((c._id ?? c.id) === commentId) return c;
+    if (Array.isArray(c.replies)) {
+      const reply = c.replies.find(r => (r._id ?? r.id) === commentId);
+      if (reply) return reply;
+    }
+  }
+  return null;
+}
+
 function normalizePost(p) {
+  // The feed/list endpoint only sends a comment COUNT, not the actual
+  // comments — full comment objects are fetched on-demand (fetchPostComments)
+  // when a user opens a post's comment section. `commentsLoaded` tracks
+  // whether `comments` below is real data yet or just a count-shaped array.
+  const commentsIsCount = typeof p.comments === 'number';
   return {
     ...p,
     likes: Array.isArray(p.likes) ? p.likes : [],
-    comments: typeof p.comments === 'number'
+    likesCount: typeof p.likesCount === 'number' ? p.likesCount : (Array.isArray(p.likes) ? p.likes.length : 0),
+    recentReactors: Array.isArray(p.recentReactors) ? p.recentReactors : [],
+    comments: commentsIsCount
       ? new Array(p.comments).fill(null)
       : (Array.isArray(p.comments) ? p.comments : []),
+    commentsCount: commentsIsCount ? p.comments : (Array.isArray(p.comments) ? p.comments.length : 0),
+    commentsLoaded: !commentsIsCount,
     shares: typeof p.shares === 'number'
       ? new Array(p.shares).fill(null)
       : (Array.isArray(p.shares) ? p.shares : []),
@@ -53,6 +73,8 @@ function normalizeMyPost(p) {
     comments: typeof p.comments === 'number'
       ? new Array(p.comments).fill(null)
       : (Array.isArray(p.comments) ? p.comments : []),
+    commentsCount: typeof p.comments === 'number' ? p.comments : (Array.isArray(p.comments) ? p.comments.length : 0),
+    commentsLoaded: typeof p.comments !== 'number',
     shares: typeof p.shares === 'number'
       ? new Array(p.shares).fill(null)
       : (Array.isArray(p.shares) ? p.shares : []),
@@ -96,9 +118,22 @@ export const likePost = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts/${postId}/like`, { method: 'POST', token });
-      return { postId, liked: data.liked, likesCount: data.likesCount, userId };
+      return { postId, liked: data.liked, likesCount: data.likesCount, recentReactors: data.recentReactors, userId };
     } catch (err) {
       return rejectWithValue({ postId, userId, message: err.message });
+    }
+  }
+);
+
+export const fetchPostComments = createAsyncThunk(
+  'posts/fetchComments',
+  async (postId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments`, { token });
+      return { postId, comments: data.comments ?? [] };
+    } catch (err) {
+      return rejectWithValue({ postId, message: err.message });
     }
   }
 );
@@ -114,6 +149,36 @@ export const commentPost = createAsyncThunk(
         token,
       });
       return { postId, comment: data.comment };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const likeComment = createAsyncThunk(
+  'posts/likeComment',
+  async ({ postId, commentId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments/${commentId}/like`, { method: 'POST', token });
+      return { postId, commentId, liked: data.liked, likesCount: data.likesCount };
+    } catch (err) {
+      return rejectWithValue({ postId, commentId, message: err.message });
+    }
+  }
+);
+
+export const replyToComment = createAsyncThunk(
+  'posts/replyToComment',
+  async ({ postId, commentId, text }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments/${commentId}/replies`, {
+        method: 'POST',
+        body: { text },
+        token,
+      });
+      return { postId, commentId, reply: data.reply };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -174,8 +239,18 @@ export const reportPost = createAsyncThunk(
 
 export const reportUser = createAsyncThunk(
   'posts/reportUser',
-  async ({ userId }) => {
-    return { userId };
+  async ({ userId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/users/${userId}/report`, {
+        method: 'POST',
+        body: { reason },
+        token,
+      });
+      return { userId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
 );
 
@@ -204,6 +279,7 @@ const postsSlice = createSlice({
     myPostsHasMore: false,
     likingIds: [],
     commentingId: null,
+    commentsLoadingIds: [],
     sharingId: null,
     creating: false,
     reportReasons: [],
@@ -245,12 +321,16 @@ const postsSlice = createSlice({
         const post = state.posts.find(p => p._id === postId);
         if (!post) return;
         const idx = post.likes.indexOf(userId);
-        if (idx === -1) post.likes.push(userId);
-        else post.likes.splice(idx, 1);
+        if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
+        else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
       })
       .addCase(likePost.fulfilled, (state, action) => {
-        const { postId } = action.payload;
+        const { postId, likesCount, recentReactors } = action.payload;
         state.likingIds = state.likingIds.filter(id => id !== postId);
+        const post = state.posts.find(p => p._id === postId);
+        if (!post) return;
+        if (typeof likesCount === 'number') post.likesCount = likesCount;
+        if (Array.isArray(recentReactors)) post.recentReactors = recentReactors;
       })
       .addCase(likePost.rejected, (state, action) => {
         const { postId, userId } = action.meta.arg;
@@ -258,8 +338,8 @@ const postsSlice = createSlice({
         const post = state.posts.find(p => p._id === postId);
         if (!post) return;
         const idx = post.likes.indexOf(userId);
-        if (idx === -1) post.likes.push(userId);
-        else post.likes.splice(idx, 1);
+        if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
+        else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
       })
 
       // ── Comment ────────────────────────────
@@ -270,10 +350,52 @@ const postsSlice = createSlice({
         const { postId, comment } = action.payload;
         state.commentingId = null;
         const post = state.posts.find(p => p._id === postId);
-        if (post && comment) post.comments.push(comment);
+        if (post && comment) {
+          post.comments.push(comment);
+          post.commentsCount = (post.commentsCount ?? 0) + 1;
+        }
       })
       .addCase(commentPost.rejected, (state) => {
         state.commentingId = null;
+      })
+
+      // ── Fetch full comments for a post (on-demand) ──
+      .addCase(fetchPostComments.pending, (state, action) => {
+        state.commentsLoadingIds.push(action.meta.arg);
+      })
+      .addCase(fetchPostComments.fulfilled, (state, action) => {
+        const { postId, comments } = action.payload;
+        state.commentsLoadingIds = state.commentsLoadingIds.filter(id => id !== postId);
+        const post = state.posts.find(p => p._id === postId) ?? state.myPosts.find(p => p._id === postId);
+        if (!post) return;
+        post.comments = comments;
+        post.commentsCount = comments.length;
+        post.commentsLoaded = true;
+      })
+      .addCase(fetchPostComments.rejected, (state, action) => {
+        const postId = action.payload?.postId ?? action.meta.arg;
+        state.commentsLoadingIds = state.commentsLoadingIds.filter(id => id !== postId);
+      })
+
+      // ── Like a comment/reply ───────────────
+      .addCase(likeComment.fulfilled, (state, action) => {
+        const { postId, commentId, likesCount } = action.payload;
+        const post = state.posts.find(p => p._id === postId);
+        if (!post) return;
+        const comment = findComment(post.comments, commentId);
+        if (comment && typeof likesCount === 'number') comment.likes = likesCount;
+      })
+
+      // ── Reply to a comment ─────────────────
+      .addCase(replyToComment.fulfilled, (state, action) => {
+        const { postId, commentId, reply } = action.payload;
+        if (!reply) return;
+        const post = state.posts.find(p => p._id === postId);
+        if (!post) return;
+        const comment = post.comments.find(c => (c._id ?? c.id) === commentId);
+        if (!comment) return;
+        if (!Array.isArray(comment.replies)) comment.replies = [];
+        comment.replies.push(reply);
       })
 
       // ── Share ──────────────────────────────

@@ -37,6 +37,12 @@ const plansSlice = createSlice({
     plans: [],
     selectedPlanId: null,
     planSelectionComplete: false,
+    // One-shot signal, separate from planSelectionComplete: that flag also
+    // gates App.jsx's "does this user have a plan" check and must stay true
+    // forever once set, so it can't be consumed. This one exists purely to
+    // tell HomePage "you just landed here from plan selection" and is safe
+    // to clear right after HomePage acts on it.
+    justSelectedPlan: false,
     loading: false,
     selecting: null,
     error: null,
@@ -44,6 +50,9 @@ const plansSlice = createSlice({
   reducers: {
     clearPlansError(state) {
       state.error = null;
+    },
+    consumeJustSelectedPlan(state) {
+      state.justSelectedPlan = false;
     },
   },
   extraReducers: (builder) => {
@@ -71,6 +80,7 @@ const plansSlice = createSlice({
         state.selecting = null;
         state.selectedPlanId = action.payload.planId;
         state.planSelectionComplete = true;
+        state.justSelectedPlan = true;
       })
       .addCase(selectPlan.rejected, (state, action) => {
         state.selecting = null;
@@ -79,5 +89,5 @@ const plansSlice = createSlice({
   },
 });
 
-export const { clearPlansError } = plansSlice.actions;
+export const { clearPlansError, consumeJustSelectedPlan } = plansSlice.actions;
 export default plansSlice.reducer;

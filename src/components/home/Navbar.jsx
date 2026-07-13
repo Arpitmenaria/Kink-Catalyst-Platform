@@ -70,7 +70,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const { conversations }      = useSelector((state) => state.messages);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
-  const totalPosts       = posts.length;
+  const totalPosts       = authUser?.postsCount ?? profile?.postsCount ?? posts.length;
   // followerCount/followingCount updated live via socket; connectionCount from /api/auth/me resync
   const totalConnections = authUser?.followerCount ?? authUser?.connectionCount ?? profile?.followers?.length ?? profile?.followersCount ?? 0;
 

@@ -983,7 +983,6 @@
 
 .prof-sugg-actions {
   display: flex;
-  gap: 6px;
   margin-top: 8px;
 }
 
@@ -1013,7 +1012,8 @@
 .prof-sugg-add-btn--pop { animation: profSuggPop 0.3s ease forwards; }
 
 .prof-sugg-remove-btn {
-  flex: 1;
+  flex: 1 1 0%;
+  margin-left: 6px;
   padding: 6px 0;
   border-radius: 6px;
   background: rgba(239,68,68,0.10);
@@ -1023,10 +1023,22 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, transform 0.15s;
+  overflow: hidden;
+  transition: background 0.15s, transform 0.15s,
+              flex-grow 0.3s ease, flex-basis 0.3s ease, margin-left 0.3s ease,
+              padding 0.3s ease, opacity 0.25s ease;
 }
 .prof-sugg-remove-btn:hover { background: rgba(239,68,68,0.22); }
 .prof-sugg-remove-btn:active { transform: scale(0.97); }
+
+.prof-sugg-remove-btn--hidden {
+  flex: 0 0 0%;
+  margin-left: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* ── Empty tab ── */
 .prof-empty-tab {

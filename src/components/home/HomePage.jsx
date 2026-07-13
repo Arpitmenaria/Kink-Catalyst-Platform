@@ -16,11 +16,13 @@ import MiniSitesPage from './MiniSitesPage';
 import { initSocket } from '../../services/socket';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
+import { consumeJustSelectedPlan } from '../../store/slices/plansSlice';
 import './HomePage.css';
 
 export default function HomePage() {
   const dispatch = useDispatch();
   const { token, user } = useSelector(s => s.auth);
+  const { justSelectedPlan } = useSelector(s => s.plans);
 
   /* Init socket + resync counts on app load */
   useEffect(() => {
@@ -33,10 +35,21 @@ export default function HomePage() {
   const [section,         setSection]         = useState('feed');
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
+  const [profileAutoEdit, setProfileAutoEdit] = useState(false);
   const [viewedUserId,    setViewedUserId]    = useState(null);
   const [viewedGroupId,   setViewedGroupId]   = useState(null);
   const [viewedEventId,   setViewedEventId]   = useState(null);
   const [profileReturnSection, setProfileReturnSection] = useState('feed');
+
+  // Just came from signup → plan selection: land on Profile → About with
+  // Personal Information edit mode already open so the user can fill it in.
+  useEffect(() => {
+    if (!justSelectedPlan) return;
+    setProfileInitTab('About');
+    setProfileAutoEdit(true);
+    setSection('profile');
+    dispatch(consumeJustSelectedPlan());
+  }, [justSelectedPlan]);
 
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
@@ -103,7 +116,11 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             initialTab={profileInitTab}
             onInitTabConsumed={() => setProfileInitTab(null)}
+            autoEditPersonal={profileAutoEdit}
+            onAutoEditConsumed={() => setProfileAutoEdit(false)}
             onUserClick={goToUserProfile}
+            onEventClick={goToEvent}
+            onMessageUser={goToMessagesWithUser}
           />
         ) : section === 'userProfile' ? (
           <UserProfilePage
@@ -117,6 +134,7 @@ export default function HomePage() {
             onLibraryClick={() => setSection('library')}
             onMinisitesClick={() => setSection('minisites')}
             onUserClick={goToUserProfile}
+            onEventClick={goToEvent}
           />
         ) : section === 'library' ? (
           <LibraryPage

@@ -189,7 +189,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     setError('');
     const thunk = groupId
       ? createGroupPost({ groupId, caption: caption.trim(), media: mediaFile ? [mediaFile] : [] })
-      : createPost({ caption: caption.trim(), mediaFile });
+      : createPost({ caption: caption.trim(), mediaFile, visibility });
     const result = await dispatch(thunk);
     if (!result.error) {
       const post = result.payload?.post ?? result.payload;

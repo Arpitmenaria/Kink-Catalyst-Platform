@@ -252,7 +252,7 @@ const authSlice = createSlice({
         if (!state.user) return;
         const d = action.payload;
         if (d.connectionCount !== undefined) state.user.connectionCount = d.connectionCount;
-        if (d.postCount      !== undefined) state.user.postCount       = d.postCount;
+        if (d.postsCount     !== undefined) state.user.postsCount      = d.postsCount;
         if (d.followerCount  !== undefined) state.user.followerCount   = d.followerCount;
         if (d.followingCount !== undefined) state.user.followingCount  = d.followingCount;
         saveSession(state.token, state.user);

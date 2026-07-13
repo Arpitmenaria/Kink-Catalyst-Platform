@@ -502,6 +502,14 @@
   transition: transform 0.3s ease;
 }
 
+/* The Ken Burns zoom is meant for static photos only — on a <video> it also
+   scales the native controls bar, pushing the play button past the wrap's
+   overflow:hidden edge and clipping it. */
+video.post-image {
+  animation: none;
+  will-change: auto;
+}
+
 /* ── People react dots — stagger pop ── */
 .post-reader-dot {
   display: inline-block;
@@ -714,30 +722,39 @@
   margin-left: 8px;
 }
 
-/* Load more replies */
-.pc-load-more {
-  background: none;
-  border: none;
-  color: #5c6a8c;
-  font-size: 12.5px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  cursor: pointer;
-  padding: 6px 8px;
-  text-align: left;
+/* Inline reply box */
+.pc-reply-input-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
-  border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
+  padding: 6px 4px 2px 8px;
 }
-.pc-load-more:hover { color: #a5b4fc; background: rgba(99,102,241,0.06); }
 
-.pc-load-dots {
-  font-size: 16px;
-  letter-spacing: 2px;
-  color: #3d4a6a;
-  line-height: 1;
+.pc-reply-input {
+  flex: 1;
+  background: #111827;
+  border: 1px solid #1e2a42;
+  border-radius: 14px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: #d0d6ec;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
+.pc-reply-input:focus { outline: none; border-color: #3b82f6; }
+
+.pc-reply-send {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.pc-reply-send:hover { background: rgba(59,130,246,0.15); }
+.pc-reply-send:disabled { color: #3d4a6a; cursor: default; }
+.pc-reply-send:disabled:hover { background: none; }
 
 /* View all comments */
 .pc-view-all {

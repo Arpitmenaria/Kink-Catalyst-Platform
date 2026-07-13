@@ -6,11 +6,12 @@ import CreatePostModal from './CreatePostModal';
 import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion } from '../../store/slices/usersSlice';
 import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
-  fetchConnections, removeConnection, fetchPhotos,
-  fetchFollowers, fetchFollowing,
+  fetchConnections, removeConnection, fetchPhotos, uploadPhoto,
+  fetchFollowers, fetchFollowing, fetchGallery,
 } from '../../store/slices/profileSlice';
 import { fetchMyPosts } from '../../store/slices/postsSlice';
-import { ALEX_AVATAR, SIDEBAR_EVENTS, PROFILE_TABS } from './mockData';
+import { fetchEvents } from '../../store/slices/eventsSlice';
+import { PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
 import './ProfilePage.css';
@@ -28,14 +29,6 @@ const PERSONAL_INFO = [
   { id: 'email',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: 'Email' },
   { id: 'phone',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>, label: 'Phone' },
   { id: 'website', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, label: 'Website' },
-];
-
-const INTERESTS = [
-  { id: 'oracle', bg: '#0070c0', logo: 'O', name: 'Oracle', followers: '7,546,224 followers' },
-  { id: 'apple',  bg: '#1c1c1e', logo: '🍎', name: 'Apple',  followers: '102B followers' },
-  { id: 'elon',   bg: '#334155', logo: '👤', name: 'Elon Musk', followers: 'CEO and Product Architect of Tesla, Inc 41B followers', small: true },
-  { id: 'xfactor',bg: '#7c3aed', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=60&q=80', name: 'The X Factor', followers: '9,654 followers' },
-  { id: 'getbs',  bg: '#6f42c1', logo: 'B', name: 'Getbootstrap', followers: '8,457,224 followers' },
 ];
 
 function BriefcaseIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>; }
@@ -136,7 +129,11 @@ function FriendSuggestionsPanel({ onUserClick }) {
               >
                 {addedIds.has(id) ? '✓ Added' : 'Add Friend'}
               </button>
-              <button className="prof-sugg-remove-btn" onClick={() => handleRemove(id)}>
+              <button
+                className={`prof-sugg-remove-btn${addedIds.has(id) ? ' prof-sugg-remove-btn--hidden' : ''}`}
+                onClick={() => handleRemove(id)}
+                tabIndex={addedIds.has(id) ? -1 : 0}
+              >
                 Remove
               </button>
             </div>
@@ -147,7 +144,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
   );
 }
 
-export function ConnectionsTab({ onUserClick, hideSearch }) {
+export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const dispatch = useDispatch();
   const { connections, connectionsTotal } = useSelector(s => s.profile);
 
@@ -325,7 +322,7 @@ export function ConnectionsTab({ onUserClick, hideSearch }) {
                 </div>
               </div>
               <div className="prof-conn-actions">
-                <button className="prof-conn-btn prof-conn-btn--msg">Chat</button>
+                <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => onMessageUser?.(conn.id)}>Chat</button>
                 <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => handleRemove(conn.id)}>Remove from friends</button>
               </div>
             </div>
@@ -357,7 +354,7 @@ export function ConnectionsTab({ onUserClick, hideSearch }) {
                 <span className="prof-conn-shared-text">{conn.mutual} mutual</span>
               </div>
               <div className="prof-conn-card-actions">
-                <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }}>Chat</button>
+                <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }} onClick={() => onMessageUser?.(conn.id)}>Chat</button>
                 <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => handleRemove(conn.id)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                   <span className="prof-conn-remove-tooltip">Remove from friends</span>
@@ -435,8 +432,10 @@ function GalleryPanel() {
       <div className="right-card">
         <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
           <p className="right-section-title">Gallery</p>
-          <button className="section-link" style={{ marginLeft: 'auto' }}>View all</button>
         </div>
+        {displayed.length === 0 && (
+          <p style={{ fontSize: 12, color: '#4a5270', margin: '0 14px 14px' }}>No photos yet.</p>
+        )}
         <div className="gallery-grid">
           {displayed.map((src, i) => (
             <div key={i} className="gallery-thumb" style={{ overflow: 'hidden', position: 'relative' }}>
@@ -453,19 +452,33 @@ function GalleryPanel() {
 export function MediaTab({ readOnly }) {
   const dispatch = useDispatch();
   const { photos } = useSelector(s => s.profile);
+  const photoInputRef = useRef(null);
+  const albumInputRef = useRef(null);
 
-  useEffect(() => { dispatch(fetchPhotos()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchPhotos());
+    dispatch(fetchGallery());
+  }, [dispatch]);
+
+  function handleFilesChosen(e) {
+    const files = [...(e.target.files ?? [])];
+    e.target.value = '';
+    if (files.length === 0) return;
+    dispatch(uploadPhoto({ files })).then(() => dispatch(fetchGallery()));
+  }
 
   return (
     <div className="prof-conn-layout">
     <div className="media-tab">
       <div className="media-header">
         <h2 className="media-title">Photos</h2>
-        {!readOnly && <button className="media-create-btn"><PlusIcon /> Create album</button>}
+        {!readOnly && <button className="media-create-btn" onClick={() => albumInputRef.current?.click()}><PlusIcon /> Create album</button>}
       </div>
+      <input ref={photoInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFilesChosen} />
+      <input ref={albumInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFilesChosen} />
       <div className="media-grid">
         {!readOnly && (
-          <button className="media-add-slot">
+          <button className="media-add-slot" onClick={() => photoInputRef.current?.click()}>
             <div className="media-add-icon"><CameraIcon /></div>
             <span className="media-add-label">Add photo</span>
           </button>
@@ -480,29 +493,25 @@ export function MediaTab({ readOnly }) {
   );
 }
 
-const PROFILE_EVENTS = [
-  { id: 'e1', img: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=200&q=80', title: 'Comedy on the green',         date: 'Mon, Sep 25, 2020 at 9:30 AM',  location: 'San Francisco',  going: 77  },
-  { id: 'e2', img: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=200&q=80', title: 'Tech Summit 2024',             date: 'Fri, Nov 15, 2024 at 10:00 AM', location: 'New York',       going: 243 },
-  { id: 'e3', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=200&q=80', title: 'Live Music Night at the Park', date: 'Sat, Dec 07, 2024 at 7:00 PM',  location: 'Los Angeles',    going: 512 },
-];
-
-function UpcomingEventsPanel() {
+function UpcomingEventsPanel({ events, onEventClick }) {
   return (
     <div className="prof-ev-sidebar">
       <div className="sidebar-section">
         <div className="section-header">
           <span className="section-title">Upcoming Events</span>
-          <button className="section-link">View all</button>
         </div>
         <div className="event-list">
-          {SIDEBAR_EVENTS.map(e => (
-            <div key={e.id} className="sidebar-event-item">
+          {events.length === 0 && (
+            <p style={{ fontSize: 12, color: '#4a5270', margin: 0 }}>No upcoming events.</p>
+          )}
+          {events.map(e => (
+            <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
               <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
-                <img src={e.img} alt={e.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div className="friend-info">
-                <p className="friend-name">{e.name}</p>
-                <p className="friend-sub">{e.date}</p>
+                <p className="friend-name">{e.title}</p>
+                <p className="friend-sub">{e.month} {e.day}</p>
               </div>
             </div>
           ))}
@@ -512,9 +521,17 @@ function UpcomingEventsPanel() {
   );
 }
 
-export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
+export function EventsTab({ onEventsClick, onCreateEvent, onEventClick, readOnly }) {
+  const dispatch = useDispatch();
+  const { events, eventsLoading } = useSelector(s => s.events);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [openMenuId,    setOpenMenuId]    = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchEvents({ tab: 'upcoming', limit: 10 }));
+  }, [dispatch]);
+
+  const nextEvent = events[0];
 
   return (
     <div className="prof-conn-layout">
@@ -526,26 +543,30 @@ export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
         )}
       </div>
 
-      {bannerVisible && (
+      {bannerVisible && nextEvent && (
         <div className="ev-banner">
           <span className="ev-banner-text">
-            <strong>Upcoming event:</strong> The learning conference on Sep 19 2024
+            <strong>Upcoming event:</strong> {nextEvent.title} — {nextEvent.fullDate}
           </span>
-          <button className="ev-banner-view">View event</button>
+          <button className="ev-banner-view" onClick={() => onEventClick?.(nextEvent.id)}>View event</button>
           <button className="ev-banner-close" onClick={() => setBannerVisible(false)}>✕</button>
         </div>
       )}
 
       <div className="ev-list">
-        {PROFILE_EVENTS.map(ev => (
+        {eventsLoading && <p style={{ color: '#5c6a8c', fontSize: 13, padding: '12px 0' }}>Loading events…</p>}
+        {!eventsLoading && events.length === 0 && (
+          <p style={{ color: '#5c6a8c', fontSize: 13, padding: '12px 0' }}>No upcoming events.</p>
+        )}
+        {events.map(ev => (
           <div key={ev.id} className="ev-card">
-            <img src={ev.img} alt={ev.title} className="ev-card-img" />
+            <img src={ev.img} alt={ev.title} className="ev-card-img" onClick={() => onEventClick?.(ev.id)} style={{ cursor: 'pointer' }} />
             <div className="ev-card-body">
-              <p className="ev-card-title">{ev.title}</p>
+              <p className="ev-card-title" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(ev.id)}>{ev.title}</p>
               <div className="ev-card-meta">
                 <span className="ev-meta-item">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  {ev.date}
+                  {ev.fullDate}
                 </span>
                 <span className="ev-meta-item">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -553,7 +574,7 @@ export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
                 </span>
                 <span className="ev-meta-item">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  {ev.going} going
+                  {ev.attending} going
                 </span>
               </div>
             </div>
@@ -563,9 +584,7 @@ export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
               </button>
               {openMenuId === ev.id && (
                 <div className="ev-card-dropdown">
-                  <button className="ev-dd-item" onClick={() => setOpenMenuId(null)}>View event</button>
-                  <button className="ev-dd-item" onClick={() => setOpenMenuId(null)}>Share</button>
-                  <button className="ev-dd-item ev-dd-item--danger" onClick={() => setOpenMenuId(null)}>Remove</button>
+                  <button className="ev-dd-item" onClick={() => { setOpenMenuId(null); onEventClick?.(ev.id); }}>View event</button>
                 </div>
               )}
             </div>
@@ -573,7 +592,7 @@ export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
         ))}
       </div>
     </div>
-    <UpcomingEventsPanel />
+    <UpcomingEventsPanel events={events.slice(0, 3)} onEventClick={onEventClick} />
     </div>
   );
 }
@@ -624,9 +643,10 @@ function profileToEdu(p) {
   return (p?.education ?? []).map(e => ({ id: e._id ?? e.id, school: e.school ?? '', degree: e.degree ?? '', years: e.years ?? '', type: e.type ?? '' }));
 }
 
-export function AboutTab({ readOnly }) {
+export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed }) {
   const dispatch = useDispatch();
   const { profile } = useSelector(s => s.profile);
+  const infoTabsRef = useRef(null);
 
   const [bio,         setBio]         = useState(() => profile?.bio ?? '');
   const [editingBio,  setEditingBio]  = useState(false);
@@ -651,6 +671,21 @@ export function AboutTab({ readOnly }) {
     setEduItems(edu);
     setEduDraft(edu);
   }, [profile]);
+
+  // Land straight in edit mode on Personal Information — used right after
+  // signup + plan selection so the user can fill in their details immediately.
+  // Scrolls the section into view too, since a first-time user won't know
+  // to scroll past the (empty) Overview card to find it.
+  useEffect(() => {
+    if (!autoEditPersonal || readOnly) return;
+    setInfoTab('personal');
+    setPersonalDraft({ ...personalValues });
+    setEditingPersonal(true);
+    onAutoEditConsumed?.();
+    requestAnimationFrame(() => {
+      infoTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [autoEditPersonal]);
 
   function handleEdit() {
     setDraftBio(bio ?? '');
@@ -726,7 +761,7 @@ export function AboutTab({ readOnly }) {
       </div>
 
       {/* Info tabs */}
-      <div className="about-info-tabs">
+      <div className="about-info-tabs" ref={infoTabsRef}>
         <div className="about-info-tab-bar">
           <button
             className={`about-info-tab-btn${infoTab === 'personal' ? ' about-info-tab-btn--active' : ''}`}
@@ -760,7 +795,9 @@ export function AboutTab({ readOnly }) {
                 <span className="about-info-row-icon">{item.icon}</span>
                 <div className="about-info-row-body">
                   <span className="about-info-row-label">{item.label}</span>
-                  {editingPersonal ? (
+                  {item.id === 'email' ? (
+                    <span className="about-info-row-value">{personalValues.email}</span>
+                  ) : editingPersonal ? (
                     item.id === 'dob' ? (
                       <div style={{ width: 260 }}>
                         <CustomDatePicker
@@ -920,27 +957,29 @@ export function AboutTab({ readOnly }) {
 export default function ProfilePage({
   onBack, onCoursesClick, onLibraryClick, onEventsClick, onEventsCreateClick,
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
-  initialTab, onInitTabConsumed, onUserClick,
+  initialTab, onInitTabConsumed, onUserClick, onEventClick, onMessageUser,
+  autoEditPersonal, onAutoEditConsumed,
 }) {
   const dispatch = useDispatch();
   const { user: authUser }  = useSelector(s => s.auth);
-  const { profile, gallery, galleryTotal, followers, following } = useSelector(s => s.profile);
+  const { profile, gallery, galleryTotal, followers, following, connectionsTotal } = useSelector(s => s.profile);
   const { followingIds: reduxFollowingIds } = useSelector(s => s.users);
   const { myPosts, myPostsTotal, myPostsLoading } = useSelector(s => s.posts);
 
   const rawProfileAvatar = profile?.avatar ?? '';
-  const avatarUrl        = rawProfileAvatar?.startsWith?.('http') ? rawProfileAvatar : ALEX_AVATAR;
+  const avatarUrl        = rawProfileAvatar?.startsWith?.('http') ? rawProfileAvatar : '';
 
   const followersCount = profile?.followersCount ?? profile?.followers?.length ?? 0;
   const followingCount = profile?.followingCount ?? profile?.following?.length ?? 0;
-  const totalPosts     = authUser?.postCount ?? myPostsTotal;
-  const displayName    = profile?.fullName || authUser?.fullName || 'Alex Rivera';
-  const role           = profile?.role || 'Lead Developer';
+  const totalPosts     = authUser?.postsCount ?? profile?.postsCount ?? myPostsTotal;
+  const displayName    = profile?.fullName || authUser?.fullName || 'You';
+  const role           = profile?.role || '';
 
   const [activeTab,       setActiveTab]       = useState(initialTab || 'Feed');
   useEffect(() => {
     dispatch(fetchUserProfile());
     dispatch(fetchMyPosts({ page: 1, limit: 10 }));
+    dispatch(fetchConnections());
   }, [dispatch]);
   useEffect(() => {
     if (initialTab) { setActiveTab(initialTab); onInitTabConsumed?.(); }
@@ -1062,14 +1101,23 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
           <div className="prof-info">
             <div className="prof-name-row">
               <h1 className="prof-name">{displayName}</h1>
-              {/* <div className="prof-connections">250 connections</div> */}
             </div>
             <div className="prof-meta-row">
-              <span className="prof-meta-item"><BriefcaseIcon /> {role}</span>
-              <span className="prof-meta-sep">·</span>
-              <span className="prof-meta-item"><PinIcon /> {profile?.location ?? 'New Hampshire'}</span>
-              <span className="prof-meta-sep">·</span>
-              <span className="prof-meta-item"><CalIcon /> {profile?.joinedAt ? `Joined on ${new Date(profile.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Joined on Nov 26, 2019'}</span>
+              {role && (
+                <>
+                  <span className="prof-meta-item"><BriefcaseIcon /> {role}</span>
+                  <span className="prof-meta-sep">·</span>
+                </>
+              )}
+              {profile?.location && (
+                <>
+                  <span className="prof-meta-item"><PinIcon /> {profile.location}</span>
+                  <span className="prof-meta-sep">·</span>
+                </>
+              )}
+              {profile?.joinedAt && (
+                <span className="prof-meta-item"><CalIcon /> Joined on {new Date(profile.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              )}
             </div>
             <div className="prof-counts-row">
               <button className="prof-count-item" onClick={() => { setFollowSearch(''); setFollowPanel('followers'); dispatch(fetchFollowers()); }}>
@@ -1082,7 +1130,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
                 <span className="prof-count-lbl">Following</span>
               </button>
               <span className="prof-count-div" />
-              <button className="prof-count-item">
+              <button className="prof-count-item" onClick={() => setActiveTab('Feed')}>
                 <span className="prof-count-num">{totalPosts}</span>
                 <span className="prof-count-lbl">Posts</span>
               </button>
@@ -1098,7 +1146,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
               onClick={() => setActiveTab(tab)}
             >
               {tab}
-              {tab === 'Connections' && <span className="prof-tab-badge">300</span>}
+              {tab === 'Connections' && connectionsTotal > 0 && <span className="prof-tab-badge">{connectionsTotal}</span>}
             </button>
           ))}
         </div>
@@ -1108,8 +1156,12 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             <div className="prof-feed">
               <div className={`post-creator${creatorClicked ? ' post-creator--clicked' : ''}`}>
                 <div className="creator-top">
-                  <div className="creator-avatar" style={{ overflow: 'hidden' }}>
-                    <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="creator-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <SkeletonImg
+                      src={avatarUrl}
+                      alt={displayName}
+                      fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontWeight: 700, color: '#fff' }}>{displayName[0]?.toUpperCase()}</span>}
+                    />
                   </div>
                   <textarea
                     className="creator-input"
@@ -1138,10 +1190,10 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             </div>
           )}
 
-          {activeTab === 'About'       && <AboutTab />}
-          {activeTab === 'Connections' && <ConnectionsTab onUserClick={onUserClick} />}
+          {activeTab === 'About'       && <AboutTab autoEditPersonal={autoEditPersonal} onAutoEditConsumed={onAutoEditConsumed} />}
+          {activeTab === 'Connections' && <ConnectionsTab onUserClick={onUserClick} onMessageUser={onMessageUser} />}
           {activeTab === 'Photos'      && <MediaTab />}
-          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} />}
+          {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} onEventClick={onEventClick} />}
 
           {activeTab !== 'Feed' && activeTab !== 'About' && activeTab !== 'Photos' && activeTab !== 'Events' && activeTab !== 'Connections' && (
             <div className="prof-empty-tab">

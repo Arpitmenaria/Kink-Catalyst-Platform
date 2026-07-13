@@ -6,25 +6,9 @@ import SkeletonImg from "../SkeletonImg";
 import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
 import { followUser, unfollowUser } from "../../store/slices/usersSlice";
+import { apiRequest } from "../../services/api";
 
-// ⚠️ TEMPORARY: profileSlice.js doesn't yet expose by-id versions of
-// fetchUserProfile / fetchMyPosts / fetchPhotos, so this component fetches
-// locally via plain fetch() instead of dispatching Redux thunks (that's why
-// you were seeing "does not provide an export named fetchUserPhotosById").
-// Once you share profileSlice.js (and confirm your API base URL / axios
-// instance), this should be moved into Redux to match the rest of the app —
-// just swap the calls inside the two useEffects below for dispatch(...).
-const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
-
-async function getJson(url, token) {
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json();
-}
-
-const TABS = ["Feed", "Photos", "About", "Events"];
+const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
 
 function BackArrowIcon() {
   return (
@@ -60,12 +44,22 @@ function CalIcon() {
     </svg>
   );
 }
-function MoreIcon() {
+function ReportIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="5" cy="12" r="2" />
-      <circle cx="12" cy="12" r="2" />
-      <circle cx="19" cy="12" r="2" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+function UsersIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -119,7 +113,7 @@ const MOCK_USER = {
   bio: "This is placeholder bio text for Arpit — replace once the real /users/:id endpoint is wired up.",
   followersCount: 128,
   followingCount: 96,
-  postCount: 12,
+  postsCount: 12,
   isFollowedByMe: false,
 };
 
@@ -216,7 +210,7 @@ const MOCK_PHOTOS = [
 
 export default function UserProfilePage({
   userId, onBack, onMessageUser, onEventsClick, onEventsCreateClick,
-  onGroupsClick, onCoursesClick, onLibraryClick, onMinisitesClick, onUserClick,
+  onGroupsClick, onCoursesClick, onLibraryClick, onMinisitesClick, onUserClick, onEventClick,
 }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector((s) => s.auth);
@@ -226,12 +220,13 @@ export default function UserProfilePage({
   const [viewedUser, setViewedUser] = useState(null);
   const [viewedPosts, setViewedPosts] = useState([]);
   const [viewedPhotos, setViewedPhotos] = useState([]);
+  const [viewedConnections, setViewedConnections] = useState(null); // null = not yet loaded
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState("Feed");
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
@@ -239,12 +234,12 @@ export default function UserProfilePage({
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      getJson(`${API_BASE}/users/${userId}`, token),
-      getJson(`${API_BASE}/users/${userId}/posts`, token),
+      apiRequest(`/api/users/${userId}`, { token }),
+      apiRequest(`/api/users/${userId}/posts`, { token }),
     ])
       .then(([userRes, postsRes]) => {
         if (cancelled) return;
-        setViewedUser(userRes);
+        setViewedUser(userRes?.user ?? userRes);
         setViewedPosts(postsRes?.posts ?? postsRes ?? []);
       })
       .catch((err) => {
@@ -265,13 +260,25 @@ export default function UserProfilePage({
 
   useEffect(() => {
     if (activeTab !== "Photos" || !userId) return;
-    getJson(`${API_BASE}/users/${userId}/photos`, token)
+    apiRequest(`/api/users/${userId}/photos`, { token })
       .then((res) => setViewedPhotos(res?.photos ?? res ?? []))
       .catch((err) => {
         console.warn("Falling back to mock photos:", err.message);
         setViewedPhotos(MOCK_PHOTOS);
       });
   }, [activeTab, userId, token]);
+
+  useEffect(() => {
+    if (activeTab !== "Connections" || !userId || viewedConnections !== null) return;
+    setConnectionsLoading(true);
+    apiRequest(`/api/users/${userId}/connections`, { token })
+      .then((res) => setViewedConnections(res?.connections ?? res ?? []))
+      .catch((err) => {
+        console.warn("Could not load connections for this user:", err.message);
+        setViewedConnections([]);
+      })
+      .finally(() => setConnectionsLoading(false));
+  }, [activeTab, userId, token, viewedConnections]);
 
   useEffect(() => {
     setIsFollowing(
@@ -323,7 +330,7 @@ export default function UserProfilePage({
 
   const followersCount = viewedUser?.followersCount ?? 0;
   const followingCount = viewedUser?.followingCount ?? 0;
-  const postsCount = viewedUser?.postCount ?? viewedPosts.length;
+  const postsCount = viewedUser?.postsCount ?? viewedPosts.length;
 
   return (
     <>
@@ -422,26 +429,16 @@ export default function UserProfilePage({
                 style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#cbd5e1" }}
                 onClick={() => (onMessageUser ? onMessageUser(userId) : null)}
               >
-                <MsgIcon /> Message
+                <MsgIcon /> Chat
               </button>
 
-              <div style={{ position: "relative" }}>
-                <button className="prof-more-btn" onClick={() => setMenuOpen((o) => !o)}>
-                  <MoreIcon />
-                </button>
-                {menuOpen && (
-                  <div className="about-dropdown">
-                    <button className="about-dropdown-item">Share profile</button>
-                    <button className="about-dropdown-item about-dropdown-item--danger">Block user</button>
-                    <button
-                      className="about-dropdown-item about-dropdown-item--danger"
-                      onClick={() => { setMenuOpen(false); setReportOpen(true); }}
-                    >
-                      Report
-                    </button>
-                  </div>
-                )}
-              </div>
+              <button
+                className="prof-edit-btn"
+                style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#ef4444" }}
+                onClick={() => setReportOpen(true)}
+              >
+                <ReportIcon /> Report
+              </button>
             </div>
           )}
         </div>
@@ -455,13 +452,16 @@ export default function UserProfilePage({
               onClick={() => setActiveTab(tab)}
             >
               {tab}
+              {tab === "Connections" && viewedConnections?.length > 0 && (
+                <span className="prof-tab-badge">{viewedConnections.length}</span>
+              )}
             </button>
           ))}
         </div>
 
         {/* ── Content ── */}
         <div
-          className={`prof-content${(activeTab === "Photos" || activeTab === "Events") ? " prof-content--wide" : ""}`}
+          className={`prof-content${(activeTab === "Photos" || activeTab === "Events" || activeTab === "Connections") ? " prof-content--wide" : ""}`}
           style={activeTab === "Feed" ? { width: "100%", maxWidth: "100%", boxSizing: "border-box" } : undefined}
         >
           {activeTab === "Feed" && (
@@ -519,8 +519,69 @@ export default function UserProfilePage({
             </div>
           )}
 
+          {activeTab === "Connections" && (
+            <div className="prof-conn-tab">
+              <div className="prof-conn-header">
+                <div className="prof-conn-header-left">
+                  <h3 className="prof-conn-title">Connections</h3>
+                  <span className="prof-conn-count">{viewedConnections?.length ?? 0}</span>
+                </div>
+              </div>
+              {connectionsLoading && (
+                <div style={{ textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
+                  Loading connections…
+                </div>
+              )}
+              {!connectionsLoading && (viewedConnections?.length ?? 0) === 0 && (
+                <div style={{ textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
+                  No connections to show.
+                </div>
+              )}
+              {!connectionsLoading && viewedConnections?.length > 0 && (
+                <div className="prof-conn-list">
+                  {viewedConnections.map((conn) => {
+                    const cid = conn.id ?? conn._id;
+                    const name = conn.name ?? conn.fullName ?? "Unknown";
+                    const avatar = conn.avatar?.startsWith?.("http") ? conn.avatar : "";
+                    return (
+                      <div key={cid} className="prof-conn-item">
+                        <div
+                          className="prof-conn-avatar-wrap"
+                          style={{ cursor: onUserClick ? "pointer" : "default" }}
+                          onClick={() => onUserClick?.(cid)}
+                        >
+                          {avatar
+                            ? <img src={avatar} alt={name} className="prof-conn-avatar" />
+                            : <span className="prof-conn-avatar" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#3b82f6", color: "#fff", fontWeight: 700 }}>{initials(name)}</span>
+                          }
+                        </div>
+                        <div className="prof-conn-info">
+                          <div className="prof-conn-name-row">
+                            <span
+                              className="prof-conn-name"
+                              style={{ cursor: onUserClick ? "pointer" : "default" }}
+                              onClick={() => onUserClick?.(cid)}
+                            >
+                              {name}
+                            </span>
+                          </div>
+                          {conn.role && <span className="prof-conn-role">{conn.role}</span>}
+                          {typeof conn.mutual === "number" && conn.mutual > 0 && (
+                            <div className="prof-conn-shared">
+                              <span className="prof-conn-shared-text"><UsersIcon /> {conn.mutual} mutual connections</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === "Events" && (
-            <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} readOnly />
+            <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} onEventClick={onEventClick} readOnly />
           )}
         </div>
       </div>
