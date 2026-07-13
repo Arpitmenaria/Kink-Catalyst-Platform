@@ -34,6 +34,9 @@ export default function HomePage() {
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
   const [viewedUserId,    setViewedUserId]    = useState(null);
+  const [viewedGroupId,   setViewedGroupId]   = useState(null);
+  const [viewedEventId,   setViewedEventId]   = useState(null);
+  const [profileReturnSection, setProfileReturnSection] = useState('feed');
 
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
@@ -47,7 +50,20 @@ export default function HomePage() {
       return;
     }
     setViewedUserId(userId);
+    setProfileReturnSection(section);
     setSection('userProfile');
+  }
+
+  function goToGroup(groupId) {
+    if (!groupId) return;
+    setViewedGroupId(groupId);
+    setSection('groups');
+  }
+
+  function goToEvent(eventId) {
+    if (!eventId) return;
+    setViewedEventId(eventId);
+    setSection('events');
   }
 
   // Jump into Messages with a specific person pre-selected (used by the
@@ -87,12 +103,20 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             initialTab={profileInitTab}
             onInitTabConsumed={() => setProfileInitTab(null)}
+            onUserClick={goToUserProfile}
           />
         ) : section === 'userProfile' ? (
           <UserProfilePage
             userId={viewedUserId}
-            onBack={() => setSection('feed')}
+            onBack={() => setSection(profileReturnSection)}
             onMessageUser={goToMessagesWithUser}
+            onEventsClick={() => setSection('events')}
+            onEventsCreateClick={goToEventsCreate}
+            onGroupsClick={() => setSection('groups')}
+            onCoursesClick={() => setSection('courses')}
+            onLibraryClick={() => setSection('library')}
+            onMinisitesClick={() => setSection('minisites')}
+            onUserClick={goToUserProfile}
           />
         ) : section === 'library' ? (
           <LibraryPage
@@ -125,6 +149,9 @@ export default function HomePage() {
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}
             startCreate={eventsCreate}
+            initialEventId={viewedEventId}
+            onInitEventConsumed={() => setViewedEventId(null)}
+            onUserClick={goToUserProfile}
           />
         ) : section === 'messages' ? (
           <MessagesPage
@@ -146,6 +173,8 @@ export default function HomePage() {
             onCalendarClick={() => setSection('calendar')}
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}
+            initialGroupId={viewedGroupId}
+            onInitGroupConsumed={() => setViewedGroupId(null)}
           />
         ) : section === 'calendar' ? (
           <CalendarPage
@@ -168,6 +197,9 @@ export default function HomePage() {
               onCalendarClick={() => setSection('calendar')}
               onProfileClick={() => setSection('profile')}
               onMinisitesClick={() => setSection('minisites')}
+              onGroupClick={goToGroup}
+              onEventClick={goToEvent}
+              onUserClick={goToUserProfile}
             />
             <Feed
               onEventsClick={() => setSection('events')}
@@ -175,7 +207,7 @@ export default function HomePage() {
               onCreateEvent={goToEventsCreate}
               onUserClick={goToUserProfile}
             />
-            <RightSidebar />
+            <RightSidebar onCoursesClick={() => setSection('courses')} />
           </>
         )}
       </div>

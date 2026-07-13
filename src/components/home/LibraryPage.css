@@ -125,6 +125,30 @@
 /* ═══════════════════════════════════════════
    Tab row
 ═══════════════════════════════════════════ */
+.lib-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #141928;
+  border: 1px solid #1e2a42;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  color: #4a5270;
+  max-width: 420px;
+}
+.lib-search-wrap:focus-within { border-color: #3b82f6; }
+.lib-search {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #e8ecf8;
+  font-size: 13px;
+  font-family: inherit;
+}
+.lib-search::placeholder { color: #4a5270; }
+
 .lib-tabs-row {
   display: flex;
   gap: 8px;
@@ -533,3 +557,12 @@
 }
 
 .lib-res-card:hover .lib-res-desc { color: #6b7a9a; }
+
+.lib-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.lib-tag {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 4px;
+  background: #1e293b; color: #64748b;
+  text-transform: uppercase;
+}

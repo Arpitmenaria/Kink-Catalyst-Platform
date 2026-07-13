@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGallery, fetchLikedPages } from '../../store/slices/profileSlice';
 import SkeletonImg from '../SkeletonImg';
+import { COURSES } from './educationData';
+import useEducationProgress from './useEducationProgress';
 
 function CalendarIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function PinIcon()      { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
@@ -9,9 +11,10 @@ function UsersIcon()    { return <svg width="11" height="11" viewBox="0 0 24 24"
 
 const EVENT_IMAGE = 'https://picsum.photos/seed/alumni-meet-event/320/130';
 
-export default function RightSidebar() {
+export default function RightSidebar({ onCoursesClick }) {
   const dispatch = useDispatch();
   const { gallery, galleryTotal, likedPages, likedPagesTotal } = useSelector(s => s.profile);
+  const { enrolledCourseIds, getCourseProgressPct } = useEducationProgress();
 
   useEffect(() => {
     dispatch(fetchGallery());
@@ -20,6 +23,10 @@ export default function RightSidebar() {
 
   const displayedGallery = gallery.slice(0, 6);
   const extraCount = galleryTotal > 6 ? galleryTotal - 6 : 0;
+
+  const enrolledCourses = COURSES
+    .filter(c => enrolledCourseIds.has(c.id))
+    .slice(0, 3);
 
   return (
     <aside className="home-right-sidebar">
@@ -34,6 +41,33 @@ export default function RightSidebar() {
           <p className="event-card-detail"><CalendarIcon /> Oct 24, 2023 · 06:00 PM</p>
           <p className="event-card-detail"><PinIcon /> Grand Hall, Innovation Hub</p>
           <button className="event-attend-btn">Going / Not Going</button>
+        </div>
+      </div>
+
+      {/* Education */}
+      <div className="right-card">
+        <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
+          <p className="right-section-title">Education</p>
+          <button className="section-link" style={{ marginLeft: 'auto' }} onClick={onCoursesClick}>View all</button>
+        </div>
+        <div className="event-list" style={{ padding: '0 14px 14px' }}>
+          {enrolledCourses.length === 0 && (
+            <p style={{ fontSize: 12, color: '#4a5270', margin: 0 }}>No courses yet.</p>
+          )}
+          {enrolledCourses.map(course => {
+            const pct = getCourseProgressPct(course.id, course);
+            return (
+              <div key={course.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={onCoursesClick}>
+                <div className="event-thumb" style={{ overflow: 'hidden' }}>
+                  <img src={course.img} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div className="friend-info">
+                  <p className="friend-name">{course.title}</p>
+                  <p className="friend-sub">{pct}% complete</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

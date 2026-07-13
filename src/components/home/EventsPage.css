@@ -2227,6 +2227,55 @@
   border-color: rgba(96, 165, 250, 0.4);
 }
 
+/* Carousel controls on event cover */
+.ev-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(10, 12, 26, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  z-index: 2;
+}
+.ev-carousel-arrow:hover {
+  background: rgba(37, 99, 235, 0.55);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+.ev-carousel-arrow--prev { left: 16px; }
+.ev-carousel-arrow--next { right: 16px; }
+
+.ev-carousel-dots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+.ev-carousel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+}
+.ev-carousel-dot:hover { background: rgba(255, 255, 255, 0.7); }
+.ev-carousel-dot--active { background: #fff; transform: scale(1.2); }
+
 /* Hero row */
 .ev-detail-hero {
   display: flex;

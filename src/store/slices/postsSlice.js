@@ -172,6 +172,13 @@ export const reportPost = createAsyncThunk(
   }
 );
 
+export const reportUser = createAsyncThunk(
+  'posts/reportUser',
+  async ({ userId }) => {
+    return { userId };
+  }
+);
+
 export const sharePost = createAsyncThunk(
   'posts/share',
   async (postId, { getState, rejectWithValue }) => {
@@ -319,6 +326,17 @@ const postsSlice = createSlice({
         state.reportSubmitting = false;
       })
       .addCase(reportPost.rejected, (state) => {
+        state.reportSubmitting = false;
+      })
+
+      // ── Report User ────────────────────────
+      .addCase(reportUser.pending, (state) => {
+        state.reportSubmitting = true;
+      })
+      .addCase(reportUser.fulfilled, (state) => {
+        state.reportSubmitting = false;
+      })
+      .addCase(reportUser.rejected, (state) => {
         state.reportSubmitting = false;
       });
   },

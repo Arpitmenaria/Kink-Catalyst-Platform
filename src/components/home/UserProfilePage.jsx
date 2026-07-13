@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import AnimatedNav from "./AnimatedNav";
 import PostCard from "./PostCard";
 import SkeletonImg from "../SkeletonImg";
+import ReportModal from "./ReportModal";
+import { EventsTab } from "./ProfilePage";
 import { followUser, unfollowUser } from "../../store/slices/usersSlice";
 
 // ⚠️ TEMPORARY: profileSlice.js doesn't yet expose by-id versions of
@@ -22,20 +24,19 @@ async function getJson(url, token) {
   return res.json();
 }
 
-const TABS = ["Feed", "Photos", "About"];
+const TABS = ["Feed", "Photos", "About", "Events"];
 
+function BackArrowIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  );
+}
 function BriefcaseIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="7" width="20" height="14" rx="2" />
       <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
     </svg>
@@ -43,16 +44,7 @@ function BriefcaseIcon() {
 }
 function PinIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
       <circle cx="12" cy="10" r="3" />
     </svg>
@@ -60,16 +52,7 @@ function PinIcon() {
 }
 function CalIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
@@ -88,32 +71,14 @@ function MoreIcon() {
 }
 function MsgIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
 function PersonAddIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <line x1="19" y1="8" x2="19" y2="14" />
@@ -123,16 +88,7 @@ function PersonAddIcon() {
 }
 function CheckIcon() {
   return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -250,45 +206,18 @@ const MOCK_POSTS = [
 ];
 
 const MOCK_PHOTOS = [
-  {
-    id: "mock-photo-1",
-    images: [
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400&q=80",
-    ],
-  },
-  {
-    id: "mock-photo-2",
-    images: [
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&q=80",
-    ],
-  },
-  {
-    id: "mock-photo-3",
-    images: [
-      "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80",
-    ],
-  },
-  {
-    id: "mock-photo-4",
-    images: [
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80",
-    ],
-  },
-  {
-    id: "mock-photo-5",
-    images: [
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80",
-    ],
-  },
-  {
-    id: "mock-photo-6",
-    images: [
-      "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=400&q=80",
-    ],
-  },
+  { id: "mock-photo-1", images: ["https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400&q=80"] },
+  { id: "mock-photo-2", images: ["https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&q=80"] },
+  { id: "mock-photo-3", images: ["https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80"] },
+  { id: "mock-photo-4", images: ["https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80"] },
+  { id: "mock-photo-5", images: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80"] },
+  { id: "mock-photo-6", images: ["https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=400&q=80"] },
 ];
 
-export default function UserProfilePage({ userId, onBack, onMessageUser }) {
+export default function UserProfilePage({
+  userId, onBack, onMessageUser, onEventsClick, onEventsCreateClick,
+  onGroupsClick, onCoursesClick, onLibraryClick, onMinisitesClick, onUserClick,
+}) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector((s) => s.auth);
   const { followingIds } = useSelector((s) => s.users);
@@ -303,6 +232,7 @@ export default function UserProfilePage({ userId, onBack, onMessageUser }) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -358,52 +288,35 @@ export default function UserProfilePage({ userId, onBack, onMessageUser }) {
     dispatch(isFollowing ? unfollowUser(userId) : followUser(userId));
   }
 
+  function handleNav(id) {
+    if (id === "home")      onBack?.();
+    if (id === "events")    onEventsClick?.();
+    if (id === "friends")   onGroupsClick?.();
+    if (id === "messages")  onMessageUser?.(userId);
+    if (id === "courses")   onCoursesClick?.();
+    if (id === "library")   onLibraryClick?.();
+    if (id === "minisites") onMinisitesClick?.();
+  }
+
   if (loading && !viewedUser) {
     return (
       <div className="prof-page">
-        <AnimatedNav
-          activeId="home"
-          avatarUrl={authUser?.avatar}
-          onNavigate={() => {}}
-        />
+        <AnimatedNav activeId="home" avatarUrl={authUser?.avatar} onNavigate={handleNav} />
         <div className="prof-main">
-          <div
-            style={{ textAlign: "center", padding: "80px 0", color: "#5c6a8c" }}
-          >
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#5c6a8c" }}>
             Loading profile…
           </div>
         </div>
       </div>
     );
   }
-  function BackArrowIcon() {
-    return (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <line x1="19" y1="12" x2="5" y2="12" />
-        <polyline points="12 19 5 12 12 5" />
-      </svg>
-    );
-  }
+
   const displayName = viewedUser?.fullName ?? "User";
   const role = viewedUser?.role ?? "";
-  const DUMMY_PROFILE =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80";
+  const DUMMY_PROFILE = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80";
 
-const rawAvatar = viewedUser?.avatar ?? "";
-
-const avatarUrl =
-  rawAvatar?.startsWith?.("http") && rawAvatar.trim()
-    ? rawAvatar
-    : DUMMY_PROFILE;
+  const rawAvatar = viewedUser?.avatar ?? "";
+  const avatarUrl = rawAvatar?.startsWith?.("http") && rawAvatar.trim() ? rawAvatar : DUMMY_PROFILE;
   const coverUrl = viewedUser?.coverPhoto?.startsWith?.("http")
     ? viewedUser.coverPhoto
     : "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop";
@@ -413,62 +326,28 @@ const avatarUrl =
   const postsCount = viewedUser?.postCount ?? viewedPosts.length;
 
   return (
+    <>
     <div className="prof-page">
-      <AnimatedNav
-        activeId="home"
-        avatarUrl={authUser?.avatar}
-        onNavigate={(id) => {
-          if (id === "home") onBack?.();
-        }}
-      />
+      <AnimatedNav activeId="home" avatarUrl={authUser?.avatar} onNavigate={handleNav} />
 
       <div className="prof-main">
         {/* ── Cover (no edit button — read-only) ── */}
-        <div
-          className="prof-cover"
-          style={{ position: "relative", overflow: "hidden" }}
-        >
-          <SkeletonImg
-  src={avatarUrl}
-  alt={displayName}
-  className="prof-avatar-img"
-/>
-          <button
-            className="adm-cover-back-btn"
-            onClick={onBack}
-            title="Back to Groups"
-          >
+        <div className="prof-cover" style={{ position: "relative", overflow: "hidden" }}>
+          <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
+          <button className="prof-cover-back-btn" onClick={onBack} title="Back to Feed">
             <BackArrowIcon />
           </button>
         </div>
 
         {/* ── Identity ── */}
         <div className="prof-identity">
-          <div
-            className="prof-avatar-wrap"
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              cursor: "default",
-            }}
-          >
+          <div className="prof-avatar-wrap" style={{ position: "relative", overflow: "hidden", cursor: "default" }}>
             <SkeletonImg
               src={avatarUrl}
               alt={displayName}
               className="prof-avatar-img"
               fallback={
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
-                    height: "100%",
-                    fontSize: "2rem",
-                    fontWeight: 700,
-                    color: "#fff",
-                  }}
-                >
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: "2rem", fontWeight: 700, color: "#fff" }}>
                   {initials(displayName)}
                 </span>
               }
@@ -482,15 +361,11 @@ const avatarUrl =
             <div className="prof-meta-row">
               {role && (
                 <>
-                  <span className="prof-meta-item">
-                    <BriefcaseIcon /> {role}
-                  </span>
+                  <span className="prof-meta-item"><BriefcaseIcon /> {role}</span>
                   <span className="prof-meta-sep">·</span>
                 </>
               )}
-              <span className="prof-meta-item">
-                <PinIcon /> {viewedUser?.location ?? "Unknown"}
-              </span>
+              <span className="prof-meta-item"><PinIcon /> {viewedUser?.location ?? "Unknown"}</span>
               <span className="prof-meta-sep">·</span>
               <span className="prof-meta-item">
                 <CalIcon />{" "}
@@ -501,16 +376,12 @@ const avatarUrl =
             </div>
             <div className="prof-counts-row">
               <button className="prof-count-item">
-                <span className="prof-count-num">
-                  {followersCount.toLocaleString()}
-                </span>
+                <span className="prof-count-num">{followersCount.toLocaleString()}</span>
                 <span className="prof-count-lbl">Followers</span>
               </button>
               <span className="prof-count-div" />
               <button className="prof-count-item">
-                <span className="prof-count-num">
-                  {followingCount.toLocaleString()}
-                </span>
+                <span className="prof-count-num">{followingCount.toLocaleString()}</span>
                 <span className="prof-count-lbl">Following</span>
               </button>
               <span className="prof-count-div" />
@@ -529,9 +400,7 @@ const avatarUrl =
                 style={
                   isFollowing
                     ? {
-                        background: followHover
-                          ? "rgba(239,68,68,0.15)"
-                          : "#1a2338",
+                        background: followHover ? "rgba(239,68,68,0.15)" : "#1a2338",
                         border: `1px solid ${followHover ? "#ef4444" : "#1e2a42"}`,
                         color: followHover ? "#ef4444" : "#cbd5e1",
                       }
@@ -542,48 +411,32 @@ const avatarUrl =
                 onClick={handleFollowToggle}
               >
                 {isFollowing ? (
-                  followHover ? (
-                    <>Unfollow</>
-                  ) : (
-                    <>
-                      <CheckIcon /> Following
-                    </>
-                  )
+                  followHover ? <>Unfollow</> : <><CheckIcon /> Following</>
                 ) : (
-                  <>
-                    <PersonAddIcon /> Follow
-                  </>
+                  <><PersonAddIcon /> Follow</>
                 )}
               </button>
 
               <button
                 className="prof-edit-btn"
-                style={{
-                  background: "#1a2338",
-                  border: "1px solid #1e2a42",
-                  color: "#cbd5e1",
-                }}
+                style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#cbd5e1" }}
                 onClick={() => (onMessageUser ? onMessageUser(userId) : null)}
               >
                 <MsgIcon /> Message
               </button>
 
               <div style={{ position: "relative" }}>
-                <button
-                  className="prof-more-btn"
-                  onClick={() => setMenuOpen((o) => !o)}
-                >
+                <button className="prof-more-btn" onClick={() => setMenuOpen((o) => !o)}>
                   <MoreIcon />
                 </button>
                 {menuOpen && (
                   <div className="about-dropdown">
-                    <button className="about-dropdown-item">
-                      Share profile
-                    </button>
-                    <button className="about-dropdown-item about-dropdown-item--danger">
-                      Block user
-                    </button>
-                    <button className="about-dropdown-item about-dropdown-item--danger">
+                    <button className="about-dropdown-item">Share profile</button>
+                    <button className="about-dropdown-item about-dropdown-item--danger">Block user</button>
+                    <button
+                      className="about-dropdown-item about-dropdown-item--danger"
+                      onClick={() => { setMenuOpen(false); setReportOpen(true); }}
+                    >
                       Report
                     </button>
                   </div>
@@ -608,40 +461,19 @@ const avatarUrl =
 
         {/* ── Content ── */}
         <div
-          className={`prof-content${activeTab === "Photos" ? " prof-content--wide" : ""}`}
-          style={
-            activeTab === "Feed"
-              ? { width: "100%", maxWidth: "100%", boxSizing: "border-box" }
-              : undefined
-          }
+          className={`prof-content${(activeTab === "Photos" || activeTab === "Events") ? " prof-content--wide" : ""}`}
+          style={activeTab === "Feed" ? { width: "100%", maxWidth: "100%", boxSizing: "border-box" } : undefined}
         >
           {activeTab === "Feed" && (
-            <div
-              className="prof-feed"
-              style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
-            >
+            <div className="prof-feed" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
               {viewedPosts.length === 0 && (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "32px",
-                    color: "#5c6a8c",
-                    fontSize: 14,
-                  }}
-                >
+                <div style={{ textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
                   No posts yet.
                 </div>
               )}
               {viewedPosts.map((post) => (
-                <div
-                  key={post._id}
-                  style={{
-                    width: "100%",
-                    maxWidth: "100%",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <PostCard post={post} />
+                <div key={post._id} style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+                  <PostCard post={post} onUserClick={onUserClick} />
                 </div>
               ))}
             </div>
@@ -655,26 +487,14 @@ const avatarUrl =
                 </div>
                 <div className="media-grid">
                   {viewedPhotos.length === 0 && (
-                    <div
-                      style={{
-                        gridColumn: "1 / -1",
-                        textAlign: "center",
-                        padding: "32px",
-                        color: "#5c6a8c",
-                        fontSize: 14,
-                      }}
-                    >
+                    <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
                       No photos yet.
                     </div>
                   )}
                   {viewedPhotos.map((photo) => (
                     <div key={photo.id} className="media-photo-card">
                       <div className="media-photo-wrap">
-                        <SkeletonImg
-                          src={photo.images?.[0]}
-                          alt=""
-                          className="media-photo-img"
-                        />
+                        <SkeletonImg src={photo.images?.[0]} alt="" className="media-photo-img" />
                       </div>
                     </div>
                   ))}
@@ -698,8 +518,15 @@ const avatarUrl =
               </div>
             </div>
           )}
+
+          {activeTab === "Events" && (
+            <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} readOnly />
+          )}
         </div>
       </div>
     </div>
+
+    {reportOpen && <ReportModal userId={userId} onClose={() => setReportOpen(false)} />}
+    </>
   );
 }

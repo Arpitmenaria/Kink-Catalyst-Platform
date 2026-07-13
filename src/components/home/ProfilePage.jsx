@@ -10,13 +10,13 @@ import {
   fetchFollowers, fetchFollowing,
 } from '../../store/slices/profileSlice';
 import { fetchMyPosts } from '../../store/slices/postsSlice';
-import { ALEX_AVATAR, SIDEBAR_EVENTS } from './mockData';
+import { ALEX_AVATAR, SIDEBAR_EVENTS, PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
 import './ProfilePage.css';
 
 const COVER_URL = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
-const TABS = ['Feed', 'About', 'Connections', 'Photos', 'Events'];
+const TABS = PROFILE_TABS;
 
 
 const PERSONAL_INFO = [
@@ -42,6 +42,7 @@ function BriefcaseIcon() { return <svg width="14" height="14" viewBox="0 0 24 24
 function PinIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 function CalIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function EditIcon()      { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
+function BackArrowIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function MoreIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function PhotosIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function VideoIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
@@ -73,7 +74,7 @@ function MutualIcon() {
   return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 }
 
-function FriendSuggestionsPanel() {
+function FriendSuggestionsPanel({ onUserClick }) {
   const dispatch   = useDispatch();
   const { suggestions, dismissedIds: reduxDismissed } = useSelector(s => s.users);
 
@@ -113,14 +114,18 @@ function FriendSuggestionsPanel() {
         return (
           <div key={id} className={`prof-sugg-item${removingIds.has(id) ? ' prof-sugg-item--removing' : ''}`}>
             <div className="prof-sugg-item-top">
-              <div className="prof-sugg-avatar" style={{ background: f.avatarColor ?? f.color ?? '#3b82f6', overflow: 'hidden' }}>
+              <div
+                className="prof-sugg-avatar"
+                style={{ background: f.avatarColor ?? f.color ?? '#3b82f6', overflow: 'hidden', cursor: 'pointer' }}
+                onClick={() => onUserClick?.(id)}
+              >
                 {f.avatar
                   ? <img src={f.avatar} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : f.name.split(' ').map(w => w[0]).join('').toUpperCase()
                 }
               </div>
               <div className="prof-sugg-info">
-                <p className="prof-sugg-name">{f.name}</p>
+                <p className="prof-sugg-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
                 <p className="prof-sugg-sub"><MutualIcon />{sub}</p>
               </div>
             </div>
@@ -142,7 +147,7 @@ function FriendSuggestionsPanel() {
   );
 }
 
-function ConnectionsTab() {
+export function ConnectionsTab({ onUserClick, hideSearch }) {
   const dispatch = useDispatch();
   const { connections, connectionsTotal } = useSelector(s => s.profile);
 
@@ -168,6 +173,10 @@ function ConnectionsTab() {
   const CONN_INDUSTRIES = [...new Set(connections.map(c => c.industry).filter(Boolean))];
 
   const hasFilter = filterLoc || filterInd;
+
+  function openConnProfile(conn) {
+    onUserClick?.(conn.id ?? conn._id);
+  }
 
   const visible = connections.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -209,16 +218,18 @@ function ConnectionsTab() {
 
       {/* ── Filter bar ── */}
       <div className="prof-conn-filter-bar" ref={filterBarRef}>
-        <div className="prof-conn-search-wrap">
-          <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input
-            className="prof-conn-search"
-            type="text"
-            placeholder="Search connections..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+        {!hideSearch && (
+          <div className="prof-conn-search-wrap">
+            <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              className="prof-conn-search"
+              type="text"
+              placeholder="Search connections..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        )}
         <button
           className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
           onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
@@ -290,13 +301,13 @@ function ConnectionsTab() {
         <div className="prof-conn-list">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
-              <div className="prof-conn-avatar-wrap">
+              <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
                 <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
                 <span className={`prof-conn-status-dot${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
               <div className="prof-conn-info">
                 <div className="prof-conn-name-row">
-                  <span className="prof-conn-name">{conn.name}</span>
+                  <span className="prof-conn-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</span>
                   {conn.online
                     ? <span className="prof-conn-online-badge">Online</span>
                     : <span className="prof-conn-last-active">{conn.lastActive}</span>
@@ -327,11 +338,11 @@ function ConnectionsTab() {
         <div className="prof-conn-grid">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">
-              <div className="prof-conn-card-avatar-wrap">
+              <div className="prof-conn-card-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
                 <img src={conn.avatar} alt={conn.name} className="prof-conn-card-avatar" />
                 <span className={`prof-conn-status-dot prof-conn-status-dot--card${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
-              <p className="prof-conn-card-name">{conn.name}</p>
+              <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</p>
               <p className="prof-conn-card-role">{conn.role}</p>
               {conn.online
                 ? <span className="prof-conn-online-badge">Online</span>
@@ -359,7 +370,7 @@ function ConnectionsTab() {
 
       <button className="prof-conn-load-more">View all connections</button>
     </div>
-    <FriendSuggestionsPanel />
+    <FriendSuggestionsPanel onUserClick={onUserClick} />
     </div>
   );
 }
@@ -439,7 +450,7 @@ function GalleryPanel() {
   );
 }
 
-function MediaTab() {
+export function MediaTab({ readOnly }) {
   const dispatch = useDispatch();
   const { photos } = useSelector(s => s.profile);
 
@@ -450,13 +461,15 @@ function MediaTab() {
     <div className="media-tab">
       <div className="media-header">
         <h2 className="media-title">Photos</h2>
-        <button className="media-create-btn"><PlusIcon /> Create album</button>
+        {!readOnly && <button className="media-create-btn"><PlusIcon /> Create album</button>}
       </div>
       <div className="media-grid">
-        <button className="media-add-slot">
-          <div className="media-add-icon"><CameraIcon /></div>
-          <span className="media-add-label">Add photo</span>
-        </button>
+        {!readOnly && (
+          <button className="media-add-slot">
+            <div className="media-add-icon"><CameraIcon /></div>
+            <span className="media-add-label">Add photo</span>
+          </button>
+        )}
         {photos.map(photo => (
           <MediaCard key={photo.id} photo={photo} />
         ))}
@@ -499,7 +512,7 @@ function UpcomingEventsPanel() {
   );
 }
 
-function EventsTab({ onEventsClick, onCreateEvent }) {
+export function EventsTab({ onEventsClick, onCreateEvent, readOnly }) {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [openMenuId,    setOpenMenuId]    = useState(null);
 
@@ -508,7 +521,9 @@ function EventsTab({ onEventsClick, onCreateEvent }) {
     <div className="ev-tab">
       <div className="ev-header">
         <h2 className="ev-title">Discover Events</h2>
-        <button className="ev-create-btn" onClick={onCreateEvent ?? onEventsClick}><PlusIcon /> Create events</button>
+        {!readOnly && (
+          <button className="ev-create-btn" onClick={onCreateEvent ?? onEventsClick}><PlusIcon /> Create events</button>
+        )}
       </div>
 
       {bannerVisible && (
@@ -609,7 +624,7 @@ function profileToEdu(p) {
   return (p?.education ?? []).map(e => ({ id: e._id ?? e.id, school: e.school ?? '', degree: e.degree ?? '', years: e.years ?? '', type: e.type ?? '' }));
 }
 
-function AboutTab() {
+export function AboutTab({ readOnly }) {
   const dispatch = useDispatch();
   const { profile } = useSelector(s => s.profile);
 
@@ -675,7 +690,7 @@ function AboutTab() {
       <div className="about-card about-card--hoverable">
         <div className="about-card-header">
           <span className="about-card-label">Overview</span>
-          {!editingBio && (
+          {!editingBio && !readOnly && (
             <button className="about-edit-pencil" onClick={handleEdit} title="Edit overview">
               <EditIcon />
             </button>
@@ -721,19 +736,21 @@ function AboutTab() {
             className={`about-info-tab-btn${infoTab === 'education' ? ' about-info-tab-btn--active' : ''}`}
             onClick={() => setInfoTab('education')}
           >Education</button>
-          <button
-            className="about-info-tab-edit"
-            title={`Edit ${infoTab === 'personal' ? 'Personal Information' : 'Education'}`}
-            onClick={() => {
-              if (infoTab === 'personal') {
-                setPersonalDraft({ ...personalValues });
-                setEditingPersonal(true);
-              } else {
-                setEduDraft(eduItems.map(i => ({ ...i })));
-                setEditingEdu(true);
-              }
-            }}
-          ><EditIcon /></button>
+          {!readOnly && (
+            <button
+              className="about-info-tab-edit"
+              title={`Edit ${infoTab === 'personal' ? 'Personal Information' : 'Education'}`}
+              onClick={() => {
+                if (infoTab === 'personal') {
+                  setPersonalDraft({ ...personalValues });
+                  setEditingPersonal(true);
+                } else {
+                  setEduDraft(eduItems.map(i => ({ ...i })));
+                  setEditingEdu(true);
+                }
+              }}
+            ><EditIcon /></button>
+          )}
         </div>
 
         {infoTab === 'personal' && (
@@ -903,7 +920,7 @@ function AboutTab() {
 export default function ProfilePage({
   onBack, onCoursesClick, onLibraryClick, onEventsClick, onEventsCreateClick,
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
-  initialTab, onInitTabConsumed,
+  initialTab, onInitTabConsumed, onUserClick,
 }) {
   const dispatch = useDispatch();
   const { user: authUser }  = useSelector(s => s.auth);
@@ -991,35 +1008,31 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
 
       <div className="prof-main">
         <div className="prof-cover" style={{ position: 'relative', overflow: 'hidden' }}>
-  <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
+          <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
 
-   <button
-            className="adm-cover-back-btn"
-            onClick={onBack}
-            title="Back to Groups"
-          >
+          <button className="prof-cover-back-btn" onClick={onBack} title="Back to Feed">
             <BackArrowIcon />
           </button>
 
-  <button className="prof-cover-edit-btn" onClick={() => coverInputRef.current?.click()} title="Change cover photo">
-    <EditIcon />
-    <span>Edit Cover</span>
-  </button>
-  <input
-    ref={coverInputRef}
-    type="file"
-    accept="image/*"
-    style={{ display: 'none' }}
-    onChange={e => {
-      const file = e.target.files?.[0];
-      if (file) {
-        setCoverUrl(URL.createObjectURL(file));
-        dispatch(updateCover(file));
-      }
-      e.target.value = '';
-    }}
-  />
-</div>
+          <button className="prof-cover-edit-btn" onClick={() => coverInputRef.current?.click()} title="Change cover photo">
+            <EditIcon />
+            <span>Edit Cover</span>
+          </button>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setCoverUrl(URL.createObjectURL(file));
+                dispatch(updateCover(file));
+              }
+              e.target.value = '';
+            }}
+          />
+        </div>
         <div className="prof-identity">
           <div className="prof-avatar-wrap" style={{ position: 'relative', overflow: 'hidden' }}>
             <SkeletonImg
@@ -1126,7 +1139,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
           )}
 
           {activeTab === 'About'       && <AboutTab />}
-          {activeTab === 'Connections' && <ConnectionsTab />}
+          {activeTab === 'Connections' && <ConnectionsTab onUserClick={onUserClick} />}
           {activeTab === 'Photos'      && <MediaTab />}
           {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} />}
 

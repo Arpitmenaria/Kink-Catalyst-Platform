@@ -11,6 +11,12 @@
   background: #080c14;
   color: #e2e8f0;
   font-family: inherit;
+  animation: crPageIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes crPageIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
 }
 
 /* ── Top Bar ── */
@@ -42,7 +48,7 @@
   transition: background 0.15s;
 }
 .cr-back-btn:hover { background: rgba(37,99,235,0.15); color: #93c5fd; }
-.cr-back-label { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr-back-label { max-width: none; white-space: nowrap; }
 
 .cr-topbar-center { display: flex; align-items: center; justify-content: center; flex: 1; }
 .cr-chapter-pill {

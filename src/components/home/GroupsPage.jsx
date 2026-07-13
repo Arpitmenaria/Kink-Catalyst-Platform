@@ -1271,7 +1271,7 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 /* ── Mock data ── */
 const HUB_CATEGORIES = ['All', 'Technology', 'Design', 'Business', 'Education', 'Health', 'Science', 'Finance', 'Arts'];
 
-const HUB_GROUPS = [
+export const HUB_GROUPS = [
   { id: 1,  name: 'Neural Interface Labs',   category: 'Technology', members: '14.2k members', memberCount: 14200, memberAvatars: ['https://i.pravatar.cc/28?img=5','https://i.pravatar.cc/28?img=9','https://i.pravatar.cc/28?img=12'],  coverImg: 'https://picsum.photos/seed/hub-neural/400/200',  iconText: 'NI', color: '#2563eb', tab: 'suggested', privacy: 'public',  createdAt: 'February 8, 2022',   admin: 'Lena Hartmann',    mission: 'Push the boundary between human cognition and machine intelligence.',     description: 'Neural Interface Labs is a research-driven community for engineers, neuroscientists, and AI practitioners exploring brain-computer interfaces, neural decoding, and next-gen human-machine interaction. We share papers, tools, and collaborate on open research.' },
   { id: 2,  name: 'Quantum Finance Guild',   category: 'Finance',    members: '8.7k members',  memberCount: 8700,  memberAvatars: ['https://i.pravatar.cc/28?img=16','https://i.pravatar.cc/28?img=20','https://i.pravatar.cc/28?img=25'], coverImg: 'https://picsum.photos/seed/hub-quantum/400/200', iconText: 'QF', color: '#7c3aed', tab: 'suggested', privacy: 'private', createdAt: 'September 3, 2021',  admin: 'Ravi Menon',       mission: 'Apply quantum computing to financial modelling and risk.',                description: 'The Quantum Finance Guild connects quants, mathematicians, and fintech engineers exploring quantum algorithms for portfolio optimisation, derivatives pricing, and high-frequency trading. Private group — verified finance professionals only.' },
   { id: 3,  name: 'BioSynth Research',       category: 'Science',    members: '5.1k members',  memberCount: 5100,  memberAvatars: ['https://i.pravatar.cc/28?img=33','https://i.pravatar.cc/28?img=36','https://i.pravatar.cc/28?img=40'], coverImg: 'https://picsum.photos/seed/hub-bio/400/200',     iconText: 'BR', color: '#059669', tab: 'suggested', privacy: 'public',  createdAt: 'April 17, 2023',     admin: 'Dr. Yuki Tanaka',  mission: 'Accelerate synthetic biology through open collaboration.',              description: 'BioSynth Research brings together biologists, chemists, and computational scientists working on engineered biological systems. Members share protocols, discuss CRISPR tooling, and collaborate on open-source biology projects.' },
@@ -1968,7 +1968,7 @@ function CreateGroupModal({ onClose }) {
 /* ══════════════════════════
    Main Component
 ══════════════════════════ */
-export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialGroupId, onInitGroupConsumed }) {
   const dispatch = useDispatch();
   const { groups, groupsLoading, groupsTab } = useSelector(s => s.groups);
   const { user: authUser } = useSelector(s => s.auth);
@@ -1981,6 +1981,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [showDetail,     setShowDetail]     = useState(false);
   const [adminGroup,     setAdminGroup]     = useState(null);
   const [detailGroup,    setDetailGroup]    = useState(null);
+  const [detailFromHome, setDetailFromHome] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [hubTab,         setHubTab]         = useState('suggested');
   const [hubCat,         setHubCat]         = useState('All');
@@ -1988,6 +1989,17 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
   }, [dispatch, hubTab, hubCat]);
+
+  useEffect(() => {
+    if (!initialGroupId) return;
+    const found = groups.find(g => (g._id ?? g.id) === initialGroupId);
+    if (found) {
+      setDetailGroup(found);
+      setShowDetail(true);
+      setDetailFromHome(true);
+    }
+    onInitGroupConsumed?.();
+  }, [initialGroupId, groups]);
 
   if (showCreate) {
     return (
@@ -2046,6 +2058,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
           setShowDetail(false);
           // Re-fetch so hub reflects any join/leave done inside detail page
           dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
+          if (detailFromHome) onBack?.();
         }}
         onManage={() => { setAdminGroup(detailGroup); setShowDetail(false); setShowAdmin(true); }}
         onFeedClick={onBack}

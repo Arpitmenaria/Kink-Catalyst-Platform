@@ -126,8 +126,8 @@ export default function PostCard({ post, onUserClick }) {
   const mediaType   = post.media?.[0]?.type ?? 'image';
 
   function handleAuthorClick() {
-    console.log('Author clicked:', authorId, authorName);
-    onUserClick(1);
+    if (!authorId || !onUserClick) return;
+    onUserClick(authorId);
   }
 
   const likeCount    = isStatic ? post.likes    : (post.likes?.length    ?? 0);

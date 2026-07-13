@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
-import CourseReaderPage from './CourseReaderPage';
+import CourseDetailPage from './CourseDetailPage';
+import ResourceDetailPage from './ResourceDetailPage';
+import HistoryPage from './HistoryPage';
 import BookmarkedResourcesPage from './BookmarkedResourcesPage';
 import { ALEX_AVATAR } from './mockData';
+import { COURSES, RESOURCES, flattenChapters } from './educationData';
+import useEducationProgress from './useEducationProgress';
 import './LearningActivityPage.css';
 
 /* ── Icons ── */
@@ -21,19 +25,9 @@ function MedalIcon()    { return <svg width="22" height="22" viewBox="0 0 24 24"
 function ArticleIcon()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>; }
 function VideoFileIcon(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
 function PdfIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>; }
+function HistoryIcon()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 
-/* ── Static data ── */
-const STATS = [
-  { Icon: CourseListIcon,  value: '12',   label: 'Total Courses',  color: '#06b6d4' },
-  { Icon: CheckCircleIcon, value: '5',    label: 'Completed',      color: '#10b981' },
-  { Icon: ClockIcon2,      value: '120h', label: 'Learning Hours', color: '#8b5cf6' },
-];
-
-const CONTINUE_COURSES = [
-  { id: 1, title: 'Advanced UI Design Systems',       module: 'Module 4: Tokens & Components',   chapter: 'Chapter 7 of 10: Component Architecture', progress: 65, img: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=300&q=80&fit=crop' },
-  { id: 2, title: 'Product Management Fundamentals',  module: 'Module 2: User Research Ethics',  chapter: 'Chapter 4 of 8: User Interview Ethics',   progress: 32, img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&q=80&fit=crop' },
-  { id: 3, title: 'React Performance Patterns',       module: 'Module 1: Profiling & Rendering', chapter: 'Chapter 2 of 12: React DevTools',          progress: 18, img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300&q=80&fit=crop' },
-];
+const RESOURCE_ICON = { Article: ArticleIcon, Video: VideoFileIcon, Guide: ArticleIcon, Document: PdfIcon };
 
 const ACHIEVEMENTS = [
   { Icon: TrophyIcon,    label: 'Fast Learner', active: true  },
@@ -41,20 +35,27 @@ const ACHIEVEMENTS = [
   { Icon: MedalIcon,     label: 'Top 1%',       active: false },
 ];
 
-const FAVORITES = [
-  { Icon: ArticleIcon,   title: 'Principles of Web Accessibility', meta: '8 min read',   color: '#3b82f6' },
-  { Icon: VideoFileIcon, title: 'Micro-interactions in Figma',     meta: '12 min video', color: '#8b5cf6' },
-  { Icon: PdfIcon,       title: 'UX Interview Cheatsheet',         meta: 'PDF • 1.2 MB', color: '#f59e0b' },
-];
+function timeAgo(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
 
 export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
   const { profile }   = useSelector(s => s.profile);
   const avatarUrl     = profile?.avatar ?? ALEX_AVATAR;
   const firstName     = (profile?.fullName ?? 'Alex Rivera').split(' ')[0];
-  const [activeCourse,    setActiveCourse]    = useState(null);
+  const progress = useEducationProgress();
+  const [activeCourseId,  setActiveCourseId]  = useState(null);
+  const [activeResourceId, setActiveResourceId] = useState(null);
   const [showBookmarks,   setShowBookmarks]   = useState(false);
+  const [showHistory,     setShowHistory]     = useState(false);
 
-  if (activeCourse)  return <CourseReaderPage course={activeCourse} onBack={() => setActiveCourse(null)} />;
+  if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
+  if (activeResourceId) return <ResourceDetailPage resourceId={activeResourceId} onBack={() => setActiveResourceId(null)} />;
+  if (showHistory) return <HistoryPage onBack={() => setShowHistory(false)} />;
   if (showBookmarks) return <BookmarkedResourcesPage onBack={() => setShowBookmarks(false)} />;
 
   function handleNav(id) {
@@ -66,6 +67,35 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
     if (id === 'friends')  onGroupsClick?.();
     if (id === 'calendar')  onCalendarClick?.();
     if (id === 'minisites') onMinisitesClick?.();
+  }
+
+  const continueCourses = COURSES
+    .filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100)
+    .map(c => {
+      const chapters = flattenChapters(c);
+      const lastId = progress.lastViewedChapter[c.id] ?? chapters[0]?.id;
+      const chIdx = Math.max(0, chapters.findIndex(ch => ch.id === lastId));
+      const ch = chapters[chIdx];
+      const moduleIdx = c.modules.findIndex(m => m.id === ch?.moduleId);
+      return {
+        ...c,
+        pct: progress.getCourseProgressPct(c.id, c),
+        moduleLabel: ch ? `Module ${moduleIdx + 1} of ${c.modules.length}: ${ch.moduleTitle.replace(/^Module \d+:\s*/, '')}` : '',
+        chapterLabel: ch ? `Chapter ${chIdx + 1} of ${chapters.length}: ${ch.title}` : '',
+      };
+    });
+
+  const savedResources = RESOURCES.filter(r => progress.isSaved(r.id)).slice(0, 3);
+
+  const STATS = [
+    { Icon: CourseListIcon,  value: String(progress.enrolledCourseIds.size), label: 'Total Courses',  color: '#06b6d4' },
+    { Icon: CheckCircleIcon, value: String(COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) === 100).length), label: 'Completed', color: '#10b981' },
+    { Icon: ClockIcon2,      value: '120h', label: 'Learning Hours', color: '#8b5cf6' },
+  ];
+
+  function openHistoryEntry(entry) {
+    if (entry.type === 'course') setActiveCourseId(entry.courseId);
+    else setActiveResourceId(entry.resourceId);
   }
 
   return (
@@ -86,15 +116,24 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           {/* LEFT: stat cards + continue learning */}
           <div className="la-left-col">
             <div className="la-stats-row">
-              {STATS.map(({ Icon, value, label, color }) => (
-                <div key={label} className="la-stat-card">
-                  <div className="la-stat-icon" style={{ color, background: color + '18' }}>
-                    <Icon />
+              {STATS.map(({ Icon, value, label, color }) => {
+                const isCompleted = label === 'Completed';
+                return (
+                  <div
+                    key={label}
+                    className="la-stat-card"
+                    style={isCompleted ? { cursor: 'pointer' } : undefined}
+                    onClick={isCompleted ? () => setShowHistory(true) : undefined}
+                    title={isCompleted ? 'View learning history' : undefined}
+                  >
+                    <div className="la-stat-icon" style={{ color, background: color + '18' }}>
+                      <Icon />
+                    </div>
+                    <p className="la-stat-value">{value}</p>
+                    <p className="la-stat-label">{label}</p>
                   </div>
-                  <p className="la-stat-value">{value}</p>
-                  <p className="la-stat-label">{label}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="la-continue-card">
@@ -103,23 +142,26 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                 <button className="la-view-all">View All</button>
               </div>
               <div className="la-course-list">
-                {CONTINUE_COURSES.map((c, i) => (
+                {continueCourses.length === 0 && (
+                  <div style={{ color: '#5c6a8c', fontSize: 14, padding: '8px 0' }}>No courses in progress yet.</div>
+                )}
+                {continueCourses.map((c, i) => (
                   <div key={c.id} className="la-course-item" style={{ '--li': i }}>
                     <img src={c.img} alt={c.title} className="la-course-thumb" />
                     <div className="la-course-body">
                       <div className="la-course-top-row">
                         <div>
                           <p className="la-course-title">{c.title}</p>
-                          <p className="la-course-module">{c.module}</p>
+                          <p className="la-course-module">{c.moduleLabel}</p>
                         </div>
-                        <span className="la-course-pct">{c.progress}%</span>
+                        <span className="la-course-pct">{c.pct}%</span>
                       </div>
                       <div className="la-progress-track">
-                        <div className="la-progress-fill" style={{ width: `${c.progress}%` }} />
+                        <div className="la-progress-fill" style={{ width: `${c.pct}%` }} />
                       </div>
                       <div className="la-course-bottom-row">
-                        <p className="la-course-chapter">{c.chapter}</p>
-                        <button className="la-play-btn" aria-label="Resume" onClick={() => setActiveCourse(c)}><PlayIcon /></button>
+                        <p className="la-course-chapter">{c.chapterLabel}</p>
+                        <button className="la-play-btn" aria-label="Resume" onClick={() => setActiveCourseId(c.id)}><PlayIcon /></button>
                       </div>
                     </div>
                   </div>
@@ -149,12 +191,39 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                 <button className="la-dots-btn" aria-label="View all bookmarks" onClick={() => setShowBookmarks(true)}><DotsIcon /></button>
               </div>
               <div className="la-fav-list">
-                {FAVORITES.map(({ Icon, title, meta, color }, i) => (
-                  <div key={i} className="la-fav-item">
-                    <div className="la-fav-icon" style={{ color, background: color + '18' }}><Icon /></div>
+                {savedResources.length === 0 && (
+                  <div style={{ color: '#5c6a8c', fontSize: 13 }}>No saved resources yet.</div>
+                )}
+                {savedResources.map(r => {
+                  const Icon = RESOURCE_ICON[r.type] ?? ArticleIcon;
+                  return (
+                    <div key={r.id} className="la-fav-item">
+                      <div className="la-fav-icon" style={{ color: '#3b82f6', background: '#3b82f618' }}><Icon /></div>
+                      <div className="la-fav-body">
+                        <p className="la-fav-title">{r.title}</p>
+                        <p className="la-fav-meta">{r.type}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="la-panel">
+              <div className="la-card-head">
+                <h2 className="la-card-title">History</h2>
+                <button className="la-view-all" onClick={() => setShowHistory(true)}>View All</button>
+              </div>
+              <div className="la-fav-list">
+                {progress.history.length === 0 && (
+                  <div style={{ color: '#5c6a8c', fontSize: 13 }}>Nothing viewed yet.</div>
+                )}
+                {progress.history.slice(0, 10).map((entry, i) => (
+                  <div key={i} className="la-fav-item" style={{ cursor: 'pointer' }} onClick={() => openHistoryEntry(entry)}>
+                    <div className="la-fav-icon" style={{ color: '#8b5cf6', background: '#8b5cf618' }}><HistoryIcon /></div>
                     <div className="la-fav-body">
-                      <p className="la-fav-title">{title}</p>
-                      <p className="la-fav-meta">{meta}</p>
+                      <p className="la-fav-title">{entry.title}</p>
+                      <p className="la-fav-meta">{entry.type === 'course' ? 'Course' : 'Resource'} · {timeAgo(entry.viewedAt)}</p>
                     </div>
                   </div>
                 ))}

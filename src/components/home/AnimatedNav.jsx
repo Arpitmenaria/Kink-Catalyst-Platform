@@ -20,8 +20,8 @@ const MAIN_ITEMS = [
   { id: 'home',      Icon: IconHome2,          label: 'Feed'      },
   { id: 'events',    Icon: IconCalendar,        label: 'Events'    },
   { id: 'friends',   Icon: IconUsers,           label: 'Groups'    },
-  { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages'  },
-  { id: 'library',   Icon: IconGradCap,         label: 'Education' },
+  { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages' },
+  { id: 'courses',   Icon: IconGradCap,         label: 'Education' },
   { id: 'minisites', Icon: IconWorld,           label: 'Mini Sites'},
 ];
 

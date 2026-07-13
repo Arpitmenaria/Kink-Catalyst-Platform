@@ -10,7 +10,12 @@
       "Bash(node -e \"const fs=require\\('fs'\\); const src=fs.readFileSync\\('src/components/home/GroupsPage.jsx','utf8'\\); console.log\\('Lines:', src.split\\('\\\\n'\\).length\\); const hasAdmPage=src.includes\\('adm-page'\\); const hasShowAdmin=src.includes\\('showAdmin'\\); const hasGroupAdminDashboard=src.includes\\('GroupAdminDashboard'\\); console.log\\('adm-page class:', hasAdmPage\\); console.log\\('showAdmin state:', hasShowAdmin\\); console.log\\('GroupAdminDashboard component:', hasGroupAdminDashboard\\);\")",
       "Bash(node -e \"const fs=require\\('fs'\\); const lines=fs.readFileSync\\('src/components/home/EventsPage.jsx','utf8'\\).split\\('\\\\n'\\); console.log\\('Total lines:', lines.length\\); lines.slice\\(-8\\).forEach\\(\\(l,i\\)=>console.log\\(lines.length-8+i+1, l\\)\\);\")",
       "Bash(node -e \"const fs=require\\('fs'\\); const lines=fs.readFileSync\\('src/components/home/MessagesPage.jsx','utf8'\\).split\\('\\\\n'\\); console.log\\('Total lines:', lines.length\\); lines.slice\\(-8\\).forEach\\(\\(l,i\\)=>console.log\\(lines.length-8+i+1, l\\)\\);\")",
-      "Bash(node -e \"const fs=require\\('fs'\\); const lines=fs.readFileSync\\('src/components/home/CalendarPage.jsx','utf8'\\).split\\('\\\\n'\\); console.log\\('Total lines:', lines.length\\); lines.slice\\(-8\\).forEach\\(\\(l,i\\)=>console.log\\(lines.length-8+i+1, l\\)\\);\")"
+      "Bash(node -e \"const fs=require\\('fs'\\); const lines=fs.readFileSync\\('src/components/home/CalendarPage.jsx','utf8'\\).split\\('\\\\n'\\); console.log\\('Total lines:', lines.length\\); lines.slice\\(-8\\).forEach\\(\\(l,i\\)=>console.log\\(lines.length-8+i+1, l\\)\\);\")",
+      "Bash(node -e ' *)",
+      "Bash(npx eslint *)",
+      "Bash(git stash *)",
+      "Bash(lsof -ti:5173)",
+      "Bash(xargs -I{} ps -p {} -o pid,command)"
     ]
   },
   "enableAllProjectMcpServers": true,

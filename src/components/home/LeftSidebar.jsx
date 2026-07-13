@@ -3,9 +3,14 @@ import SkeletonImg from '../SkeletonImg';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
-import { ALEX_AVATAR, SIDEBAR_EVENTS } from './mockData';
+import { ALEX_AVATAR, GALLERY_IMAGES } from './mockData';
 import CreatePostModal from './CreatePostModal';
 import AnimatedNav from './AnimatedNav';
+import { HUB_GROUPS } from './GroupsPage';
+import { DISC_EVENTS, BOOKED_EVENTS } from './EventsPage';
+
+const YOUR_GROUPS = HUB_GROUPS.filter(g => g.tab === 'joined');
+const UPCOMING_EVENTS = [...DISC_EVENTS, ...BOOKED_EVENTS].slice(0, 3);
 
 function membershipLabel(tier = '') {
   const map = { platinum: 'Platinum Member', gold: 'Gold Member', free: 'Free Member' };
@@ -52,7 +57,7 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick }) {
+export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick, onGroupClick, onEventClick, onUserClick }) {
   const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
@@ -170,7 +175,11 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                   className="friend-item"
                 >
                   <div className="friend-item-top">
-                    <div className="friend-avatar" style={{ background: f.avatarColor ?? '#3b82f6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <div
+                      className="friend-avatar"
+                      style={{ background: f.avatarColor ?? '#3b82f6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer' }}
+                      onClick={() => onUserClick?.(id)}
+                    >
                       {f.avatar
                         ? <SkeletonImg
                             src={f.avatar}
@@ -181,7 +190,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                       }
                     </div>
                     <div className="friend-info">
-                      <p className="friend-name">{f.name}</p>
+                      <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
                       <p className="friend-sub"><MutualIcon />{f.mutualFriends ? `${f.mutualFriends} mutual friends` : (f.sub ?? '')}</p>
                     </div>
                   </div>
@@ -215,7 +224,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
           </div>
           <div className="group-list">
             {groups.map(g => (
-              <div key={g.id ?? g._id} className="group-item">
+              <div key={g.id ?? g._id} className="group-item" style={{ cursor: 'pointer' }} onClick={() => onGroupClick?.(g.id ?? g._id)}>
                 <div className="group-icon" style={{ background: g.color ?? '#3b82f6' }}>
                   {g.name[0]}
                 </div>
@@ -235,15 +244,31 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <button className="section-link">View all</button>
           </div>
           <div className="event-list">
-            {SIDEBAR_EVENTS.map(e => (
-              <div key={e.id} className="sidebar-event-item">
+            {UPCOMING_EVENTS.map(e => (
+              <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
                 <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
-                  <img src={e.img} alt={e.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div className="friend-info">
-                  <p className="friend-name">{e.name}</p>
-                  <p className="friend-sub">{e.date}</p>
+                  <p className="friend-name">{e.title}</p>
+                  <p className="friend-sub">{e.month} {e.day}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gallery */}
+        <div className="right-card">
+          <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
+            <p className="right-section-title">Gallery</p>
+            <button className="section-link" style={{ marginLeft: 'auto' }}>View all</button>
+          </div>
+          <div className="gallery-grid">
+            {GALLERY_IMAGES.map((src, i) => (
+              <div key={i} className="gallery-thumb" style={{ overflow: 'hidden' }}>
+                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {i === 5 && <div className="gallery-more">+42</div>}
               </div>
             ))}
           </div>
