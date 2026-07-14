@@ -237,7 +237,9 @@ export default function PostCard({ post, onUserClick }) {
   }
 
   function openReport() { setMenuOpen(false); setReportOpen(true); }
-
+/**
+ * 
+ */
   return (
     <>
       <article className="post-card">
