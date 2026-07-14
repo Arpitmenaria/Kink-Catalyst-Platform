@@ -19,7 +19,8 @@
       "Bash(xargs -I{} cat {})",
       "Bash(curl -s -i \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\")",
       "Bash(curl -s -o /tmp/conv_response.txt -w \"HTTP_STATUS:%{http_code}\\\\n\" \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 15)",
-      "Bash(curl -sv \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 10)"
+      "Bash(curl -sv \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 10)",
+      "Bash(ssh -T git@github-gaurav)"
     ]
   },
   "enableAllProjectMcpServers": true,
