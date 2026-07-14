@@ -111,7 +111,11 @@ export const startDM = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest('/api/conversations', { method: 'POST', token, body: { userId } });
-      return normalizeConversation(data);
+      const conv = normalizeConversation(data);
+      // The create/get-or-create response doesn't always echo back a `participant`
+      // object — fall back to the userId we know we started this DM with, so
+      // "click avatar to view profile" never ends up with a null participantId.
+      return { ...conv, participantId: conv.participantId ?? userId };
     } catch (err) {
       return rejectWithValue(err.message);
     }

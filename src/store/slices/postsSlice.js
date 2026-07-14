@@ -241,6 +241,36 @@ export const createPost = createAsyncThunk(
   }
 );
 
+export const editPost = createAsyncThunk(
+  'posts/edit',
+  async ({ postId, caption, visibility }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}`, {
+        method: 'PATCH',
+        body: { caption, visibility },
+        token,
+      });
+      return { postId, caption: data.post?.caption ?? caption, visibility: data.post?.visibility ?? visibility };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const deletePost = createAsyncThunk(
+  'posts/delete',
+  async (postId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/posts/${postId}`, { method: 'DELETE', token });
+      return { postId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const fetchReportReasons = createAsyncThunk(
   'posts/fetchReportReasons',
   async (_, { rejectWithValue }) => {
@@ -316,6 +346,8 @@ const postsSlice = createSlice({
     commentsLoadingIds: [],
     sharingId: null,
     creating: false,
+    editingId: null,
+    deletingId: null,
     reportReasons: [],
     reasonsLoading: false,
     reportSubmitting: false,
@@ -455,6 +487,37 @@ const postsSlice = createSlice({
       })
       .addCase(sharePost.rejected, (state) => {
         state.sharingId = null;
+      })
+
+      // ── Edit Post ──────────────────────────
+      .addCase(editPost.pending, (state, action) => {
+        state.editingId = action.meta.arg.postId;
+      })
+      .addCase(editPost.fulfilled, (state, action) => {
+        state.editingId = null;
+        const { postId, caption, visibility } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          post.caption = caption;
+          post.visibility = visibility;
+        });
+      })
+      .addCase(editPost.rejected, (state) => {
+        state.editingId = null;
+      })
+
+      // ── Delete Post ────────────────────────
+      .addCase(deletePost.pending, (state, action) => {
+        state.deletingId = action.meta.arg;
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        state.deletingId = null;
+        const { postId } = action.payload;
+        state.posts = state.posts.filter(p => p._id !== postId);
+        state.myPosts = state.myPosts.filter(p => p._id !== postId);
+        state.viewedPosts = state.viewedPosts.filter(p => p._id !== postId);
+      })
+      .addCase(deletePost.rejected, (state) => {
+        state.deletingId = null;
       })
 
       // ── Create Post ───────────────────────

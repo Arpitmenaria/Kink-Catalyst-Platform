@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
-import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments } from '../../store/slices/postsSlice';
+import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost } from '../../store/slices/postsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
+import CreatePostModal from './CreatePostModal';
 import './PostCard.css';
 
+const CAPTION_TRUNCATE_LENGTH = 200;
 const BURST_EMOJIS = ['😊', '❤️', '🔥', '✨', '💫', '⭐', '🎉', '👏'];
 const BURST_PATHS = [
   { dx: -48, dy: -64, rot: -30 },
@@ -34,9 +36,12 @@ function timeAgo(dateStr) {
 function MoreIcon()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function ReportIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>; }
 function FlagIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
+function EditIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>; }
+function TrashIcon()   { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>; }
 function GlobeIcon()   { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline', verticalAlign:'middle' }}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
 function FriendsIcon() { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline', verticalAlign:'middle' }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function LockIcon()    { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline', verticalAlign:'middle' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
+function PinIcon()     { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline', verticalAlign:'middle' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 
 const VISIBILITY_META = {
   anyone:   { Icon: GlobeIcon,   label: 'Anyone' },
@@ -53,6 +58,8 @@ function PlayIcon()    { return <svg width="26" height="26" viewBox="0 0 24 24" 
 function CloseIcon()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
 function ChevronBigLeft()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 function ChevronBigRight() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
+function ChevronSmallLeft()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
+function ChevronSmallRight() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
 
 const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#ef4444'];
 function nameColor(name = '') {
@@ -97,7 +104,7 @@ function normalizeComment(c) {
 export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
-  const { likingIds, commentingId, commentsLoadingIds } = useSelector(s => s.posts);
+  const { likingIds, commentingId, commentsLoadingIds, deletingId } = useSelector(s => s.posts);
 
   const isStatic = typeof post.likes === 'number';
 
@@ -112,6 +119,9 @@ export default function PostCard({ post, onUserClick }) {
   const [likedComments,   setLikedComments]   = useState(new Set());
   const [replyingTo,      setReplyingTo]      = useState(null);
   const [replyText,       setReplyText]       = useState('');
+  const [captionExpanded, setCaptionExpanded] = useState(false);
+  const [editOpen,        setEditOpen]        = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const menuRef = useRef(null);
 
   function toggleReplies(id) {
@@ -146,15 +156,20 @@ export default function PostCard({ post, onUserClick }) {
 
   const userId = user?.id ?? user?._id;
   const authorId      = post.author?._id ?? post.author?.id ?? post.author?.userId ?? post.authorId ?? post.userId;
+  const isOwner       = !!userId && !!authorId && userId === authorId;
   const authorName    = post.author?.fullName || 'Unknown';
   const rawAuthorAv   = post.author?.avatar ?? '';
   const authorAvatar  = rawAuthorAv?.startsWith?.('http') ? rawAuthorAv : '';
+  const authorLocation = post.author?.location ?? '';
   const mediaItems  = (post.media ?? []).filter(m => m?.url?.startsWith?.('http'));
   const [slideIndex, setSlideIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const goPrevSlide = () => setSlideIndex(i => (i - 1 + mediaItems.length) % mediaItems.length);
   const goNextSlide = () => setSlideIndex(i => (i + 1) % mediaItems.length);
   const visMeta     = VISIBILITY_META[post.visibility] ?? VISIBILITY_META.anyone;
+  const caption        = post.caption ?? '';
+  const captionIsLong  = caption.length > CAPTION_TRUNCATE_LENGTH;
+  const captionShown   = captionExpanded || !captionIsLong ? caption : caption.slice(0, CAPTION_TRUNCATE_LENGTH).trimEnd();
 
   function handleAuthorClick() {
     if (!onUserClick) return;
@@ -237,9 +252,21 @@ export default function PostCard({ post, onUserClick }) {
   }
 
   function openReport() { setMenuOpen(false); setReportOpen(true); }
-/**
- * 
- */
+
+  function openEdit() { setMenuOpen(false); setEditOpen(true); }
+
+  function openDeleteConfirm() { setMenuOpen(false); setDeleteConfirmOpen(true); }
+
+  async function handleDeleteConfirm() {
+    const result = await dispatch(deletePost(post._id));
+    if (deletePost.fulfilled.match(result)) {
+      setDeleteConfirmOpen(false);
+      dispatch(showToast({ message: 'Post deleted', type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to delete post', type: 'error' }));
+    }
+  }
+
   return (
     <>
       <article className="post-card">
@@ -267,28 +294,57 @@ export default function PostCard({ post, onUserClick }) {
             >
               {authorName}
             </p>
-            <p className="post-time">{timeAgo(post.createdAt)} · <span title={visMeta.label}><visMeta.Icon /></span></p>
+            <p className="post-time">
+              {timeAgo(post.createdAt)} · <span title={visMeta.label}><visMeta.Icon /></span>
+              {authorLocation && <> · <PinIcon /> {authorLocation}</>}
+            </p>
           </div>
           <div className="post-menu-wrap" ref={menuRef}>
             <button className="post-more-btn" onClick={() => setMenuOpen(v => !v)}><MoreIcon /></button>
             {menuOpen && (
               <div className="post-menu-dropdown">
-                <button className="post-menu-item" onClick={openReport}>
-                  <span className="post-menu-icon post-menu-icon--red"><ReportIcon /></span>
-                  <span className="post-menu-text"><span className="post-menu-item-title">Report Post</span><span className="post-menu-item-sub">Submit a report for review</span></span>
-                </button>
-                <div className="post-menu-divider" />
-                <button className="post-menu-item" onClick={openReport}>
-                  <span className="post-menu-icon post-menu-icon--blue"><FlagIcon /></span>
-                  <span className="post-menu-text"><span className="post-menu-item-title">Flag as inappropriate</span><span className="post-menu-item-sub">Mark as offensive content</span></span>
-                </button>
+                {isOwner ? (
+                  <>
+                    <button className="post-menu-item" onClick={openEdit}>
+                      <span className="post-menu-icon post-menu-icon--blue"><EditIcon /></span>
+                      <span className="post-menu-text"><span className="post-menu-item-title">Edit Post</span><span className="post-menu-item-sub">Change caption or audience</span></span>
+                    </button>
+                    <div className="post-menu-divider" />
+                    <button className="post-menu-item" onClick={openDeleteConfirm}>
+                      <span className="post-menu-icon post-menu-icon--red"><TrashIcon /></span>
+                      <span className="post-menu-text"><span className="post-menu-item-title">Delete Post</span><span className="post-menu-item-sub">Remove this post permanently</span></span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="post-menu-item" onClick={openReport}>
+                      <span className="post-menu-icon post-menu-icon--red"><ReportIcon /></span>
+                      <span className="post-menu-text"><span className="post-menu-item-title">Report Post</span><span className="post-menu-item-sub">Submit a report for review</span></span>
+                    </button>
+                    <div className="post-menu-divider" />
+                    <button className="post-menu-item" onClick={openReport}>
+                      <span className="post-menu-icon post-menu-icon--blue"><FlagIcon /></span>
+                      <span className="post-menu-text"><span className="post-menu-item-title">Flag as inappropriate</span><span className="post-menu-item-sub">Mark as offensive content</span></span>
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
         </div>
 
         {/* Caption */}
-        {post.caption && <p className="post-text">{post.caption}</p>}
+        {post.caption && (
+          <p className="post-text">
+            {captionShown}
+            {captionIsLong && !captionExpanded && '… '}
+            {captionIsLong && (
+              <button type="button" className="post-caption-toggle" onClick={() => setCaptionExpanded(v => !v)}>
+                {captionExpanded ? ' See less' : 'See more'}
+              </button>
+            )}
+          </p>
+        )}
 
         {/* Media */}
         {mediaItems.length > 0 && (
@@ -315,8 +371,8 @@ export default function PostCard({ post, onUserClick }) {
             }
             {mediaItems.length > 1 && (
               <>
-                <button className="post-slider-arrow post-slider-arrow--prev" onClick={goPrevSlide} aria-label="Previous image" type="button">‹</button>
-                <button className="post-slider-arrow post-slider-arrow--next" onClick={goNextSlide} aria-label="Next image" type="button">›</button>
+                <button className="post-slider-arrow post-slider-arrow--prev" onClick={goPrevSlide} aria-label="Previous image" type="button"><ChevronSmallLeft /></button>
+                <button className="post-slider-arrow post-slider-arrow--next" onClick={goNextSlide} aria-label="Next image" type="button"><ChevronSmallRight /></button>
                 <div className="post-slider-dots">
                   {mediaItems.map((_, i) => (
                     <button
@@ -408,7 +464,7 @@ export default function PostCard({ post, onUserClick }) {
             ))}
           </div>
           <div className="post-action-sep" />
-          <button className="post-action-btn" onClick={() => setShowComments(v => !v)}>
+          <button className="post-action-btn" onClick={() => { if (commentCount > 0) setShowComments(v => !v); }}>
             <CommentIcon /> Comment ({commentCount})
           </button>
           <div className="post-action-sep" />
@@ -527,6 +583,23 @@ export default function PostCard({ post, onUserClick }) {
       </article>
 
       {reportOpen && <ReportModal postId={post._id} onClose={() => setReportOpen(false)} />}
+
+      {editOpen && <CreatePostModal editingPost={post} onClose={() => setEditOpen(false)} />}
+
+      {deleteConfirmOpen && (
+        <div className="dpm-overlay" onClick={() => setDeleteConfirmOpen(false)}>
+          <div className="dpm-box" onClick={e => e.stopPropagation()}>
+            <h2 className="dpm-title">Delete Post</h2>
+            <p className="dpm-desc">Are you sure you want to delete this post? This action cannot be undone.</p>
+            <div className="dpm-actions">
+              <button className="dpm-cancel-btn" onClick={() => setDeleteConfirmOpen(false)} type="button">Cancel</button>
+              <button className="dpm-confirm-btn" onClick={handleDeleteConfirm} disabled={deletingId === post._id} type="button">
+                {deletingId === post._id ? 'Deleting...' : 'Delete Post'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

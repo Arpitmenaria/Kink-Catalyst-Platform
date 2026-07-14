@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPost } from '../../store/slices/postsSlice';
+import { createPost, editPost } from '../../store/slices/postsSlice';
 import { createGroupPost } from '../../store/slices/groupsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { apiRequest } from '../../services/api';
@@ -77,14 +77,16 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, editingPost }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
-  const { creating } = useSelector(s => s.posts);
+  const { creating, editingId } = useSelector(s => s.posts);
+
+  const isEditMode = !!editingPost;
 
   const [tab,           setTab]           = useState(initialTab);
-  const [caption,       setCaption]       = useState('');
+  const [caption,       setCaption]       = useState(editingPost?.caption ?? '');
   // Video tab: single file, goes through the trimmer before landing here.
   const [mediaFile,     setMediaFile]     = useState(null);
   const [mediaPreview,  setMediaPreview]  = useState(null);
@@ -97,7 +99,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   const [cropIndex,     setCropIndex]     = useState(0);
   const [dragOver,      setDragOver]      = useState(false);
   const [error,         setError]         = useState('');
-  const [visibility,    setVisibility]    = useState('anyone');
+  const [visibility,    setVisibility]    = useState(editingPost?.visibility ?? 'anyone');
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
   const [emojiOpen,     setEmojiOpen]     = useState(false);
   // @mention — query is the partial name typed after "@", results come from
@@ -364,7 +366,28 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     setError('');
   }
 
+  async function handleSaveEdit() {
+    if (caption.length > CAPTION_MAX) {
+      setError(`Caption is too long. Maximum ${CAPTION_MAX} characters.`);
+      return;
+    }
+    if (!caption.trim()) {
+      setError('Caption cannot be empty.');
+      return;
+    }
+    setError('');
+    const result = await dispatch(editPost({ postId: editingPost._id, caption: caption.trim(), visibility }));
+    if (editPost.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Post updated', type: 'success' }));
+      onClose();
+    } else {
+      setError(result.payload || 'Failed to update post. Please try again.');
+    }
+  }
+
   async function handlePost() {
+    if (isEditMode) return handleSaveEdit();
+
     const hasMedia = tab === 'photo' ? images.length > 0 : !!mediaFile;
 
     // Caption length
@@ -418,24 +441,26 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
         {/* Header */}
         <div className="cp-header">
           <div>
-            <h2 className="cp-title" id="cp-title">Create Post</h2>
-            <p className="cp-subtitle">Share an update, photo, or event with your network.</p>
+            <h2 className="cp-title" id="cp-title">{isEditMode ? 'Edit Post' : 'Create Post'}</h2>
+            <p className="cp-subtitle">{isEditMode ? 'Update your caption or audience.' : 'Share an update, photo, or event with your network.'}</p>
           </div>
           <button className="cp-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         {/* Tabs */}
-        <div className="cp-tabs">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              className={`cp-tab${tab === t.id ? ' cp-tab--active' : ''}`}
-              onClick={() => switchTab(t.id)}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
+        {!isEditMode && (
+          <div className="cp-tabs">
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                className={`cp-tab${tab === t.id ? ' cp-tab--active' : ''}`}
+                onClick={() => switchTab(t.id)}
+              >
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Body */}
         <div className="cp-body">
@@ -524,8 +549,22 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
             )}
           </div>
 
+          {/* Existing media — read-only in edit mode, since editing only supports caption/visibility */}
+          {isEditMode && editingPost.media?.length > 0 && (
+            <div className="cp-photo-grid">
+              {editingPost.media.map((m, i) => (
+                <div key={m.id ?? m.url ?? i} className="cp-photo-thumb">
+                  {m.type === 'video'
+                    ? <video src={m.url} className="cp-photo-thumb-img" />
+                    : <img src={m.url} alt="" className="cp-photo-thumb-img" />
+                  }
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Media upload / preview */}
-          {tab === 'photo' ? (
+          {!isEditMode && (tab === 'photo' ? (
             images.length > 0 ? (
               <div className="cp-photo-grid">
                 {images.map(img => (
@@ -578,7 +617,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
             )
           ) : (
             <div className="cp-event-placeholder">Event creation coming soon.</div>
-          )}
+          ))}
           <input
             ref={fileInputRef}
             type="file"
@@ -613,9 +652,15 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
             </div>
           </div>
           {error && <p className="cp-error">{error}</p>}
-          <button className="cp-post-btn" onClick={handlePost} disabled={creating || tab === 'event'}>
-            {creating ? 'Posting…' : <><span>Post</span><SendIcon /></>}
-          </button>
+          {isEditMode ? (
+            <button className="cp-post-btn" onClick={handlePost} disabled={editingId === editingPost._id}>
+              {editingId === editingPost._id ? 'Saving…' : <><span>Save</span><SendIcon /></>}
+            </button>
+          ) : (
+            <button className="cp-post-btn" onClick={handlePost} disabled={creating || tab === 'event'}>
+              {creating ? 'Posting…' : <><span>Post</span><SendIcon /></>}
+            </button>
+          )}
         </div>
 
       </div>

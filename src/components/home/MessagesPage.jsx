@@ -9,6 +9,7 @@ import {
   toggleBlock, reportConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
 } from '../../store/slices/messagesSlice';
 import { fetchSuggestions } from '../../store/slices/usersSlice';
+import { showToast } from '../../store/slices/toastSlice';
 import {
   joinConversation, leaveConversation,
   emitTypingStart, emitTypingStop, onUserTyping, onUserStoppedTyping,
@@ -28,13 +29,19 @@ function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 
 function DoubleCheckIcon() { return <svg width="16" height="13" viewBox="0 0 28 13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 7 5 11 13 3"/><polyline points="9 7 13 11 21 3"/></svg>; }
 function PlusCircleIcon()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
 function AttachPlusIcon()  { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
-function ImageIcon()       { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function EmojiIcon()       { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function MicIcon()         { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>; }
 function SendIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
 function ChevronRightIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
 function BlockIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>; }
 function AlertIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>; }
+
+const EMOJI_LIST = [
+  '😀','😁','😂','🤣','😊','😍','😘','😎','🤔','🙄','😴','😭',
+  '😢','😅','😉','😇','🥳','😱','🤩','😜','🤗','🙌','👏','👍',
+  '👎','🙏','💪','🔥','✨','🎉','❤️','🧡','💛','💚','💙','💜',
+  '🖤','💯','⭐','🌟','☀️','🌈','🍕','🍔','☕','🎂','🎁','📸',
+];
 function ReadCheckIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>; }
 function BackArrowIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function UploadIcon()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>; }
@@ -160,7 +167,7 @@ function UploadAssetsModal({ convId, onClose }) {
   );
 }
 
-function SharedAssetsView({ conv, onBack }) {
+function SharedAssetsView({ conv, onBack, onOpenLightbox }) {
   const dispatch = useDispatch();
   const { assets, assetsLoading } = useSelector(s => s.messages);
 
@@ -215,8 +222,8 @@ function SharedAssetsView({ conv, onBack }) {
             {items.map((item, i) => (
               <div key={item.id ?? i} className="sa-media-thumb">
                 {item.type === 'video'
-                  ? <video src={item.url} className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                  : <img src={item.url} alt="" className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                  ? <video src={item.url} controls className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                  : <img src={item.url} alt="" className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%', cursor: 'pointer' }} onClick={() => onOpenLightbox?.(item.url)} />
                 }
               </div>
             ))}
@@ -316,7 +323,7 @@ function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 
 
 function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
   const dispatch = useDispatch();
-  const { suggestions } = useSelector(s => s.users);
+  const { suggestions, followingIds } = useSelector(s => s.users);
 
   const [view,        setView]        = useState('dm');
   const [search,      setSearch]      = useState('');
@@ -335,6 +342,7 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
     name: s.name ?? s.fullName ?? '',
     role: s.role ?? s.bio ?? '',
     color: s.color ?? '#3b82f6',
+    isFollowing: followingIds.includes(s.id ?? s._id ?? ''),
   })).filter(c => c.id);
 
   const filtered = contacts.filter(c =>
@@ -346,6 +354,10 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
   }
 
   function handleSelectDM(contact) {
+    if (!contact.isFollowing) {
+      dispatch(showToast({ message: `Follow ${contact.name.split(' ')[0] || 'this person'} to start chatting with them.`, type: 'error' }));
+      return;
+    }
     onStartDM?.(contact.id);
     onClose();
   }
@@ -394,11 +406,16 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
                 <span className="nm-contacts-title">Suggested</span>
                 <div className="nm-contact-list">
                   {filtered.map(c => (
-                    <div key={c.id} className="nm-contact-item" onClick={() => handleSelectDM(c)}>
+                    <div
+                      key={c.id}
+                      className={`nm-contact-item${c.isFollowing ? '' : ' nm-contact-item--locked'}`}
+                      onClick={() => handleSelectDM(c)}
+                      title={c.isFollowing ? undefined : `Follow ${c.name.split(' ')[0] || 'this person'} to start chatting`}
+                    >
                       <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
                       <div className="nm-contact-info">
                         <p className="nm-contact-name">{c.name}</p>
-                        <p className="nm-contact-role">{c.role}</p>
+                        <p className="nm-contact-role">{c.isFollowing ? c.role : 'Follow to chat'}</p>
                       </div>
                       <ArrowRightSmIcon />
                     </div>
@@ -492,7 +509,7 @@ const TABS = ['All', 'Unread', 'Groups', 'Online'];
 
 const TAB_PARAM = { All: 'all', Unread: 'unread', Groups: 'groups', Online: 'online' };
 
-export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialUserId, onInitUserConsumed }) {
+export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick, onUserClick, initialUserId, onInitUserConsumed }) {
   const dispatch = useDispatch();
   const {
     conversations, conversationsLoading,
@@ -516,11 +533,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [showAssets,       setShowAssets]      = useState(false);
   const [typingUser,       setTypingUser]      = useState(null);
   const [lightboxUrl,      setLightboxUrl]     = useState(null);
+  const [emojiOpen,        setEmojiOpen]       = useState(false);
+  const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | null
 
   const messagesEndRef  = useRef(null);
+  const emojiRef        = useRef(null);
+  const msgInputRef     = useRef(null);
   const typingTimerRef  = useRef(null);
   const isTypingRef     = useRef(false);
-  const imgInputRef     = useRef(null);
   const fileInputRef    = useRef(null);
 
   /* Fetch online users on mount */
@@ -595,6 +615,15 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgCount]);
 
+  /* Close emoji picker on outside click */
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) setEmojiOpen(false);
+    }
+    if (emojiOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [emojiOpen]);
+
   function openConversation(conv) {
     setActiveConv(conv);
     setChatKey(k => k + 1);
@@ -622,8 +651,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     dispatch(sendMessage({ convId: activeConv.id, type: msgType, file }));
   }
 
-  function handleInputChange(e) {
-    setInputMsg(e.target.value);
+  function triggerTyping() {
     if (!activeConv) return;
     if (!isTypingRef.current) {
       isTypingRef.current = true;
@@ -634,6 +662,26 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       isTypingRef.current = false;
       emitTypingStop(activeConv.id);
     }, 1500);
+  }
+
+  function handleInputChange(e) {
+    setInputMsg(e.target.value);
+    triggerTyping();
+  }
+
+  function insertEmoji(emoji) {
+    const el = msgInputRef.current;
+    const start = el?.selectionStart ?? inputMsg.length;
+    const end = el?.selectionEnd ?? inputMsg.length;
+    const next = inputMsg.slice(0, start) + emoji + inputMsg.slice(end);
+    setInputMsg(next);
+    triggerTyping();
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = start + emoji.length;
+      el.setSelectionRange(pos, pos);
+    });
   }
 
   async function handleStartDM(userId) {
@@ -647,12 +695,35 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     if (createGroup.fulfilled.match(result)) openConversation(result.payload);
   }
 
-  function handleBlock() {
-    if (activeConv) dispatch(toggleBlock(activeConv.id));
+  function closeConfirm() { setConfirmAction(null); }
+
+  async function handleConfirmAction() {
+    if (!activeConv) return closeConfirm();
+    if (confirmAction === 'block') {
+      const result = await dispatch(toggleBlock(activeConv.id));
+      if (toggleBlock.fulfilled.match(result)) {
+        dispatch(showToast({ message: result.payload.blocked ? 'Conversation blocked' : 'Conversation unblocked', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to update block status', type: 'error' }));
+      }
+    } else if (confirmAction === 'report') {
+      const result = await dispatch(reportConversation({ convId: activeConv.id, reason: 'Inappropriate content' }));
+      if (reportConversation.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Conversation reported for review', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to report conversation', type: 'error' }));
+      }
+    }
+    closeConfirm();
   }
 
-  function handleReport() {
-    if (activeConv) dispatch(reportConversation({ convId: activeConv.id, reason: 'Inappropriate content' }));
+  function handleUserClick(userId) {
+    if (!onUserClick) return;
+    if (!userId) {
+      dispatch(showToast({ message: "Can't open this profile — missing user info.", type: 'error' }));
+      return;
+    }
+    onUserClick(userId);
   }
 
   const messages  = activeConv ? (allMessages[activeConv.id] ?? []) : [];
@@ -661,6 +732,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   // store updates (e.g. a socket "online"/"offline" event) — always render the live copy from
   // the conversations list instead of the frozen selection.
   const liveActiveConv = activeConv ? (conversations.find(c => c.id === activeConv.id) ?? activeConv) : null;
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
   /* ── Chat view ── */
   if (activeConv) {
@@ -714,12 +786,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
 
         {showAssets
-          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} />
+          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} onOpenLightbox={setLightboxUrl} />
           : <>
           {/* Chat area */}
           <div className="msg-chat-area" key={chatKey}>
             <div className="msg-chat-header">
-              <div className="msg-chat-header-user">
+              <div
+                className="msg-chat-header-user"
+                onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
+                style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
+              >
                 <div className="msg-avatar-wrap">
                   <div className="msg-avatar msg-avatar--md" style={{ background: liveActiveConv.color }}>{initials(liveActiveConv.name)}</div>
                   {liveActiveConv.online && <span className="msg-online-dot" />}
@@ -803,26 +879,23 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Hidden file inputs */}
-            <input
-              ref={imgInputRef}
-              type="file"
-              accept="image/*,video/*"
-              style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleSendFile(f, f.type.startsWith('video') ? 'video' : 'image'); e.target.value = ''; }}
-            />
+            {/* Hidden file input — covers images, videos, and documents */}
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+              accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
               style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleSendFile(f, 'file'); e.target.value = ''; }}
+              onChange={e => {
+                const f = e.target.files?.[0];
+                if (f) handleSendFile(f, f.type.startsWith('image') ? 'image' : f.type.startsWith('video') ? 'video' : 'file');
+                e.target.value = '';
+              }}
             />
 
             <div className="msg-input-bar">
               <button className="msg-input-icon-btn" title="Attach file" onClick={() => !isBlocked && fileInputRef.current?.click()}><AttachPlusIcon /></button>
-              <button className="msg-input-icon-btn" title="Send image" onClick={() => !isBlocked && imgInputRef.current?.click()}><ImageIcon /></button>
               <input
+                ref={msgInputRef}
                 className="msg-input"
                 type="text"
                 placeholder={isBlocked ? 'You have blocked this conversation' : 'Type a message...'}
@@ -831,7 +904,23 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
                 disabled={isBlocked || sending}
               />
-              <button className="msg-input-icon-btn"><EmojiIcon /></button>
+              <div className="msg-emoji-wrap" ref={emojiRef}>
+                <button
+                  className="msg-input-icon-btn"
+                  type="button"
+                  title="Add emoji"
+                  onClick={() => !isBlocked && setEmojiOpen(v => !v)}
+                >
+                  <EmojiIcon />
+                </button>
+                {emojiOpen && (
+                  <div className="msg-emoji-popover">
+                    {EMOJI_LIST.map(em => (
+                      <button key={em} type="button" className="msg-emoji-btn" onClick={() => insertEmoji(em)}>{em}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="msg-input-icon-btn"><MicIcon /></button>
               <button
                 className={`msg-send-btn${inputMsg.trim() ? ' msg-send-btn--active' : ''}`}
@@ -853,11 +942,21 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
           {/* Contact info panel */}
           <div className="msg-contact-panel" key={`panel-${chatKey}`}>
-            <div className="msg-contact-avatar-wrap">
+            <div
+              className="msg-contact-avatar-wrap"
+              onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
+              style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
+            >
               <div className="msg-contact-avatar" style={{ background: liveActiveConv.color }}>{initials(liveActiveConv.name)}</div>
               {liveActiveConv.online && <span className="msg-contact-online-dot" />}
             </div>
-            <p className="msg-contact-name">{liveActiveConv.name}</p>
+            <p
+              className="msg-contact-name"
+              onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
+              style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
+            >
+              {liveActiveConv.name}
+            </p>
             <p className="msg-contact-role">{liveActiveConv.role}</p>
 
             <div className="msg-media-section">
@@ -887,14 +986,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             </div>
 
             <div className="msg-contact-actions">
-              <button className="msg-action-item" onClick={handleBlock}>
+              <button className="msg-action-item" onClick={() => setConfirmAction('block')}>
                 <span className="msg-action-icon msg-action-icon--red"><BlockIcon /></span>
                 <span className="msg-action-label">
                   {isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}` : `Block ${liveActiveConv.name.split(' ')[0]}`}
                 </span>
                 <ChevronRightIcon />
               </button>
-              <button className="msg-action-item" onClick={handleReport}>
+              <button className="msg-action-item" onClick={() => setConfirmAction('report')}>
                 <span className="msg-action-icon msg-action-icon--orange"><AlertIcon /></span>
                 <span className="msg-action-label">Report Conversation</span>
                 <ChevronRightIcon />
@@ -920,6 +1019,35 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               onClick={e => e.stopPropagation()}
               style={{ maxWidth: '90vw', maxHeight: '88vh', borderRadius: 10, objectFit: 'contain', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
             />
+          </div>
+        )}
+
+        {/* ── Block / Report confirmation ── */}
+        {confirmAction && (
+          <div className="msg-confirm-overlay" onClick={closeConfirm}>
+            <div className="msg-confirm-box" onClick={e => e.stopPropagation()}>
+              <h2 className="msg-confirm-title">
+                {confirmAction === 'block'
+                  ? (isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}?` : `Block ${liveActiveConv.name.split(' ')[0]}?`)
+                  : 'Report Conversation'}
+              </h2>
+              <p className="msg-confirm-desc">
+                {confirmAction === 'block'
+                  ? (isBlocked
+                      ? `${liveActiveConv.name} will be able to message you again.`
+                      : `${liveActiveConv.name} won't be able to send you messages, and you won't see theirs either. You can unblock them anytime.`)
+                  : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
+              </p>
+              <div className="msg-confirm-actions">
+                <button className="msg-confirm-cancel-btn" onClick={closeConfirm}>Cancel</button>
+                <button
+                  className={`msg-confirm-confirm-btn${confirmAction === 'block' && isBlocked ? ' msg-confirm-confirm-btn--neutral' : ''}`}
+                  onClick={handleConfirmAction}
+                >
+                  {confirmAction === 'block' ? (isBlocked ? 'Unblock' : 'Block') : 'Report'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -966,6 +1094,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           {TABS.map(t => (
             <button key={t} className={`msg-tab${tab === t ? ' msg-tab--active' : ''}`} onClick={() => setTab(t)}>
               {t}
+              {t === 'Unread' && totalUnread > 0 && <span className="msg-tab-badge">{totalUnread}</span>}
             </button>
           ))}
         </div>
@@ -983,10 +1112,18 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
         <div className="msg-list">
           {conversationsLoading && conversations.length === 0 && (
-            <p style={{ color: '#5c6a8c', fontSize: 13, padding: '16px 0' }}>Loading…</p>
+            <div className="msg-list-loading">
+              <span className="msg-spinner" />
+              <p>Loading conversations…</p>
+            </div>
           )}
           {!conversationsLoading && conversations.length === 0 && (
-            <p style={{ color: '#5c6a8c', fontSize: 13, padding: '16px 0' }}>No conversations yet.</p>
+            <div className="msg-list-empty">
+              <span className="msg-list-empty-icon"><MessagesNavIcon /></span>
+              <p className="msg-list-empty-title">No conversations yet</p>
+              <p className="msg-list-empty-sub">Start a conversation with a friend or connection to see it here.</p>
+              <button className="msg-list-empty-cta" onClick={() => setNewMsgOpen(true)}>New Message</button>
+            </div>
           )}
           {conversations.map(conv => (
             <div
@@ -1003,7 +1140,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   <span className="msg-conv-name">{conv.name}</span>
                   <div className="msg-conv-meta">
                     <span className="msg-conv-time">{conv.lastMessage?.time ?? ''}</span>
-                    {conv.unreadCount > 0 && <span className="msg-unread-dot" />}
+                    {conv.unreadCount > 0 && <span className="msg-badge">{conv.unreadCount}</span>}
                   </div>
                 </div>
                 <div className="msg-conv-bottom">

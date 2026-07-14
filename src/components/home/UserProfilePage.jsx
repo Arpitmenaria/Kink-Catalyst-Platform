@@ -7,6 +7,7 @@ import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
 import { followUser, unfollowUser } from "../../store/slices/usersSlice";
 import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
+import { showToast } from "../../store/slices/toastSlice";
 import { apiRequest } from "../../services/api";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
@@ -299,11 +300,19 @@ export default function UserProfilePage({
     dispatch(isFollowing ? unfollowUser(userId) : followUser(userId));
   }
 
+  function handleChatClick() {
+    if (!isFollowing) {
+      dispatch(showToast({ message: `Follow ${displayName.split(' ')[0]} to start chatting with them.`, type: 'error' }));
+      return;
+    }
+    onMessageUser?.(userId);
+  }
+
   function handleNav(id) {
     if (id === "home")      onBack?.();
     if (id === "events")    onEventsClick?.();
     if (id === "friends")   onGroupsClick?.();
-    if (id === "messages")  onMessageUser?.(userId);
+    if (id === "messages")  handleChatClick();
     if (id === "courses")   onCoursesClick?.();
     if (id === "library")   onLibraryClick?.();
     if (id === "minisites") onMinisitesClick?.();
@@ -324,10 +333,9 @@ export default function UserProfilePage({
 
   const displayName = viewedUser?.fullName ?? "User";
   const role = viewedUser?.profession ?? viewedUser?.role ?? "";
-  const DUMMY_PROFILE = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80";
 
   const rawAvatar = viewedUser?.avatar ?? "";
-  const avatarUrl = rawAvatar?.startsWith?.("http") && rawAvatar.trim() ? rawAvatar : DUMMY_PROFILE;
+  const avatarUrl = rawAvatar?.startsWith?.("http") && rawAvatar.trim() ? rawAvatar : "";
   const coverUrl = viewedUser?.coverPhoto?.startsWith?.("http")
     ? viewedUser.coverPhoto
     : "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop";
@@ -430,8 +438,15 @@ export default function UserProfilePage({
 
               <button
                 className="prof-edit-btn"
-                style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#cbd5e1" }}
-                onClick={() => (onMessageUser ? onMessageUser(userId) : null)}
+                style={{
+                  background: "#1a2338",
+                  border: "1px solid #1e2a42",
+                  color: isFollowing ? "#cbd5e1" : "#5c6a8c",
+                  opacity: isFollowing ? 1 : 0.6,
+                  cursor: isFollowing ? "pointer" : "not-allowed",
+                }}
+                onClick={handleChatClick}
+                title={isFollowing ? undefined : `Follow ${displayName.split(' ')[0]} to start chatting`}
               >
                 <MsgIcon /> Chat
               </button>

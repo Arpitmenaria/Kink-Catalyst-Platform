@@ -180,6 +180,7 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onCalendarClick={() => setSection('calendar')}
             onMinisitesClick={() => setSection('minisites')}
+            onUserClick={goToUserProfile}
             initialUserId={viewedUserId}
             onInitUserConsumed={() => setViewedUserId(null)}
           />
@@ -229,7 +230,7 @@ export default function HomePage() {
               onCreateEvent={goToEventsCreate}
               onUserClick={goToUserProfile}
             />
-            <RightSidebar onCoursesClick={() => setSection('courses')} />
+            <RightSidebar onCoursesClick={() => setSection('courses')} onGalleryClick={() => goToProfileTab('Photos')} />
           </>
         )}
       </div>
