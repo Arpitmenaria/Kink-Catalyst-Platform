@@ -48,6 +48,15 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  // Facebook-style year jump — a plain prev/next month arrow makes picking an
+  // old birth year require dozens of clicks, so expose Month/Year <select>s
+  // in the calendar header instead.
+  const nowYear = today.getFullYear();
+  const minYear = minDate ? minDate.getFullYear() : nowYear - 100;
+  const maxYear = maxDate ? maxDate.getFullYear() : nowYear + 10;
+  const yearOptions = [];
+  for (let y = maxYear; y >= minYear; y--) yearOptions.push(y);
+
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) {
@@ -90,7 +99,24 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
         <div className="dtp-dropdown dtp-dropdown--cal">
           <div className="dtp-cal-nav">
             <button className="dtp-nav-btn" onClick={() => setView(new Date(year, month - 1, 1))}><ChevLeft /></button>
-            <span className="dtp-month-label">{MONTHS[month]} {year}</span>
+            <div className="dtp-cal-nav-selects">
+              <select
+                className="dtp-nav-select"
+                value={month}
+                onChange={(e) => setView(new Date(year, Number(e.target.value), 1))}
+                aria-label="Month"
+              >
+                {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+              </select>
+              <select
+                className="dtp-nav-select dtp-nav-select--year"
+                value={year}
+                onChange={(e) => setView(new Date(Number(e.target.value), month, 1))}
+                aria-label="Year"
+              >
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
             <button className="dtp-nav-btn" onClick={() => setView(new Date(year, month + 1, 1))}><ChevRight /></button>
           </div>
           <div className="dtp-day-names">

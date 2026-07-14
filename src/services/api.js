@@ -16,7 +16,10 @@ export async function apiRequest(path, { method = 'GET', body, token, isFormData
   if (!res.ok) {
     const message =
       data?.message || data?.error || data?.msg || `Request failed (${res.status})`;
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
 
   return data;

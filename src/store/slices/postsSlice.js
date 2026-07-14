@@ -215,13 +215,17 @@ export const replyToComment = createAsyncThunk(
 
 export const createPost = createAsyncThunk(
   'posts/create',
-  async ({ caption, mediaFile, visibility = 'anyone' }, { getState, rejectWithValue }) => {
+  // mediaFile: single video file. mediaFiles: one or more images (multi-photo
+  // posts) — both append under the same 'media' field so the backend can
+  // treat it as an array, same as the group-post upload.
+  async ({ caption, mediaFile, mediaFiles, visibility = 'anyone' }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const formData = new FormData();
       if (caption?.trim()) formData.append('caption', caption.trim());
       formData.append('visibility', visibility);
       if (mediaFile) formData.append('media', mediaFile);
+      (mediaFiles ?? []).forEach(file => formData.append('media', file));
 
       const data = await apiRequest('/api/posts', {
         method: 'POST',

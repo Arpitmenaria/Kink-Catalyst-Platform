@@ -766,6 +766,26 @@
 
 .section-link:hover { text-decoration: underline; }
 
+.sidebar-create-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #3a4468;
+  border-radius: 8px;
+  color: #8b95b8;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  background: transparent;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.sidebar-create-btn:hover {
+  border-color: #3b82f6;
+  border-style: solid;
+  color: #93c5fd;
+  background: rgba(59,130,246,0.08);
+}
+
 /* ── Friend/group/event items ── */
 .friend-list, .group-list, .event-list {
   display: flex;

@@ -34,6 +34,7 @@ export default function HomePage() {
 
   const [section,         setSection]         = useState('feed');
   const [eventsCreate,    setEventsCreate]    = useState(false);
+  const [groupsCreate,    setGroupsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
   const [profileAutoEdit, setProfileAutoEdit] = useState(false);
   const [viewedUserId,    setViewedUserId]    = useState(null);
@@ -52,6 +53,7 @@ export default function HomePage() {
   }, [justSelectedPlan]);
 
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
+  function goToGroupsCreate() { setGroupsCreate(true); setSection('groups'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
 
   // Open someone's profile. If it's the logged-in user, send them to their
@@ -184,7 +186,7 @@ export default function HomePage() {
           />
         ) : section === 'groups' ? (
           <GroupsPage
-            onBack={() => setSection('feed')}
+            onBack={() => { setGroupsCreate(false); setSection('feed'); }}
             onCoursesClick={() => setSection('courses')}
             onLibraryClick={() => setSection('library')}
             onEventsClick={() => setSection('events')}
@@ -193,6 +195,7 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             initialGroupId={viewedGroupId}
             onInitGroupConsumed={() => setViewedGroupId(null)}
+            startCreate={groupsCreate}
           />
         ) : section === 'calendar' ? (
           <CalendarPage
@@ -218,6 +221,8 @@ export default function HomePage() {
               onGroupClick={goToGroup}
               onEventClick={goToEvent}
               onUserClick={goToUserProfile}
+              onCreateGroup={goToGroupsCreate}
+              onCreateEvent={goToEventsCreate}
             />
             <Feed
               onEventsClick={() => setSection('events')}

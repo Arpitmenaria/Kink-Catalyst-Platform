@@ -49,6 +49,10 @@ function ShareIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" 
 function BookmarkIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>; }
 function EmojiIcon()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function SendIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
+function PlayIcon()    { return <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 21 12 6 21"/></svg>; }
+function CloseIcon()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function ChevronBigLeft()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
+function ChevronBigRight() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
 
 const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#ef4444'];
 function nameColor(name = '') {
@@ -145,8 +149,11 @@ export default function PostCard({ post, onUserClick }) {
   const authorName    = post.author?.fullName || 'Unknown';
   const rawAuthorAv   = post.author?.avatar ?? '';
   const authorAvatar  = rawAuthorAv?.startsWith?.('http') ? rawAuthorAv : '';
-  const mediaUrl    = post.media?.[0]?.url?.startsWith?.('http') ? post.media[0].url : null;
-  const mediaType   = post.media?.[0]?.type ?? 'image';
+  const mediaItems  = (post.media ?? []).filter(m => m?.url?.startsWith?.('http'));
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const goPrevSlide = () => setSlideIndex(i => (i - 1 + mediaItems.length) % mediaItems.length);
+  const goNextSlide = () => setSlideIndex(i => (i + 1) % mediaItems.length);
   const visMeta     = VISIBILITY_META[post.visibility] ?? VISIBILITY_META.anyone;
 
   function handleAuthorClick() {
@@ -186,6 +193,17 @@ export default function PostCard({ post, onUserClick }) {
     if (isStatic || !showComments || post.commentsLoaded) return;
     dispatch(fetchPostComments(post._id));
   }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    function onKey(e) {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      if (e.key === 'ArrowLeft') goPrevSlide();
+      if (e.key === 'ArrowRight') goNextSlide();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [lightboxOpen, mediaItems.length]);
 
   function handleLike() {
     if (isStatic) {
@@ -268,20 +286,67 @@ export default function PostCard({ post, onUserClick }) {
         {post.caption && <p className="post-text">{post.caption}</p>}
 
         {/* Media */}
-        {mediaUrl && (
-          <div className="post-image-wrap">
-            {mediaType === 'video'
+        {mediaItems.length > 0 && (
+          <div className="post-image-wrap post-image-slider">
+            {mediaItems.length > 1 && (
+              <span className="post-slider-count">{slideIndex + 1}/{mediaItems.length}</span>
+            )}
+            {mediaItems[slideIndex]?.type === 'video'
               ? (
-                <video
-                  src={mediaUrl}
-                  className="post-image"
-                  controls
-                  style={{ height: '240px', width: '100%', display: 'block', objectFit: 'cover', background: '#0d1424' }}
-                />
+                <div className="post-video-thumb" onClick={() => setLightboxOpen(true)}>
+                  <video
+                    src={mediaItems[slideIndex].url}
+                    className="post-image"
+                    preload="metadata"
+                    style={{ height: '240px', width: '100%', display: 'block', objectFit: 'cover', background: '#0d1424' }}
+                  />
+                  <span className="post-video-play"><PlayIcon /></span>
+                </div>
               ) : (
-                <SkeletonImg src={mediaUrl} alt="" className="post-image" imgStyle={{ height: '240px' }} />
+                <div onClick={() => setLightboxOpen(true)} style={{ cursor: 'pointer' }}>
+                  <SkeletonImg src={mediaItems[slideIndex]?.url} alt="" className="post-image" imgStyle={{ height: '240px' }} />
+                </div>
               )
             }
+            {mediaItems.length > 1 && (
+              <>
+                <button className="post-slider-arrow post-slider-arrow--prev" onClick={goPrevSlide} aria-label="Previous image" type="button">‹</button>
+                <button className="post-slider-arrow post-slider-arrow--next" onClick={goNextSlide} aria-label="Next image" type="button">›</button>
+                <div className="post-slider-dots">
+                  {mediaItems.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`post-slider-dot${i === slideIndex ? ' post-slider-dot--active' : ''}`}
+                      onClick={() => setSlideIndex(i)}
+                      aria-label={`Go to image ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Fullscreen lightbox */}
+        {lightboxOpen && mediaItems.length > 0 && (
+          <div className="post-lightbox" onClick={() => setLightboxOpen(false)}>
+            <button className="post-lightbox-close" onClick={() => setLightboxOpen(false)} aria-label="Close" type="button"><CloseIcon /></button>
+            {mediaItems.length > 1 && (
+              <span className="post-lightbox-count">{slideIndex + 1} / {mediaItems.length}</span>
+            )}
+            {mediaItems.length > 1 && (
+              <button className="post-lightbox-arrow post-lightbox-arrow--prev" onClick={e => { e.stopPropagation(); goPrevSlide(); }} aria-label="Previous" type="button"><ChevronBigLeft /></button>
+            )}
+            <div className="post-lightbox-stage" onClick={e => e.stopPropagation()}>
+              {mediaItems[slideIndex]?.type === 'video'
+                ? <video src={mediaItems[slideIndex].url} controls autoPlay className="post-lightbox-media" />
+                : <img src={mediaItems[slideIndex]?.url} alt="" className="post-lightbox-media" />
+              }
+            </div>
+            {mediaItems.length > 1 && (
+              <button className="post-lightbox-arrow post-lightbox-arrow--next" onClick={e => { e.stopPropagation(); goNextSlide(); }} aria-label="Next" type="button"><ChevronBigRight /></button>
+            )}
           </div>
         )}
 

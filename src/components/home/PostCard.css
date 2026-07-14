@@ -497,9 +497,169 @@
   display: block;
   object-fit: cover;
   flex-shrink: 0;
-  animation: postKenBurns 10s ease-in-out infinite alternate;
-  will-change: transform;
-  transition: transform 0.3s ease;
+}
+
+/* ── Multi-image slider ── */
+.post-image-slider {
+  position: relative;
+}
+
+.post-slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s;
+}
+.post-slider-arrow:hover { background: rgba(0,0,0,0.8); }
+.post-slider-arrow--prev { left: 10px; }
+.post-slider-arrow--next { right: 10px; }
+
+.post-slider-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 5;
+}
+.post-slider-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.post-slider-dot--active { background: #fff; transform: scale(1.25); }
+
+/* ── Netflix-style video play button ── */
+.post-video-thumb {
+  position: relative;
+  cursor: pointer;
+}
+.post-video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  border: 2px solid rgba(255,255,255,0.85);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 3px;
+  transition: background 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+.post-video-thumb:hover .post-video-play {
+  background: rgba(0,0,0,0.75);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+/* ── Fullscreen lightbox ── */
+.post-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.post-lightbox-stage {
+  max-width: 90vw;
+  max-height: 88vh;
+  display: flex;
+}
+.post-lightbox-media {
+  max-width: 90vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+.post-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.post-lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+.post-lightbox-count {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.post-lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.post-lightbox-arrow:hover { background: rgba(255,255,255,0.22); }
+.post-lightbox-arrow--prev { left: 22px; }
+.post-lightbox-arrow--next { right: 22px; }
+
+.post-slider-count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
 }
 
 /* The Ken Burns zoom is meant for static photos only — on a <video> it also

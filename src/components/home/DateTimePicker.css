@@ -53,7 +53,7 @@
 
 /* ── Calendar ── */
 .dtp-dropdown--cal {
-  width: 280px;
+  width: 300px;
   padding: 14px;
 }
 
@@ -61,11 +61,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   margin-bottom: 12px;
 }
 .dtp-nav-btn {
   width: 30px;
   height: 30px;
+  flex-shrink: 0;
   border-radius: 7px;
   border: none;
   background: #1a1f35;
@@ -78,11 +80,33 @@
 }
 .dtp-nav-btn:hover { background: #252b45; color: #e2e8f0; }
 
-.dtp-month-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: #e2e8f0;
+.dtp-cal-nav-selects {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
 }
+.dtp-nav-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #1a1f35 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 5px center;
+  background-size: 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 18px 5px 7px;
+  cursor: pointer;
+  min-width: 0;
+  text-overflow: ellipsis;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.dtp-nav-select:hover   { background-color: #252b45; }
+.dtp-nav-select:focus   { outline: none; border-color: #3b82f6; }
+.dtp-nav-select         { flex: 1; }
+.dtp-nav-select--year   { flex: 0 0 60px; }
 
 .dtp-day-names {
   display: grid;

@@ -48,11 +48,20 @@ function MutualIcon() {
   );
 }
 
+function LocationIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  );
+}
+
 function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick, onGroupClick, onEventClick, onUserClick }) {
+export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick, onGroupClick, onEventClick, onUserClick, onCreateGroup, onCreateEvent }) {
   const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
@@ -188,7 +197,15 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                     </div>
                     <div className="friend-info">
                       <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
-                      <p className="friend-sub"><MutualIcon />{f.mutualFriends ? `${f.mutualFriends} mutual friends` : (f.sub ?? '')}</p>
+                      <p className="friend-sub">
+                        {f.mutualFriends ? (
+                          <><MutualIcon />{f.mutualFriends} mutual friends</>
+                        ) : (f.location || f.city) ? (
+                          <><LocationIcon />{f.location ?? f.city}</>
+                        ) : (
+                          <><MutualIcon />{f.sub ?? ''}</>
+                        )}
+                      </p>
                     </div>
                   </div>
                   <div className="friend-actions">
@@ -216,45 +233,50 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Your Groups</span>
-            <button className="section-link" onClick={onGroupsClick}>View all</button>
+            {groups.length > 0 && <button className="section-link" onClick={onGroupsClick}>View all</button>}
           </div>
-          <div className="group-list">
-            {groups.map(g => (
-              <div key={g.id ?? g._id} className="group-item" style={{ cursor: 'pointer' }} onClick={() => onGroupClick?.(g.id ?? g._id)}>
-                <div className="group-icon" style={{ background: g.color ?? '#3b82f6' }}>
-                  {g.name[0]}
+          {groups.length === 0 ? (
+            <button className="sidebar-create-btn" onClick={onCreateGroup}>+ Create Group</button>
+          ) : (
+            <div className="group-list">
+              {groups.map(g => (
+                <div key={g.id ?? g._id} className="group-item" style={{ cursor: 'pointer' }} onClick={() => onGroupClick?.(g.id ?? g._id)}>
+                  <div className="group-icon" style={{ background: g.color ?? '#3b82f6' }}>
+                    {g.name[0]}
+                  </div>
+                  <div className="friend-info">
+                    <p className="friend-name">{g.name}</p>
+                    <p className="friend-sub">{g.members}</p>
+                  </div>
                 </div>
-                <div className="friend-info">
-                  <p className="friend-name">{g.name}</p>
-                  <p className="friend-sub">{g.members}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Upcoming Events */}
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Upcoming Events</span>
-            <button className="section-link" onClick={onEventsClick}>View all</button>
+            {upcomingEvents.length > 0 && <button className="section-link" onClick={onEventsClick}>View all</button>}
           </div>
-          <div className="event-list">
-            {upcomingEvents.length === 0 && (
-              <p style={{ fontSize: 12, color: '#4a5270', margin: 0 }}>No upcoming events.</p>
-            )}
-            {upcomingEvents.map(e => (
-              <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
-                <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
-                  <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          {upcomingEvents.length === 0 ? (
+            <button className="sidebar-create-btn" onClick={onCreateEvent}>+ Create Event</button>
+          ) : (
+            <div className="event-list">
+              {upcomingEvents.map(e => (
+                <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
+                  <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
+                    <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div className="friend-info">
+                    <p className="friend-name">{e.title}</p>
+                    <p className="friend-sub">{e.month} {e.day}</p>
+                  </div>
                 </div>
-                <div className="friend-info">
-                  <p className="friend-name">{e.title}</p>
-                  <p className="friend-sub">{e.month} {e.day}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

@@ -113,8 +113,11 @@ export default function LoginForm() {
 
     setBtnState('loading');
     const result = await dispatch(loginUser({ email: form.email, password: form.password }));
-    const next = loginUser.rejected.match(result) ? 'error' : 'success';
-    setBtnState(next);
+    // requiresPlanSelection isn't a failed login — App.jsx redirects to
+    // PlansPage for it, so treat it like success rather than flashing
+    // "Invalid credentials" for what was actually a correct login.
+    const isRealError = loginUser.rejected.match(result) && !result.payload?.requiresPlanSelection;
+    setBtnState(isRealError ? 'error' : 'success');
 
     resetTimer.current = setTimeout(() => setBtnState('idle'), 2200);
   }

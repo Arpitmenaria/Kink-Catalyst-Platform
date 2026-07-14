@@ -3,7 +3,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createPost } from '../../store/slices/postsSlice';
 import { createGroupPost } from '../../store/slices/groupsSlice';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiRequest } from '../../services/api';
+import ImageCropper from './ImageCropper';
+import VideoTrimmer from './VideoTrimmer';
 import './CreatePost.css';
+
+const EMOJI_LIST = [
+  '😀','😁','😂','🤣','😊','😍','😘','😎','🤔','🙄','😴','😭',
+  '😢','😅','😉','😇','🥳','😱','🤩','😜','🤗','🙌','👏','👍',
+  '👎','🙏','💪','🔥','✨','🎉','❤️','🧡','💛','💚','💙','💜',
+  '🖤','💯','⭐','🌟','☀️','🌈','🍕','🍔','☕','🎂','🎁','📸',
+];
 
 function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
@@ -57,6 +67,9 @@ function EmojiIcon() {
 function SendIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
 }
+function PlusIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+}
 
 const TABS = [
   { id: 'photo', label: 'Photo', icon: <PhotoTabIcon /> },
@@ -66,21 +79,40 @@ const TABS = [
 
 export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId }) {
   const dispatch = useDispatch();
-  const { user: authUser } = useSelector(s => s.auth);
+  const { user: authUser, token } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
   const { creating } = useSelector(s => s.posts);
 
   const [tab,           setTab]           = useState(initialTab);
   const [caption,       setCaption]       = useState('');
+  // Video tab: single file, goes through the trimmer before landing here.
   const [mediaFile,     setMediaFile]     = useState(null);
   const [mediaPreview,  setMediaPreview]  = useState(null);
+  const [pendingVideo,  setPendingVideo]  = useState(null); // raw File awaiting trim/skip
+  // Photo tab — each selected image lands here only after it's been through
+  // the crop queue (cropped or explicitly skipped).
+  const [images,        setImages]        = useState([]); // [{ id, file, url }]
+  // Files picked but not yet cropped/skipped, processed one at a time.
+  const [cropQueue,     setCropQueue]     = useState([]);
+  const [cropIndex,     setCropIndex]     = useState(0);
   const [dragOver,      setDragOver]      = useState(false);
   const [error,         setError]         = useState('');
   const [visibility,    setVisibility]    = useState('anyone');
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const [emojiOpen,     setEmojiOpen]     = useState(false);
+  // @mention — query is the partial name typed after "@", results come from
+  // a local (non-Redux) fetch so it can't clobber ProfilePage's shared
+  // connections list if both happen to be mounted at once.
+  const [mentionOpen,    setMentionOpen]    = useState(false);
+  const [mentionQuery,   setMentionQuery]   = useState('');
+  const [mentionResults, setMentionResults] = useState([]);
+  const [mentionLoading, setMentionLoading] = useState(false);
 
   const fileInputRef  = useRef(null);
   const dropdownRef   = useRef(null);
+  const emojiRef       = useRef(null);
+  const mentionRef      = useRef(null);
+  const textareaRef     = useRef(null);
   const displayName = profile?.fullName ?? authUser?.fullName ?? 'You';
   const avatarUrl = profile?.avatar || '';
 
@@ -100,6 +132,93 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     return () => document.removeEventListener('mousedown', onOutsideClick);
   }, [dropdownOpen]);
 
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) setEmojiOpen(false);
+    }
+    if (emojiOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [emojiOpen]);
+
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (mentionRef.current && !mentionRef.current.contains(e.target)) setMentionOpen(false);
+    }
+    if (mentionOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [mentionOpen]);
+
+  // Debounced @mention search — local fetch, not a Redux dispatch (avoids
+  // clobbering ProfilePage's shared connections list, see note above).
+  useEffect(() => {
+    if (!mentionOpen) return;
+    let cancelled = false;
+    setMentionLoading(true);
+    const timer = setTimeout(() => {
+      const qs = mentionQuery ? `?search=${encodeURIComponent(mentionQuery)}&limit=6` : '?limit=6';
+      apiRequest(`/api/users/me/connections${qs}`, { token })
+        .then(data => {
+          if (cancelled) return;
+          const list = (data.connections ?? []).map(c => ({
+            id: c.id ?? c._id,
+            name: c.name ?? c.fullName ?? '',
+            avatar: c.avatar?.startsWith?.('http') ? c.avatar : '',
+          }));
+          setMentionResults(list);
+        })
+        .catch(() => { if (!cancelled) setMentionResults([]); })
+        .finally(() => { if (!cancelled) setMentionLoading(false); });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [mentionOpen, mentionQuery, token]);
+
+  function insertAtCursor(text) {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? caption.length;
+    const end = el?.selectionEnd ?? caption.length;
+    const next = caption.slice(0, start) + text + caption.slice(end);
+    setCaption(next);
+    if (error) setError('');
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = start + text.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
+
+  function handleCaptionChange(e) {
+    const value = e.target.value;
+    const cursor = e.target.selectionStart ?? value.length;
+    setCaption(value);
+    if (error) setError('');
+
+    const before = value.slice(0, cursor);
+    const match = before.match(/(?:^|\s)@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1]);
+      setMentionOpen(true);
+    } else {
+      setMentionOpen(false);
+    }
+  }
+
+  function handleMentionSelect(person) {
+    const el = textareaRef.current;
+    const cursor = el?.selectionStart ?? caption.length;
+    const before = caption.slice(0, cursor);
+    const after = caption.slice(cursor);
+    const replaced = before.replace(/@(\w*)$/, `@${person.name} `);
+    const next = replaced + after;
+    setCaption(next);
+    setMentionOpen(false);
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(replaced.length, replaced.length);
+    });
+  }
+
   function switchTab(t) {
     if (t === 'event') {
       onClose();
@@ -111,12 +230,18 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     setMediaFile(null);
     if (mediaPreview) URL.revokeObjectURL(mediaPreview);
     setMediaPreview(null);
+    setPendingVideo(null);
+    images.forEach(img => URL.revokeObjectURL(img.url));
+    setImages([]);
+    setCropQueue([]);
+    setCropIndex(0);
     setError('');
   }
 
   const CAPTION_MAX = 2000;
   const PHOTO_MAX_MB = 10;
   const VIDEO_MAX_MB = 200;
+  const PHOTO_MAX_COUNT = 10;
   const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   const ALLOWED_VIDEO = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'];
 
@@ -134,22 +259,66 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     return null;
   }
 
+  // Video tab — validated file goes to the trimmer before becoming mediaFile.
   function handleFileSelect(file) {
     if (!file) return;
-    const err = validateFile(file, tab);
+    const err = validateFile(file, 'video');
     if (err) { setError(err); return; }
-    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-    setMediaFile(file);
-    setMediaPreview(URL.createObjectURL(file));
     setError('');
+    setPendingVideo(file);
   }
 
-  function handleInputChange(e) { handleFileSelect(e.target.files[0]); }
+  function handleTrimSave(trimmedFile) {
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+    setMediaFile(trimmedFile);
+    setMediaPreview(URL.createObjectURL(trimmedFile));
+    setPendingVideo(null);
+  }
+
+  function handleTrimCancel() {
+    setPendingVideo(null);
+  }
+
+  // Photo tab — validate everything picked, then queue the valid ones for
+  // the one-at-a-time crop flow (Facebook/Instagram-style multi-upload).
+  function handleFilesSelect(fileList) {
+    const files = Array.from(fileList ?? []);
+    if (!files.length) return;
+
+    const room = PHOTO_MAX_COUNT - images.length - cropQueue.length;
+    if (room <= 0) {
+      setError(`You can add up to ${PHOTO_MAX_COUNT} photos per post.`);
+      return;
+    }
+
+    const toQueue = [];
+    let firstError = '';
+    for (const file of files.slice(0, room)) {
+      const err = validateFile(file, 'photo');
+      if (err) { firstError = firstError || err; continue; }
+      toQueue.push(file);
+    }
+    if (files.length > room) {
+      firstError = firstError || `You can add up to ${PHOTO_MAX_COUNT} photos per post.`;
+    }
+    setError(firstError);
+    if (!toQueue.length) return;
+
+    setCropQueue(toQueue);
+    setCropIndex(0);
+  }
+
+  function handleInputChange(e) {
+    if (tab === 'photo') handleFilesSelect(e.target.files);
+    else handleFileSelect(e.target.files[0]);
+    e.target.value = '';
+  }
 
   function handleDrop(e) {
     e.preventDefault();
     setDragOver(false);
-    handleFileSelect(e.dataTransfer.files[0]);
+    if (tab === 'photo') handleFilesSelect(e.dataTransfer.files);
+    else handleFileSelect(e.dataTransfer.files[0]);
   }
 
   function removeMedia() {
@@ -159,20 +328,53 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     setError('');
   }
 
+  function advanceCropQueue() {
+    if (cropIndex + 1 >= cropQueue.length) {
+      setCropQueue([]);
+      setCropIndex(0);
+    } else {
+      setCropIndex(i => i + 1);
+    }
+  }
+
+  function handleCropSave(croppedFile) {
+    setImages(prev => [...prev, { id: `${Date.now()}-${prev.length}`, file: croppedFile, url: URL.createObjectURL(croppedFile) }]);
+    advanceCropQueue();
+  }
+
+  function handleCropSkip() {
+    const original = cropQueue[cropIndex];
+    setImages(prev => [...prev, { id: `${Date.now()}-${prev.length}`, file: original, url: URL.createObjectURL(original) }]);
+    advanceCropQueue();
+  }
+
+  // Cancel abandons only the images still waiting in the queue — anything
+  // already cropped/skipped this round stays in the preview grid.
+  function handleCropCancelAll() {
+    setCropQueue([]);
+    setCropIndex(0);
+  }
+
+  function removeImage(id) {
+    setImages(prev => {
+      const img = prev.find(i => i.id === id);
+      if (img) URL.revokeObjectURL(img.url);
+      return prev.filter(i => i.id !== id);
+    });
+    setError('');
+  }
+
   async function handlePost() {
+    const hasMedia = tab === 'photo' ? images.length > 0 : !!mediaFile;
+
     // Caption length
     if (caption.length > CAPTION_MAX) {
       setError(`Caption is too long. Maximum ${CAPTION_MAX} characters.`);
       return;
     }
     // Require caption OR media
-    if (!caption.trim() && !mediaFile) {
+    if (!caption.trim() && !hasMedia) {
       setError('Write something or add a photo / video before posting.');
-      return;
-    }
-    // Photo tab — require a file
-    if (tab === 'photo' && !mediaFile && !caption.trim()) {
-      setError('Select a photo or write a caption.');
       return;
     }
     // Video tab — require a file
@@ -180,16 +382,23 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
       setError('Select a video to post.');
       return;
     }
-    // Re-validate file in case state drifted
-    if (mediaFile) {
-      const err = validateFile(mediaFile, tab);
+    // Re-validate in case state drifted
+    if (tab === 'video' && mediaFile) {
+      const err = validateFile(mediaFile, 'video');
       if (err) { setError(err); return; }
+    }
+    if (tab === 'photo') {
+      for (const img of images) {
+        const err = validateFile(img.file, 'photo');
+        if (err) { setError(err); return; }
+      }
     }
 
     setError('');
+    const mediaFiles = tab === 'photo' ? images.map(i => i.file) : (mediaFile ? [mediaFile] : []);
     const thunk = groupId
-      ? createGroupPost({ groupId, caption: caption.trim(), media: mediaFile ? [mediaFile] : [] })
-      : createPost({ caption: caption.trim(), mediaFile, visibility });
+      ? createGroupPost({ groupId, caption: caption.trim(), media: mediaFiles })
+      : createPost({ caption: caption.trim(), mediaFile, mediaFiles, visibility });
     const result = await dispatch(thunk);
     if (!result.error) {
       const post = result.payload?.post ?? result.payload;
@@ -271,12 +480,13 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
           </div>
 
           {/* Caption */}
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={mentionRef}>
             <textarea
+              ref={textareaRef}
               className={`cp-textarea${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
               placeholder="What's on your mind?"
               value={caption}
-              onChange={e => { setCaption(e.target.value); if (error) setError(''); }}
+              onChange={handleCaptionChange}
               rows={3}
               maxLength={CAPTION_MAX + 50}
             />
@@ -289,16 +499,69 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
                 {caption.length}/{CAPTION_MAX}
               </span>
             )}
+            {mentionOpen && (
+              <div className="cp-mention-dropdown">
+                {mentionLoading && <div className="cp-mention-empty">Searching…</div>}
+                {!mentionLoading && mentionResults.length === 0 && (
+                  <div className="cp-mention-empty">No matching connections.</div>
+                )}
+                {!mentionLoading && mentionResults.map(person => (
+                  <button
+                    key={person.id}
+                    type="button"
+                    className="cp-mention-item"
+                    onClick={() => handleMentionSelect(person)}
+                  >
+                    <span className="cp-mention-avatar">
+                      {person.avatar
+                        ? <img src={person.avatar} alt={person.name} />
+                        : getInitials(person.name)}
+                    </span>
+                    <span className="cp-mention-name">{person.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Media upload / preview */}
-          {tab === 'photo' || tab === 'video' ? (
+          {tab === 'photo' ? (
+            images.length > 0 ? (
+              <div className="cp-photo-grid">
+                {images.map(img => (
+                  <div key={img.id} className="cp-photo-thumb">
+                    <img src={img.url} alt="" className="cp-photo-thumb-img" />
+                    <button className="cp-remove-media" onClick={() => removeImage(img.id)} aria-label="Remove photo">✕</button>
+                  </div>
+                ))}
+                {images.length < PHOTO_MAX_COUNT && (
+                  <button
+                    type="button"
+                    className="cp-photo-add-more"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <PlusIcon />
+                    <span>Add more</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div
+                className={`cp-upload-zone${dragOver ? ' cp-upload-zone--dragover' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+              >
+                <div className="cp-upload-icon"><UploadPhotoIcon /></div>
+                <p className="cp-upload-title">Select images to share</p>
+                <p className="cp-upload-sub">JPG, PNG or GIF, up to {PHOTO_MAX_MB}MB each — pick multiple at once</p>
+              </div>
+            )
+          ) : tab === 'video' ? (
             mediaPreview ? (
               <div className="cp-preview">
-                {tab === 'photo'
-                  ? <img src={mediaPreview} alt="preview" className="cp-preview-img" />
-                  : <video src={mediaPreview} controls className="cp-preview-img" />
-                }
+                <video src={mediaPreview} controls className="cp-preview-img" />
                 <button className="cp-remove-media" onClick={removeMedia} aria-label="Remove media">✕</button>
               </div>
             ) : (
@@ -309,37 +572,45 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
               >
-                <div className="cp-upload-icon">
-                  {tab === 'photo' ? <UploadPhotoIcon /> : <UploadVideoIcon />}
-                </div>
-                {tab === 'photo' ? (
-                  <>
-                    <p className="cp-upload-title">Select images to share</p>
-                    <p className="cp-upload-sub">JPG, PNG or GIF, up to 5MB</p>
-                  </>
-                ) : (
-                  <p className="cp-upload-title">Drag and drop your videos here</p>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={tab === 'photo' ? 'image/*' : 'video/*'}
-                  style={{ display: 'none' }}
-                  onChange={handleInputChange}
-                />
+                <div className="cp-upload-icon"><UploadVideoIcon /></div>
+                <p className="cp-upload-title">Drag and drop your videos here</p>
               </div>
             )
           ) : (
             <div className="cp-event-placeholder">Event creation coming soon.</div>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={tab === 'photo' ? 'image/*' : 'video/*'}
+            multiple={tab === 'photo'}
+            style={{ display: 'none' }}
+            onChange={handleInputChange}
+          />
         </div>
 
         {/* Footer */}
         <div className="cp-footer">
           <div className="cp-footer-icons">
-            <button className="cp-footer-icon-btn" type="button" title="Add hashtag"><HashIcon /></button>
-            <button className="cp-footer-icon-btn" type="button" title="Mention someone"><AtIcon /></button>
-            <button className="cp-footer-icon-btn" type="button" title="Add emoji"><EmojiIcon /></button>
+            <button className="cp-footer-icon-btn" type="button" title="Add hashtag" onClick={() => insertAtCursor('#')}><HashIcon /></button>
+            <button
+              className="cp-footer-icon-btn"
+              type="button"
+              title="Mention someone"
+              onClick={() => { insertAtCursor('@'); setMentionQuery(''); setMentionOpen(true); }}
+            >
+              <AtIcon />
+            </button>
+            <div className="cp-emoji-wrap" ref={emojiRef}>
+              <button className="cp-footer-icon-btn" type="button" title="Add emoji" onClick={() => setEmojiOpen(v => !v)}><EmojiIcon /></button>
+              {emojiOpen && (
+                <div className="cp-emoji-popover">
+                  {EMOJI_LIST.map(em => (
+                    <button key={em} type="button" className="cp-emoji-btn" onClick={() => insertAtCursor(em)}>{em}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           {error && <p className="cp-error">{error}</p>}
           <button className="cp-post-btn" onClick={handlePost} disabled={creating || tab === 'event'}>
@@ -348,6 +619,26 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
         </div>
 
       </div>
+
+      {cropQueue.length > 0 && (
+        <ImageCropper
+          key={cropIndex}
+          file={cropQueue[cropIndex]}
+          index={cropIndex}
+          total={cropQueue.length}
+          onCancel={handleCropCancelAll}
+          onSkip={handleCropSkip}
+          onSave={handleCropSave}
+        />
+      )}
+
+      {pendingVideo && (
+        <VideoTrimmer
+          file={pendingVideo}
+          onCancel={handleTrimCancel}
+          onSave={handleTrimSave}
+        />
+      )}
     </div>
   );
 }

@@ -55,6 +55,15 @@ export const loginUser = createAsyncThunk(
       const payload = data.data ?? data;
       return { user: payload.user ?? null, token: payload.token ?? null };
     } catch (err) {
+      // Backend returns this on a non-2xx status when the account exists but
+      // never finished plan setup — route to PlansPage instead of showing
+      // "invalid credentials" for what is actually a successful login.
+      if (err.data?.requiresPlanSelection) {
+        return rejectWithValue({
+          requiresPlanSelection: true,
+          setupToken: err.data.setupToken ?? null,
+        });
+      }
       return rejectWithValue(err.message);
     }
   }
@@ -192,7 +201,13 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        if (action.payload?.requiresPlanSelection) {
+          state.requiresPlanSelection = true;
+          state.setupToken = action.payload.setupToken;
+          state.error = null;
+        } else {
+          state.error = action.payload;
+        }
       })
 
       // ── Register ──────────────────────────────

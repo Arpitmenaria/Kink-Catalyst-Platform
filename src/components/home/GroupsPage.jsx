@@ -1968,14 +1968,14 @@ function CreateGroupModal({ onClose }) {
 /* ══════════════════════════
    Main Component
 ══════════════════════════ */
-export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialGroupId, onInitGroupConsumed }) {
+export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialGroupId, onInitGroupConsumed, startCreate }) {
   const dispatch = useDispatch();
   const { groups, groupsLoading, groupsTab } = useSelector(s => s.groups);
   const { user: authUser } = useSelector(s => s.auth);
   const myId = authUser?._id ?? authUser?.id;
 
   const [modalOpen,      setModalOpen]      = useState(false);
-  const [showCreate,     setShowCreate]     = useState(false);
+  const [showCreate,     setShowCreate]     = useState(startCreate || false);
   const [showAdmin,      setShowAdmin]      = useState(false);
   const [showModeration, setShowModeration] = useState(false);
   const [showDetail,     setShowDetail]     = useState(false);
