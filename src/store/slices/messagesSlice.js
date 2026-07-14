@@ -376,7 +376,13 @@ const messagesSlice = createSlice({
       })
 
       .addCase(fetchOnlineUsers.pending, s => { s.onlineLoading = true; })
-      .addCase(fetchOnlineUsers.fulfilled, (s, a) => { s.onlineLoading = false; s.onlineUsers = a.payload; })
+      .addCase(fetchOnlineUsers.fulfilled, (s, a) => {
+        s.onlineLoading = false;
+        s.onlineUsers = a.payload;
+        // Resync conversation-list online dots against the authoritative REST snapshot
+        const onlineIds = new Set(a.payload.map(u => u.id));
+        s.conversations.forEach(c => { c.online = onlineIds.has(c.participantId); });
+      })
       .addCase(fetchOnlineUsers.rejected, s => { s.onlineLoading = false; });
   },
 });

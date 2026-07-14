@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline } from '../store/slices/messagesSlice';
+import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers } from '../store/slices/messagesSlice';
 import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
 
@@ -15,7 +15,12 @@ export function initSocket(token, store) {
   socket = io(BASE_URL, {
     auth: { token },
     transports: ['websocket'],
-    reconnectionAttempts: 5,
+  });
+
+  socket.on('connect', () => {
+    // Fires on initial connect AND every reconnect — resync presence so
+    // online/offline events missed while disconnected don't leave stale state.
+    storeRef.dispatch(fetchOnlineUsers());
   });
 
   socket.on('new_message', ({ conversationId, message }) => {
