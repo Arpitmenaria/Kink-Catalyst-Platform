@@ -1,6 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
 
+// The same post can exist as separate copies in the main feed, the logged-in
+// user's own post list, and a viewed profile's post list simultaneously —
+// mutate every copy that matches, not just the first one found, or lists
+// that didn't get the update go stale (e.g. comments posted from a profile
+// page never showing there once the feed already holds its own copy).
+function forEachMatchingPost(state, postId, fn) {
+  for (const list of [state.posts, state.myPosts, state.viewedPosts]) {
+    const post = list.find(p => p._id === postId);
+    if (post) fn(post);
+  }
+}
+
 function findComment(comments, commentId) {
   for (const c of comments) {
     if ((c._id ?? c.id) === commentId) return c;
@@ -12,7 +24,7 @@ function findComment(comments, commentId) {
   return null;
 }
 
-function normalizePost(p) {
+export function normalizePost(p) {
   // The feed/list endpoint only sends a comment COUNT, not the actual
   // comments — full comment objects are fetched on-demand (fetchPostComments)
   // when a user opens a post's comment section. `commentsLoaded` tracks
@@ -106,6 +118,22 @@ export const fetchMyPosts = createAsyncThunk(
         page: data.page ?? page,
         hasMore: data.hasMore ?? false,
       };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// Lightweight count-only fetch for the navbar's "Total Posts" stat — must NOT
+// touch state.myPosts, since ProfilePage's fetchMyPosts (paged list) can be
+// in flight at the same time and a shared reducer would clobber it.
+export const fetchMyPostsCount = createAsyncThunk(
+  'posts/fetchMyPostsCount',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/me/posts?page=1&limit=1`, { token });
+      return { total: data.total ?? 0 };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -277,6 +305,7 @@ const postsSlice = createSlice({
     myPostsTotal: 0,
     myPostsLoading: false,
     myPostsHasMore: false,
+    viewedPosts: [],
     likingIds: [],
     commentingId: null,
     commentsLoadingIds: [],
@@ -286,7 +315,11 @@ const postsSlice = createSlice({
     reasonsLoading: false,
     reportSubmitting: false,
   },
-  reducers: {},
+  reducers: {
+    setViewedPosts(state, action) {
+      state.viewedPosts = action.payload ?? [];
+    },
+  },
   extraReducers: (builder) => {
     builder
       // ── Fetch Feed ─────────────────────────
@@ -314,32 +347,37 @@ const postsSlice = createSlice({
       })
       .addCase(fetchMyPosts.rejected, (state) => { state.myPostsLoading = false; })
 
+      // ── Fetch My Posts Count (navbar stat only) ────
+      .addCase(fetchMyPostsCount.fulfilled, (state, action) => {
+        state.myPostsTotal = action.payload.total;
+      })
+
       // ── Like (optimistic toggle) ────────────
       .addCase(likePost.pending, (state, action) => {
         const { postId, userId } = action.meta.arg;
         state.likingIds.push(postId);
-        const post = state.posts.find(p => p._id === postId);
-        if (!post) return;
-        const idx = post.likes.indexOf(userId);
-        if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
-        else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
+        forEachMatchingPost(state, postId, (post) => {
+          const idx = post.likes.indexOf(userId);
+          if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
+          else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
+        });
       })
       .addCase(likePost.fulfilled, (state, action) => {
         const { postId, likesCount, recentReactors } = action.payload;
         state.likingIds = state.likingIds.filter(id => id !== postId);
-        const post = state.posts.find(p => p._id === postId);
-        if (!post) return;
-        if (typeof likesCount === 'number') post.likesCount = likesCount;
-        if (Array.isArray(recentReactors)) post.recentReactors = recentReactors;
+        forEachMatchingPost(state, postId, (post) => {
+          if (typeof likesCount === 'number') post.likesCount = likesCount;
+          if (Array.isArray(recentReactors)) post.recentReactors = recentReactors;
+        });
       })
       .addCase(likePost.rejected, (state, action) => {
         const { postId, userId } = action.meta.arg;
         state.likingIds = state.likingIds.filter(id => id !== postId);
-        const post = state.posts.find(p => p._id === postId);
-        if (!post) return;
-        const idx = post.likes.indexOf(userId);
-        if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
-        else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
+        forEachMatchingPost(state, postId, (post) => {
+          const idx = post.likes.indexOf(userId);
+          if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
+          else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
+        });
       })
 
       // ── Comment ────────────────────────────
@@ -349,10 +387,11 @@ const postsSlice = createSlice({
       .addCase(commentPost.fulfilled, (state, action) => {
         const { postId, comment } = action.payload;
         state.commentingId = null;
-        const post = state.posts.find(p => p._id === postId);
-        if (post && comment) {
-          post.comments.push(comment);
-          post.commentsCount = (post.commentsCount ?? 0) + 1;
+        if (comment) {
+          forEachMatchingPost(state, postId, (post) => {
+            post.comments.push(comment);
+            post.commentsCount = (post.commentsCount ?? 0) + 1;
+          });
         }
       })
       .addCase(commentPost.rejected, (state) => {
@@ -366,11 +405,11 @@ const postsSlice = createSlice({
       .addCase(fetchPostComments.fulfilled, (state, action) => {
         const { postId, comments } = action.payload;
         state.commentsLoadingIds = state.commentsLoadingIds.filter(id => id !== postId);
-        const post = state.posts.find(p => p._id === postId) ?? state.myPosts.find(p => p._id === postId);
-        if (!post) return;
-        post.comments = comments;
-        post.commentsCount = comments.length;
-        post.commentsLoaded = true;
+        forEachMatchingPost(state, postId, (post) => {
+          post.comments = comments;
+          post.commentsCount = comments.length;
+          post.commentsLoaded = true;
+        });
       })
       .addCase(fetchPostComments.rejected, (state, action) => {
         const postId = action.payload?.postId ?? action.meta.arg;
@@ -380,22 +419,22 @@ const postsSlice = createSlice({
       // ── Like a comment/reply ───────────────
       .addCase(likeComment.fulfilled, (state, action) => {
         const { postId, commentId, likesCount } = action.payload;
-        const post = state.posts.find(p => p._id === postId);
-        if (!post) return;
-        const comment = findComment(post.comments, commentId);
-        if (comment && typeof likesCount === 'number') comment.likes = likesCount;
+        forEachMatchingPost(state, postId, (post) => {
+          const comment = findComment(post.comments, commentId);
+          if (comment && typeof likesCount === 'number') comment.likes = likesCount;
+        });
       })
 
       // ── Reply to a comment ─────────────────
       .addCase(replyToComment.fulfilled, (state, action) => {
         const { postId, commentId, reply } = action.payload;
         if (!reply) return;
-        const post = state.posts.find(p => p._id === postId);
-        if (!post) return;
-        const comment = post.comments.find(c => (c._id ?? c.id) === commentId);
-        if (!comment) return;
-        if (!Array.isArray(comment.replies)) comment.replies = [];
-        comment.replies.push(reply);
+        forEachMatchingPost(state, postId, (post) => {
+          const comment = post.comments.find(c => (c._id ?? c.id) === commentId);
+          if (!comment) return;
+          if (!Array.isArray(comment.replies)) comment.replies = [];
+          comment.replies.push(reply);
+        });
       })
 
       // ── Share ──────────────────────────────
@@ -405,8 +444,9 @@ const postsSlice = createSlice({
       .addCase(sharePost.fulfilled, (state, action) => {
         state.sharingId = null;
         const { postId } = action.payload;
-        const post = state.posts.find(p => p._id === postId);
-        if (post && Array.isArray(post.shares)) post.shares.push('shared');
+        forEachMatchingPost(state, postId, (post) => {
+          if (Array.isArray(post.shares)) post.shares.push('shared');
+        });
       })
       .addCase(sharePost.rejected, (state) => {
         state.sharingId = null;
@@ -464,4 +504,5 @@ const postsSlice = createSlice({
   },
 });
 
+export const { setViewedPosts } = postsSlice.actions;
 export default postsSlice.reducer;

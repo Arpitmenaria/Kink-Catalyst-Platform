@@ -6,6 +6,7 @@ import SkeletonImg from "../SkeletonImg";
 import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
 import { followUser, unfollowUser } from "../../store/slices/usersSlice";
+import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
 import { apiRequest } from "../../services/api";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
@@ -114,7 +115,7 @@ const MOCK_USER = {
   followersCount: 128,
   followingCount: 96,
   postsCount: 12,
-  isFollowedByMe: false,
+  isFollowing: false,
 };
 
 const MOCK_POSTS = [
@@ -215,10 +216,12 @@ export default function UserProfilePage({
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector((s) => s.auth);
   const { followingIds } = useSelector((s) => s.users);
+  // Posts live in Redux (not local state) so PostCard's like/comment/reply/share
+  // dispatches — which update state.posts.viewedPosts — are reflected here.
+  const viewedPosts = useSelector((s) => s.posts.viewedPosts);
 
   // ⚠️ Local state standing in for Redux until profileSlice.js gets by-id thunks
   const [viewedUser, setViewedUser] = useState(null);
-  const [viewedPosts, setViewedPosts] = useState([]);
   const [viewedPhotos, setViewedPhotos] = useState([]);
   const [viewedConnections, setViewedConnections] = useState(null); // null = not yet loaded
   const [connectionsLoading, setConnectionsLoading] = useState(false);
@@ -233,6 +236,7 @@ export default function UserProfilePage({
     if (!userId) return;
     let cancelled = false;
     setLoading(true);
+    dispatch(setViewedPostsAction([]));
     Promise.all([
       apiRequest(`/api/users/${userId}`, { token }),
       apiRequest(`/api/users/${userId}/posts`, { token }),
@@ -240,7 +244,7 @@ export default function UserProfilePage({
       .then(([userRes, postsRes]) => {
         if (cancelled) return;
         setViewedUser(userRes?.user ?? userRes);
-        setViewedPosts(postsRes?.posts ?? postsRes ?? []);
+        dispatch(setViewedPostsAction((postsRes?.posts ?? postsRes ?? []).map(normalizePost)));
       })
       .catch((err) => {
         // Fallback to static mock data so the UI/navigation can be verified
@@ -248,7 +252,7 @@ export default function UserProfilePage({
         console.warn("Falling back to mock profile data:", err.message);
         if (cancelled) return;
         setViewedUser(MOCK_USER);
-        setViewedPosts(MOCK_POSTS);
+        dispatch(setViewedPostsAction(MOCK_POSTS));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -256,7 +260,7 @@ export default function UserProfilePage({
     return () => {
       cancelled = true;
     };
-  }, [userId, token]);
+  }, [userId, token, dispatch]);
 
   useEffect(() => {
     if (activeTab !== "Photos" || !userId) return;
@@ -282,7 +286,7 @@ export default function UserProfilePage({
 
   useEffect(() => {
     setIsFollowing(
-      followingIds.includes(userId) || !!viewedUser?.isFollowedByMe,
+      followingIds.includes(userId) || !!viewedUser?.isFollowing,
     );
   }, [followingIds, userId, viewedUser]);
 
@@ -319,7 +323,7 @@ export default function UserProfilePage({
   }
 
   const displayName = viewedUser?.fullName ?? "User";
-  const role = viewedUser?.role ?? "";
+  const role = viewedUser?.profession ?? viewedUser?.role ?? "";
   const DUMMY_PROFILE = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80";
 
   const rawAvatar = viewedUser?.avatar ?? "";

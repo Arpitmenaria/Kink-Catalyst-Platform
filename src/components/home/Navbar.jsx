@@ -5,6 +5,7 @@ import { ALEX_AVATAR } from './mockData';
 import { logout } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
 import { fetchNotifications, markNotificationsRead } from '../../store/slices/notificationsSlice';
+import { fetchMyPostsCount } from '../../store/slices/postsSlice';
 
 function BellIcon() {
   return (
@@ -66,11 +67,14 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
   const { notifications, unreadCount } = useSelector((state) => state.notifications);
-  const { posts }              = useSelector((state) => state.posts);
+  const { myPostsTotal }       = useSelector((state) => state.posts);
   const { conversations }      = useSelector((state) => state.messages);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
-  const totalPosts       = authUser?.postsCount ?? profile?.postsCount ?? posts.length;
+  // authUser/profile postsCount reflect the logged-in user; myPostsTotal (from
+  // /api/users/me/posts) is the accurate fallback — NOT state.posts, which is the
+  // whole feed's posts across all users.
+  const totalPosts       = authUser?.postsCount ?? profile?.postsCount ?? myPostsTotal;
   // followerCount/followingCount updated live via socket; connectionCount from /api/auth/me resync
   const totalConnections = authUser?.followerCount ?? authUser?.connectionCount ?? profile?.followers?.length ?? profile?.followersCount ?? 0;
 
@@ -85,6 +89,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
 
   useEffect(() => {
     dispatch(fetchNotifications());
+    dispatch(fetchMyPostsCount());
   }, [dispatch]);
 
   useEffect(() => {
