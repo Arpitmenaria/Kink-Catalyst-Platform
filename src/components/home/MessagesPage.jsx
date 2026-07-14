@@ -483,7 +483,7 @@ const TABS = ['All', 'Unread', 'Groups', 'Online'];
 
 const TAB_PARAM = { All: 'all', Unread: 'unread', Groups: 'groups', Online: 'online' };
 
-export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialUserId, onInitUserConsumed }) {
   const dispatch = useDispatch();
   const {
     conversations, conversationsLoading,
@@ -528,6 +528,27 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       dispatch(clearPendingOpenConv());
     }
   }, [pendingOpenConvId, conversations, dispatch]);
+
+  /* Navigated here with a specific user (Chat button on a profile) — get-or-create the DM and open it.
+     Guarded by a ref because React.StrictMode double-invokes effects in dev, and the backend isn't
+     guaranteed to dedupe two concurrent "create DM" calls into a single conversation. */
+  const startedDMForRef = useRef(null);
+  useEffect(() => {
+    if (!initialUserId || startedDMForRef.current === initialUserId) return;
+    startedDMForRef.current = initialUserId;
+    // Already have this DM loaded locally — open it directly instead of hitting the create endpoint again.
+    const existing = conversations.find(c => c.type === 'dm' && c.participantId === initialUserId);
+    if (existing) {
+      openConversation(existing);
+      onInitUserConsumed?.();
+      return;
+    }
+    (async () => {
+      const result = await dispatch(startDM(initialUserId));
+      if (startDM.fulfilled.match(result)) openConversation(result.payload);
+      onInitUserConsumed?.();
+    })();
+  }, [initialUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Debounce search */
   useEffect(() => {
@@ -627,6 +648,10 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
   const messages  = activeConv ? (allMessages[activeConv.id] ?? []) : [];
   const isBlocked = activeConv ? (blockedConvIds[activeConv.id] ?? false) : false;
+  // activeConv is a snapshot taken when the chat was opened, so it goes stale as soon as the
+  // store updates (e.g. a socket "online"/"offline" event) — always render the live copy from
+  // the conversations list instead of the frozen selection.
+  const liveActiveConv = activeConv ? (conversations.find(c => c.id === activeConv.id) ?? activeConv) : null;
 
   /* ── Chat view ── */
   if (activeConv) {
@@ -680,19 +705,19 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
 
         {showAssets
-          ? <SharedAssetsView conv={activeConv} onBack={() => setShowAssets(false)} />
+          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} />
           : <>
           {/* Chat area */}
           <div className="msg-chat-area" key={chatKey}>
             <div className="msg-chat-header">
               <div className="msg-chat-header-user">
                 <div className="msg-avatar-wrap">
-                  <div className="msg-avatar msg-avatar--md" style={{ background: activeConv.color }}>{initials(activeConv.name)}</div>
-                  {activeConv.online && <span className="msg-online-dot" />}
+                  <div className="msg-avatar msg-avatar--md" style={{ background: liveActiveConv.color }}>{initials(liveActiveConv.name)}</div>
+                  {liveActiveConv.online && <span className="msg-online-dot" />}
                 </div>
                 <div>
-                  <p className="msg-chat-name">{activeConv.name}</p>
-                  {activeConv.online
+                  <p className="msg-chat-name">{liveActiveConv.name}</p>
+                  {liveActiveConv.online
                     ? <p className="msg-chat-status msg-chat-status--online">● Online</p>
                     : <p className="msg-chat-status">Offline</p>
                   }
@@ -809,11 +834,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           {/* Contact info panel */}
           <div className="msg-contact-panel" key={`panel-${chatKey}`}>
             <div className="msg-contact-avatar-wrap">
-              <div className="msg-contact-avatar" style={{ background: activeConv.color }}>{initials(activeConv.name)}</div>
-              {activeConv.online && <span className="msg-contact-online-dot" />}
+              <div className="msg-contact-avatar" style={{ background: liveActiveConv.color }}>{initials(liveActiveConv.name)}</div>
+              {liveActiveConv.online && <span className="msg-contact-online-dot" />}
             </div>
-            <p className="msg-contact-name">{activeConv.name}</p>
-            <p className="msg-contact-role">{activeConv.role}</p>
+            <p className="msg-contact-name">{liveActiveConv.name}</p>
+            <p className="msg-contact-role">{liveActiveConv.role}</p>
 
             <div className="msg-media-section">
               <div className="msg-media-header">
@@ -845,7 +870,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <button className="msg-action-item" onClick={handleBlock}>
                 <span className="msg-action-icon msg-action-icon--red"><BlockIcon /></span>
                 <span className="msg-action-label">
-                  {isBlocked ? `Unblock ${activeConv.name.split(' ')[0]}` : `Block ${activeConv.name.split(' ')[0]}`}
+                  {isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}` : `Block ${liveActiveConv.name.split(' ')[0]}`}
                 </span>
                 <ChevronRightIcon />
               </button>

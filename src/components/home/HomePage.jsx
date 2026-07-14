@@ -82,9 +82,7 @@ export default function HomePage() {
   }
 
   // Jump into Messages with a specific person pre-selected (used by the
-  // "Message" button on UserProfilePage). MessagesPage needs to accept an
-  // `initialUserId` prop and auto-open/create that conversation — wire that
-  // up inside MessagesPage if it doesn't already support deep-linking.
+  // "Message" button on UserProfilePage).
   function goToMessagesWithUser(userId) {
     setViewedUserId(userId);
     setSection('messages');
@@ -183,6 +181,7 @@ export default function HomePage() {
             onCalendarClick={() => setSection('calendar')}
             onMinisitesClick={() => setSection('minisites')}
             initialUserId={viewedUserId}
+            onInitUserConsumed={() => setViewedUserId(null)}
           />
         ) : section === 'groups' ? (
           <GroupsPage

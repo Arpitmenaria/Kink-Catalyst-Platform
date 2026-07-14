@@ -15,7 +15,11 @@
       "Bash(npx eslint *)",
       "Bash(git stash *)",
       "Bash(lsof -ti:5173)",
-      "Bash(xargs -I{} ps -p {} -o pid,command)"
+      "Bash(xargs -I{} ps -p {} -o pid,command)",
+      "Bash(xargs -I{} cat {})",
+      "Bash(curl -s -i \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\")",
+      "Bash(curl -s -o /tmp/conv_response.txt -w \"HTTP_STATUS:%{http_code}\\\\n\" \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 15)",
+      "Bash(curl -sv \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 10)"
     ]
   },
   "enableAllProjectMcpServers": true,

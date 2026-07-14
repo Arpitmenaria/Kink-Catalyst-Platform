@@ -19,6 +19,8 @@ export function initSocket(token, store) {
   });
 
   socket.on('new_message', ({ conversationId, message }) => {
+    // TEMP DIAGNOSTIC — remove after inspecting the payload shape.
+    console.log('[socket] new_message raw payload', JSON.stringify(message));
     const state = storeRef.getState();
     const msgId = message.id ?? message._id;
     const convMessages = state.messages.messages[conversationId] ?? [];
