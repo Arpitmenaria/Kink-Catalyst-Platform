@@ -191,8 +191,11 @@ export default function PostCard({ post, onUserClick }) {
   // fetch the actual thread the first time this post's comments are opened.
   useEffect(() => {
     if (isStatic || !showComments || post.commentsLoaded) return;
+    // Nothing to fetch for a post with no comments — showing the empty state
+    // immediately (below) avoids a fetch that could leave the panel stuck.
+    if (commentCount === 0) return;
     dispatch(fetchPostComments(post._id));
-  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch]);
+  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, commentCount]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -418,7 +421,7 @@ export default function PostCard({ post, onUserClick }) {
             {commentsLoading && (
               <p style={{ textAlign: 'center', padding: '10px', color: '#5c6a8c', fontSize: 13 }}>Loading comments…</p>
             )}
-            {!commentsLoading && post.commentsLoaded && realComments.length === 0 && (
+            {!commentsLoading && realComments.length === 0 && (post.commentsLoaded || commentCount === 0) && (
               <p style={{ textAlign: 'center', padding: '10px', color: '#5c6a8c', fontSize: 13 }}>No comments yet.</p>
             )}
             {realComments.map(c => (
