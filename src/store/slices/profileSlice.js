@@ -198,6 +198,53 @@ export const uploadPhoto = createAsyncThunk(
   }
 );
 
+// ── Albums ──────────────────────────────────────────────────────────────────────
+function normalizeAlbum(a = {}) {
+  const photos = (a.photos ?? a.images ?? [])
+    .map(p => (typeof p === 'string' ? p : p?.url))
+    .filter(u => u?.startsWith?.('http'));
+  return {
+    id: a.id ?? a._id,
+    name: a.name ?? a.title ?? 'Untitled album',
+    cover: (a.cover?.startsWith?.('http') ? a.cover : '') || photos[0] || '',
+    photos,
+    count: a.count ?? a.photoCount ?? photos.length,
+    createdAt: a.createdAt,
+  };
+}
+
+// GET /api/users/me/albums
+export const fetchAlbums = createAsyncThunk(
+  'profile/fetchAlbums',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/me/albums', { token });
+      return (data.albums ?? []).map(normalizeAlbum);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// POST /api/users/me/albums — multipart: name + photos[] files
+export const createAlbum = createAsyncThunk(
+  'profile/createAlbum',
+  async ({ name, files }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const form = new FormData();
+      form.append('name', name);
+      const fileList = Array.isArray(files) ? files : [files];
+      for (const f of fileList) form.append('photos', f);
+      const data = await apiRequest('/api/users/me/albums', { method: 'POST', token, body: form, isFormData: true });
+      return normalizeAlbum(data.album ?? data);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // ── 10. GET /api/users/me/followers ────────────────────────────────────────────
 export const fetchFollowers = createAsyncThunk(
   'profile/fetchFollowers',
@@ -293,6 +340,10 @@ const profileSlice = createSlice({
     photosTotal: 0,
     photosLoading: false,
 
+    albums: [],
+    albumsLoading: false,
+    creatingAlbum: false,
+
     followers: [],
     followersTotal: 0,
     followersLoading: false,
@@ -381,6 +432,20 @@ const profileSlice = createSlice({
       .addCase(uploadPhoto.fulfilled, (state, action) => {
         if (action.payload) state.photos.unshift(action.payload);
       })
+
+      // ── Albums ─────────────────────────────────────────────────────────────
+      .addCase(fetchAlbums.pending, (state) => { state.albumsLoading = true; })
+      .addCase(fetchAlbums.fulfilled, (state, action) => {
+        state.albumsLoading = false;
+        state.albums = action.payload;
+      })
+      .addCase(fetchAlbums.rejected, (state) => { state.albumsLoading = false; })
+      .addCase(createAlbum.pending, (state) => { state.creatingAlbum = true; })
+      .addCase(createAlbum.fulfilled, (state, action) => {
+        state.creatingAlbum = false;
+        if (action.payload) state.albums.unshift(action.payload);
+      })
+      .addCase(createAlbum.rejected, (state) => { state.creatingAlbum = false; })
 
       // ── fetchFollowers ─────────────────────────────────────────────────────
       .addCase(fetchFollowers.pending, (state) => { state.followersLoading = true; })

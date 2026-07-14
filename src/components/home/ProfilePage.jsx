@@ -8,6 +8,7 @@ import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
   fetchConnections, removeConnection, fetchPhotos, uploadPhoto,
   fetchFollowers, fetchFollowing, fetchGallery,
+  fetchAlbums, createAlbum,
 } from '../../store/slices/profileSlice';
 import { fetchMyPosts } from '../../store/slices/postsSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
@@ -16,7 +17,6 @@ import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
 import './ProfilePage.css';
 
-const COVER_URL = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop';
 const TABS = PROFILE_TABS;
 
 
@@ -34,7 +34,9 @@ const PERSONAL_INFO = [
 function BriefcaseIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>; }
 function PinIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 function CalIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
+function GradCapIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2 2 6 2s6-1 6-2v-5"/></svg>; }
 function EditIcon()      { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
+function ImagePlaceholderIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>; }
 function BackArrowIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function MoreIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function PhotosIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
@@ -65,6 +67,9 @@ function initials(name = '') {
 
 function MutualIcon() {
   return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+}
+function SuggLocationIcon() {
+  return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 }
 
 function FriendSuggestionsPanel({ onUserClick }) {
@@ -103,7 +108,9 @@ function FriendSuggestionsPanel({ onUserClick }) {
       </div>
       {visible.map(f => {
         const id = f.id ?? f._id;
-        const sub = f.mutualFriends ? `${f.mutualFriends} mutual friends` : (f.sub ?? '');
+        const hasMutual = !!f.mutualFriends;
+        const locationText = f.location || f.city;
+        const sub = hasMutual ? `${f.mutualFriends} mutual friends` : (locationText || f.sub || '');
         return (
           <div key={id} className={`prof-sugg-item${removingIds.has(id) ? ' prof-sugg-item--removing' : ''}`}>
             <div className="prof-sugg-item-top">
@@ -119,7 +126,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
               </div>
               <div className="prof-sugg-info">
                 <p className="prof-sugg-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
-                <p className="prof-sugg-sub"><MutualIcon />{sub}</p>
+                {sub && <p className="prof-sugg-sub">{hasMutual ? <MutualIcon /> : <SuggLocationIcon />}{sub}</p>}
               </div>
             </div>
             <div className="prof-sugg-actions">
@@ -245,6 +252,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           </button>
           {openDrop === 'loc' && (
             <div className="prof-conn-fbar-dropdown">
+              {CONN_LOCATIONS.length === 0 && <span className="prof-conn-fbar-empty">No locations</span>}
               {CONN_LOCATIONS.map(loc => (
                 <button
                   key={loc}
@@ -268,6 +276,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           </button>
           {openDrop === 'ind' && (
             <div className="prof-conn-fbar-dropdown">
+              {CONN_INDUSTRIES.length === 0 && <span className="prof-conn-fbar-empty">No industries</span>}
               {CONN_INDUSTRIES.map(ind => (
                 <button
                   key={ind}
@@ -299,7 +308,10 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
               <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
-                <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
+                {conn.avatar
+                  ? <img src={conn.avatar} alt={conn.name} className="prof-conn-avatar" />
+                  : <span className="prof-conn-avatar prof-conn-avatar--fallback">{initials(conn.name)}</span>
+                }
                 <span className={`prof-conn-status-dot${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
               <div className="prof-conn-info">
@@ -336,7 +348,10 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">
               <div className="prof-conn-card-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
-                <img src={conn.avatar} alt={conn.name} className="prof-conn-card-avatar" />
+                {conn.avatar
+                  ? <img src={conn.avatar} alt={conn.name} className="prof-conn-card-avatar" />
+                  : <span className="prof-conn-card-avatar prof-conn-avatar--fallback">{initials(conn.name)}</span>
+                }
                 <span className={`prof-conn-status-dot prof-conn-status-dot--card${conn.online ? ' prof-conn-status-dot--online' : ''}`} />
               </div>
               <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</p>
@@ -365,7 +380,9 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      <button className="prof-conn-load-more">View all connections</button>
+      {connectionsTotal > 5 && (
+        <button className="prof-conn-load-more">View all connections</button>
+      )}
     </div>
     <FriendSuggestionsPanel onUserClick={onUserClick} />
     </div>
@@ -384,14 +401,6 @@ function MediaCard({ photo }) {
     <div className="media-photo-card">
       <div className="media-photo-wrap" style={{ position: 'relative', overflow: 'hidden' }}>
         <SkeletonImg src={photo.images[idx]} alt="" className="media-photo-img" />
-
-        {/* gradient overlay + stats (always visible on hover) */}
-        <div className="media-photo-overlay">
-          <div className="media-photo-stats">
-            <span className="media-stat"><HeartFillIcon /> {photo.likes}</span>
-            <span className="media-stat"><MsgIcon /> {photo.comments}</span>
-          </div>
-        </div>
 
         {/* Multi-image badge top-right */}
         {multi && (
@@ -451,13 +460,14 @@ function GalleryPanel() {
 
 export function MediaTab({ readOnly }) {
   const dispatch = useDispatch();
-  const { photos } = useSelector(s => s.profile);
+  const { photos, albums } = useSelector(s => s.profile);
   const photoInputRef = useRef(null);
-  const albumInputRef = useRef(null);
+  const [albumModalOpen, setAlbumModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPhotos());
     dispatch(fetchGallery());
+    dispatch(fetchAlbums());
   }, [dispatch]);
 
   function handleFilesChosen(e) {
@@ -468,14 +478,34 @@ export function MediaTab({ readOnly }) {
   }
 
   return (
-    <div className="prof-conn-layout">
     <div className="media-tab">
       <div className="media-header">
         <h2 className="media-title">Photos</h2>
-        {!readOnly && <button className="media-create-btn" onClick={() => albumInputRef.current?.click()}><PlusIcon /> Create album</button>}
+        {!readOnly && <button className="media-create-btn" onClick={() => setAlbumModalOpen(true)}><PlusIcon /> Create album</button>}
       </div>
       <input ref={photoInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFilesChosen} />
-      <input ref={albumInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFilesChosen} />
+
+      {albums.length > 0 && (
+        <>
+          <h3 className="media-subhead">Albums</h3>
+          <div className="media-album-grid">
+            {albums.map(album => (
+              <div key={album.id} className="media-album-card">
+                <div className="media-album-cover">
+                  {album.cover
+                    ? <SkeletonImg src={album.cover} alt={album.name} className="media-album-cover-img" />
+                    : <div className="media-album-cover media-album-cover--empty"><CameraIcon /></div>
+                  }
+                  <span className="media-album-count">{album.count} photo{album.count === 1 ? '' : 's'}</span>
+                </div>
+                <p className="media-album-name">{album.name}</p>
+              </div>
+            ))}
+          </div>
+          <h3 className="media-subhead">All photos</h3>
+        </>
+      )}
+
       <div className="media-grid">
         {!readOnly && (
           <button className="media-add-slot" onClick={() => photoInputRef.current?.click()}>
@@ -487,8 +517,94 @@ export function MediaTab({ readOnly }) {
           <MediaCard key={photo.id} photo={photo} />
         ))}
       </div>
+      {albumModalOpen && <CreateAlbumModal onClose={() => setAlbumModalOpen(false)} />}
     </div>
-    <GalleryPanel />
+  );
+}
+
+function CreateAlbumModal({ onClose }) {
+  const dispatch = useDispatch();
+  const { creatingAlbum } = useSelector(s => s.profile);
+  const [name, setName] = useState('');
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [error, setError] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
+
+  const ALBUM_MAX = 30;
+  function handlePick(e) {
+    const picked = [...(e.target.files ?? [])];
+    e.target.value = '';
+    if (!picked.length) return;
+    const room = ALBUM_MAX - files.length;
+    if (room <= 0) { setError(`An album can have up to ${ALBUM_MAX} photos.`); return; }
+    const toAdd = picked.slice(0, room);
+    setFiles(prev => [...prev, ...toAdd]);
+    setPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
+    setError(picked.length > room ? `An album can have up to ${ALBUM_MAX} photos.` : '');
+  }
+
+  function removeAt(idx) {
+    setFiles(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => { URL.revokeObjectURL(prev[idx]); return prev.filter((_, i) => i !== idx); });
+  }
+
+  async function handleCreate() {
+    if (!name.trim()) { setError('Give your album a name.'); return; }
+    if (files.length === 0) { setError('Add at least one photo.'); return; }
+    const res = await dispatch(createAlbum({ name: name.trim(), files }));
+    if (createAlbum.fulfilled.match(res)) onClose();
+    else setError(res.payload || 'Could not create album. Please try again.');
+  }
+
+  return (
+    <div className="cp-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="cp-modal" role="dialog" aria-modal="true" style={{ maxWidth: 520 }}>
+        <div className="cp-header">
+          <div>
+            <h2 className="cp-title">Create album</h2>
+            <p className="cp-subtitle">Name your album and add photos.</p>
+          </div>
+          <button className="cp-close-btn" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div className="cp-body">
+          <input
+            className="album-name-input"
+            placeholder="Album name"
+            value={name}
+            onChange={e => { setName(e.target.value); if (error) setError(''); }}
+            maxLength={80}
+            autoFocus
+          />
+          <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePick} />
+          <div className="media-grid">
+            <button type="button" className="media-add-slot" onClick={() => inputRef.current?.click()}>
+              <div className="media-add-icon"><CameraIcon /></div>
+              <span className="media-add-label">Add photos</span>
+            </button>
+            {previews.map((src, i) => (
+              <div key={i} className="album-thumb">
+                <img src={src} alt="" className="album-thumb-img" />
+                <button className="cp-remove-media" onClick={() => removeAt(i)} aria-label="Remove">✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="cp-footer">
+          {error && <p className="cp-error">{error}</p>}
+          <button className="cp-post-btn" onClick={handleCreate} disabled={creatingAlbum}>
+            {creatingAlbum ? 'Creating…' : `Create album${files.length ? ` (${files.length})` : ''}`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -856,7 +972,7 @@ export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed }) {
                         title="Remove"
                         type="button"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                       </button>
                     </div>
                     <div className="about-edu-edit-grid">
@@ -974,6 +1090,8 @@ export default function ProfilePage({
   const totalPosts     = authUser?.postsCount ?? profile?.postsCount ?? myPostsTotal;
   const displayName    = profile?.fullName || authUser?.fullName || 'You';
   const role           = profile?.role || '';
+  // Degree from the first education entry that has one (shown next to location)
+  const degree         = (profile?.education ?? []).find(e => e.degree)?.degree || '';
 
   const [activeTab,       setActiveTab]       = useState(initialTab || 'Feed');
   useEffect(() => {
@@ -990,7 +1108,7 @@ export default function ProfilePage({
   const [createPostOpen,  setCreatePostOpen]  = useState(false);
   const [createTab,       setCreateTab]       = useState('photo');
   const [creatorClicked,  setCreatorClicked]  = useState(false);
-  const [coverUrl,        setCoverUrl]        = useState(COVER_URL);
+  const [coverUrl,        setCoverUrl]        = useState(null);
   const [localAvatar,     setAvatarUrl]       = useState(null);
 
   // Sync cover from profile
@@ -1047,7 +1165,19 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
 
       <div className="prof-main">
         <div className="prof-cover" style={{ position: 'relative', overflow: 'hidden' }}>
-          <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
+          {coverUrl
+            ? <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
+            : (
+              <button
+                className="prof-cover-placeholder"
+                onClick={() => coverInputRef.current?.click()}
+                title="Add a cover photo"
+              >
+                <ImagePlaceholderIcon />
+                <span>Add a cover photo</span>
+              </button>
+            )
+          }
 
           <button className="prof-cover-back-btn" onClick={onBack} title="Back to Feed">
             <BackArrowIcon />
@@ -1112,6 +1242,12 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
               {profile?.location && (
                 <>
                   <span className="prof-meta-item"><PinIcon /> {profile.location}</span>
+                  <span className="prof-meta-sep">·</span>
+                </>
+              )}
+              {degree && (
+                <>
+                  <span className="prof-meta-item"><GradCapIcon /> {degree}</span>
                   <span className="prof-meta-sep">·</span>
                 </>
               )}
