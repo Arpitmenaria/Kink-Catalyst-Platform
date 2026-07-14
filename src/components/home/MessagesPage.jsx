@@ -65,9 +65,10 @@ function initials(name) {
 }
 
 function formatDocSize(bytes) {
-  if (!bytes) return '';
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / 1024).toFixed(0)} KB`;
+  const n = Number(bytes);
+  if (!n || !Number.isFinite(n)) return '';
+  if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / 1024).toFixed(0)} KB`;
 }
 
 /* ── Upload Assets Modal ── */
@@ -173,9 +174,11 @@ function SharedAssetsView({ conv, onBack }) {
   const totalGB    = storage?.totalGB ?? 10;
   const pct        = Math.round((usedGB / totalGB) * 100);
 
+  // Fetch counts/items for all three tabs up front so the tab labels show
+  // correct per-tab counts immediately, without waiting for the user to switch tabs.
   useEffect(() => {
-    dispatch(fetchAssets({ convId: conv.id, tab }));
-  }, [conv.id, tab, dispatch]);
+    SA_TABS.forEach(t => dispatch(fetchAssets({ convId: conv.id, tab: t.id })));
+  }, [conv.id, dispatch]);
 
   return (
     <div className="sa-wrap">
@@ -197,7 +200,7 @@ function SharedAssetsView({ conv, onBack }) {
               className={`sa-tab${tab === t.id ? ' sa-tab--active' : ''}`}
               onClick={() => setTab(t.id)}
             >
-              {t.label} {convAssets.total != null && <span className="sa-tab-count">({convAssets.total})</span>}
+              {t.label} {convAssets.totals?.[t.id] != null && <span className="sa-tab-count">({convAssets.totals[t.id]})</span>}
             </button>
           ))}
         </div>
@@ -208,7 +211,7 @@ function SharedAssetsView({ conv, onBack }) {
         {/* ── Media tab ── */}
         {!assetsLoading && tab === 'media' && (
           <div className="sa-media-grid">
-            {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13, gridColumn: '1/-1' }}>No media yet.</p>}
+            {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13 }}>No media yet.</p>}
             {items.map((item, i) => (
               <div key={item.id ?? i} className="sa-media-thumb">
                 {item.type === 'video'
@@ -225,7 +228,13 @@ function SharedAssetsView({ conv, onBack }) {
           <div className="sa-list">
             {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13 }}>No links yet.</p>}
             {items.map((link, i) => (
-              <div key={link.id ?? i} className="sa-link-item">
+              <a
+                key={link.id ?? i}
+                className="sa-link-item"
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <div className="sa-link-icon"><LinkItemIcon /></div>
                 <div className="sa-link-body">
                   <p className="sa-link-title">{link.title ?? link.url}</p>
@@ -238,7 +247,7 @@ function SharedAssetsView({ conv, onBack }) {
                     <div className="sa-link-avatar" style={{ background: conv.color }}>{initials(conv.name)}</div>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         )}
@@ -757,6 +766,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                           <span className="msg-bubble-time">{msg.pending ? '···' : msg.time}</span>
                           {msg.from === 'me' && msg.read && !msg.pending && <span className="msg-read-check"><ReadCheckIcon /></span>}
                         </div>
+                      </div>
+                    ) : msg.type === 'file' ? (
+                      <div className={`msg-bubble${msg.from === 'me' ? ' msg-bubble--sent' : ' msg-bubble--received'}`}>
+                        {msg.mediaUrl ? (
+                          <a className="msg-file-chip" href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" download>
+                            <span className="msg-file-icon">{(DOC_TYPE_META[msg.fileName?.split('.').pop()?.toLowerCase()] ?? DOC_TYPE_META.pdf).icon}</span>
+                            <span className="msg-file-name">{msg.fileName || 'Attachment'}</span>
+                          </a>
+                        ) : (
+                          <p className="msg-bubble-text">{msg.pending ? msg.text : (msg.fileName || 'Attachment')}</p>
+                        )}
                       </div>
                     ) : (
                       <div className={`msg-bubble${msg.from === 'me' ? ' msg-bubble--sent' : ' msg-bubble--received'}`}>

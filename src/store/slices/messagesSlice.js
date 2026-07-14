@@ -17,12 +17,14 @@ function normalizeConversation(c) {
 }
 
 function normalizeMessage(m) {
+  const mediaUrl = m.mediaUrl?.startsWith?.('http') ? m.mediaUrl : null;
   return {
     id: m.id ?? m._id ?? '',
     from: m.from ?? 'them',
     type: m.type ?? 'text',
     text: m.text ?? '',
-    mediaUrl: m.mediaUrl?.startsWith?.('http') ? m.mediaUrl : null,
+    mediaUrl,
+    fileName: m.fileName ?? m.name ?? (mediaUrl ? decodeURIComponent(mediaUrl.split('/').pop()) : ''),
     time: m.time ?? '',
     read: m.read ?? false,
     createdAt: m.createdAt ?? '',
@@ -224,7 +226,7 @@ const messagesSlice = createSlice({
     sending: false,
     onlineUsers: [],
     onlineLoading: false,
-    assets: {},           // { [convId]: { media|docs|links: [], storage, total } }
+    assets: {},           // { [convId]: { media|docs|links: [], storage, totals: { media, links, docs } } }
     assetsLoading: false,
     blockedConvIds: {},   // { [convId]: boolean }
     pendingOpenConvId: null, // set by startDM so MessagesPage auto-opens that conversation
@@ -299,7 +301,7 @@ const messagesSlice = createSlice({
       .addCase(sendMessage.pending, (s, a) => {
         s.sending = true;
         // Optimistic: add a temp message immediately so UI feels instant
-        const { convId, text, type } = a.meta.arg;
+        const { convId, text, type, file } = a.meta.arg;
         const tempId = `temp_${a.meta.requestId}`;
         if (!s.messages[convId]) s.messages[convId] = [];
         const msgType = type ?? 'text';
@@ -310,6 +312,7 @@ const messagesSlice = createSlice({
           type: msgType,
           text: previewText,
           mediaUrl: null,
+          fileName: file?.name ?? '',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           read: false,
           pending: true,
@@ -360,8 +363,9 @@ const messagesSlice = createSlice({
         const { convId, tab, items, total, storage } = a.payload;
         s.assetsLoading = false;
         if (!s.assets[convId]) s.assets[convId] = {};
+        if (!s.assets[convId].totals) s.assets[convId].totals = {};
         s.assets[convId][tab] = items;
-        s.assets[convId].total = total;
+        s.assets[convId].totals[tab] = total;
         if (storage) s.assets[convId].storage = storage;
       })
       .addCase(fetchAssets.rejected, s => { s.assetsLoading = false; })
