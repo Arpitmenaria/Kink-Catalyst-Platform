@@ -300,7 +300,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 1px;
 }
 
 .msg-conv-top {
@@ -753,7 +753,7 @@
 /* Message bubbles */
 .msg-bubble-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -800,6 +800,12 @@
   gap: 8px;
   text-decoration: none;
   color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .msg-file-icon {
@@ -861,6 +867,39 @@
   border: 1px solid #1a2540;
 }
 
+/* Multi-image/video "album" message */
+.msg-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  width: 240px;
+}
+
+.msg-media-grid-item {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0d1424;
+  border: 1px solid #1a2540;
+}
+
+.msg-media-grid-item img,
+.msg-media-grid-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+
+/* Multi-doc "album" message */
+.msg-file-chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* ── Input bar ── */
 .msg-input-bar {
   display: flex;
@@ -871,6 +910,54 @@
   background: #0d0f1e;
   flex-shrink: 0;
 }
+
+/* ── Blocked-conversation bar (replaces input bar) ── */
+.msg-blocked-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid #181c30;
+  background: #0d0f1e;
+  flex-shrink: 0;
+}
+
+.msg-blocked-text {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: #5c6a8c;
+}
+
+.msg-blocked-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.msg-blocked-btn {
+  padding: 10px 0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.msg-blocked-btn--delete {
+  border: 1px solid #3a1f28;
+  background: none;
+  color: #ef4444;
+}
+.msg-blocked-btn--delete:hover { background: rgba(239,68,68,0.1); }
+
+.msg-blocked-btn--unblock {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+}
+.msg-blocked-btn--unblock:hover { background: #1d4ed8; }
 
 .msg-input-icon-btn {
   background: none;
@@ -888,6 +975,40 @@
 .msg-input-icon-btn:hover { color: #c8cfe0; background: #131626; }
 
 .msg-emoji-wrap { position: relative; flex-shrink: 0; }
+
+.msg-attach-wrap { position: relative; flex-shrink: 0; }
+
+.msg-attach-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 40;
+  background: #131626;
+  border: 1px solid #252d4a;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 160px;
+}
+
+.msg-attach-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: #c8cfe0;
+  font-size: 13px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+}
+.msg-attach-item:hover { background: #1e2438; }
 
 .msg-emoji-popover {
   position: absolute;
@@ -1007,6 +1128,17 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+.msg-contact-location {
+  font-size: 11.5px;
+  color: #5c6a8c;
+  margin: 0px 0 0;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .msg-contact-role {
   font-size: 12px;
   color: #5c6a8c;
@@ -1115,6 +1247,12 @@
 }
 
 .msg-action-item:hover { background: #131626; }
+
+.msg-action-item--disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.msg-action-item--disabled:hover { background: none; }
 
 .msg-action-icon {
   width: 24px;
@@ -1968,6 +2106,7 @@
   background: #131626;
   border: 1px solid #1e2238;
   color: #5c6a8c;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2602,3 +2741,30 @@
 
 .msg-confirm-confirm-btn--neutral { background: #3b82f6; }
 .msg-confirm-confirm-btn--neutral:hover { background: #2563eb; }
+
+.msg-confirm-cancel-btn:disabled,
+.msg-confirm-confirm-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.msg-confirm-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msg-confirm-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  animation: msgConfirmSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes msgConfirmSpin {
+  to { transform: rotate(360deg); }
+}

@@ -14,18 +14,31 @@ function normalizeConversation(c) {
     lastMessage: c.lastMessage ?? null,
     unreadCount: c.unreadCount ?? 0,
     participantId: c.participantId ?? c.participant?.id ?? c.participant?._id ?? null,
+    location: c.location ?? '',
   };
 }
 
 function normalizeMessage(m) {
-  const mediaUrl = m.mediaUrl?.startsWith?.('http') ? m.mediaUrl : null;
+  // Backend always sends `media` now (synthesised from the legacy single-mediaUrl
+  // shape for old messages, [] for text-only) — but stay defensive in case an
+  // older cached payload or a not-yet-migrated response is missing it.
+  const media = Array.isArray(m.media)
+    ? m.media.filter(it => it?.url?.startsWith?.('http')).map(it => ({
+        url: it.url,
+        type: it.type ?? 'file',
+        fileName: it.fileName ?? it.name ?? decodeURIComponent(it.url.split('/').pop()),
+        fileSize: it.fileSize ?? null,
+        fileType: it.fileType ?? null,
+      }))
+    : (m.mediaUrl?.startsWith?.('http')
+        ? [{ url: m.mediaUrl, type: m.type ?? 'file', fileName: m.fileName ?? m.name ?? decodeURIComponent(m.mediaUrl.split('/').pop()), fileSize: null, fileType: null }]
+        : []);
   return {
     id: m.id ?? m._id ?? '',
     from: m.from ?? 'them',
     type: m.type ?? 'text',
     text: m.text ?? '',
-    mediaUrl,
-    fileName: m.fileName ?? m.name ?? (mediaUrl ? decodeURIComponent(mediaUrl.split('/').pop()) : ''),
+    media,
     time: m.time ?? '',
     read: m.read ?? false,
     createdAt: m.createdAt ?? '',
@@ -64,6 +77,12 @@ export const fetchMessages = createAsyncThunk(
         messages: (data.messages ?? []).map(normalizeMessage),
         page: data.page ?? page,
         hasMore: data.hasMore ?? false,
+        // The list endpoint doesn't echo the other participant's profile or the
+        // requester's persisted block/report state — this one does.
+        otherUserId: data.otherUser?.userId ?? data.otherUser?._id ?? null,
+        otherUserLocation: data.otherUser?.location ?? '',
+        isBlocked: typeof data.isBlocked === 'boolean' ? data.isBlocked : null,
+        isReported: typeof data.isReported === 'boolean' ? data.isReported : null,
       };
     } catch (err) {
       return rejectWithValue(err.message);
@@ -74,14 +93,17 @@ export const fetchMessages = createAsyncThunk(
 // 3. POST /api/conversations/:id/messages
 export const sendMessage = createAsyncThunk(
   'messages/sendMessage',
-  async ({ convId, type = 'text', text, file }, { getState, dispatch, rejectWithValue }) => {
+  async ({ convId, type = 'text', text, file, files }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       // API always expects multipart/form-data
       const form = new FormData();
       form.append('type', type);
       if (text) form.append('text', text);
-      if (file) form.append('file', file);
+      // `files[]` (new, up to 20) for a multi-select send; `file` (legacy, single)
+      // still works standalone — never send both for the same call.
+      if (files?.length) files.forEach(f => form.append('files[]', f));
+      else if (file) form.append('file', file);
       const body = form; const isFormData = true;
       const data = await apiRequest(`/api/conversations/${convId}/messages`, { method: 'POST', token, body, isFormData });
       return { convId, message: normalizeMessage(data.message ?? {}) };
@@ -188,6 +210,20 @@ export const toggleBlock = createAsyncThunk(
   }
 );
 
+// 9b. DELETE /api/conversations/:id — soft-delete for the current user only
+export const deleteConversation = createAsyncThunk(
+  'messages/deleteConversation',
+  async (convId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/conversations/${convId}`, { method: 'DELETE', token });
+      return { convId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // 10. POST /api/conversations/:id/report
 export const reportConversation = createAsyncThunk(
   'messages/reportConversation',
@@ -236,7 +272,9 @@ const messagesSlice = createSlice({
     assets: {},           // { [convId]: { media|docs|links: [], storage, totals: { media, links, docs } } }
     assetsLoading: false,
     blockedConvIds: {},   // { [convId]: boolean }
+    reportedConvIds: {},  // { [convId]: boolean }
     pendingOpenConvId: null, // set by startDM so MessagesPage auto-opens that conversation
+    lastFetchParams: { tab: 'all', search: '' }, // last args passed to fetchConversations, so a resurrected conversation (see receiveMessage in socket.js) refetches under the filter the user is actually looking at
     error: null,
   },
   reducers: {
@@ -288,7 +326,10 @@ const messagesSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      .addCase(fetchConversations.pending, s => { s.conversationsLoading = true; })
+      .addCase(fetchConversations.pending, (s, a) => {
+        s.conversationsLoading = true;
+        s.lastFetchParams = { tab: a.meta.arg?.tab ?? 'all', search: a.meta.arg?.search ?? '' };
+      })
       .addCase(fetchConversations.fulfilled, (s, a) => {
         s.conversationsLoading = false;
         s.conversations = a.payload.conversations;
@@ -298,28 +339,46 @@ const messagesSlice = createSlice({
 
       .addCase(fetchMessages.pending, s => { s.messagesLoading = true; })
       .addCase(fetchMessages.fulfilled, (s, a) => {
-        const { convId, messages, page, hasMore } = a.payload;
+        const { convId, messages, page, hasMore, otherUserId, otherUserLocation, isBlocked, isReported } = a.payload;
         s.messagesLoading = false;
         s.messages[convId] = page === 1 ? messages : [...messages, ...(s.messages[convId] ?? [])];
         s.messagesHasMore[convId] = hasMore;
+        if (otherUserId) {
+          const conv = s.conversations.find(c => c.id === convId);
+          if (conv) {
+            if (!conv.participantId) conv.participantId = otherUserId;
+            if (otherUserLocation) conv.location = otherUserLocation;
+          }
+        }
+        // Persisted truth from the server overrides whatever the client guessed
+        // (or never knew) after a hard refresh.
+        if (isBlocked !== null) s.blockedConvIds[convId] = isBlocked;
+        if (isReported !== null) s.reportedConvIds[convId] = isReported;
       })
       .addCase(fetchMessages.rejected, s => { s.messagesLoading = false; })
 
       .addCase(sendMessage.pending, (s, a) => {
         s.sending = true;
-        // Optimistic: add a temp message immediately so UI feels instant
-        const { convId, text, type, file } = a.meta.arg;
+        // Optimistic: add a temp message immediately so UI feels instant. No
+        // preview thumbnails yet (nothing's uploaded), just a placeholder line —
+        // `media` fills in for real once sendMessage.fulfilled swaps this out.
+        const { convId, text, type, file, files } = a.meta.arg;
         const tempId = `temp_${a.meta.requestId}`;
         if (!s.messages[convId]) s.messages[convId] = [];
         const msgType = type ?? 'text';
-        const previewText = text ?? (msgType === 'image' ? '📷 Photo' : msgType === 'video' ? '🎥 Video' : msgType === 'file' ? '📎 File' : '');
+        const fileCount = files?.length ?? (file ? 1 : 0);
+        const previewText = text ?? (
+          msgType === 'image' ? (fileCount > 1 ? `📷 ${fileCount} Photos` : '📷 Photo')
+          : msgType === 'video' ? (fileCount > 1 ? `🎥 ${fileCount} Videos` : '🎥 Video')
+          : msgType === 'file' ? (fileCount > 1 ? `📎 ${fileCount} Files` : '📎 File')
+          : ''
+        );
         s.messages[convId].push({
           id: tempId,
           from: 'me',
           type: msgType,
           text: previewText,
-          mediaUrl: null,
-          fileName: file?.name ?? '',
+          media: [],
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           read: false,
           pending: true,
@@ -384,6 +443,19 @@ const messagesSlice = createSlice({
 
       .addCase(toggleBlock.fulfilled, (s, a) => {
         s.blockedConvIds[a.payload.convId] = a.payload.blocked;
+      })
+
+      .addCase(reportConversation.fulfilled, (s, a) => {
+        s.reportedConvIds[a.payload.convId] = true;
+      })
+
+      .addCase(deleteConversation.fulfilled, (s, a) => {
+        const { convId } = a.payload;
+        s.conversations = s.conversations.filter(c => c.id !== convId);
+        delete s.messages[convId];
+        delete s.blockedConvIds[convId];
+        delete s.reportedConvIds[convId];
+        delete s.assets[convId];
       })
 
       .addCase(fetchOnlineUsers.pending, s => { s.onlineLoading = true; })

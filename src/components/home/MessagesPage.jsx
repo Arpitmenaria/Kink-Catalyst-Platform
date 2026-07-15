@@ -6,7 +6,7 @@ import CreatePostModal from './CreatePostModal';
 import {
   fetchConversations, fetchMessages, sendMessage, markRead,
   startDM, createGroup, fetchAssets, uploadAssets,
-  toggleBlock, reportConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
+  toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
 } from '../../store/slices/messagesSlice';
 import { fetchSuggestions } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
@@ -29,12 +29,15 @@ function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 
 function DoubleCheckIcon() { return <svg width="16" height="13" viewBox="0 0 28 13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 7 5 11 13 3"/><polyline points="9 7 13 11 21 3"/></svg>; }
 function PlusCircleIcon()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
 function AttachPlusIcon()  { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
+function PhotoIcon()       { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
+function DocFileIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>; }
 function EmojiIcon()       { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function MicIcon()         { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>; }
 function SendIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
 function ChevronRightIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
 function BlockIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>; }
 function AlertIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>; }
+function PinIcon()         { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 
 const EMOJI_LIST = [
   '😀','😁','😂','🤣','😊','😍','😘','😎','🤔','🙄','😴','😭',
@@ -76,6 +79,38 @@ function formatDocSize(bytes) {
   if (!n || !Number.isFinite(n)) return '';
   if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   return `${(n / 1024).toFixed(0)} KB`;
+}
+
+const PREVIEWABLE_DOC_EXTS = new Set(['pdf', 'txt']);
+function isPreviewableDoc(name) {
+  return PREVIEWABLE_DOC_EXTS.has(name?.split('.').pop()?.toLowerCase());
+}
+
+// Cloudinary's raw-upload responses carry their own Content-Disposition with the
+// internal storage id as the filename, which browsers prefer over the anchor's
+// `download` attribute for cross-origin links. A blob: URL has no such header, so
+// building the download from a locally-fetched blob is the only reliable way to
+// force the real file name.
+function triggerBlobDownload(blobUrl, filename) {
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename || 'download';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function downloadFile(url, filename) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    triggerBlobDownload(objectUrl, filename);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  } catch {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
 }
 
 /* ── Upload Assets Modal ── */
@@ -167,7 +202,7 @@ function UploadAssetsModal({ convId, onClose }) {
   );
 }
 
-function SharedAssetsView({ conv, onBack, onOpenLightbox }) {
+function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
   const dispatch = useDispatch();
   const { assets, assetsLoading } = useSelector(s => s.messages);
 
@@ -266,14 +301,20 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox }) {
             {items.map((doc, i) => {
               const ext  = doc.name?.split('.').pop()?.toLowerCase() ?? 'pdf';
               const meta = DOC_TYPE_META[ext] ?? DOC_TYPE_META.pdf;
+              const previewable = isPreviewableDoc(doc.name);
               return (
-                <div key={doc.id ?? i} className="sa-doc-item">
+                <div
+                  key={doc.id ?? i}
+                  className="sa-doc-item"
+                  style={previewable ? { cursor: 'pointer' } : undefined}
+                  onClick={() => previewable && onOpenDoc?.({ url: doc.url, name: doc.name })}
+                >
                   <div className="sa-doc-icon" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
                   <div className="sa-doc-body">
                     <p className="sa-doc-name">{doc.name}</p>
                     <p className="sa-doc-meta">{formatDocSize(doc.size)} • Shared by {doc.sharedBy ?? ''} • {doc.time ?? ''}</p>
                   </div>
-                  <a className="sa-doc-download" href={doc.url} download title="Download"><DocDownloadIcon /></a>
+                  <button type="button" className="sa-doc-download" title="Download" onClick={e => { e.stopPropagation(); downloadFile(doc.url, doc.name); }}><DocDownloadIcon /></button>
                 </div>
               );
             })}
@@ -517,8 +558,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     messagesLoading,
     onlineUsers,
     blockedConvIds,
+    reportedConvIds,
     sending,
-    assets: allAssets,
     pendingOpenConvId,
   } = useSelector(s => s.messages);
 
@@ -533,11 +574,18 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [showAssets,       setShowAssets]      = useState(false);
   const [typingUser,       setTypingUser]      = useState(null);
   const [lightboxUrl,      setLightboxUrl]     = useState(null);
+  const [docPreview,       setDocPreview]      = useState(null);
+  const [previewBlobUrl,   setPreviewBlobUrl]  = useState(null);
+  const [previewLoading,   setPreviewLoading]  = useState(false);
+  const [previewFailed,    setPreviewFailed]   = useState(false);
   const [emojiOpen,        setEmojiOpen]       = useState(false);
-  const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | null
+  const [attachOpen,       setAttachOpen]      = useState(false);
+  const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | null
+  const [confirmSubmitting, setConfirmSubmitting] = useState(false);
 
   const messagesEndRef  = useRef(null);
   const emojiRef        = useRef(null);
+  const attachRef       = useRef(null);
   const msgInputRef     = useRef(null);
   const typingTimerRef  = useRef(null);
   const isTypingRef     = useRef(false);
@@ -615,14 +663,44 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgCount]);
 
-  /* Close emoji picker on outside click */
+  /* Close emoji/attach popovers on outside click */
   useEffect(() => {
     function onOutsideClick(e) {
       if (emojiRef.current && !emojiRef.current.contains(e.target)) setEmojiOpen(false);
+      if (attachRef.current && !attachRef.current.contains(e.target)) setAttachOpen(false);
     }
-    if (emojiOpen) document.addEventListener('mousedown', onOutsideClick);
+    if (emojiOpen || attachOpen) document.addEventListener('mousedown', onOutsideClick);
     return () => document.removeEventListener('mousedown', onOutsideClick);
-  }, [emojiOpen]);
+  }, [emojiOpen, attachOpen]);
+
+  // Cloudinary's "raw" delivery serves docs as application/octet-stream with an
+  // attachment disposition, so pointing an <iframe> straight at docPreview.url just
+  // force-downloads it instead of rendering. Fetch the bytes ourselves and hand the
+  // iframe a blob: URL typed as application/pdf, which the browser renders inline.
+  useEffect(() => {
+    if (!docPreview) return;
+    let cancelled = false;
+    let objectUrl = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard fetch-in-effect loading/error flags
+    setPreviewLoading(true);
+    setPreviewFailed(false);
+    const mime = docPreview.name?.split('.').pop()?.toLowerCase() === 'txt' ? 'text/plain' : 'application/pdf';
+    fetch(docPreview.url)
+      .then(res => { if (!res.ok) throw new Error('fetch failed'); return res.blob(); })
+      .then(blob => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob.slice(0, blob.size, mime));
+        setPreviewBlobUrl(objectUrl);
+      })
+      .catch(() => { if (!cancelled) setPreviewFailed(true); })
+      .finally(() => { if (!cancelled) setPreviewLoading(false); });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setPreviewBlobUrl(null);
+      setPreviewFailed(false);
+    };
+  }, [docPreview]);
 
   function openConversation(conv) {
     setActiveConv(conv);
@@ -631,7 +709,6 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     dispatch(clearUnread({ convId: conv.id })); // instant badge clear
     dispatch(fetchMessages({ convId: conv.id }));
     dispatch(markRead(conv.id));
-    dispatch(fetchAssets({ convId: conv.id, tab: 'media', limit: 3 })); // right panel preview
   }
 
   async function handleSend() {
@@ -646,9 +723,31 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     dispatch(sendMessage({ convId: activeConv.id, type: 'text', text }));
   }
 
-  function handleSendFile(file, msgType) {
-    if (!file || !activeConv || sending) return;
-    dispatch(sendMessage({ convId: activeConv.id, type: msgType, file }));
+  // The send-message endpoint now takes a `files[]` array (up to 20), so a
+  // multi-select becomes one grouped "album" message instead of N separate
+  // ones. Media (image/video) and docs are split into at most two calls —
+  // one album per type — since they render as different bubble shapes.
+  async function handleSendFiles(fileList) {
+    if (!fileList?.length || !activeConv || sending) return;
+    const files = Array.from(fileList);
+    const mediaFiles = files.filter(f => f.type.startsWith('image') || f.type.startsWith('video'));
+    const docFiles = files.filter(f => !f.type.startsWith('image') && !f.type.startsWith('video'));
+    if (mediaFiles.length) {
+      const msgType = mediaFiles.every(f => f.type.startsWith('video')) ? 'video' : 'image';
+      await dispatch(sendMessage({ convId: activeConv.id, type: msgType, files: mediaFiles }));
+    }
+    if (docFiles.length) {
+      await dispatch(sendMessage({ convId: activeConv.id, type: 'file', files: docFiles }));
+    }
+  }
+
+  function openAttachPicker(kind) {
+    setAttachOpen(false);
+    if (!fileInputRef.current) return;
+    fileInputRef.current.accept = kind === 'photos'
+      ? 'image/*,video/*'
+      : '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip';
+    fileInputRef.current.click();
   }
 
   function triggerTyping() {
@@ -699,6 +798,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
   async function handleConfirmAction() {
     if (!activeConv) return closeConfirm();
+    setConfirmSubmitting(true);
     if (confirmAction === 'block') {
       const result = await dispatch(toggleBlock(activeConv.id));
       if (toggleBlock.fulfilled.match(result)) {
@@ -713,7 +813,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       } else {
         dispatch(showToast({ message: result.payload ?? 'Failed to report conversation', type: 'error' }));
       }
+    } else if (confirmAction === 'delete') {
+      const result = await dispatch(deleteConversation(activeConv.id));
+      if (deleteConversation.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Chat deleted', type: 'success' }));
+        setActiveConv(null);
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to delete chat', type: 'error' }));
+      }
     }
+    setConfirmSubmitting(false);
     closeConfirm();
   }
 
@@ -726,8 +835,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     onUserClick(userId);
   }
 
-  const messages  = activeConv ? (allMessages[activeConv.id] ?? []) : [];
-  const isBlocked = activeConv ? (blockedConvIds[activeConv.id] ?? false) : false;
+  const messages   = activeConv ? (allMessages[activeConv.id] ?? []) : [];
+  const isBlocked  = activeConv ? (blockedConvIds[activeConv.id] ?? false) : false;
+  const isReported = activeConv ? (reportedConvIds[activeConv.id] ?? false) : false;
   // activeConv is a snapshot taken when the chat was opened, so it goes stale as soon as the
   // store updates (e.g. a socket "online"/"offline" event) — always render the live copy from
   // the conversations list instead of the frozen selection.
@@ -786,7 +896,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
 
         {showAssets
-          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} onOpenLightbox={setLightboxUrl} />
+          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} onOpenLightbox={setLightboxUrl} onOpenDoc={setDocPreview} />
           : <>
           {/* Chat area */}
           <div className="msg-chat-area" key={chatKey}>
@@ -802,10 +912,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 </div>
                 <div>
                   <p className="msg-chat-name">{liveActiveConv.name}</p>
-                  {liveActiveConv.online
-                    ? <p className="msg-chat-status msg-chat-status--online">● Online</p>
-                    : <p className="msg-chat-status">Offline</p>
-                  }
+                  <p className={`msg-chat-status${liveActiveConv.online ? ' msg-chat-status--online' : ''}`}>
+                    {liveActiveConv.online ? '● Online' : 'Offline'}
+                  </p>
                 </div>
               </div>
               <button className="msg-chat-search-btn"><SearchIcon /></button>
@@ -822,7 +931,12 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#5c6a8c', fontSize: 13 }}>No messages yet. Say hello!</div>
               )}
 
-              {messages.map(msg => (
+              {messages.map(msg => {
+                const mediaVisuals = msg.media.filter(m => m.type === 'image' || m.type === 'video');
+                const mediaDocs = msg.media.filter(m => m.type !== 'image' && m.type !== 'video');
+                const isMediaMsg = msg.type === 'image' || msg.type === 'video';
+                const isFileMsg = msg.type === 'file';
+                return (
                 <div key={msg.id} className={`msg-bubble-row${msg.from === 'me' ? ' msg-bubble-row--me' : ''}`} style={msg.pending ? { opacity: 0.6 } : undefined}>
                   {msg.from !== 'me' && (
                     <div className="msg-avatar msg-avatar--xs" style={{ background: activeConv.color, flexShrink: 0 }}>
@@ -830,28 +944,51 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                     </div>
                   )}
                   <div className="msg-bubble-col">
-                    {(msg.type === 'image' || msg.type === 'video') ? (
+                    {isMediaMsg ? (
                       <div className="msg-bubble-img-wrap">
-                        {msg.type === 'video'
-                          ? <video src={msg.mediaUrl} controls className="msg-img-placeholder" style={{ width: '100%', background: '#0d1424' }} />
-                          : msg.mediaUrl
-                            ? <img src={msg.mediaUrl} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover', cursor: 'pointer' }} onClick={() => setLightboxUrl(msg.mediaUrl)} />
-                            : <div className="msg-img-placeholder" />
-                        }
+                        {mediaVisuals.length === 0 ? (
+                          <div className="msg-img-placeholder" />
+                        ) : mediaVisuals.length === 1 ? (
+                          mediaVisuals[0].type === 'video'
+                            ? <video src={mediaVisuals[0].url} controls className="msg-img-placeholder" style={{ width: '100%', background: '#0d1424' }} />
+                            : <img src={mediaVisuals[0].url} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover', cursor: 'pointer' }} onClick={() => setLightboxUrl(mediaVisuals[0].url)} />
+                        ) : (
+                          <div className="msg-media-grid">
+                            {mediaVisuals.map((item, i) => (
+                              <div key={i} className="msg-media-grid-item">
+                                {item.type === 'video'
+                                  ? <video src={item.url} controls />
+                                  : <img src={item.url} alt="" onClick={() => setLightboxUrl(item.url)} />
+                                }
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <div className="msg-bubble-meta msg-bubble-meta--right">
                           <span className="msg-bubble-time">{msg.pending ? '···' : msg.time}</span>
                           {msg.from === 'me' && msg.read && !msg.pending && <span className="msg-read-check"><ReadCheckIcon /></span>}
                         </div>
                       </div>
-                    ) : msg.type === 'file' ? (
+                    ) : isFileMsg ? (
                       <div className={`msg-bubble${msg.from === 'me' ? ' msg-bubble--sent' : ' msg-bubble--received'}`}>
-                        {msg.mediaUrl ? (
-                          <a className="msg-file-chip" href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" download>
-                            <span className="msg-file-icon">{(DOC_TYPE_META[msg.fileName?.split('.').pop()?.toLowerCase()] ?? DOC_TYPE_META.pdf).icon}</span>
-                            <span className="msg-file-name">{msg.fileName || 'Attachment'}</span>
-                          </a>
+                        {mediaDocs.length > 0 ? (
+                          <div className="msg-file-chip-list">
+                            {mediaDocs.map((doc, i) => (
+                              isPreviewableDoc(doc.fileName) ? (
+                                <button key={i} type="button" className="msg-file-chip" onClick={() => setDocPreview({ url: doc.url, name: doc.fileName })}>
+                                  <span className="msg-file-icon">{(DOC_TYPE_META[doc.fileName?.split('.').pop()?.toLowerCase()] ?? DOC_TYPE_META.pdf).icon}</span>
+                                  <span className="msg-file-name">{doc.fileName || 'Attachment'}</span>
+                                </button>
+                              ) : (
+                                <button key={i} type="button" className="msg-file-chip" onClick={() => downloadFile(doc.url, doc.fileName || 'Attachment')}>
+                                  <span className="msg-file-icon">{(DOC_TYPE_META[doc.fileName?.split('.').pop()?.toLowerCase()] ?? DOC_TYPE_META.pdf).icon}</span>
+                                  <span className="msg-file-name">{doc.fileName || 'Attachment'}</span>
+                                </button>
+                              )
+                            ))}
+                          </div>
                         ) : (
-                          <p className="msg-bubble-text">{msg.pending ? msg.text : (msg.fileName || 'Attachment')}</p>
+                          <p className="msg-bubble-text">{msg.text || 'Attachment'}</p>
                         )}
                       </div>
                     ) : (
@@ -859,7 +996,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                         <p className="msg-bubble-text">{msg.text}</p>
                       </div>
                     )}
-                    {msg.type !== 'image' && msg.type !== 'video' && (
+                    {!isMediaMsg && (
                       <div className={`msg-bubble-meta${msg.from === 'me' ? ' msg-bubble-meta--right' : ''}`}>
                         <span className="msg-bubble-time">{msg.pending ? '···' : msg.time}</span>
                         {msg.from === 'me' && msg.read && !msg.pending && <span className="msg-read-check"><ReadCheckIcon /></span>}
@@ -867,7 +1004,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {typingUser && (
                 <div className="msg-bubble-row">
@@ -883,53 +1021,75 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
               style={{ display: 'none' }}
               onChange={e => {
-                const f = e.target.files?.[0];
-                if (f) handleSendFile(f, f.type.startsWith('image') ? 'image' : f.type.startsWith('video') ? 'video' : 'file');
+                handleSendFiles(e.target.files);
                 e.target.value = '';
               }}
             />
 
-            <div className="msg-input-bar">
-              <button className="msg-input-icon-btn" title="Attach file" onClick={() => !isBlocked && fileInputRef.current?.click()}><AttachPlusIcon /></button>
-              <input
-                ref={msgInputRef}
-                className="msg-input"
-                type="text"
-                placeholder={isBlocked ? 'You have blocked this conversation' : 'Type a message...'}
-                value={inputMsg}
-                onChange={handleInputChange}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                disabled={isBlocked || sending}
-              />
-              <div className="msg-emoji-wrap" ref={emojiRef}>
-                <button
-                  className="msg-input-icon-btn"
-                  type="button"
-                  title="Add emoji"
-                  onClick={() => !isBlocked && setEmojiOpen(v => !v)}
-                >
-                  <EmojiIcon />
-                </button>
-                {emojiOpen && (
-                  <div className="msg-emoji-popover">
-                    {EMOJI_LIST.map(em => (
-                      <button key={em} type="button" className="msg-emoji-btn" onClick={() => insertEmoji(em)}>{em}</button>
-                    ))}
-                  </div>
-                )}
+            {isBlocked ? (
+              <div className="msg-blocked-bar">
+                <p className="msg-blocked-text">You have blocked this conversation</p>
+                <div className="msg-blocked-actions">
+                  <button className="msg-blocked-btn msg-blocked-btn--delete" type="button" onClick={() => setConfirmAction('delete')}>Delete Chat</button>
+                  <button className="msg-blocked-btn msg-blocked-btn--unblock" type="button" onClick={() => setConfirmAction('block')}>Unblock</button>
+                </div>
               </div>
-              <button className="msg-input-icon-btn"><MicIcon /></button>
-              <button
-                className={`msg-send-btn${inputMsg.trim() ? ' msg-send-btn--active' : ''}`}
-                onClick={handleSend}
-                disabled={!inputMsg.trim() || sending || isBlocked}
-              >
-                <SendIcon />
-              </button>
-            </div>
+            ) : (
+              <div className="msg-input-bar">
+                <div className="msg-attach-wrap" ref={attachRef}>
+                  <button className="msg-input-icon-btn" title="Attach file" onClick={() => setAttachOpen(v => !v)}><AttachPlusIcon /></button>
+                  {attachOpen && (
+                    <div className="msg-attach-popover">
+                      <button type="button" className="msg-attach-item" onClick={() => openAttachPicker('photos')}>
+                        <PhotoIcon /> Photos
+                      </button>
+                      <button type="button" className="msg-attach-item" onClick={() => openAttachPicker('docs')}>
+                        <DocFileIcon /> Docs
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={msgInputRef}
+                  className="msg-input"
+                  type="text"
+                  placeholder="Type a message..."
+                  value={inputMsg}
+                  onChange={handleInputChange}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  disabled={sending}
+                />
+                <div className="msg-emoji-wrap" ref={emojiRef}>
+                  <button
+                    className="msg-input-icon-btn"
+                    type="button"
+                    title="Add emoji"
+                    onClick={() => setEmojiOpen(v => !v)}
+                  >
+                    <EmojiIcon />
+                  </button>
+                  {emojiOpen && (
+                    <div className="msg-emoji-popover">
+                      {EMOJI_LIST.map(em => (
+                        <button key={em} type="button" className="msg-emoji-btn" onClick={() => insertEmoji(em)}>{em}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button className="msg-input-icon-btn"><MicIcon /></button>
+                <button
+                  className={`msg-send-btn${inputMsg.trim() ? ' msg-send-btn--active' : ''}`}
+                  onClick={handleSend}
+                  disabled={!inputMsg.trim() || sending}
+                >
+                  <SendIcon />
+                </button>
+              </div>
+            )}
           </div>
 
           {newMsgOpen && (
@@ -957,6 +1117,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             >
               {liveActiveConv.name}
             </p>
+            {liveActiveConv.location && (
+              <p className="msg-contact-location"><PinIcon />{liveActiveConv.location}</p>
+            )}
             <p className="msg-contact-role">{liveActiveConv.role}</p>
 
             <div className="msg-media-section">
@@ -964,25 +1127,6 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <span className="msg-media-title">Media, Links, and Docs</span>
                 <button className="msg-see-all" onClick={() => setShowAssets(true)}>See All</button>
               </div>
-              {(() => {
-                const convAssets = allAssets[activeConv.id] ?? {};
-                const mediaItems = convAssets.media ?? [];
-                const total = convAssets.total ?? 0;
-                const preview = mediaItems.slice(0, 2);
-                const remaining = total > 2 ? total - 2 : 0;
-                if (total === 0 && mediaItems.length === 0) return null;
-                return (
-                  <div className="msg-media-grid">
-                    {preview.map((item, i) => (
-                      item.url
-                        ? <img key={item.id ?? i} src={item.url} alt="" className={`msg-media-thumb msg-media-thumb--${i + 1}`} style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: 6 }} />
-                        : <div key={i} className={`msg-media-thumb msg-media-thumb--${i + 1}`} />
-                    ))}
-                    {preview.length === 0 && <div className="msg-media-thumb msg-media-thumb--1" />}
-                    {remaining > 0 && <div className="msg-media-count">+{remaining}</div>}
-                  </div>
-                );
-              })()}
             </div>
 
             <div className="msg-contact-actions">
@@ -993,10 +1137,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 </span>
                 <ChevronRightIcon />
               </button>
-              <button className="msg-action-item" onClick={() => setConfirmAction('report')}>
+              <button
+                className={`msg-action-item${isReported ? ' msg-action-item--disabled' : ''}`}
+                onClick={() => !isReported && setConfirmAction('report')}
+                disabled={isReported}
+              >
                 <span className="msg-action-icon msg-action-icon--orange"><AlertIcon /></span>
-                <span className="msg-action-label">Report Conversation</span>
-                <ChevronRightIcon />
+                <span className="msg-action-label">{isReported ? 'Reported' : 'Report Conversation'}</span>
+                {!isReported && <ChevronRightIcon />}
               </button>
             </div>
           </div>
@@ -1022,29 +1170,85 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           </div>
         )}
 
-        {/* ── Block / Report confirmation ── */}
+        {/* ── Doc preview ── */}
+        {docPreview && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column' }}
+            onClick={() => setDocPreview(null)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+              <span style={{ color: '#e0e6f8', fontSize: 14, fontWeight: 500 }}>{docPreview.name}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => (previewBlobUrl ? triggerBlobDownload(previewBlobUrl, docPreview.name) : downloadFile(docPreview.url, docPreview.name))}
+                  title="Download"
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                ><DownloadIcon /></button>
+                <button
+                  onClick={() => setDocPreview(null)}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 38, height: 38, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                  aria-label="Close"
+                >✕</button>
+              </div>
+            </div>
+            {previewLoading && (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+                Loading preview…
+              </div>
+            )}
+            {!previewLoading && previewFailed && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }} onClick={e => e.stopPropagation()}>
+                <span>Couldn't load a preview for this file.</span>
+                <button
+                  type="button"
+                  onClick={() => downloadFile(docPreview.url, docPreview.name)}
+                  style={{ color: '#3b82f6', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+                >Download instead</button>
+              </div>
+            )}
+            {!previewLoading && !previewFailed && previewBlobUrl && (
+              <iframe
+                src={previewBlobUrl}
+                title={docPreview.name}
+                onClick={e => e.stopPropagation()}
+                style={{ flex: 1, width: '100%', border: 'none', background: '#fff' }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* ── Block / Report / Delete confirmation ── */}
         {confirmAction && (
           <div className="msg-confirm-overlay" onClick={closeConfirm}>
             <div className="msg-confirm-box" onClick={e => e.stopPropagation()}>
               <h2 className="msg-confirm-title">
                 {confirmAction === 'block'
                   ? (isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}?` : `Block ${liveActiveConv.name.split(' ')[0]}?`)
-                  : 'Report Conversation'}
+                  : confirmAction === 'delete'
+                    ? 'Delete Chat?'
+                    : 'Report Conversation'}
               </h2>
               <p className="msg-confirm-desc">
                 {confirmAction === 'block'
                   ? (isBlocked
                       ? `${liveActiveConv.name} will be able to message you again.`
                       : `${liveActiveConv.name} won't be able to send you messages, and you won't see theirs either. You can unblock them anytime.`)
-                  : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
+                  : confirmAction === 'delete'
+                    ? `This will delete the chat with ${liveActiveConv.name} from your inbox. They'll keep their copy, and the chat will come back if either of you sends a new message.`
+                    : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
               </p>
               <div className="msg-confirm-actions">
-                <button className="msg-confirm-cancel-btn" onClick={closeConfirm}>Cancel</button>
+                <button className="msg-confirm-cancel-btn" onClick={closeConfirm} disabled={confirmSubmitting}>Cancel</button>
                 <button
-                  className={`msg-confirm-confirm-btn${confirmAction === 'block' && isBlocked ? ' msg-confirm-confirm-btn--neutral' : ''}`}
+                  className={`msg-confirm-confirm-btn${confirmAction === 'block' && isBlocked ? ' msg-confirm-confirm-btn--neutral' : ''}${confirmSubmitting ? ' msg-confirm-confirm-btn--loading' : ''}`}
                   onClick={handleConfirmAction}
+                  disabled={confirmSubmitting}
                 >
-                  {confirmAction === 'block' ? (isBlocked ? 'Unblock' : 'Block') : 'Report'}
+                  {confirmSubmitting && <span className="msg-confirm-spinner" />}
+                  {confirmSubmitting
+                    ? (confirmAction === 'block' ? (isBlocked ? 'Unblocking…' : 'Blocking…') : confirmAction === 'delete' ? 'Deleting…' : 'Reporting…')
+                    : (confirmAction === 'block' ? (isBlocked ? 'Unblock' : 'Block') : confirmAction === 'delete' ? 'Delete' : 'Report')}
                 </button>
               </div>
             </div>

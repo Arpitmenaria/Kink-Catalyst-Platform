@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers } from '../store/slices/messagesSlice';
+import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers, fetchConversations } from '../store/slices/messagesSlice';
 import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
 import { setFriendStatus, addIncomingRequest } from '../store/slices/usersSlice';
@@ -35,6 +35,18 @@ const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
 let socket = null;
 let storeRef = null; // full Redux store — gives us dispatch + getState
 
+// A message can land for a conversation the user has soft-deleted locally
+// (see messagesSlice.deleteConversation), which the backend un-deletes on its
+// end but our `conversations` array no longer has an entry for — refetch the
+// list under whatever tab/search the user is currently looking at so it
+// reappears instead of silently vanishing until the next manual refresh.
+function resurrectConversationIfMissing(conversationId) {
+  const state = storeRef.getState();
+  if (!state.messages.conversations.find(c => c.id === conversationId)) {
+    storeRef.dispatch(fetchConversations(state.messages.lastFetchParams));
+  }
+}
+
 export function initSocket(token, store) {
   // Guard on the instance existing (not just `.connected`) — otherwise React
   // StrictMode's double-mount in dev creates a 2nd socket while the 1st is
@@ -69,11 +81,13 @@ export function initSocket(token, store) {
 
     // No pending message from us → we are the recipient
     storeRef.dispatch(receiveMessage({ convId: conversationId, message: { ...message, from: 'them' } }));
+    resurrectConversationIfMissing(conversationId);
   });
 
   socket.on('new_message_notification', ({ conversationId, message }) => {
     // Personal room (user:<id>) — always a message from someone else
     storeRef.dispatch(receiveMessage({ convId: conversationId, message: { ...message, from: 'them' } }));
+    resurrectConversationIfMissing(conversationId);
   });
 
   socket.on('messages_read', ({ conversationId }) => {

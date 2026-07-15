@@ -20,7 +20,13 @@
       "Bash(curl -s -i \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\")",
       "Bash(curl -s -o /tmp/conv_response.txt -w \"HTTP_STATUS:%{http_code}\\\\n\" \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 15)",
       "Bash(curl -sv \"https://kick-analyst-backend-production.up.railway.app/api/conversations?page=1&limit=30\" --max-time 10)",
-      "Bash(ssh -T git@github-gaurav)"
+      "Bash(ssh -T git@github-gaurav)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(node -e \"require\\('playwright'\\)\")",
+      "Bash(npx --no-install -y playwright@1.61.1 --help)",
+      "Bash(curl -s http://localhost:5183/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5183/src/main.jsx)",
+      "Bash(pkill -f \"vite --port 5183\")"
     ]
   },
   "enableAllProjectMcpServers": true,
