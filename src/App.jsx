@@ -6,10 +6,11 @@ import ForgotPasswordPage from './components/forgot-password/ForgotPasswordPage'
 import VerifyOtpPage from './components/verify/VerifyOtpPage';
 import PlansPage from './components/plans/PlansPage';
 import HomePage from './components/home/HomePage';
+import OnboardingForm from './components/home/OnboardingForm';
 
 export default function App() {
   const { otpPending, isAuthenticated, requiresPlanSelection, user } = useSelector((state) => state.auth);
-  const { planSelectionComplete } = useSelector((state) => state.plans);
+  const { planSelectionComplete, justSelectedPlan } = useSelector((state) => state.plans);
   const { page } = useSelector((state) => state.ui);
 
   if (otpPending) return <><Toast /><VerifyOtpPage /></>;
@@ -19,7 +20,12 @@ export default function App() {
 
   if (isAuthenticated) {
     const hasPlan = planSelectionComplete || !!user?.membership;
-    return hasPlan ? <><Toast /><HomePage /></> : <><Toast /><PlansPage /></>;
+    if (!hasPlan) return <><Toast /><PlansPage /></>;
+    // Brand-new user who just picked a plan → complete-profile onboarding form
+    // before landing in the app. Consuming justSelectedPlan (on Save) drops
+    // them into the feed.
+    if (justSelectedPlan) return <><Toast /><OnboardingForm /></>;
+    return <><Toast /><HomePage /></>;
   }
 
   if (page === 'login')           return <><Toast /><LoginPage /></>;

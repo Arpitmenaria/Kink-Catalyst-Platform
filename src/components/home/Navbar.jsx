@@ -75,8 +75,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   // /api/users/me/posts) is the accurate fallback — NOT state.posts, which is the
   // whole feed's posts across all users.
   const totalPosts       = authUser?.postsCount ?? profile?.postsCount ?? myPostsTotal;
-  // followerCount/followingCount updated live via socket; connectionCount from /api/auth/me resync
-  const totalConnections = authUser?.followerCount ?? authUser?.connectionCount ?? profile?.followers?.length ?? profile?.followersCount ?? 0;
+  // Total Connections = accepted friend connections (NOT followers).
+  const totalConnections = authUser?.connectionCount ?? profile?.connectionsCount ?? profile?.connectionCount ?? 0;
 
   const displayName = profile?.fullName || authUser?.fullName || 'Alex Rivera';
   const rawAvatar   = profile?.avatar ?? authUser?.avatar ?? '';

@@ -126,6 +126,24 @@
   border-color: #313658;
 }
 
+/* Google button wrapper — holds the styled button + the invisible real GIS
+   button overlaid on top (so clicks hit Google, UI stays on-theme). */
+.social-btn-wrap {
+  flex: 1;
+  position: relative;
+}
+.social-btn-wrap .social-btn { width: 100%; }
+.social-btn-gis {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.social-btn-gis > div,
+.social-btn-gis iframe { width: 100% !important; height: 100% !important; }
+
 .social-btn:active {
   background: #1e2238;
 }

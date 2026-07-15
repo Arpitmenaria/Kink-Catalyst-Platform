@@ -7,6 +7,17 @@ import { resetForgotPassword } from '../../store/slices/forgotPasswordSlice';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
   || '423673543994-0l046sv4nbb3m7qvb713d44b51npne6f.apps.googleusercontent.com';
 
+function GoogleIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.013 17.64 11.705 17.64 9.2z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
 function AppleIcon() {
   return (
     <svg width="17" height="17" viewBox="0 0 814 1000" fill="currentColor" aria-hidden="true">
@@ -86,6 +97,7 @@ export default function LoginForm() {
 
   const resetTimer = useRef(null);
   const googleBtnRef = useRef(null);
+  const googleWrapRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -94,8 +106,9 @@ export default function LoginForm() {
     };
   }, [dispatch]);
 
-  // Google Identity Services: load the script, then render Google's official
-  // Sign-In button. Its callback hands us an ID token we send to the backend.
+  // Google Identity Services: render the REAL Google button invisibly on top of
+  // our custom-styled button, so the UI keeps our theme but clicks trigger the
+  // genuine Google popup (which hands back an ID token we send to the backend).
   useEffect(() => {
     async function handleCredential(response) {
       const credential = response?.credential;
@@ -112,9 +125,12 @@ export default function LoginForm() {
       if (!window.google?.accounts?.id || !googleBtnRef.current) return;
       window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
       googleBtnRef.current.innerHTML = '';
+      // GIS requires width >= 200; our wrapper clips the overflow to its real
+      // (narrower) size, so the invisible button still covers exactly the button.
+      const width = Math.max(200, Math.round(googleWrapRef.current?.offsetWidth || 200));
       window.google.accounts.id.renderButton(googleBtnRef.current, {
-        type: 'standard', theme: 'filled_black', size: 'large',
-        text: 'signin_with', shape: 'rectangular', width: 340,
+        type: 'standard', theme: 'outline', size: 'large',
+        text: 'signin_with', shape: 'rectangular', width,
       });
     }
 
@@ -242,16 +258,17 @@ export default function LoginForm() {
 
           <div className="divider" style={{ margin: '16px 0 14px' }}><span>Or sign in with</span></div>
 
-          <div className="social-buttons" style={{ flexDirection: 'column', gap: 10 }}>
-            <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }} />
-            <button
-              type="button"
-              className="social-btn"
-              disabled
-              title="Apple Sign-In coming soon"
-              style={{ width: '100%', opacity: 0.5, cursor: 'not-allowed' }}
-            >
-              <AppleIcon /> Apple <span style={{ fontSize: 11, opacity: 0.7 }}>(soon)</span>
+          <div className="social-buttons">
+            {/* Custom-styled Google button with the real GIS button overlaid
+                transparently on top so clicks trigger the genuine Google popup. */}
+            <div ref={googleWrapRef} className="social-btn-wrap">
+              <button type="button" className="social-btn" style={{ width: '100%' }}>
+                <GoogleIcon /> Google
+              </button>
+              <div ref={googleBtnRef} className="social-btn-gis" />
+            </div>
+            <button type="button" className="social-btn" disabled={!isIdle}>
+              <AppleIcon /> Apple
             </button>
           </div>
 

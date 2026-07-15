@@ -82,7 +82,7 @@ function SuggLocationIcon() {
 
 function FriendSuggestionsPanel({ onUserClick }) {
   const dispatch   = useDispatch();
-  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap } = useSelector(s => s.users);
+  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap, followingIds } = useSelector(s => s.users);
 
   const [poppingIds, setPoppingIds] = useState(new Set());
   const [removingIds, setRemovingIds] = useState(new Set());
@@ -94,6 +94,10 @@ function FriendSuggestionsPanel({ onUserClick }) {
     dispatch(sendFriendRequest(id));
     setPoppingIds(p => new Set([...p, id]));
     setTimeout(() => setPoppingIds(p => { const s = new Set(p); s.delete(id); return s; }), 500);
+  }
+
+  function handleFollow(id, isFollowing) {
+    dispatch(isFollowing ? unfollowUser(id) : followUser(id));
   }
 
   function handleRemove(id) {
@@ -116,11 +120,15 @@ function FriendSuggestionsPanel({ onUserClick }) {
         const id = f.id ?? f._id;
         const status = friendStatusMap[id] ?? f.friendStatus ?? 'none';
         const isPendingOrConnected = status === 'requested' || status === 'connected';
+        const isFollowing = followingIds.includes(id) || !!f.isFollowing;
         const hasMutual = !!f.mutualFriends;
         const locationText = f.location || f.city;
         const sub = hasMutual ? `${f.mutualFriends} mutual friends` : (locationText || f.sub || '');
         return (
           <div key={id} className={`prof-sugg-item${removingIds.has(id) ? ' prof-sugg-item--removing' : ''}`}>
+            <button className="prof-sugg-close" onClick={() => handleRemove(id)} title="Remove" aria-label="Remove suggestion">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
             <div className="prof-sugg-item-top">
               <div
                 className="prof-sugg-avatar"
@@ -146,11 +154,10 @@ function FriendSuggestionsPanel({ onUserClick }) {
                 {status === 'connected' ? '✓ Connected' : status === 'requested' ? 'Requested' : 'Add Friend'}
               </button>
               <button
-                className={`prof-sugg-remove-btn${isPendingOrConnected ? ' prof-sugg-remove-btn--hidden' : ''}`}
-                onClick={() => handleRemove(id)}
-                tabIndex={isPendingOrConnected ? -1 : 0}
+                className={`prof-sugg-follow-btn${isFollowing ? ' prof-sugg-follow-btn--on' : ''}`}
+                onClick={() => handleFollow(id, isFollowing)}
               >
-                Remove
+                {isFollowing ? 'Following' : 'Follow'}
               </button>
             </div>
           </div>
@@ -358,15 +365,11 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                   }
                 </div>
                 <span className="prof-conn-role">{conn.role}</span>
-                <div className="prof-conn-shared">
-                  <div className="prof-conn-shared-avatars">
-                    {conn.sharedAvatars.map((src, i) => (
-                      <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
-                    ))}
-                    {conn.extra && <span className="prof-conn-shared-extra">{conn.extra}</span>}
+                {conn.location && (
+                  <div className="prof-conn-shared">
+                    <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
                   </div>
-                  <span className="prof-conn-shared-text">{conn.mutual} mutual connections</span>
-                </div>
+                )}
               </div>
               <div className="prof-conn-actions">
                 <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => onMessageUser?.(conn.id)}>Chat</button>
@@ -395,14 +398,11 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 ? <span className="prof-conn-online-badge">Online</span>
                 : <span className="prof-conn-last-active">{conn.lastActive}</span>
               }
-              <div className="prof-conn-card-mutual">
-                <div className="prof-conn-shared-avatars">
-                  {conn.sharedAvatars.slice(0, 2).map((src, i) => (
-                    <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
-                  ))}
+              {conn.location && (
+                <div className="prof-conn-card-mutual">
+                  <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
                 </div>
-                <span className="prof-conn-shared-text">{conn.mutual} mutual</span>
-              </div>
+              )}
               <div className="prof-conn-card-actions">
                 <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }} onClick={() => onMessageUser?.(conn.id)}>Chat</button>
                 <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => handleRemove(conn.id)}>
@@ -498,6 +498,7 @@ export function MediaTab({ readOnly }) {
   const { photos, albums } = useSelector(s => s.profile);
   const photoInputRef = useRef(null);
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
+  const [openAlbum, setOpenAlbum] = useState(null);
 
   useEffect(() => {
     dispatch(fetchPhotos());
@@ -510,6 +511,34 @@ export function MediaTab({ readOnly }) {
     e.target.value = '';
     if (files.length === 0) return;
     dispatch(uploadPhoto({ files })).then(() => dispatch(fetchGallery()));
+  }
+
+  // Album folder view — clicking an album opens its photos like a real folder.
+  if (openAlbum) {
+    const current = albums.find(a => a.id === openAlbum.id) ?? openAlbum;
+    return (
+      <div className="media-tab">
+        <div className="media-header">
+          <button className="media-album-back" onClick={() => setOpenAlbum(null)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Albums
+          </button>
+          <h2 className="media-title" style={{ marginLeft: 4 }}>{current.name}</h2>
+        </div>
+        <div className="media-grid">
+          {(current.photos ?? []).length === 0 && (
+            <p style={{ gridColumn: '1 / -1', color: '#5c6a8c', fontSize: 13 }}>No photos in this album.</p>
+          )}
+          {(current.photos ?? []).map((src, i) => (
+            <div key={i} className="media-photo-card">
+              <div className="media-photo-wrap" style={{ overflow: 'hidden' }}>
+                <SkeletonImg src={src} alt="" className="media-photo-img" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -525,7 +554,7 @@ export function MediaTab({ readOnly }) {
           <h3 className="media-subhead">Albums</h3>
           <div className="media-album-grid">
             {albums.map(album => (
-              <div key={album.id} className="media-album-card">
+              <div key={album.id} className="media-album-card" style={{ cursor: 'pointer' }} onClick={() => setOpenAlbum(album)}>
                 <div className="media-album-cover">
                   {album.cover
                     ? <SkeletonImg src={album.cover} alt={album.name} className="media-album-cover-img" />
