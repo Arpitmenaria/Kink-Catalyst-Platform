@@ -25,6 +25,35 @@ export const fetchSuggestions = createAsyncThunk(
   }
 );
 
+// Full user directory (not the curated/limited "suggestions" list) — powers
+// "Invite More Friends", which needs to show anyone, sortable by mutual count
+// and city, even when the suggestions algorithm has nothing left to offer.
+export const fetchAllUsers = createAsyncThunk(
+  'users/fetchAllUsers',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/all', { token });
+      const list = Array.isArray(data) ? data : (data.users ?? data.results ?? []);
+      return list.map(u => {
+        const uid = u.userId ?? u._id ?? u.id ?? '';
+        return {
+          id: uid,
+          _id: uid,
+          name: u.fullName ?? u.name ?? '',
+          avatar: u.avatar?.startsWith?.('http') ? u.avatar : '',
+          location: u.city ?? u.location ?? '',
+          mutualFriends: u.mutualCount ?? u.mutualFriends ?? 0,
+          friendStatus: u.friendStatus ?? 'none',
+          isFollowing: !!u.isFollowing,
+        };
+      }).filter(u => u.id);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const followUser = createAsyncThunk(
   'users/follow',
   async (userId, { getState, dispatch, rejectWithValue }) => {
@@ -148,6 +177,8 @@ const usersSlice = createSlice({
   initialState: {
     suggestions: [],
     suggestionsLoading: false,
+    allUsers: [],
+    allUsersLoading: false,
     followingIds: [],
     dismissedIds: [],
     // Optimistic relationship overrides keyed by userId. Any surface reads
@@ -187,6 +218,24 @@ const usersSlice = createSlice({
       })
       .addCase(fetchSuggestions.rejected, (state, action) => {
         state.suggestionsLoading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(fetchAllUsers.pending, (state) => {
+        state.allUsersLoading = true;
+      })
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.allUsersLoading = false;
+        state.allUsers = action.payload;
+        // Seed followingIds/friendStatusMap so Follow/Add Friend reflect the server's
+        // view for people not already known from other fetches (suggestions, profile).
+        action.payload.forEach(u => {
+          if (u.isFollowing && !state.followingIds.includes(u.id)) state.followingIds.push(u.id);
+          if (state.friendStatusMap[u.id] === undefined) state.friendStatusMap[u.id] = u.friendStatus;
+        });
+      })
+      .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.allUsersLoading = false;
         state.error = action.payload;
       })
 

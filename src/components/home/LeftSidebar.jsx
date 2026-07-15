@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups, followUser, unfollowUser } from '../../store/slices/usersSlice';
+import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups, followUser, unfollowUser, fetchAllUsers } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
 import CreatePostModal from './CreatePostModal';
@@ -65,7 +65,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
-  const { suggestions, dismissedIds, groups, friendStatusMap, followingIds } = useSelector((state) => state.users);
+  const { suggestions, dismissedIds, groups, friendStatusMap, followingIds, allUsers, allUsersLoading } = useSelector((state) => state.users);
   const { conversations } = useSelector((state) => state.messages);
   const { events: upcomingEvents } = useSelector((state) => state.events);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
@@ -104,7 +104,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
 
   function openAllSuggestions() {
     setShowAllSuggestions(true);
-    dispatch(fetchSuggestions(50));
+    dispatch(fetchAllUsers());
   }
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'You';
@@ -248,6 +248,11 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                 </div>
               );
             })}
+            {visibleSuggestions.length === 0 && (
+              <div className="friend-empty">
+                <button className="friend-empty-cta" onClick={openAllSuggestions}>Invite More Friends</button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -305,8 +310,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
 
       {showAllSuggestions && (
         <AllSuggestionsModal
-          suggestions={suggestions}
-          dismissedIds={dismissedIds}
+          suggestions={allUsers}
+          loading={allUsersLoading}
           friendStatusMap={friendStatusMap}
           followingIds={followingIds}
           onClose={() => setShowAllSuggestions(false)}
@@ -320,12 +325,25 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   );
 }
 
-function AllSuggestionsModal({ suggestions, dismissedIds, friendStatusMap, followingIds, onClose, onAddFriend, onFollowToggle, onDismiss, onUserClick }) {
+function AllSuggestionsModal({ suggestions, loading, friendStatusMap, followingIds, onClose, onAddFriend, onFollowToggle, onDismiss, onUserClick }) {
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('mutual'); // 'mutual' | 'city'
 
+  // Dismissing a suggestion only hides it from the compact sidebar preview — the
+  // full list here always shows everyone, so "Invite More Friends" (shown when the
+  // preview is empty because everything visible was dismissed) has something to open.
   const visible = suggestions
-    .filter(f => !dismissedIds.includes(f.id ?? f._id))
-    .filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+    .filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
+    .slice()
+    .sort((a, b) => {
+      if (sortBy === 'mutual') return (b.mutualFriends ?? 0) - (a.mutualFriends ?? 0);
+      const cityA = (a.location ?? a.city ?? '').toLowerCase();
+      const cityB = (b.location ?? b.city ?? '').toLowerCase();
+      if (!cityA && !cityB) return 0;
+      if (!cityA) return 1;
+      if (!cityB) return -1;
+      return cityA.localeCompare(cityB);
+    });
 
   return (
     <div className="all-sugg-overlay" onClick={onClose}>
@@ -333,6 +351,17 @@ function AllSuggestionsModal({ suggestions, dismissedIds, friendStatusMap, follo
         <div className="all-sugg-header">
           <h2 className="all-sugg-title">Friend Suggestions</h2>
           <button className="all-sugg-close-btn" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div className="all-sugg-sort-wrap">
+          <span className="all-sugg-sort-label">Sort by</span>
+          <button
+            className={`all-sugg-sort-btn${sortBy === 'mutual' ? ' all-sugg-sort-btn--active' : ''}`}
+            onClick={() => setSortBy('mutual')}
+          >Mutual Friends</button>
+          <button
+            className={`all-sugg-sort-btn${sortBy === 'city' ? ' all-sugg-sort-btn--active' : ''}`}
+            onClick={() => setSortBy('city')}
+          >City</button>
         </div>
         <div className="all-sugg-search-wrap">
           <input
@@ -344,7 +373,8 @@ function AllSuggestionsModal({ suggestions, dismissedIds, friendStatusMap, follo
           />
         </div>
         <div className="all-sugg-list">
-          {visible.length === 0 && <p className="all-sugg-empty">No suggestions found.</p>}
+          {loading && visible.length === 0 && <p className="all-sugg-empty">Loading…</p>}
+          {!loading && visible.length === 0 && <p className="all-sugg-empty">No suggestions found.</p>}
           {visible.map(f => {
             const id = f.id ?? f._id;
             const status = friendStatusMap[id] ?? f.friendStatus ?? 'none';

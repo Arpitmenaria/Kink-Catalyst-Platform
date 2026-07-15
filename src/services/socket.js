@@ -3,6 +3,7 @@ import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchO
 import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
 import { setFriendStatus, addIncomingRequest } from '../store/slices/usersSlice';
+import { setConnectionOnline, setConnectionOffline } from '../store/slices/profileSlice';
 import { notificationReceived } from '../store/slices/notificationsSlice';
 import { showToast } from '../store/slices/toastSlice';
 
@@ -96,10 +97,12 @@ export function initSocket(token, store) {
 
   socket.on('user_online', ({ userId }) => {
     storeRef.dispatch(setUserOnline({ userId }));
+    storeRef.dispatch(setConnectionOnline({ userId }));
   });
 
   socket.on('user_offline', ({ userId }) => {
     storeRef.dispatch(setUserOffline({ userId }));
+    storeRef.dispatch(setConnectionOffline({ userId }));
   });
 
   socket.on('follow_update', (data) => {

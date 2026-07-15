@@ -964,6 +964,18 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     return conv.participantId ?? connections.find(c => c.conversationId === conv.id)?.id ?? null;
   }
 
+  // conv.online gets clobbered to false by the online-users resync (messagesSlice)
+  // whenever conv.participantId is null — which is common, since the plain
+  // conversations-list endpoint doesn't echo participant ids. connections[].online
+  // is keyed by user id (not conversation id) and is kept live via socket
+  // regardless, so prefer it whenever we can resolve who the conversation is with.
+  function getOnlineStatus(conv) {
+    if (!conv) return false;
+    const pid = getParticipantId(conv);
+    const conn = pid ? connections.find(c => c.id === pid) : null;
+    return conn ? conn.online : conv.online;
+  }
+
   function openLightbox(items, index) {
     const visuals = items.filter(m => m.type === 'image' || m.type === 'video');
     if (visuals.length === 0) return;
@@ -998,6 +1010,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   // store updates (e.g. a socket "online"/"offline" event) — always render the live copy from
   // the conversations list instead of the frozen selection.
   const liveActiveConv = activeConv ? (conversations.find(c => c.id === activeConv.id) ?? activeConv) : null;
+  const activeOnline = getOnlineStatus(liveActiveConv);
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
   /* ── Chat view ── */
@@ -1042,7 +1055,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   >
                     {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
                   </div>
-                  {conv.online && <span className="msg-online-dot" />}
+                  {getOnlineStatus(conv) && <span className="msg-online-dot" />}
                 </div>
                 <div className="msg-compact-body">
                   <div className="msg-compact-top">
@@ -1074,12 +1087,12 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   <div className="msg-avatar msg-avatar--md" style={{ background: '#3b82f6' }}>
                     {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
                   </div>
-                  {liveActiveConv.online && <span className="msg-online-dot" />}
+                  {activeOnline && <span className="msg-online-dot" />}
                 </div>
                 <div>
                   <p className="msg-chat-name">{liveActiveConv.name}</p>
-                  <p className={`msg-chat-status${liveActiveConv.online ? ' msg-chat-status--online' : ''}`}>
-                    {liveActiveConv.online ? '● Online' : 'Offline'}
+                  <p className={`msg-chat-status${activeOnline ? ' msg-chat-status--online' : ''}`}>
+                    {activeOnline ? '● Online' : 'Offline'}
                   </p>
                 </div>
               </div>
@@ -1292,7 +1305,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <div className="msg-contact-avatar" style={{ background: '#3b82f6' }}>
                 {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
               </div>
-              {liveActiveConv.online && <span className="msg-contact-online-dot" />}
+              {activeOnline && <span className="msg-contact-online-dot" />}
             </div>
             <p
               className="msg-contact-name"
@@ -1655,7 +1668,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 >
                   {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
                 </div>
-                {conv.online && <span className="msg-online-dot" />}
+                {getOnlineStatus(conv) && <span className="msg-online-dot" />}
               </div>
               <div className="msg-conv-body">
                 <div className="msg-conv-top">

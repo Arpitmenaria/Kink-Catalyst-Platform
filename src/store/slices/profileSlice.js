@@ -355,7 +355,22 @@ const profileSlice = createSlice({
 
     uploading: false,
   },
-  reducers: {},
+  reducers: {
+    // Socket presence events only patch messagesSlice's own conversation/online-user
+    // copies — connections (used by e.g. Messages' Quick Online panel) need their own
+    // copy kept in sync too, or "online" there just freezes at whatever fetchConnections
+    // last saw.
+    setConnectionOnline(state, action) {
+      const { userId } = action.payload;
+      const conn = state.connections.find(c => c.id === userId);
+      if (conn) conn.online = true;
+    },
+    setConnectionOffline(state, action) {
+      const { userId } = action.payload;
+      const conn = state.connections.find(c => c.id === userId);
+      if (conn) conn.online = false;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // ── fetchUserProfile ───────────────────────────────────────────────────
@@ -486,4 +501,5 @@ const profileSlice = createSlice({
   },
 });
 
+export const { setConnectionOnline, setConnectionOffline } = profileSlice.actions;
 export default profileSlice.reducer;
