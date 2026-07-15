@@ -212,9 +212,9 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                 </div>
               </div>
               <div className="navbar-ud-divider" />
-              <button className="navbar-ud-item">
+              {/* <button className="navbar-ud-item" onClick={() => { setUserOpen(false); onProfileClick?.(); }}>
                 <SettingsIcon /> Settings
-              </button>
+              </button> */}
               <div className="navbar-ud-divider" />
               <button className="navbar-ud-item navbar-ud-item--logout" onClick={() => { dispatch(logout()); dispatch(showLogin()); }}>
                 <LogoutIcon /> Log Out

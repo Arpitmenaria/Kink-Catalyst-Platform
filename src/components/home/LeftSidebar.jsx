@@ -325,7 +325,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   );
 }
 
-function AllSuggestionsModal({ suggestions, loading, friendStatusMap, followingIds, onClose, onAddFriend, onFollowToggle, onDismiss, onUserClick }) {
+export function AllSuggestionsModal({ suggestions, loading, friendStatusMap, followingIds, onClose, onAddFriend, onFollowToggle, onDismiss, onUserClick }) {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('mutual'); // 'mutual' | 'city'
 

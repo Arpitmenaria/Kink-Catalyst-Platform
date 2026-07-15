@@ -490,6 +490,7 @@
   object-fit: cover;
   flex-shrink: 0;
   border: 2px solid #1a2540;
+  display: block;
 }
 
 .prof-conn-info {
@@ -816,16 +817,17 @@
 .prof-conn-view-btn--active { background: #162040; color: #60a5fa; }
 
 /* ── Avatar wrap with status dot ── */
-.prof-conn-avatar-wrap { position: relative; flex-shrink: 0; }
+.prof-conn-avatar-wrap { position: relative; flex-shrink: 0; line-height: 0; }
 .prof-conn-status-dot {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 10px;
-  height: 10px;
+  bottom: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #3a4a68;
   border: 2px solid #0d1222;
+  box-sizing: border-box;
 }
 .prof-conn-status-dot--online { background: #22c55e; }
 .prof-conn-status-dot--card { bottom: 4px; right: 4px; width: 12px; height: 12px; }

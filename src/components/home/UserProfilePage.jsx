@@ -54,16 +54,6 @@ function ReportIcon() {
     </svg>
   );
 }
-function UsersIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
 function MsgIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -238,6 +228,7 @@ export default function UserProfilePage({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [photoLbIdx, setPhotoLbIdx] = useState(null); // Photos tab lightbox
 
   useEffect(() => {
     if (!userId) return;
@@ -279,11 +270,22 @@ export default function UserProfilePage({
       });
   }, [activeTab, userId, token]);
 
+  // Reset per-user tab data when the viewed profile changes, so we refetch for
+  // the new user instead of showing the previous one's (or a stale empty) list.
+  useEffect(() => {
+    setViewedConnections(null);
+    setViewedPhotos([]);
+  }, [userId]);
+
   useEffect(() => {
     if (activeTab !== "Connections" || !userId || viewedConnections !== null) return;
     setConnectionsLoading(true);
     apiRequest(`/api/users/${userId}/connections`, { token })
-      .then((res) => setViewedConnections(res?.connections ?? res ?? []))
+      .then((res) => {
+        const list = Array.isArray(res) ? res
+          : (res?.connections ?? res?.data ?? res?.results ?? []);
+        setViewedConnections(Array.isArray(list) ? list : []);
+      })
       .catch((err) => {
         console.warn("Could not load connections for this user:", err.message);
         setViewedConnections([]);
@@ -349,9 +351,7 @@ export default function UserProfilePage({
 
   const rawAvatar = viewedUser?.avatar ?? "";
   const avatarUrl = rawAvatar?.startsWith?.("http") && rawAvatar.trim() ? rawAvatar : "";
-  const coverUrl = viewedUser?.coverPhoto?.startsWith?.("http")
-    ? viewedUser.coverPhoto
-    : "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=90&fit=crop";
+  const coverUrl = viewedUser?.coverPhoto?.startsWith?.("http") ? viewedUser.coverPhoto : null;
 
   const followersCount = viewedUser?.followersCount ?? 0;
   const followingCount = viewedUser?.followingCount ?? 0;
@@ -365,7 +365,10 @@ export default function UserProfilePage({
       <div className="prof-main">
         {/* ── Cover (no edit button — read-only) ── */}
         <div className="prof-cover" style={{ position: "relative", overflow: "hidden" }}>
-          <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
+          {coverUrl
+            ? <SkeletonImg src={coverUrl} alt="cover" className="prof-cover-img" />
+            : <div className="prof-cover-placeholder" />
+          }
           <button className="prof-cover-back-btn" onClick={onBack} title="Back to Feed">
             <BackArrowIcon />
           </button>
@@ -554,7 +557,12 @@ export default function UserProfilePage({
             </div>
           )}
 
-          {activeTab === "Photos" && (
+          {activeTab === "Photos" && (() => {
+            const photoUrls = viewedPhotos.map(p => p.images?.[0]).filter(Boolean);
+            const closeLb = () => setPhotoLbIdx(null);
+            const prevLb = () => setPhotoLbIdx(i => (i - 1 + photoUrls.length) % photoUrls.length);
+            const nextLb = () => setPhotoLbIdx(i => (i + 1) % photoUrls.length);
+            return (
             <div className="prof-conn-layout">
               <div className="media-tab" style={{ flex: 1 }}>
                 <div className="media-header">
@@ -566,8 +574,8 @@ export default function UserProfilePage({
                       No photos yet.
                     </div>
                   )}
-                  {viewedPhotos.map((photo) => (
-                    <div key={photo.id} className="media-photo-card">
+                  {viewedPhotos.map((photo, i) => (
+                    <div key={photo.id} className="media-photo-card" style={{ cursor: "pointer" }} onClick={() => setPhotoLbIdx(i)}>
                       <div className="media-photo-wrap">
                         <SkeletonImg src={photo.images?.[0]} alt="" className="media-photo-img" />
                       </div>
@@ -575,24 +583,94 @@ export default function UserProfilePage({
                   ))}
                 </div>
               </div>
-            </div>
-          )}
 
-          {activeTab === "About" && (
-            <div className="about-tab">
-              <h2 className="about-section-title">Profile Info</h2>
-              <div className="about-card">
-                <div className="about-card-header">
-                  <span className="about-card-label">Overview</span>
+              {photoLbIdx !== null && photoUrls[photoLbIdx] && (
+                <div className="post-lightbox" onClick={closeLb}>
+                  <button className="post-lightbox-close" onClick={closeLb} aria-label="Close" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                  {photoUrls.length > 1 && <span className="post-lightbox-count">{photoLbIdx + 1} / {photoUrls.length}</span>}
+                  {photoUrls.length > 1 && (
+                    <button className="post-lightbox-arrow post-lightbox-arrow--prev" onClick={e => { e.stopPropagation(); prevLb(); }} aria-label="Previous" type="button">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                  )}
+                  <div className="post-lightbox-stage" onClick={e => e.stopPropagation()}>
+                    <img src={photoUrls[photoLbIdx]} alt="" className="post-lightbox-media" />
+                  </div>
+                  {photoUrls.length > 1 && (
+                    <button className="post-lightbox-arrow post-lightbox-arrow--next" onClick={e => { e.stopPropagation(); nextLb(); }} aria-label="Next" type="button">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  )}
                 </div>
-                {viewedUser?.bio ? (
-                  <p className="about-bio-text">{viewedUser.bio}</p>
-                ) : (
-                  <p className="about-bio-empty">No overview added yet.</p>
-                )}
-              </div>
+              )}
             </div>
-          )}
+            );
+          })()}
+
+          {activeTab === "About" && (() => {
+            const fmtDob = (d) => {
+              if (!d) return "";
+              try { return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); }
+              catch { return ""; }
+            };
+            const personal = [
+              { label: "Full Name",           value: viewedUser?.fullName },
+              { label: "Profession",          value: viewedUser?.profession ?? viewedUser?.role },
+              { label: "Date of Birth",       value: fmtDob(viewedUser?.dateOfBirth) },
+              { label: "Gender",              value: viewedUser?.gender },
+              { label: "Relationship Status", value: viewedUser?.relationshipStatus },
+              { label: "Location",            value: viewedUser?.location },
+              { label: "Website",             value: viewedUser?.website },
+            ].filter(f => f.value);
+            const edu = Array.isArray(viewedUser?.education) ? viewedUser.education : [];
+            return (
+              <div className="about-tab">
+                <h2 className="about-section-title">Profile Info</h2>
+                <div className="about-card">
+                  <div className="about-card-header">
+                    <span className="about-card-label">Overview</span>
+                  </div>
+                  {viewedUser?.bio
+                    ? <p className="about-bio-text">{viewedUser.bio}</p>
+                    : <p className="about-bio-empty">No overview added yet.</p>}
+                </div>
+
+                <div className="about-card" style={{ marginTop: 16 }}>
+                  <div className="about-card-header"><span className="about-card-label">Personal Information</span></div>
+                  {personal.length === 0 ? (
+                    <p className="about-bio-empty">No details added yet.</p>
+                  ) : (
+                    <div className="about-info-section">
+                      {personal.map(f => (
+                        <div key={f.label} className="about-info-row">
+                          <div className="about-info-row-body">
+                            <span className="about-info-row-label">{f.label}</span>
+                            <span className="about-info-row-value">{f.value}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="about-card" style={{ marginTop: 16 }}>
+                  <div className="about-card-header"><span className="about-card-label">Education</span></div>
+                  {edu.length === 0 ? (
+                    <p className="about-bio-empty">No education added yet.</p>
+                  ) : (
+                    edu.map((e, i) => (
+                      <div key={e._id ?? e.id ?? i} className="about-edu-item" style={{ padding: "10px 0" }}>
+                        <p className="about-edu-school" style={{ margin: 0, fontWeight: 600, color: "#e2e8f0" }}>{e.school}</p>
+                        {e.degree && <p className="about-edu-degree" style={{ margin: "2px 0 0", color: "#94a3b8", fontSize: 13 }}>{e.degree}{e.years ? ` · ${e.years}` : ""}</p>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {activeTab === "Connections" && (
             <div className="prof-conn-tab">
@@ -618,6 +696,10 @@ export default function UserProfilePage({
                     const cid = conn.id ?? conn._id;
                     const name = conn.name ?? conn.fullName ?? "Unknown";
                     const avatar = conn.avatar?.startsWith?.("http") ? conn.avatar : "";
+                    const myId = authUser?._id ?? authUser?.id;
+                    const isSelfConn = cid === myId;
+                    const cStatus = friendStatusMap[cid] ?? conn.friendStatus ?? "none";
+                    const cFollowing = followingIds.includes(cid) || !!conn.isFollowing;
                     return (
                       <div key={cid} className="prof-conn-item">
                         <div
@@ -641,12 +723,30 @@ export default function UserProfilePage({
                             </span>
                           </div>
                           {conn.role && <span className="prof-conn-role">{conn.role}</span>}
-                          {typeof conn.mutual === "number" && conn.mutual > 0 && (
+                          {conn.location && (
                             <div className="prof-conn-shared">
-                              <span className="prof-conn-shared-text"><UsersIcon /> {conn.mutual} mutual connections</span>
+                              <span className="prof-conn-shared-text"><PinIcon /> {conn.location}</span>
                             </div>
                           )}
                         </div>
+                        {!isSelfConn && (
+                          <div className="prof-conn-actions">
+                            <button
+                              className="prof-conn-btn prof-conn-btn--msg"
+                              disabled={cStatus === "requested" || cStatus === "connected"}
+                              onClick={() => cStatus === "none" && dispatch(sendFriendRequest(cid))}
+                            >
+                              {cStatus === "connected" ? "Connected" : cStatus === "requested" ? "Pending" : cStatus === "incoming" ? "Respond" : "Connect"}
+                            </button>
+                            <button
+                              className="prof-conn-btn prof-conn-btn--remove"
+                              style={cFollowing ? { color: "#4ade80", borderColor: "#16a34a" } : undefined}
+                              onClick={() => dispatch(cFollowing ? unfollowUser(cid) : followUser(cid))}
+                            >
+                              {cFollowing ? "Following" : "Follow"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

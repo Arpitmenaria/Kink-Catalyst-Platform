@@ -3,7 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, fetchFriendRequests } from '../../store/slices/usersSlice';
+import { AllSuggestionsModal } from './LeftSidebar';
+import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, fetchFriendRequests, fetchAllUsers } from '../../store/slices/usersSlice';
 import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
   fetchConnections, removeConnection, fetchPhotos, uploadPhoto,
@@ -82,12 +83,15 @@ function SuggLocationIcon() {
 
 function FriendSuggestionsPanel({ onUserClick }) {
   const dispatch   = useDispatch();
-  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap, followingIds } = useSelector(s => s.users);
+  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap, followingIds, allUsers, allUsersLoading } = useSelector(s => s.users);
 
   const [poppingIds, setPoppingIds] = useState(new Set());
   const [removingIds, setRemovingIds] = useState(new Set());
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => { dispatch(fetchSuggestions(5)); }, [dispatch]);
+
+  function openAll() { setShowAll(true); dispatch(fetchAllUsers()); }
 
   function handleAdd(id, status) {
     if (status === 'requested' || status === 'connected') return;
@@ -114,7 +118,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
     <div className="prof-conn-suggestions">
       <div className="prof-sugg-header">
         <span className="prof-sugg-title">Friend Suggestions</span>
-        <button className="prof-sugg-see-all">View all</button>
+        <button className="prof-sugg-see-all" onClick={openAll}>View all</button>
       </div>
       {visible.map(f => {
         const id = f.id ?? f._id;
@@ -163,6 +167,19 @@ function FriendSuggestionsPanel({ onUserClick }) {
           </div>
         );
       })}
+      {showAll && (
+        <AllSuggestionsModal
+          suggestions={allUsers}
+          loading={allUsersLoading}
+          friendStatusMap={friendStatusMap}
+          followingIds={followingIds}
+          onClose={() => setShowAll(false)}
+          onAddFriend={handleAdd}
+          onFollowToggle={handleFollow}
+          onDismiss={handleRemove}
+          onUserClick={onUserClick}
+        />
+      )}
     </div>
   );
 }
@@ -359,10 +376,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               <div className="prof-conn-info">
                 <div className="prof-conn-name-row">
                   <span className="prof-conn-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</span>
-                  {conn.online
-                    ? <span className="prof-conn-online-badge">Online</span>
-                    : <span className="prof-conn-last-active">{conn.lastActive}</span>
-                  }
                 </div>
                 <span className="prof-conn-role">{conn.role}</span>
                 {conn.location && (
@@ -394,10 +407,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               </div>
               <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</p>
               <p className="prof-conn-card-role">{conn.role}</p>
-              {conn.online
-                ? <span className="prof-conn-online-badge">Online</span>
-                : <span className="prof-conn-last-active">{conn.lastActive}</span>
-              }
               {conn.location && (
                 <div className="prof-conn-card-mutual">
                   <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
@@ -499,6 +508,7 @@ export function MediaTab({ readOnly }) {
   const photoInputRef = useRef(null);
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
   const [openAlbum, setOpenAlbum] = useState(null);
+  const [lbIdx, setLbIdx] = useState(null); // album image lightbox index
 
   useEffect(() => {
     dispatch(fetchPhotos());
@@ -516,27 +526,53 @@ export function MediaTab({ readOnly }) {
   // Album folder view — clicking an album opens its photos like a real folder.
   if (openAlbum) {
     const current = albums.find(a => a.id === openAlbum.id) ?? openAlbum;
+    const albumPhotos = current.photos ?? [];
+    const closeLb = () => setLbIdx(null);
+    const prevLb = () => setLbIdx(i => (i - 1 + albumPhotos.length) % albumPhotos.length);
+    const nextLb = () => setLbIdx(i => (i + 1) % albumPhotos.length);
     return (
       <div className="media-tab">
-        <div className="media-header">
+        <div className="media-header" style={{ justifyContent: 'flex-start', gap: 12 }}>
           <button className="media-album-back" onClick={() => setOpenAlbum(null)}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Albums
           </button>
-          <h2 className="media-title" style={{ marginLeft: 4 }}>{current.name}</h2>
+          <h2 className="media-title">{current.name}</h2>
         </div>
         <div className="media-grid">
-          {(current.photos ?? []).length === 0 && (
+          {albumPhotos.length === 0 && (
             <p style={{ gridColumn: '1 / -1', color: '#5c6a8c', fontSize: 13 }}>No photos in this album.</p>
           )}
-          {(current.photos ?? []).map((src, i) => (
-            <div key={i} className="media-photo-card">
+          {albumPhotos.map((src, i) => (
+            <div key={i} className="media-photo-card" style={{ cursor: 'pointer' }} onClick={() => setLbIdx(i)}>
               <div className="media-photo-wrap" style={{ overflow: 'hidden' }}>
                 <SkeletonImg src={src} alt="" className="media-photo-img" />
               </div>
             </div>
           ))}
         </div>
+
+        {lbIdx !== null && albumPhotos[lbIdx] && (
+          <div className="post-lightbox" onClick={closeLb}>
+            <button className="post-lightbox-close" onClick={closeLb} aria-label="Close" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            {albumPhotos.length > 1 && <span className="post-lightbox-count">{lbIdx + 1} / {albumPhotos.length}</span>}
+            {albumPhotos.length > 1 && (
+              <button className="post-lightbox-arrow post-lightbox-arrow--prev" onClick={e => { e.stopPropagation(); prevLb(); }} aria-label="Previous" type="button">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            )}
+            <div className="post-lightbox-stage" onClick={e => e.stopPropagation()}>
+              <img src={albumPhotos[lbIdx]} alt="" className="post-lightbox-media" />
+            </div>
+            {albumPhotos.length > 1 && (
+              <button className="post-lightbox-arrow post-lightbox-arrow--next" onClick={e => { e.stopPropagation(); nextLb(); }} aria-label="Next" type="button">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -551,7 +587,7 @@ export function MediaTab({ readOnly }) {
 
       {albums.length > 0 && (
         <>
-          <h3 className="media-subhead">Albums</h3>
+          <h3 className="media-subhead">Albums (These are private directories)</h3>
           <div className="media-album-grid">
             {albums.map(album => (
               <div key={album.id} className="media-album-card" style={{ cursor: 'pointer' }} onClick={() => setOpenAlbum(album)}>

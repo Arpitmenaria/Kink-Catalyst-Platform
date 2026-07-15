@@ -72,7 +72,7 @@ export default function OnboardingForm() {
     if (!form.location.trim()) errs.location = true;
     if (Object.keys(errs).length) {
       setErrors(errs);
-      dispatch(showToast({ message: 'Please fill in the required fields (marked *).', type: 'error' }));
+      dispatch(showToast({ message: 'Fields * are mandatory.', type: 'error' }));
       return;
     }
 
@@ -102,7 +102,7 @@ export default function OnboardingForm() {
     <div className="ob-page">
       <div className="ob-card">
         <div className="ob-header">
-          <h1 className="ob-title">Complete your profile</h1>
+          <h1 className="ob-title">Complete  your  profile</h1>
           <p className="ob-subtitle">Tell us a bit about yourself to get started.</p>
         </div>
 

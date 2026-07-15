@@ -410,17 +410,17 @@ export default function PostCard({ post, onUserClick }) {
             }
           </div>
           <div className="post-meta">
-            <p
-              className="post-author"
-              style={{ cursor: authorId ? 'pointer' : 'default' }}
-              onClick={handleAuthorClick}
-            >
-              {authorName}
+            <p className="post-author-row">
+              <span
+                className="post-author"
+                style={{ cursor: authorId ? 'pointer' : 'default' }}
+                onClick={handleAuthorClick}
+              >
+                {authorName}
+              </span>
+              {authorLocation && <span className="post-author-loc"> · <PinIcon /> {authorLocation}</span>}
             </p>
-            <p className="post-time">
-              {timeAgo(post.createdAt)}
-              {authorLocation && <> · <PinIcon /> {authorLocation}</>}
-            </p>
+            <p className="post-time">{timeAgo(post.createdAt)}</p>
           </div>
           {isOwner && (
             <span className="post-visibility post-visibility--header"><visMeta.Icon /> {visMeta.label}</span>
