@@ -8,7 +8,7 @@ import {
   startDM, createGroup, fetchAssets, uploadAssets,
   toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
 } from '../../store/slices/messagesSlice';
-import { fetchSuggestions } from '../../store/slices/usersSlice';
+import { fetchSuggestions, sendFriendRequest } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import {
   joinConversation, leaveConversation,
@@ -255,11 +255,17 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
           <div className="sa-media-grid">
             {items.length === 0 && <p style={{ color: '#5c6a8c', fontSize: 13 }}>No media yet.</p>}
             {items.map((item, i) => (
-              <div key={item.id ?? i} className="sa-media-thumb">
+              <div
+                key={item.id ?? i}
+                className="sa-media-thumb"
+                style={{ cursor: 'pointer', position: 'relative' }}
+                onClick={() => onOpenLightbox?.(items, i)}
+              >
                 {item.type === 'video'
-                  ? <video src={item.url} controls className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                  : <img src={item.url} alt="" className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%', cursor: 'pointer' }} onClick={() => onOpenLightbox?.(item.url)} />
+                  ? <video src={item.url} muted className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                  : <img src={item.url} alt="" className="sa-media-img" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                 }
+                {item.type === 'video' && <span className="msg-media-grid-play">▶</span>}
               </div>
             ))}
           </div>
@@ -362,9 +368,9 @@ function CheckSmIcon()     { return <svg width="10" height="10" viewBox="0 0 24 
 function GroupNewIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 
-function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
+function NewMessageModal({ onClose, onStartDM, onCreateGroup, onViewProfile }) {
   const dispatch = useDispatch();
-  const { suggestions, followingIds } = useSelector(s => s.users);
+  const { suggestions, friendStatusMap } = useSelector(s => s.users);
 
   const [view,        setView]        = useState('dm');
   const [search,      setSearch]      = useState('');
@@ -383,7 +389,7 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
     name: s.name ?? s.fullName ?? '',
     role: s.role ?? s.bio ?? '',
     color: s.color ?? '#3b82f6',
-    isFollowing: followingIds.includes(s.id ?? s._id ?? ''),
+    friendStatus: friendStatusMap[s.id ?? s._id ?? ''] ?? s.friendStatus ?? 'none',
   })).filter(c => c.id);
 
   const filtered = contacts.filter(c =>
@@ -395,12 +401,18 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
   }
 
   function handleSelectDM(contact) {
-    if (!contact.isFollowing) {
-      dispatch(showToast({ message: `Follow ${contact.name.split(' ')[0] || 'this person'} to start chatting with them.`, type: 'error' }));
-      return;
-    }
+    if (contact.friendStatus !== 'connected') return;
     onStartDM?.(contact.id);
     onClose();
+  }
+
+  function handleViewProfile(contact) {
+    onViewProfile?.(contact.id);
+    onClose();
+  }
+
+  function handleConnect(contact) {
+    dispatch(sendFriendRequest(contact.id));
   }
 
   async function handleCreateGroupSubmit() {
@@ -446,21 +458,46 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup }) {
               <div className="nm-contacts-section">
                 <span className="nm-contacts-title">Suggested</span>
                 <div className="nm-contact-list">
-                  {filtered.map(c => (
-                    <div
-                      key={c.id}
-                      className={`nm-contact-item${c.isFollowing ? '' : ' nm-contact-item--locked'}`}
-                      onClick={() => handleSelectDM(c)}
-                      title={c.isFollowing ? undefined : `Follow ${c.name.split(' ')[0] || 'this person'} to start chatting`}
-                    >
-                      <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
-                      <div className="nm-contact-info">
-                        <p className="nm-contact-name">{c.name}</p>
-                        <p className="nm-contact-role">{c.isFollowing ? c.role : 'Follow to chat'}</p>
+                  {filtered.map(c => {
+                    const connected = c.friendStatus === 'connected';
+                    return (
+                      <div
+                        key={c.id}
+                        className={`nm-contact-item${connected ? '' : ' nm-contact-item--locked'}`}
+                        onClick={connected ? () => handleSelectDM(c) : undefined}
+                        title={connected ? undefined : `Connect with ${c.name.split(' ')[0] || 'this person'} to start chatting`}
+                      >
+                        <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
+                        <div className="nm-contact-info">
+                          <p className="nm-contact-name">{c.name}</p>
+                          <p className="nm-contact-role">
+                            {connected ? c.role : c.friendStatus === 'requested' ? 'Request pending' : 'Not connected yet'}
+                          </p>
+                        </div>
+                        {connected ? (
+                          <ArrowRightSmIcon />
+                        ) : (
+                          <div className="nm-contact-actions" onClick={e => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              className="nm-contact-action-btn"
+                              onClick={() => handleViewProfile(c)}
+                            >
+                              View Profile
+                            </button>
+                            <button
+                              type="button"
+                              className="nm-contact-action-btn nm-contact-action-btn--primary"
+                              disabled={c.friendStatus === 'requested'}
+                              onClick={() => handleConnect(c)}
+                            >
+                              {c.friendStatus === 'requested' ? 'Pending' : 'Connect'}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <ArrowRightSmIcon />
-                    </div>
-                  ))}
+                    );
+                  })}
                   {filtered.length === 0 && (
                     <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No contacts found.</p>
                   )}
@@ -573,7 +610,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [newMsgOpen,       setNewMsgOpen]      = useState(false);
   const [showAssets,       setShowAssets]      = useState(false);
   const [typingUser,       setTypingUser]      = useState(null);
-  const [lightboxUrl,      setLightboxUrl]     = useState(null);
+  const [lightbox,         setLightbox]        = useState(null); // { items: [{url,type}], index } | null
   const [docPreview,       setDocPreview]      = useState(null);
   const [previewBlobUrl,   setPreviewBlobUrl]  = useState(null);
   const [previewLoading,   setPreviewLoading]  = useState(false);
@@ -590,6 +627,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const typingTimerRef  = useRef(null);
   const isTypingRef     = useRef(false);
   const fileInputRef    = useRef(null);
+  const lightboxTouchX  = useRef(null);
 
   /* Fetch online users on mount */
   useEffect(() => {
@@ -835,6 +873,33 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     onUserClick(userId);
   }
 
+  function openLightbox(items, index) {
+    const visuals = items.filter(m => m.type === 'image' || m.type === 'video');
+    if (visuals.length === 0) return;
+    setLightbox({ items: visuals, index: Math.max(0, Math.min(index, visuals.length - 1)) });
+  }
+  function closeLightbox() { setLightbox(null); }
+  function lightboxPrev(e) {
+    e?.stopPropagation();
+    setLightbox(prev => prev && { ...prev, index: (prev.index - 1 + prev.items.length) % prev.items.length });
+  }
+  function lightboxNext(e) {
+    e?.stopPropagation();
+    setLightbox(prev => prev && { ...prev, index: (prev.index + 1) % prev.items.length });
+  }
+
+  /* Lightbox keyboard nav: ← → to browse, Esc to close */
+  useEffect(() => {
+    if (!lightbox) return;
+    function onKey(e) {
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft') lightboxPrev();
+      else if (e.key === 'ArrowRight') lightboxNext();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
+
   const messages   = activeConv ? (allMessages[activeConv.id] ?? []) : [];
   const isBlocked  = activeConv ? (blockedConvIds[activeConv.id] ?? false) : false;
   const isReported = activeConv ? (reportedConvIds[activeConv.id] ?? false) : false;
@@ -896,7 +961,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
 
         {showAssets
-          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} onOpenLightbox={setLightboxUrl} onOpenDoc={setDocPreview} />
+          ? <SharedAssetsView conv={liveActiveConv} onBack={() => setShowAssets(false)} onOpenLightbox={openLightbox} onOpenDoc={setDocPreview} />
           : <>
           {/* Chat area */}
           <div className="msg-chat-area" key={chatKey}>
@@ -951,15 +1016,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                         ) : mediaVisuals.length === 1 ? (
                           mediaVisuals[0].type === 'video'
                             ? <video src={mediaVisuals[0].url} controls className="msg-img-placeholder" style={{ width: '100%', background: '#0d1424' }} />
-                            : <img src={mediaVisuals[0].url} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover', cursor: 'pointer' }} onClick={() => setLightboxUrl(mediaVisuals[0].url)} />
+                            : <img src={mediaVisuals[0].url} alt="" className="msg-img-placeholder" style={{ objectFit: 'cover', cursor: 'pointer' }} onClick={() => openLightbox(mediaVisuals, 0)} />
                         ) : (
                           <div className="msg-media-grid">
                             {mediaVisuals.map((item, i) => (
-                              <div key={i} className="msg-media-grid-item">
+                              <div key={i} className="msg-media-grid-item" onClick={() => openLightbox(mediaVisuals, i)} style={{ cursor: 'pointer', position: 'relative' }}>
                                 {item.type === 'video'
-                                  ? <video src={item.url} controls />
-                                  : <img src={item.url} alt="" onClick={() => setLightboxUrl(item.url)} />
+                                  ? <video src={item.url} muted />
+                                  : <img src={item.url} alt="" />
                                 }
+                                {item.type === 'video' && <span className="msg-media-grid-play">▶</span>}
                               </div>
                             ))}
                           </div>
@@ -1097,6 +1163,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               onClose={() => setNewMsgOpen(false)}
               onStartDM={handleStartDM}
               onCreateGroup={handleCreateGroup}
+              onViewProfile={handleUserClick}
             />
           )}
 
@@ -1150,25 +1217,84 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           </div>
         </>}
 
-        {/* ── Lightbox ── */}
-        {lightboxUrl && (
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onClick={() => setLightboxUrl(null)}
-          >
-            <button
-              onClick={() => setLightboxUrl(null)}
-              style={{ position: 'absolute', top: 18, right: 22, background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 38, height: 38, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-              aria-label="Close"
-            >✕</button>
-            <img
-              src={lightboxUrl}
-              alt=""
-              onClick={e => e.stopPropagation()}
-              style={{ maxWidth: '90vw', maxHeight: '88vh', borderRadius: 10, objectFit: 'contain', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
-            />
-          </div>
-        )}
+        {/* ── Lightbox / media slider ── */}
+        {lightbox && (() => {
+          const current  = lightbox.items[lightbox.index];
+          const hasMulti = lightbox.items.length > 1;
+          return (
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onClick={closeLightbox}
+              onTouchStart={e => { lightboxTouchX.current = e.touches[0].clientX; }}
+              onTouchEnd={e => {
+                if (lightboxTouchX.current == null) return;
+                const dx = e.changedTouches[0].clientX - lightboxTouchX.current;
+                lightboxTouchX.current = null;
+                if (Math.abs(dx) < 40 || !hasMulti) return;
+                dx > 0 ? lightboxPrev() : lightboxNext();
+              }}
+            >
+              <button
+                onClick={closeLightbox}
+                style={{ position: 'absolute', top: 18, right: 22, background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 38, height: 38, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                aria-label="Close"
+              >✕</button>
+
+              {hasMulti && (
+                <span style={{ position: 'absolute', top: 22, left: '50%', transform: 'translateX(-50%)', color: '#cbd5e1', fontSize: 13, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                  {lightbox.index + 1} / {lightbox.items.length}
+                </span>
+              )}
+
+              {hasMulti && (
+                <button
+                  onClick={lightboxPrev}
+                  style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 44, height: 44, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  aria-label="Previous"
+                >‹</button>
+              )}
+
+              {current.type === 'video' ? (
+                <video
+                  key={current.url}
+                  src={current.url}
+                  controls
+                  autoPlay
+                  onClick={e => e.stopPropagation()}
+                  style={{ maxWidth: '90vw', maxHeight: '88vh', borderRadius: 10, boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+                />
+              ) : (
+                <img
+                  key={current.url}
+                  src={current.url}
+                  alt=""
+                  onClick={e => e.stopPropagation()}
+                  style={{ maxWidth: '90vw', maxHeight: '88vh', borderRadius: 10, objectFit: 'contain', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+                />
+              )}
+
+              {hasMulti && (
+                <button
+                  onClick={lightboxNext}
+                  style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: 44, height: 44, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  aria-label="Next"
+                >›</button>
+              )}
+
+              {hasMulti && (
+                <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+                  {lightbox.items.map((_, i) => (
+                    <span
+                      key={i}
+                      onClick={e => { e.stopPropagation(); setLightbox(prev => prev && { ...prev, index: i }); }}
+                      style={{ width: 6, height: 6, borderRadius: '50%', cursor: 'pointer', background: i === lightbox.index ? '#fff' : 'rgba(255,255,255,0.35)' }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── Doc preview ── */}
         {docPreview && (
@@ -1280,6 +1406,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           onClose={() => setNewMsgOpen(false)}
           onStartDM={handleStartDM}
           onCreateGroup={handleCreateGroup}
+          onViewProfile={handleUserClick}
         />
       )}
 

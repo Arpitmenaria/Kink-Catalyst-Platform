@@ -26,7 +26,8 @@
       "Bash(npx --no-install -y playwright@1.61.1 --help)",
       "Bash(curl -s http://localhost:5183/)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5183/src/main.jsx)",
-      "Bash(pkill -f \"vite --port 5183\")"
+      "Bash(pkill -f \"vite --port 5183\")",
+      "Bash(lsof -i :5173 -sTCP:LISTEN -t)"
     ]
   },
   "enableAllProjectMcpServers": true,
