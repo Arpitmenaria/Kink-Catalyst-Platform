@@ -37,6 +37,8 @@ export default function HomePage() {
   const [groupsCreate,    setGroupsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
   const [profileAutoEdit, setProfileAutoEdit] = useState(false);
+  const [profileAutoEditEducation, setProfileAutoEditEducation] = useState(false);
+  const [profileInitFollowPanel, setProfileInitFollowPanel] = useState(null); // 'following' | 'followers' | null
   const [viewedUserId,    setViewedUserId]    = useState(null);
   const [viewedGroupId,   setViewedGroupId]   = useState(null);
   const [viewedEventId,   setViewedEventId]   = useState(null);
@@ -55,6 +57,8 @@ export default function HomePage() {
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
   function goToGroupsCreate() { setGroupsCreate(true); setSection('groups'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
+  function goToProfileEducation() { setProfileInitTab('About'); setProfileAutoEditEducation(true); setSection('profile'); }
+  function goToProfileFollowPanel(panel) { setProfileInitFollowPanel(panel); setSection('profile'); }
 
   // Open someone's profile. If it's the logged-in user, send them to their
   // own editable ProfilePage instead of the read-only UserProfilePage.
@@ -118,6 +122,10 @@ export default function HomePage() {
             onInitTabConsumed={() => setProfileInitTab(null)}
             autoEditPersonal={profileAutoEdit}
             onAutoEditConsumed={() => setProfileAutoEdit(false)}
+            autoEditEducation={profileAutoEditEducation}
+            onAutoEditEducationConsumed={() => setProfileAutoEditEducation(false)}
+            initFollowPanel={profileInitFollowPanel}
+            onInitFollowPanelConsumed={() => setProfileInitFollowPanel(null)}
             onUserClick={goToUserProfile}
             onEventClick={goToEvent}
             onMessageUser={goToMessagesWithUser}
@@ -217,6 +225,8 @@ export default function HomePage() {
               onGroupsClick={() => setSection('groups')}
               onCalendarClick={() => setSection('calendar')}
               onProfileClick={() => setSection('profile')}
+              onFollowingClick={() => goToProfileFollowPanel('following')}
+              onFollowersClick={() => goToProfileFollowPanel('followers')}
               onMinisitesClick={() => setSection('minisites')}
               onGroupClick={goToGroup}
               onEventClick={goToEvent}
@@ -230,7 +240,7 @@ export default function HomePage() {
               onCreateEvent={goToEventsCreate}
               onUserClick={goToUserProfile}
             />
-            <RightSidebar onCoursesClick={() => setSection('courses')} onGalleryClick={() => goToProfileTab('Photos')} />
+            <RightSidebar onAddEducationClick={goToProfileEducation} onGalleryClick={() => goToProfileTab('Photos')} />
           </>
         )}
       </div>

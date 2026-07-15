@@ -283,6 +283,7 @@ const messagesSlice = createSlice({
     conversations: [],
     conversationsTotal: 0,
     conversationsLoading: false,
+    latestConversationsRequestId: null, // guards against an out-of-order fetchConversations response clobbering a newer tab/search switch
     messages: {},         // { [convId]: message[] }
     messagesLoading: false,
     messagesHasMore: {},  // { [convId]: boolean }
@@ -296,7 +297,6 @@ const messagesSlice = createSlice({
     blockedUsers: [],
     blockedUsersTotal: 0,
     blockedUsersLoading: false,
-    pendingOpenConvId: null, // set by startDM so MessagesPage auto-opens that conversation
     lastFetchParams: { tab: 'all', search: '' }, // last args passed to fetchConversations, so a resurrected conversation (see receiveMessage in socket.js) refetches under the filter the user is actually looking at
     error: null,
   },
@@ -306,9 +306,6 @@ const messagesSlice = createSlice({
       const { convId } = action.payload;
       const conv = state.conversations.find(c => c.id === convId);
       if (conv) conv.unreadCount = 0;
-    },
-    clearPendingOpenConv(state) {
-      state.pendingOpenConvId = null;
     },
     // Optimistic removal after unblocking a user / deleting their chat from the Blocked panel
     removeBlockedUser(state, action) {
@@ -356,14 +353,23 @@ const messagesSlice = createSlice({
     builder
       .addCase(fetchConversations.pending, (s, a) => {
         s.conversationsLoading = true;
+        s.latestConversationsRequestId = a.meta.requestId;
         s.lastFetchParams = { tab: a.meta.arg?.tab ?? 'all', search: a.meta.arg?.search ?? '' };
       })
       .addCase(fetchConversations.fulfilled, (s, a) => {
+        // Ignore an out-of-order response — e.g. switching All → Unread → Groups quickly can
+        // let an earlier tab's slower request resolve after a later one, clobbering the tab
+        // the user is actually looking at with stale data.
+        if (a.meta.requestId !== s.latestConversationsRequestId) return;
         s.conversationsLoading = false;
         s.conversations = a.payload.conversations;
         s.conversationsTotal = a.payload.total;
       })
-      .addCase(fetchConversations.rejected, (s, a) => { s.conversationsLoading = false; s.error = a.payload; })
+      .addCase(fetchConversations.rejected, (s, a) => {
+        if (a.meta.requestId !== s.latestConversationsRequestId) return;
+        s.conversationsLoading = false;
+        s.error = a.payload;
+      })
 
       .addCase(fetchMessages.pending, s => { s.messagesLoading = true; })
       .addCase(fetchMessages.fulfilled, (s, a) => {
@@ -447,7 +453,6 @@ const messagesSlice = createSlice({
       .addCase(startDM.fulfilled, (s, a) => {
         const conv = a.payload;
         if (!s.conversations.find(c => c.id === conv.id)) s.conversations.unshift(conv);
-        s.pendingOpenConvId = conv.id;
       })
 
       .addCase(createGroup.fulfilled, (s, a) => { s.conversations.unshift(a.payload); })
@@ -506,5 +511,5 @@ const messagesSlice = createSlice({
   },
 });
 
-export const { clearUnread, clearPendingOpenConv, removeBlockedUser, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
+export const { clearUnread, removeBlockedUser, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
 export default messagesSlice.reducer;

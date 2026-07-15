@@ -4,6 +4,7 @@ import { createPost, editPost } from '../../store/slices/postsSlice';
 import { createGroupPost } from '../../store/slices/groupsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { apiRequest } from '../../services/api';
+import { shiftMentionsOnEdit, trimWithMentions } from './mentionUtils.jsx';
 import ImageCropper from './ImageCropper';
 import VideoTrimmer from './VideoTrimmer';
 import './CreatePost.css';
@@ -21,15 +22,30 @@ function getInitials(name = '') {
 
 // Split caption text into plain runs + colored #hashtag / @mention tokens for
 // the highlight overlay behind the textarea (LinkedIn/Instagram style).
-const TAG_RE = /([#@][\w]+)/g;
-function renderHighlighted(text) {
-  const nodes = [];
-  let last = 0, m, i = 0;
-  while ((m = TAG_RE.exec(text)) !== null) {
-    if (m.index > last) nodes.push(text.slice(last, m.index));
-    nodes.push(<span key={i++} className="cp-tag">{m[0]}</span>);
-    last = m.index + m[0].length;
+// Mentions use the tracked offset/length spans (so a multi-word token like
+// "@Mark Johnson" highlights in full); hashtags fall back to regex since they
+// don't need id tracking.
+const HASHTAG_RE = /#[\w]+/g;
+function renderHighlighted(text, mentions = []) {
+  const spans = mentions
+    .filter(m => typeof m.offset === 'number' && typeof m.length === 'number')
+    .map(m => ({ start: m.offset, end: m.offset + m.length }));
+  let hm;
+  HASHTAG_RE.lastIndex = 0;
+  while ((hm = HASHTAG_RE.exec(text)) !== null) {
+    const start = hm.index, end = start + hm[0].length;
+    if (spans.some(s => start < s.end && end > s.start)) continue;
+    spans.push({ start, end });
   }
+  spans.sort((a, b) => a.start - b.start);
+
+  const nodes = [];
+  let last = 0;
+  spans.forEach((s, i) => {
+    if (s.start > last) nodes.push(text.slice(last, s.start));
+    nodes.push(<span key={i} className="cp-tag">{text.slice(s.start, s.end)}</span>);
+    last = s.end;
+  });
   if (last < text.length) nodes.push(text.slice(last));
   return nodes;
 }
@@ -124,6 +140,9 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   const [mentionQuery,   setMentionQuery]   = useState('');
   const [mentionResults, setMentionResults] = useState([]);
   const [mentionLoading, setMentionLoading] = useState(false);
+  // Tracked { userId, username, offset, length } spans within `caption`, sent to the
+  // backend on submit so @mentions render as clickable profile links (see mentionUtils.jsx).
+  const [mentions,       setMentions]       = useState(() => editingPost?.mentions ?? []);
 
   const fileInputRef  = useRef(null);
   const dropdownRef   = useRef(null);
@@ -203,6 +222,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     const start = el?.selectionStart ?? caption.length;
     const end = el?.selectionEnd ?? caption.length;
     const next = caption.slice(0, start) + text + caption.slice(end);
+    setMentions(prev => shiftMentionsOnEdit(caption, next, prev));
     setCaption(next);
     if (error) setError('');
     requestAnimationFrame(() => {
@@ -216,6 +236,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   function handleCaptionChange(e) {
     const value = e.target.value;
     const cursor = e.target.selectionStart ?? value.length;
+    setMentions(prev => shiftMentionsOnEdit(caption, value, prev));
     setCaption(value);
     if (error) setError('');
 
@@ -234,8 +255,12 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     const cursor = el?.selectionStart ?? caption.length;
     const before = caption.slice(0, cursor);
     const after = caption.slice(cursor);
-    const replaced = before.replace(/@(\w*)$/, `@${person.name} `);
+    const match = before.match(/@(\w*)$/);
+    const offset = match ? match.index : before.length;
+    const token = `@${person.name}`;
+    const replaced = before.replace(/@(\w*)$/, `${token} `);
     const next = replaced + after;
+    setMentions(prev => [...prev, { userId: person.id, username: person.name, offset, length: token.length }]);
     setCaption(next);
     setMentionOpen(false);
     requestAnimationFrame(() => {
@@ -400,7 +425,8 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
       return;
     }
     setError('');
-    const result = await dispatch(editPost({ postId: editingPost._id, caption: caption.trim(), visibility }));
+    const { text: trimmedCaption, mentions: finalMentions } = trimWithMentions(caption, mentions);
+    const result = await dispatch(editPost({ postId: editingPost._id, caption: trimmedCaption, visibility, mentions: finalMentions }));
     if (editPost.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Post updated', type: 'success' }));
       onClose();
@@ -443,9 +469,10 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
     setError('');
     const mediaFiles = tab === 'photo' ? images.map(i => i.file) : (mediaFile ? [mediaFile] : []);
+    const { text: trimmedCaption, mentions: finalMentions } = trimWithMentions(caption, mentions);
     const thunk = groupId
-      ? createGroupPost({ groupId, caption: caption.trim(), media: mediaFiles })
-      : createPost({ caption: caption.trim(), mediaFile, mediaFiles, visibility });
+      ? createGroupPost({ groupId, caption: trimmedCaption, media: mediaFiles })
+      : createPost({ caption: trimmedCaption, mediaFile, mediaFiles, visibility, mentions: finalMentions });
     const result = await dispatch(thunk);
     if (!result.error) {
       const post = result.payload?.post ?? result.payload;
@@ -532,7 +559,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
           <div style={{ position: 'relative' }} ref={mentionRef}>
             <div className="cp-input-wrap">
               <div ref={highlightRef} className="cp-highlight" aria-hidden="true">
-                {renderHighlighted(caption)}{'​'}
+                {renderHighlighted(caption, mentions)}{'​'}
               </div>
               <textarea
                 ref={textareaRef}

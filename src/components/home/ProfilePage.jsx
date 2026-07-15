@@ -123,7 +123,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
         const isFollowing = followingIds.includes(id) || !!f.isFollowing;
         const hasMutual = !!f.mutualFriends;
         const locationText = f.location || f.city;
-        const sub = hasMutual ? `${f.mutualFriends} mutual friends` : (locationText || f.sub || '');
+        const sub = hasMutual ? `${f.mutualFriends} mutual` : (locationText || f.sub || '');
         return (
           <div key={id} className={`prof-sugg-item${removingIds.has(id) ? ' prof-sugg-item--removing' : ''}`}>
             <button className="prof-sugg-close" onClick={() => handleRemove(id)} title="Remove" aria-label="Remove suggestion">
@@ -823,7 +823,7 @@ function profileToEdu(p) {
   return (p?.education ?? []).map(e => ({ id: e._id ?? e.id, school: e.school ?? '', degree: e.degree ?? '', years: e.years ?? '', type: e.type ?? '' }));
 }
 
-export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed }) {
+export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed, autoEditEducation, onAutoEditEducationConsumed }) {
   const dispatch = useDispatch();
   const { profile } = useSelector(s => s.profile);
   const infoTabsRef = useRef(null);
@@ -866,6 +866,18 @@ export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed }) {
       infoTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }, [autoEditPersonal]);
+
+  // Same as above, but for the "Add your education" CTA on the home screen's Education card.
+  useEffect(() => {
+    if (!autoEditEducation || readOnly) return;
+    setInfoTab('education');
+    setEduDraft(eduItems.map(i => ({ ...i })));
+    setEditingEdu(true);
+    onAutoEditEducationConsumed?.();
+    requestAnimationFrame(() => {
+      infoTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [autoEditEducation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleEdit() {
     setDraftBio(bio ?? '');
@@ -1140,10 +1152,12 @@ export default function ProfilePage({
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
   initialTab, onInitTabConsumed, onUserClick, onEventClick, onMessageUser,
   autoEditPersonal, onAutoEditConsumed,
+  autoEditEducation, onAutoEditEducationConsumed,
+  initFollowPanel, onInitFollowPanelConsumed,
 }) {
   const dispatch = useDispatch();
   const { user: authUser }  = useSelector(s => s.auth);
-  const { profile, gallery, galleryTotal, followers, following, connectionsTotal } = useSelector(s => s.profile);
+  const { profile, gallery, galleryTotal, followers, following, connectionsTotal, followersLoading, followingLoading } = useSelector(s => s.profile);
   const { followingIds: reduxFollowingIds } = useSelector(s => s.users);
   const { myPosts, myPostsTotal, myPostsLoading } = useSelector(s => s.posts);
 
@@ -1170,6 +1184,13 @@ export default function ProfilePage({
   const [followPanel,     setFollowPanel]     = useState(null); // 'followers' | 'following' | null
   const [followSearch,    setFollowSearch]    = useState('');
   const [followingIds,    setFollowingIds]    = useState(new Set());
+  useEffect(() => {
+    if (!initFollowPanel) return;
+    setFollowSearch('');
+    setFollowPanel(initFollowPanel);
+    dispatch(initFollowPanel === 'followers' ? fetchFollowers() : fetchFollowing());
+    onInitFollowPanelConsumed?.();
+  }, [initFollowPanel]); // eslint-disable-line react-hooks/exhaustive-deps
   const [createPostOpen,  setCreatePostOpen]  = useState(false);
   const [createTab,       setCreateTab]       = useState('photo');
   const [creatorClicked,  setCreatorClicked]  = useState(false);
@@ -1399,7 +1420,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             </div>
           )}
 
-          {activeTab === 'About'       && <AboutTab autoEditPersonal={autoEditPersonal} onAutoEditConsumed={onAutoEditConsumed} />}
+          {activeTab === 'About'       && <AboutTab autoEditPersonal={autoEditPersonal} onAutoEditConsumed={onAutoEditConsumed} autoEditEducation={autoEditEducation} onAutoEditEducationConsumed={onAutoEditEducationConsumed} />}
           {activeTab === 'Connections' && <ConnectionsTab onUserClick={onUserClick} onMessageUser={onMessageUser} />}
           {activeTab === 'Photos'      && <MediaTab />}
           {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} onEventClick={onEventClick} />}
@@ -1429,6 +1450,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
     {followPanel && (() => {
       const list = (followPanel === 'followers' ? followers : following)
         .filter(p => p.name.toLowerCase().includes(followSearch.toLowerCase()) || p.role.toLowerCase().includes(followSearch.toLowerCase()));
+      const listLoading = followPanel === 'followers' ? followersLoading : followingLoading;
       return (
         <div className="fp-overlay" onClick={() => setFollowPanel(null)}>
           <div className="fp-panel" onClick={e => e.stopPropagation()}>
@@ -1450,7 +1472,13 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
               <input className="fp-search" placeholder={`Search ${followPanel}…`} value={followSearch} onChange={e => setFollowSearch(e.target.value)} autoFocus />
             </div>
             <div className="fp-list">
-              {list.length === 0 && <p className="fp-empty">No results found</p>}
+              {listLoading && list.length === 0 && (
+                <div className="fp-loading">
+                  <span className="fp-spinner" />
+                  <p style={{ margin: 0 }}>Loading {followPanel}…</p>
+                </div>
+              )}
+              {!listLoading && list.length === 0 && <p className="fp-empty">No results found</p>}
               {list.map(person => (
                 <div className="fp-person" key={person.id}>
                   {person.avatar?.startsWith?.('http')

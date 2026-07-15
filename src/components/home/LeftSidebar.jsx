@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
+import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups, followUser, unfollowUser } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
 import CreatePostModal from './CreatePostModal';
@@ -61,11 +61,11 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase();
 }
 
-export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onMinisitesClick, onGroupClick, onEventClick, onUserClick, onCreateGroup, onCreateEvent }) {
+export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsClick, onCalendarClick, onCoursesClick, onLibraryClick, onProfileClick, onFollowingClick, onFollowersClick, onMinisitesClick, onGroupClick, onEventClick, onUserClick, onCreateGroup, onCreateEvent }) {
   const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
-  const { suggestions, dismissedIds, groups, friendStatusMap } = useSelector((state) => state.users);
+  const { suggestions, dismissedIds, groups, friendStatusMap, followingIds } = useSelector((state) => state.users);
   const { conversations } = useSelector((state) => state.messages);
   const { events: upcomingEvents } = useSelector((state) => state.events);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
@@ -73,6 +73,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const [createOpen,  setCreateOpen]  = useState(false);
   const [activeNavId, setActiveNavId] = useState('home');
   const [poppingIds,  setPoppingIds]  = useState(new Set());
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
 
   useEffect(() => {
     dispatch(fetchUserProfile());
@@ -94,6 +95,16 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   function handleDismiss(id) {
     if (!id) return;
     dispatch(dismissSuggestion(id));
+  }
+
+  function handleFollowToggle(id, isFollowing) {
+    if (!id) return;
+    dispatch(isFollowing ? unfollowUser(id) : followUser(id));
+  }
+
+  function openAllSuggestions() {
+    setShowAllSuggestions(true);
+    dispatch(fetchSuggestions(50));
   }
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'You';
@@ -156,12 +167,12 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <p className="profile-name">{displayName}</p>
             <p className="profile-role">{role}</p>
             <div className="profile-stats">
-              <div className="profile-stat">
+              <div className="profile-stat" onClick={onFollowingClick} style={{ cursor: 'pointer' }}>
                 <span className="stat-num">{followingCount}</span>
                 <span className="stat-lbl">Following</span>
               </div>
               <div className="profile-stat-div" />
-              <div className="profile-stat">
+              <div className="profile-stat" onClick={onFollowersClick} style={{ cursor: 'pointer' }}>
                 <span className="stat-num">{followersCount}</span>
                 <span className="stat-lbl">Followers</span>
               </div>
@@ -174,19 +185,23 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         <div className="sidebar-section">
           <div className="section-header">
             <span className="section-title">Friend Suggestions</span>
-            <button className="section-link">View all</button>
+            {visibleSuggestions.length > 0 && <button className="section-link" onClick={openAllSuggestions}>View all</button>}
           </div>
           <div className="friend-list">
-            {visibleSuggestions.map(f => {
+            {visibleSuggestions.slice(0, 5).map(f => {
               const id = f.id ?? f._id;
               const status = friendStatusMap[id] ?? f.friendStatus ?? 'none';
               const requested = status === 'requested';
               const connected = status === 'connected';
+              const isFollowing = followingIds.includes(id);
               return (
                 <div
                   key={id}
-                  className="friend-item"
+                  className="friend-item all-sugg-item"
                 >
+                  <button className="all-sugg-cross-btn all-sugg-cross-btn--corner" title="Remove suggestion" onClick={() => handleDismiss(id)}>
+                    ✕
+                  </button>
                   <div className="friend-item-top">
                     <div
                       className="friend-avatar"
@@ -206,7 +221,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                       <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
                       <p className="friend-sub">
                         {f.mutualFriends ? (
-                          <><MutualIcon />{f.mutualFriends} mutual friends</>
+                          <><MutualIcon />{f.mutualFriends} mutual</>
                         ) : (f.location || f.city) ? (
                           <><LocationIcon />{f.location ?? f.city}</>
                         ) : (
@@ -215,7 +230,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                       </p>
                     </div>
                   </div>
-                  <div className="friend-actions">
+                  <div className="friend-actions all-sugg-actions">
                     <button
                       className={`friend-add-btn${(requested || connected) ? ' friend-add-btn--added' : ''}${poppingIds.has(id) ? ' friend-add-btn--pop' : ''}`}
                       onClick={() => handleAddFriend(id, status)}
@@ -224,11 +239,10 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                       {connected ? '✓ Connected' : requested ? 'Requested' : 'Add Friend'}
                     </button>
                     <button
-                      className={`friend-remove-btn${(requested || connected) ? ' friend-remove-btn--hidden' : ''}`}
-                      onClick={() => handleDismiss(id)}
-                      tabIndex={(requested || connected) ? -1 : 0}
+                      className={`all-sugg-follow-btn${isFollowing ? ' all-sugg-follow-btn--active' : ''}`}
+                      onClick={() => handleFollowToggle(id, isFollowing)}
                     >
-                      Remove
+                      {isFollowing ? 'Following' : 'Follow'}
                     </button>
                   </div>
                 </div>
@@ -288,6 +302,108 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         </div>
 
       </div>
+
+      {showAllSuggestions && (
+        <AllSuggestionsModal
+          suggestions={suggestions}
+          dismissedIds={dismissedIds}
+          friendStatusMap={friendStatusMap}
+          followingIds={followingIds}
+          onClose={() => setShowAllSuggestions(false)}
+          onAddFriend={handleAddFriend}
+          onFollowToggle={handleFollowToggle}
+          onDismiss={handleDismiss}
+          onUserClick={onUserClick}
+        />
+      )}
     </aside>
+  );
+}
+
+function AllSuggestionsModal({ suggestions, dismissedIds, friendStatusMap, followingIds, onClose, onAddFriend, onFollowToggle, onDismiss, onUserClick }) {
+  const [search, setSearch] = useState('');
+
+  const visible = suggestions
+    .filter(f => !dismissedIds.includes(f.id ?? f._id))
+    .filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="all-sugg-overlay" onClick={onClose}>
+      <div className="all-sugg-modal" onClick={e => e.stopPropagation()}>
+        <div className="all-sugg-header">
+          <h2 className="all-sugg-title">Friend Suggestions</h2>
+          <button className="all-sugg-close-btn" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div className="all-sugg-search-wrap">
+          <input
+            className="all-sugg-search"
+            placeholder="Search suggestions..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="all-sugg-list">
+          {visible.length === 0 && <p className="all-sugg-empty">No suggestions found.</p>}
+          {visible.map(f => {
+            const id = f.id ?? f._id;
+            const status = friendStatusMap[id] ?? f.friendStatus ?? 'none';
+            const requested = status === 'requested';
+            const connected = status === 'connected';
+            const isFollowing = followingIds.includes(id);
+            return (
+              <div key={id} className="friend-item all-sugg-item">
+                <button className="all-sugg-cross-btn all-sugg-cross-btn--corner" title="Remove suggestion" onClick={() => onDismiss(id)}>
+                  ✕
+                </button>
+                <div className="friend-item-top">
+                  <div
+                    className="friend-avatar"
+                    style={{ background: f.avatarColor ?? '#3b82f6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer' }}
+                    onClick={() => onUserClick?.(id)}
+                  >
+                    {f.avatar
+                      ? <SkeletonImg
+                          src={f.avatar}
+                          alt={f.name}
+                          fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>{initials(f.name)}</span>}
+                        />
+                      : initials(f.name)
+                    }
+                  </div>
+                  <div className="friend-info">
+                    <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
+                    <p className="friend-sub">
+                      {f.mutualFriends ? (
+                        <><MutualIcon />{f.mutualFriends} mutual</>
+                      ) : (f.location || f.city) ? (
+                        <><LocationIcon />{f.location ?? f.city}</>
+                      ) : (
+                        <><MutualIcon />{f.sub ?? ''}</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="friend-actions all-sugg-actions">
+                  <button
+                    className={`friend-add-btn${(requested || connected) ? ' friend-add-btn--added' : ''}`}
+                    onClick={() => onAddFriend(id, status)}
+                    disabled={requested || connected}
+                  >
+                    {connected ? '✓ Connected' : requested ? 'Requested' : 'Add Friend'}
+                  </button>
+                  <button
+                    className={`all-sugg-follow-btn${isFollowing ? ' all-sugg-follow-btn--active' : ''}`}
+                    onClick={() => onFollowToggle(id, isFollowing)}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

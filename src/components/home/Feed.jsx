@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
 import { fetchFeedPosts } from '../../store/slices/postsSlice';
+import { fetchConnections } from '../../store/slices/profileSlice';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
 
@@ -22,6 +23,7 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
 
   useEffect(() => {
     dispatch(fetchFeedPosts());
+    dispatch(fetchConnections()); // candidates for @mention autocomplete in post/comment composers
   }, [dispatch]);
 
   function openCreate(tab = 'photo') { setCreateTab(tab); setCreateOpen(true); }

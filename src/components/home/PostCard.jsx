@@ -5,6 +5,8 @@ import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPos
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
 import CreatePostModal from './CreatePostModal';
+import ReactionsModal from './ReactionsModal';
+import { getMentionQuery, shiftMentionsOnEdit, insertMention, trimWithMentions, renderTaggedText, MentionDropdown } from './mentionUtils.jsx';
 import './PostCard.css';
 
 const CAPTION_TRUNCATE_LENGTH = 200;
@@ -24,19 +26,6 @@ function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
 
-// Color #hashtags and @mentions in rendered post captions (feed display).
-const CAPTION_TAG_RE = /([#@][\w]+)/g;
-function renderCaption(text = '') {
-  const nodes = [];
-  let last = 0, m, i = 0;
-  while ((m = CAPTION_TAG_RE.exec(text)) !== null) {
-    if (m.index > last) nodes.push(text.slice(last, m.index));
-    nodes.push(<span key={i++} className="post-caption-tag">{m[0]}</span>);
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) nodes.push(text.slice(last));
-  return nodes;
-}
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -64,7 +53,7 @@ const VISIBILITY_META = {
 };
 
 // LinkedIn-style reactions. `id` is what we send to the backend.
-const REACTIONS = [
+export const REACTIONS = [
   { id: 'like',       emoji: '👍', label: 'Like',       color: '#378fe9' },
   { id: 'celebrate',  emoji: '👏', label: 'Celebrate',  color: '#6dae4f' },
   { id: 'support',    emoji: '🫶', label: 'Support',    color: '#b393c8' },
@@ -72,7 +61,7 @@ const REACTIONS = [
   { id: 'insightful', emoji: '💡', label: 'Insightful', color: '#f5bb5c' },
   { id: 'funny',      emoji: '😄', label: 'Funny',      color: '#44bfd0' },
 ];
-const REACTION_MAP = Object.fromEntries(REACTIONS.map(r => [r.id, r]));
+export const REACTION_MAP = Object.fromEntries(REACTIONS.map(r => [r.id, r]));
 function ReactIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function CommentIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function ShareIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>; }
@@ -105,19 +94,23 @@ function normalizeComment(c) {
   const name = c.author?.fullName ?? 'Unknown';
   return {
     id: cid,
+    authorId: c.author?._id ?? c.author?.id ?? null,
     initials: nameInitials(name),
     color: nameColor(name),
     name,
     time: timeAgo(c.createdAt),
     text: c.text ?? '',
+    mentions: c.mentions ?? [],
     likes: typeof c.likes === 'number' ? c.likes : (Array.isArray(c.likes) ? c.likes.length : 0),
     replies: (c.replies ?? []).filter(Boolean).map(r => {
       const rName = r.author?.fullName ?? 'Unknown';
       return {
         id: r._id ?? r.id,
+        authorId: r.author?._id ?? r.author?.id ?? null,
         initials: nameInitials(rName),
         color: nameColor(rName),
         name: rName,
+        mentions: r.mentions ?? [],
         time: timeAgo(r.createdAt),
         text: r.text ?? '',
         likes: typeof r.likes === 'number' ? r.likes : 0,
@@ -130,10 +123,14 @@ export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId } = useSelector(s => s.posts);
+  const { connections } = useSelector(s => s.profile);
 
   const isStatic = typeof post.likes === 'number';
 
   const [comment,         setComment]         = useState('');
+  const [commentMentions, setCommentMentions] = useState([]);
+  const [commentDropdown, setCommentDropdown] = useState(null); // { start, end, candidates } | null
+  const commentInputRef = useRef(null);
   const [localReaction,   setLocalReaction]   = useState(null);
   const [reacting,        setReacting]        = useState(false);
   const [particles,       setParticles]       = useState([]);
@@ -146,10 +143,21 @@ export default function PostCard({ post, onUserClick }) {
   const [likedComments,   setLikedComments]   = useState(new Set());
   const [replyingTo,      setReplyingTo]      = useState(null);
   const [replyText,       setReplyText]       = useState('');
+  const [replyMentions,   setReplyMentions]   = useState([]);
+  const [replyDropdown,   setReplyDropdown]   = useState(null); // { start, end, candidates } | null
+  const replyInputRef = useRef(null);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [editOpen,        setEditOpen]        = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [reactionsModalOpen, setReactionsModalOpen] = useState(false);
   const menuRef = useRef(null);
+
+  function mentionCandidates(query) {
+    const q = query.toLowerCase();
+    return (connections ?? [])
+      .filter(p => (p.name ?? '').toLowerCase().includes(q))
+      .slice(0, 5);
+  }
 
   function toggleReplies(id) {
     setExpandedReplies(prev => {
@@ -171,13 +179,39 @@ export default function PostCard({ post, onUserClick }) {
   function openReplyBox(commentId) {
     setReplyingTo(prev => (prev === commentId ? null : commentId));
     setReplyText('');
+    setReplyMentions([]);
+    setReplyDropdown(null);
+  }
+
+  function handleReplyTextChange(e) {
+    const next = e.target.value;
+    const cursor = e.target.selectionStart;
+    setReplyMentions(prev => shiftMentionsOnEdit(replyText, next, prev));
+    setReplyText(next);
+    const q = getMentionQuery(next, cursor);
+    setReplyDropdown(q ? { start: q.start, end: cursor, candidates: mentionCandidates(q.query) } : null);
+  }
+
+  function pickReplyMention(person) {
+    if (!replyDropdown) return;
+    const { text, mention, cursor } = insertMention(replyText, replyDropdown.start, replyDropdown.end, person);
+    setReplyMentions(prev => [...prev, mention]);
+    setReplyText(text);
+    setReplyDropdown(null);
+    requestAnimationFrame(() => {
+      replyInputRef.current?.focus();
+      replyInputRef.current?.setSelectionRange(cursor, cursor);
+    });
   }
 
   function handleSendReply(commentId) {
     if (!replyText.trim()) return;
-    dispatch(replyToComment({ postId: post._id, commentId, text: replyText.trim() }));
+    const { text, mentions } = trimWithMentions(replyText, replyMentions);
+    dispatch(replyToComment({ postId: post._id, commentId, text, mentions }));
     setExpandedReplies(prev => new Set(prev).add(commentId));
     setReplyText('');
+    setReplyMentions([]);
+    setReplyDropdown(null);
     setReplyingTo(null);
   }
 
@@ -206,6 +240,15 @@ export default function PostCard({ post, onUserClick }) {
       return;
     }
     onUserClick(authorId);
+  }
+
+  function handleCommentAuthorClick(id) {
+    if (!onUserClick) return;
+    if (!id) {
+      dispatch(showToast({ message: "Can't open this profile — missing user info.", type: 'error' }));
+      return;
+    }
+    onUserClick(id);
   }
 
   const likeCount    = isStatic ? post.likes    : (post.likesCount ?? post.likes?.length ?? 0);
@@ -297,12 +340,36 @@ export default function PostCard({ post, onUserClick }) {
     dispatch(sharePost(post._id));
   }
 
+  function handleCommentTextChange(e) {
+    const next = e.target.value;
+    const cursor = e.target.selectionStart;
+    setCommentMentions(prev => shiftMentionsOnEdit(comment, next, prev));
+    setComment(next);
+    const q = getMentionQuery(next, cursor);
+    setCommentDropdown(q ? { start: q.start, end: cursor, candidates: mentionCandidates(q.query) } : null);
+  }
+
+  function pickCommentMention(person) {
+    if (!commentDropdown) return;
+    const { text, mention, cursor } = insertMention(comment, commentDropdown.start, commentDropdown.end, person);
+    setCommentMentions(prev => [...prev, mention]);
+    setComment(text);
+    setCommentDropdown(null);
+    requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+      commentInputRef.current?.setSelectionRange(cursor, cursor);
+    });
+  }
+
   function handleComment() {
     if (!comment.trim()) return;
     if (isStatic) { setComment(''); return; }
     if (!isCommenting) {
-      dispatch(commentPost({ postId: post._id, text: comment.trim() }));
+      const { text, mentions } = trimWithMentions(comment, commentMentions);
+      dispatch(commentPost({ postId: post._id, text, mentions }));
       setComment('');
+      setCommentMentions([]);
+      setCommentDropdown(null);
       setShowComments(true);
     }
   }
@@ -352,10 +419,12 @@ export default function PostCard({ post, onUserClick }) {
             </p>
             <p className="post-time">
               {timeAgo(post.createdAt)}
-              {isOwner && <> · <span className="post-visibility"><visMeta.Icon /> {visMeta.label}</span></>}
               {authorLocation && <> · <PinIcon /> {authorLocation}</>}
             </p>
           </div>
+          {isOwner && (
+            <span className="post-visibility post-visibility--header"><visMeta.Icon /> {visMeta.label}</span>
+          )}
           <div className="post-menu-wrap" ref={menuRef}>
             <button className="post-more-btn" onClick={() => setMenuOpen(v => !v)}><MoreIcon /></button>
             {menuOpen && (
@@ -393,7 +462,7 @@ export default function PostCard({ post, onUserClick }) {
         {/* Caption */}
         {post.caption && (
           <p className="post-text">
-            {renderCaption(captionShown)}
+            {renderTaggedText(captionShown, post.mentions, onUserClick)}
             {captionIsLong && !captionExpanded && '… '}
             {captionIsLong && (
               <button type="button" className="post-caption-toggle" onClick={() => setCaptionExpanded(v => !v)}>
@@ -478,8 +547,8 @@ export default function PostCard({ post, onUserClick }) {
         )}
 
         {/* People react row */}
-        {likeCount > 0 && (
-          <div className="post-people-react">
+        {likeCount > 0 && !isStatic && (
+          <div className="post-people-react" style={{ cursor: 'pointer' }} onClick={() => setReactionsModalOpen(true)}>
             <div className="post-reader-avatars">
               {recentReactors.slice(0, 4).map((r, i) => (
                 <div key={r._id ?? r.id ?? i} className="post-reader-dot">
@@ -570,12 +639,12 @@ export default function PostCard({ post, onUserClick }) {
               <div key={c.id} className="pc-thread">
                 {/* Top-level comment */}
                 <div className="pc-comment">
-                  <div className="pc-avatar" style={{ background: c.color }}>{c.initials}</div>
+                  <div className="pc-avatar" style={{ background: c.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.initials}</div>
                   <div className="pc-body">
                     <div className="pc-bubble">
-                      <span className="pc-name">{c.name}</span>
+                      <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.name}</span>
                       <span className="pc-time">{c.time}</span>
-                      <p className="pc-text">{c.text}</p>
+                      <p className="pc-text">{renderTaggedText(c.text, c.mentions, onUserClick)}</p>
                     </div>
                     <div className="pc-actions">
                       <button className={`pc-act${likedComments.has(c.id) ? ' pc-act--liked' : ''}`} onClick={() => handleCommentLike(c.id)}>
@@ -596,14 +665,16 @@ export default function PostCard({ post, onUserClick }) {
                     {replyingTo === c.id && (
                       <div className="pc-reply-input-wrap">
                         <input
+                          ref={replyInputRef}
                           type="text"
                           className="pc-reply-input"
                           placeholder={`Reply to ${c.name}...`}
                           value={replyText}
-                          onChange={e => setReplyText(e.target.value)}
+                          onChange={handleReplyTextChange}
                           onKeyDown={e => e.key === 'Enter' && handleSendReply(c.id)}
                           autoFocus
                         />
+                        {replyDropdown && <MentionDropdown candidates={replyDropdown.candidates} onPick={pickReplyMention} />}
                         <button className="pc-reply-send" onClick={() => handleSendReply(c.id)} disabled={!replyText.trim()}>
                           <SendIcon />
                         </button>
@@ -615,12 +686,12 @@ export default function PostCard({ post, onUserClick }) {
                       <div className="pc-replies">
                         {c.replies.map(r => (
                           <div key={r.id} className="pc-comment pc-comment--reply">
-                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.color }}>{r.initials}</div>
+                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.initials}</div>
                             <div className="pc-body">
                               <div className="pc-bubble pc-bubble--reply">
-                                <span className="pc-name">{r.name}</span>
+                                <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.name}</span>
                                 <span className="pc-time">{r.time}</span>
-                                <p className="pc-text">{r.text}</p>
+                                <p className="pc-text">{renderTaggedText(r.text, r.mentions, onUserClick)}</p>
                               </div>
                               <div className="pc-actions">
                                 <button className={`pc-act${likedComments.has(r.id) ? ' pc-act--liked' : ''}`} onClick={() => handleCommentLike(r.id)}>
@@ -647,17 +718,23 @@ export default function PostCard({ post, onUserClick }) {
 
         {/* Comment bar */}
         <div className="post-comment-bar">
-          <div className="comment-avatar">{getInitials(user?.fullName ?? 'A')}</div>
+          <div
+            className="comment-avatar"
+            style={{ cursor: userId ? 'pointer' : 'default' }}
+            onClick={() => handleCommentAuthorClick(userId)}
+          >{getInitials(user?.fullName ?? 'A')}</div>
           <div className="comment-input-wrap">
             <input
+              ref={commentInputRef}
               type="text"
               className="comment-input"
               placeholder="Write A Comment..."
               value={comment}
-              onChange={e => setComment(e.target.value)}
+              onChange={handleCommentTextChange}
               onKeyDown={e => e.key === 'Enter' && handleComment()}
               disabled={isCommenting}
             />
+            {commentDropdown && <MentionDropdown candidates={commentDropdown.candidates} onPick={pickCommentMention} />}
             <div className="comment-input-icons">
               <button className="comment-icon-btn" tabIndex={-1}><EmojiIcon /></button>
               <button className={`comment-icon-btn comment-send-btn${comment.trim() ? ' active' : ''}`} tabIndex={-1} onClick={handleComment}><SendIcon /></button>
@@ -667,6 +744,10 @@ export default function PostCard({ post, onUserClick }) {
       </article>
 
       {reportOpen && <ReportModal postId={post._id} onClose={() => setReportOpen(false)} />}
+
+      {reactionsModalOpen && (
+        <ReactionsModal postId={post._id} onClose={() => setReactionsModalOpen(false)} onUserClick={onUserClick} />
+      )}
 
       {editOpen && <CreatePostModal editingPost={post} onClose={() => setEditOpen(false)} />}
 

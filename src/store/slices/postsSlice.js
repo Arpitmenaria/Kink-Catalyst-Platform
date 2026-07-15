@@ -182,14 +182,31 @@ export const fetchPostComments = createAsyncThunk(
   }
 );
 
+// Reactions modal — full per-reaction-type list, paginated. Fetched with a
+// generous limit and no `reaction` filter so tab counts (All / 👍 / 🎉 / …)
+// can be computed client-side by grouping `likes` by `.reaction`, without a
+// separate probe request per type.
+export const fetchPostLikes = createAsyncThunk(
+  'posts/fetchLikes',
+  async ({ postId, page = 1, limit = 100 }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/likes?page=${page}&limit=${limit}`, { token });
+      return { postId, total: data.total ?? 0, page: data.page ?? page, likes: data.likes ?? [] };
+    } catch (err) {
+      return rejectWithValue({ postId, message: err.message });
+    }
+  }
+);
+
 export const commentPost = createAsyncThunk(
   'posts/comment',
-  async ({ postId, text }, { getState, rejectWithValue }) => {
+  async ({ postId, text, mentions }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts/${postId}/comments`, {
         method: 'POST',
-        body: { text },
+        body: { text, mentions: mentions ?? [] },
         token,
       });
       return { postId, comment: data.comment };
@@ -214,12 +231,12 @@ export const likeComment = createAsyncThunk(
 
 export const replyToComment = createAsyncThunk(
   'posts/replyToComment',
-  async ({ postId, commentId, text }, { getState, rejectWithValue }) => {
+  async ({ postId, commentId, text, mentions }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts/${postId}/comments/${commentId}/replies`, {
         method: 'POST',
-        body: { text },
+        body: { text, mentions: mentions ?? [] },
         token,
       });
       return { postId, commentId, reply: data.reply };
@@ -234,12 +251,13 @@ export const createPost = createAsyncThunk(
   // mediaFile: single video file. mediaFiles: one or more images (multi-photo
   // posts). Merge into one deduped list so a caller passing the same file as
   // both (video tab did this) doesn't upload it twice under the 'media' field.
-  async ({ caption, mediaFile, mediaFiles, visibility = 'anyone' }, { getState, rejectWithValue }) => {
+  async ({ caption, mediaFile, mediaFiles, visibility = 'anyone', mentions }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const formData = new FormData();
       if (caption?.trim()) formData.append('caption', caption.trim());
       formData.append('visibility', visibility);
+      if (mentions?.length) formData.append('mentions', JSON.stringify(mentions));
       const allMedia = [...(mediaFile ? [mediaFile] : []), ...(mediaFiles ?? [])];
       const uniqueMedia = allMedia.filter((f, i) => allMedia.indexOf(f) === i);
       uniqueMedia.forEach(file => formData.append('media', file));
@@ -259,15 +277,20 @@ export const createPost = createAsyncThunk(
 
 export const editPost = createAsyncThunk(
   'posts/edit',
-  async ({ postId, caption, visibility }, { getState, rejectWithValue }) => {
+  async ({ postId, caption, visibility, mentions }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts/${postId}`, {
         method: 'PATCH',
-        body: { caption, visibility },
+        body: { caption, visibility, mentions: mentions ?? [] },
         token,
       });
-      return { postId, caption: data.post?.caption ?? caption, visibility: data.post?.visibility ?? visibility };
+      return {
+        postId,
+        caption: data.post?.caption ?? caption,
+        visibility: data.post?.visibility ?? visibility,
+        mentions: data.post?.mentions ?? mentions ?? [],
+      };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -360,6 +383,7 @@ const postsSlice = createSlice({
     likingIds: [],
     commentingId: null,
     commentsLoadingIds: [],
+    postLikes: {}, // { [postId]: { total, items: [], page, hasMore, loading } } — Reactions modal data
     sharingId: null,
     creating: false,
     editingId: null,
@@ -472,6 +496,27 @@ const postsSlice = createSlice({
         state.commentsLoadingIds = state.commentsLoadingIds.filter(id => id !== postId);
       })
 
+      // ── Reactions modal — full likes list (paginated) ──
+      .addCase(fetchPostLikes.pending, (state, action) => {
+        const { postId } = action.meta.arg;
+        if (!state.postLikes[postId]) state.postLikes[postId] = { total: 0, items: [], page: 0, hasMore: true, loading: false };
+        state.postLikes[postId].loading = true;
+      })
+      .addCase(fetchPostLikes.fulfilled, (state, action) => {
+        const { postId, total, page, likes } = action.payload;
+        const entry = state.postLikes[postId] ?? { total: 0, items: [], page: 0, hasMore: true, loading: false };
+        entry.total = total;
+        entry.page = page;
+        entry.items = page === 1 ? likes : [...entry.items, ...likes];
+        entry.hasMore = entry.items.length < total;
+        entry.loading = false;
+        state.postLikes[postId] = entry;
+      })
+      .addCase(fetchPostLikes.rejected, (state, action) => {
+        const postId = action.payload?.postId ?? action.meta.arg?.postId;
+        if (state.postLikes[postId]) state.postLikes[postId].loading = false;
+      })
+
       // ── Like a comment/reply ───────────────
       .addCase(likeComment.fulfilled, (state, action) => {
         const { postId, commentId, likesCount } = action.payload;
@@ -514,10 +559,11 @@ const postsSlice = createSlice({
       })
       .addCase(editPost.fulfilled, (state, action) => {
         state.editingId = null;
-        const { postId, caption, visibility } = action.payload;
+        const { postId, caption, visibility, mentions } = action.payload;
         forEachMatchingPost(state, postId, (post) => {
           post.caption = caption;
           post.visibility = visibility;
+          post.mentions = mentions;
         });
       })
       .addCase(editPost.rejected, (state) => {

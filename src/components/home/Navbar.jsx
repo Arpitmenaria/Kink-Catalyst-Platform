@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
-import { ALEX_AVATAR } from './mockData';
 import { logout } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
 import { fetchNotifications, markNotificationsRead } from '../../store/slices/notificationsSlice';
@@ -80,7 +79,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
 
   const displayName = profile?.fullName || authUser?.fullName || 'Alex Rivera';
   const rawAvatar   = profile?.avatar ?? authUser?.avatar ?? '';
-  const avatarUrl   = rawAvatar?.startsWith?.('http') ? rawAvatar : ALEX_AVATAR;
+  const avatarUrl   = rawAvatar?.startsWith?.('http') ? rawAvatar : '';
 
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [userOpen,   setUserOpen]   = useState(false);

@@ -6,7 +6,7 @@ import CreatePostModal from './CreatePostModal';
 import {
   fetchConversations, fetchMessages, sendMessage, markRead,
   startDM, createGroup, fetchAssets, uploadAssets,
-  toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
+  toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread,
   fetchBlockedUsers, removeBlockedUser,
 } from '../../store/slices/messagesSlice';
 import { fetchSuggestions } from '../../store/slices/usersSlice';
@@ -332,7 +332,8 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
       </div>
 
       <div className="sa-right">
-        <div className="sa-panel">
+        {/* Storage Used — hidden for now */}
+        {/* <div className="sa-panel">
           <div className="sa-panel-header">
             <span className="sa-panel-title">Storage Used</span>
             <button className="sa-upgrade-btn">Upgrade</button>
@@ -348,7 +349,7 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
             <InfoIcon />
             <span>{conv.name.split(' ')[0]} has contributed <strong>{storage?.otherUserContribGB ?? 0} GB</strong> to this share.</span>
           </div>
-        </div>
+        </div> */}
 
         <div className="sa-panel">
           <p className="sa-quick-title">QUICK ACTIONS</p>
@@ -606,7 +607,6 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     blockedUsers,
     blockedUsersLoading,
     sending,
-    pendingOpenConvId,
   } = useSelector(s => s.messages);
   const { connections } = useSelector(s => s.profile);
   const onlineConnections = connections.filter(c => c.online);
@@ -630,7 +630,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [attachOpen,       setAttachOpen]      = useState(false);
   const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | null
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
-  const [blockedConfirm,   setBlockedConfirm]  = useState(null); // { type: 'unblock' | 'delete', user, convId } | null
+  const [blockedConfirm,   setBlockedConfirm]  = useState(null); // { type: 'unblock' | 'delete', user } | null
   const [blockedConfirmSubmitting, setBlockedConfirmSubmitting] = useState(false);
 
   const messagesEndRef  = useRef(null);
@@ -648,16 +648,6 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     dispatch(fetchBlockedUsers());
     dispatch(fetchConnections({ limit: 100 }));
   }, [dispatch]);
-
-  /* Auto-open conversation started via Chat button from Groups / Profile */
-  useEffect(() => {
-    if (!pendingOpenConvId || conversations.length === 0) return;
-    const conv = conversations.find(c => c.id === pendingOpenConvId);
-    if (conv) {
-      setActiveConv(conv);
-      dispatch(clearPendingOpenConv());
-    }
-  }, [pendingOpenConvId, conversations, dispatch]);
 
   /* Navigated here with a specific user (Chat button on a profile) — get-or-create the DM and open it.
      Guarded by a ref because React.StrictMode double-invokes effects in dev, and the backend isn't
@@ -914,21 +904,26 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     openConversation(conv);
   }
 
-  async function openBlockedConfirm(type, user) {
-    const convId = await resolveConvIdForUser(user.id);
-    if (!convId) {
-      dispatch(showToast({ message: "Couldn't open the conversation for this user.", type: 'error' }));
-      return;
-    }
-    setBlockedConfirm({ type, user, convId });
+  // Open the confirm popup immediately — resolving the conversation id (which may need a
+  // network round trip via resolveConvIdForUser) happens on actual confirm, not before the
+  // popup can even show.
+  function openBlockedConfirm(type, user) {
+    setBlockedConfirm({ type, user });
   }
 
   function closeBlockedConfirm() { setBlockedConfirm(null); }
 
   async function handleBlockedConfirmAction() {
     if (!blockedConfirm) return;
-    const { type, user, convId } = blockedConfirm;
+    const { type, user } = blockedConfirm;
     setBlockedConfirmSubmitting(true);
+    const convId = await resolveConvIdForUser(user.id);
+    if (!convId) {
+      dispatch(showToast({ message: "Couldn't open the conversation for this user.", type: 'error' }));
+      setBlockedConfirmSubmitting(false);
+      closeBlockedConfirm();
+      return;
+    }
     if (type === 'unblock') {
       const result = await dispatch(toggleBlock(convId));
       if (toggleBlock.fulfilled.match(result)) {
@@ -957,6 +952,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       return;
     }
     onUserClick(userId);
+  }
+
+  // The conversations-list API doesn't echo back the other participant's user id, and the
+  // messages API's equivalent field is unreliable across backend versions — but every 1:1 DM
+  // is necessarily with a connection, and the connections API already gives us a direct
+  // conversationId → user id mapping. Prefer that over whatever (if anything) fetchMessages
+  // managed to backfill onto conv.participantId.
+  function getParticipantId(conv) {
+    if (!conv) return null;
+    return conv.participantId ?? connections.find(c => c.conversationId === conv.id)?.id ?? null;
   }
 
   function openLightbox(items, index) {
@@ -1031,9 +1036,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <div className="msg-avatar-wrap">
                   <div
                     className="msg-avatar msg-avatar--sm"
-                    style={{ background: conv.color, cursor: conv.type !== 'group' ? 'pointer' : 'default' }}
+                    style={{ background: '#3b82f6', cursor: conv.type !== 'group' ? 'pointer' : 'default' }}
                     title={conv.type !== 'group' ? 'View profile' : undefined}
-                    onClick={conv.type !== 'group' ? e => { e.stopPropagation(); handleUserClick(conv.participantId); } : undefined}
+                    onClick={conv.type !== 'group' ? e => { e.stopPropagation(); handleUserClick(getParticipantId(conv)); } : undefined}
                   >
                     {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
                   </div>
@@ -1062,11 +1067,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <div className="msg-chat-header">
               <div
                 className="msg-chat-header-user"
-                onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
+                onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(getParticipantId(liveActiveConv)) : undefined}
                 style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
               >
                 <div className="msg-avatar-wrap">
-                  <div className="msg-avatar msg-avatar--md" style={{ background: liveActiveConv.color }}>
+                  <div className="msg-avatar msg-avatar--md" style={{ background: '#3b82f6' }}>
                     {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
                   </div>
                   {liveActiveConv.online && <span className="msg-online-dot" />}
@@ -1102,9 +1107,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   {msg.from !== 'me' && (
                     <div
                       className="msg-avatar msg-avatar--xs"
-                      style={{ background: activeConv.color, flexShrink: 0, cursor: activeConv.type !== 'group' ? 'pointer' : 'default' }}
+                      style={{ background: '#3b82f6', flexShrink: 0, cursor: activeConv.type !== 'group' ? 'pointer' : 'default' }}
                       title={activeConv.type !== 'group' ? 'View profile' : undefined}
-                      onClick={activeConv.type !== 'group' ? () => handleUserClick(activeConv.participantId) : undefined}
+                      onClick={activeConv.type !== 'group' ? () => handleUserClick(getParticipantId(activeConv)) : undefined}
                     >
                       {activeConv.avatarUrl ? <img src={activeConv.avatarUrl} alt="" /> : initials(activeConv.name)}
                     </div>
@@ -1178,9 +1183,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <div className="msg-bubble-row">
                   <div
                     className="msg-avatar msg-avatar--xs"
-                    style={{ background: activeConv.color, flexShrink: 0, cursor: activeConv.type !== 'group' ? 'pointer' : 'default' }}
+                    style={{ background: '#3b82f6', flexShrink: 0, cursor: activeConv.type !== 'group' ? 'pointer' : 'default' }}
                     title={activeConv.type !== 'group' ? 'View profile' : undefined}
-                    onClick={activeConv.type !== 'group' ? () => handleUserClick(activeConv.participantId) : undefined}
+                    onClick={activeConv.type !== 'group' ? () => handleUserClick(getParticipantId(activeConv)) : undefined}
                   >
                     {activeConv.avatarUrl ? <img src={activeConv.avatarUrl} alt="" /> : initials(activeConv.name)}
                   </div>
@@ -1281,17 +1286,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           <div className="msg-contact-panel" key={`panel-${chatKey}`}>
             <div
               className="msg-contact-avatar-wrap"
-              onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
+              onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(getParticipantId(liveActiveConv)) : undefined}
               style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
             >
-              <div className="msg-contact-avatar" style={{ background: liveActiveConv.color }}>
+              <div className="msg-contact-avatar" style={{ background: '#3b82f6' }}>
                 {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
               </div>
               {liveActiveConv.online && <span className="msg-contact-online-dot" />}
             </div>
             <p
               className="msg-contact-name"
-              onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
+              onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(getParticipantId(liveActiveConv)) : undefined}
               style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
             >
               {liveActiveConv.name}
@@ -1644,9 +1649,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <div className="msg-avatar-wrap">
                 <div
                   className="msg-avatar"
-                  style={{ background: conv.color, cursor: conv.type !== 'group' ? 'pointer' : 'default' }}
+                  style={{ background: '#3b82f6', cursor: conv.type !== 'group' ? 'pointer' : 'default' }}
                   title={conv.type !== 'group' ? 'View profile' : undefined}
-                  onClick={conv.type !== 'group' ? e => { e.stopPropagation(); handleUserClick(conv.participantId); } : undefined}
+                  onClick={conv.type !== 'group' ? e => { e.stopPropagation(); handleUserClick(getParticipantId(conv)); } : undefined}
                 >
                   {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
                 </div>
