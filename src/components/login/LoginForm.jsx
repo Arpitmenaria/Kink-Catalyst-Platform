@@ -1,19 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, clearAuthState } from '../../store/slices/authSlice';
+import { loginUser, googleLogin, clearAuthState } from '../../store/slices/authSlice';
 import { showSignup, showForgotPassword } from '../../store/slices/uiSlice';
 import { resetForgotPassword } from '../../store/slices/forgotPasswordSlice';
 
-function GoogleIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.013 17.64 11.705 17.64 9.2z" fill="#4285F4"/>
-      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-    </svg>
-  );
-}
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  || '423673543994-0l046sv4nbb3m7qvb713d44b51npne6f.apps.googleusercontent.com';
 
 function AppleIcon() {
   return (
@@ -93,12 +85,49 @@ export default function LoginForm() {
   const [btnState,     setBtnState]     = useState('idle'); // 'idle'|'loading'|'success'|'error'
 
   const resetTimer = useRef(null);
+  const googleBtnRef = useRef(null);
 
   useEffect(() => {
     return () => {
       dispatch(clearAuthState());
       if (resetTimer.current) clearTimeout(resetTimer.current);
     };
+  }, [dispatch]);
+
+  // Google Identity Services: load the script, then render Google's official
+  // Sign-In button. Its callback hands us an ID token we send to the backend.
+  useEffect(() => {
+    async function handleCredential(response) {
+      const credential = response?.credential;
+      if (!credential) return;
+      setBtnState('loading');
+      const result = await dispatch(googleLogin(credential));
+      const isRealError = googleLogin.rejected.match(result) && !result.payload?.requiresPlanSelection;
+      setBtnState(isRealError ? 'error' : 'success');
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+      resetTimer.current = setTimeout(() => setBtnState('idle'), 2200);
+    }
+
+    function renderButton() {
+      if (!window.google?.accounts?.id || !googleBtnRef.current) return;
+      window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
+      googleBtnRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard', theme: 'filled_black', size: 'large',
+        text: 'signin_with', shape: 'rectangular', width: 340,
+      });
+    }
+
+    if (window.google?.accounts?.id) { renderButton(); return; }
+    let script = document.getElementById('gis-client');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true; script.defer = true; script.id = 'gis-client';
+      document.body.appendChild(script);
+    }
+    script.addEventListener('load', renderButton);
+    return () => script.removeEventListener('load', renderButton);
   }, [dispatch]);
 
   function handleChange(e) {
@@ -213,12 +242,16 @@ export default function LoginForm() {
 
           <div className="divider" style={{ margin: '16px 0 14px' }}><span>Or sign in with</span></div>
 
-          <div className="social-buttons">
-            <button type="button" className="social-btn" disabled={!isIdle}>
-              <GoogleIcon /> Google
-            </button>
-            <button type="button" className="social-btn" disabled={!isIdle}>
-              <AppleIcon /> Apple
+          <div className="social-buttons" style={{ flexDirection: 'column', gap: 10 }}>
+            <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }} />
+            <button
+              type="button"
+              className="social-btn"
+              disabled
+              title="Apple Sign-In coming soon"
+              style={{ width: '100%', opacity: 0.5, cursor: 'not-allowed' }}
+            >
+              <AppleIcon /> Apple <span style={{ fontSize: 11, opacity: 0.7 }}>(soon)</span>
             </button>
           </div>
 

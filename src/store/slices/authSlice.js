@@ -69,6 +69,31 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+// Google Sign-In: `credential` is the ID token from Google Identity Services.
+// Backend verifies it, finds/creates the user, and returns the same
+// { user, token } shape as normal login (or requiresPlanSelection).
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (credential, { rejectWithValue }) => {
+    try {
+      const data = await apiRequest('/api/auth/google', {
+        method: 'POST',
+        body: { credential },
+      });
+      const payload = data.data ?? data;
+      return { user: payload.user ?? null, token: payload.token ?? null };
+    } catch (err) {
+      if (err.data?.requiresPlanSelection) {
+        return rejectWithValue({
+          requiresPlanSelection: true,
+          setupToken: err.data.setupToken ?? null,
+        });
+      }
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const registerUser = createAsyncThunk(
   'auth/register',
   async (credentials, { rejectWithValue }) => {
@@ -200,6 +225,29 @@ const authSlice = createSlice({
         saveSession(action.payload.token, action.payload.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.loading = false;
+        if (action.payload?.requiresPlanSelection) {
+          state.requiresPlanSelection = true;
+          state.setupToken = action.payload.setupToken;
+          state.error = null;
+        } else {
+          state.error = action.payload;
+        }
+      })
+
+      // ── Google Sign-In (same result path as login) ──
+      .addCase(googleLogin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
+        saveSession(action.payload.token, action.payload.user);
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
         state.loading = false;
         if (action.payload?.requiresPlanSelection) {
           state.requiresPlanSelection = true;
