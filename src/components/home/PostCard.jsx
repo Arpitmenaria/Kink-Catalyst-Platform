@@ -416,13 +416,13 @@ export default function PostCard({ post, onUserClick }) {
                     src={mediaItems[slideIndex].url}
                     className="post-image"
                     preload="metadata"
-                    style={{ height: '240px', width: '100%', display: 'block', objectFit: 'cover', background: '#0d1424' }}
+                    style={{ height: 'auto', maxHeight: '600px', width: '100%', display: 'block', objectFit: 'contain', background: '#0d1424' }}
                   />
                   <span className="post-video-play"><PlayIcon /></span>
                 </div>
               ) : (
                 <div onClick={() => setLightboxOpen(true)} style={{ cursor: 'pointer' }}>
-                  <SkeletonImg src={mediaItems[slideIndex]?.url} alt="" className="post-image" imgStyle={{ height: '240px' }} />
+                  <SkeletonImg src={mediaItems[slideIndex]?.url} alt="" className="post-image" imgStyle={{ height: 'auto', maxHeight: '600px', objectFit: 'contain', background: '#0d1424' }} />
                 </div>
               )
             }
