@@ -21,6 +21,7 @@ function normalizeConnection(c) {
     mutual:       c.mutualCount ?? 0,
     sharedAvatars:(c.mutualAvatars ?? []).filter(u => u?.startsWith?.('http')),
     extra:        c.extraMutual || null,
+    conversationId: c.conversationId ?? null,
   };
 }
 

@@ -7,7 +7,6 @@ import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
 import { followUser, unfollowUser, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from "../../store/slices/usersSlice";
 import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
-import { showToast } from "../../store/slices/toastSlice";
 import { apiRequest } from "../../services/api";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
@@ -316,10 +315,7 @@ export default function UserProfilePage({
   function handleReject()   { dispatch(rejectFriendRequest(userId)); }
 
   function handleChatClick() {
-    if (!isConnected) {
-      dispatch(showToast({ message: `Connect with ${displayName.split(' ')[0]} to start messaging.`, type: 'error' }));
-      return;
-    }
+    if (!isConnected) return;
     onMessageUser?.(userId);
   }
 
@@ -327,7 +323,9 @@ export default function UserProfilePage({
     if (id === "home")      onBack?.();
     if (id === "events")    onEventsClick?.();
     if (id === "friends")   onGroupsClick?.();
-    if (id === "messages")  handleChatClick();
+    // Left-nav "Messages" is the main app nav button — always takes you to Messages,
+    // unlike the profile's own "Chat" button which is gated on being connected.
+    if (id === "messages")  onMessageUser?.(userId);
     if (id === "courses")   onCoursesClick?.();
     if (id === "library")   onLibraryClick?.();
     if (id === "minisites") onMinisitesClick?.();

@@ -7,8 +7,10 @@ import {
   fetchConversations, fetchMessages, sendMessage, markRead,
   startDM, createGroup, fetchAssets, uploadAssets,
   toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread, clearPendingOpenConv,
+  fetchBlockedUsers, removeBlockedUser,
 } from '../../store/slices/messagesSlice';
-import { fetchSuggestions, sendFriendRequest } from '../../store/slices/usersSlice';
+import { fetchSuggestions } from '../../store/slices/usersSlice';
+import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import {
   joinConversation, leaveConversation,
@@ -24,10 +26,9 @@ function MessagesNavIcon() { return <svg width="16" height="16" viewBox="0 0 24 
 
 /* ── UI icons ── */
 function SearchIcon()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
-function ComposeIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
+function ComposeIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function DoubleCheckIcon() { return <svg width="16" height="13" viewBox="0 0 28 13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 7 5 11 13 3"/><polyline points="9 7 13 11 21 3"/></svg>; }
-function PlusCircleIcon()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
 function AttachPlusIcon()  { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
 function PhotoIcon()       { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function DocFileIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>; }
@@ -38,6 +39,8 @@ function ChevronRightIcon(){ return <svg width="14" height="14" viewBox="0 0 24 
 function BlockIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>; }
 function AlertIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>; }
 function PinIcon()         { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
+function TrashIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>; }
+function UnlockIcon()      { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>; }
 
 const EMOJI_LIST = [
   '😀','😁','😂','🤣','😊','😍','😘','😎','🤔','🙄','😴','😭',
@@ -368,9 +371,10 @@ function CheckSmIcon()     { return <svg width="10" height="10" viewBox="0 0 24 
 function GroupNewIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 
-function NewMessageModal({ onClose, onStartDM, onCreateGroup, onViewProfile }) {
+function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup, onViewProfile }) {
   const dispatch = useDispatch();
   const { suggestions, friendStatusMap } = useSelector(s => s.users);
+  const { connections, connectionsLoading } = useSelector(s => s.profile);
 
   const [view,        setView]        = useState('dm');
   const [search,      setSearch]      = useState('');
@@ -382,6 +386,7 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup, onViewProfile }) {
 
   useEffect(() => {
     dispatch(fetchSuggestions(20));
+    dispatch(fetchConnections({ limit: 50 }));
   }, [dispatch]);
 
   const contacts = suggestions.map(s => ({
@@ -396,23 +401,38 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup, onViewProfile }) {
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  function toggleContact(id) {
-    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  // "New Message" is scoped to people you're already connected with — chat directly via
+  // the conversationId the connections endpoint already resolves, or create one on first message.
+  const connectionContacts = connections.map(c => ({
+    id: c.id,
+    name: c.name,
+    role: c.role,
+    location: c.location,
+    avatarUrl: c.avatar,
+    online: c.online,
+    conversationId: c.conversationId,
+  })).filter(c => c.id);
+
+  const filteredConnections = connectionContacts.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  function handleChatWithConnection(c) {
+    if (c.conversationId) {
+      onOpenConversation?.({ id: c.conversationId, type: 'dm', name: c.name, color: '#3b82f6', avatarUrl: c.avatarUrl, participantId: c.id });
+    } else {
+      onStartDM?.(c.id);
+    }
+    onClose();
   }
 
-  function handleSelectDM(contact) {
-    if (contact.friendStatus !== 'connected') return;
-    onStartDM?.(contact.id);
-    onClose();
+  function toggleContact(id) {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
   function handleViewProfile(contact) {
     onViewProfile?.(contact.id);
     onClose();
-  }
-
-  function handleConnect(contact) {
-    dispatch(sendFriendRequest(contact.id));
   }
 
   async function handleCreateGroupSubmit() {
@@ -456,51 +476,39 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup, onViewProfile }) {
               </div>
 
               <div className="nm-contacts-section">
-                <span className="nm-contacts-title">Suggested</span>
+                <span className="nm-contacts-title">Your Connections</span>
                 <div className="nm-contact-list">
-                  {filtered.map(c => {
-                    const connected = c.friendStatus === 'connected';
-                    return (
-                      <div
-                        key={c.id}
-                        className={`nm-contact-item${connected ? '' : ' nm-contact-item--locked'}`}
-                        onClick={connected ? () => handleSelectDM(c) : undefined}
-                        title={connected ? undefined : `Connect with ${c.name.split(' ')[0] || 'this person'} to start chatting`}
-                      >
-                        <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
-                        <div className="nm-contact-info">
-                          <p className="nm-contact-name">{c.name}</p>
-                          <p className="nm-contact-role">
-                            {connected ? c.role : c.friendStatus === 'requested' ? 'Request pending' : 'Not connected yet'}
-                          </p>
-                        </div>
-                        {connected ? (
-                          <ArrowRightSmIcon />
-                        ) : (
-                          <div className="nm-contact-actions" onClick={e => e.stopPropagation()}>
-                            <button
-                              type="button"
-                              className="nm-contact-action-btn"
-                              onClick={() => handleViewProfile(c)}
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              type="button"
-                              className="nm-contact-action-btn nm-contact-action-btn--primary"
-                              disabled={c.friendStatus === 'requested'}
-                              onClick={() => handleConnect(c)}
-                            >
-                              {c.friendStatus === 'requested' ? 'Pending' : 'Connect'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No contacts found.</p>
+                  {connectionsLoading && filteredConnections.length === 0 && (
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>Loading connections…</p>
                   )}
+                  {!connectionsLoading && filteredConnections.length === 0 && (
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No connections found.</p>
+                  )}
+                  {filteredConnections.map(c => (
+                    <div key={c.id} className="nm-contact-item" onClick={() => handleChatWithConnection(c)}>
+                      <div
+                        className="nm-contact-avatar"
+                        style={{ background: '#3b82f6', cursor: 'pointer' }}
+                        title="View profile"
+                        onClick={e => { e.stopPropagation(); handleViewProfile(c); }}
+                      >
+                        {c.avatarUrl ? <img src={c.avatarUrl} alt="" /> : initials(c.name)}
+                      </div>
+                      <div className="nm-contact-info">
+                        <p className="nm-contact-name">{c.name}</p>
+                        <p className="nm-contact-role">{[c.role, c.location].filter(Boolean).join(' · ')}</p>
+                      </div>
+                      <div className="nm-contact-actions" onClick={e => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="nm-contact-action-btn nm-contact-action-btn--primary"
+                          onClick={() => handleChatWithConnection(c)}
+                        >
+                          Chat
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </>
@@ -583,7 +591,7 @@ function NewMessageModal({ onClose, onStartDM, onCreateGroup, onViewProfile }) {
   );
 }
 
-const TABS = ['All', 'Unread', 'Groups', 'Online'];
+const TABS = ['All', 'Unread', 'Groups', 'Online', 'Blocked'];
 
 const TAB_PARAM = { All: 'all', Unread: 'unread', Groups: 'groups', Online: 'online' };
 
@@ -593,12 +601,15 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     conversations, conversationsLoading,
     messages: allMessages,
     messagesLoading,
-    onlineUsers,
     blockedConvIds,
     reportedConvIds,
+    blockedUsers,
+    blockedUsersLoading,
     sending,
     pendingOpenConvId,
   } = useSelector(s => s.messages);
+  const { connections } = useSelector(s => s.profile);
+  const onlineConnections = connections.filter(c => c.online);
 
   const [tab,              setTab]             = useState('All');
   const [createPostOpen,   setCreatePostOpen]  = useState(false);
@@ -619,6 +630,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [attachOpen,       setAttachOpen]      = useState(false);
   const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | null
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
+  const [blockedConfirm,   setBlockedConfirm]  = useState(null); // { type: 'unblock' | 'delete', user, convId } | null
+  const [blockedConfirmSubmitting, setBlockedConfirmSubmitting] = useState(false);
 
   const messagesEndRef  = useRef(null);
   const emojiRef        = useRef(null);
@@ -629,9 +642,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const fileInputRef    = useRef(null);
   const lightboxTouchX  = useRef(null);
 
-  /* Fetch online users on mount */
+  /* Fetch online users (drives conversation online dots) + blocked users + connections (Quick Online panel) on mount */
   useEffect(() => {
     dispatch(fetchOnlineUsers());
+    dispatch(fetchBlockedUsers());
+    dispatch(fetchConnections({ limit: 100 }));
   }, [dispatch]);
 
   /* Auto-open conversation started via Chat button from Groups / Profile */
@@ -671,10 +686,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     return () => clearTimeout(t);
   }, [search]);
 
-  /* Fetch conversations on mount + whenever tab / search changes */
+  /* Fetch conversations on mount + whenever tab / search changes ('Blocked' has its own data source) */
   useEffect(() => {
+    if (tab === 'Blocked') return;
     dispatch(fetchConversations({ tab: TAB_PARAM[tab], search: debouncedSearch }));
   }, [tab, debouncedSearch, dispatch]);
+
+  /* Refresh the blocked list whenever the Blocked tab is opened */
+  useEffect(() => {
+    if (tab === 'Blocked') dispatch(fetchBlockedUsers());
+  }, [tab, dispatch]);
 
   /* Join/leave socket room + typing listeners when conversation changes */
   useEffect(() => {
@@ -827,6 +848,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     setNewMsgOpen(false);
   }
 
+  // A connection's conversationId is already known — skip the get-or-create round trip
+  // and open it directly.
+  function handleOpenConnectionChat(conv) {
+    openConversation(conv);
+    setNewMsgOpen(false);
+  }
+
   async function handleCreateGroup(groupData) {
     const result = await dispatch(createGroup(groupData));
     if (createGroup.fulfilled.match(result)) openConversation(result.payload);
@@ -862,6 +890,64 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     }
     setConfirmSubmitting(false);
     closeConfirm();
+  }
+
+  // The blocked-users list only carries user ids, and blocked conversations aren't
+  // guaranteed to be present in whatever page of `conversations` happens to be loaded —
+  // so resolve straight from the user id via the same get-or-create DM endpoint used by
+  // "Chat" buttons on profiles, instead of searching the local list.
+  async function resolveConvIdForUser(userId) {
+    const existing = conversations.find(c => c.participantId === userId);
+    if (existing) return existing.id;
+    const result = await dispatch(startDM(userId));
+    return startDM.fulfilled.match(result) ? result.payload.id : null;
+  }
+
+  async function handleOpenChatWithUser(user) {
+    const convId = await resolveConvIdForUser(user.id);
+    if (!convId) {
+      dispatch(showToast({ message: "Couldn't open the conversation for this user.", type: 'error' }));
+      return;
+    }
+    const conv = conversations.find(c => c.id === convId)
+      ?? { id: convId, type: 'dm', name: user.name, color: '#3b82f6', avatarUrl: user.avatarUrl ?? user.avatar, participantId: user.id };
+    openConversation(conv);
+  }
+
+  async function openBlockedConfirm(type, user) {
+    const convId = await resolveConvIdForUser(user.id);
+    if (!convId) {
+      dispatch(showToast({ message: "Couldn't open the conversation for this user.", type: 'error' }));
+      return;
+    }
+    setBlockedConfirm({ type, user, convId });
+  }
+
+  function closeBlockedConfirm() { setBlockedConfirm(null); }
+
+  async function handleBlockedConfirmAction() {
+    if (!blockedConfirm) return;
+    const { type, user, convId } = blockedConfirm;
+    setBlockedConfirmSubmitting(true);
+    if (type === 'unblock') {
+      const result = await dispatch(toggleBlock(convId));
+      if (toggleBlock.fulfilled.match(result)) {
+        dispatch(removeBlockedUser(user.id));
+        dispatch(showToast({ message: `${user.name} unblocked`, type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to unblock user', type: 'error' }));
+      }
+    } else if (type === 'delete') {
+      const result = await dispatch(deleteConversation(convId));
+      if (deleteConversation.fulfilled.match(result)) {
+        dispatch(removeBlockedUser(user.id));
+        dispatch(showToast({ message: 'Chat deleted', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to delete chat', type: 'error' }));
+      }
+    }
+    setBlockedConfirmSubmitting(false);
+    closeBlockedConfirm();
   }
 
   function handleUserClick(userId) {
@@ -917,6 +1003,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           activeId="messages"
           onNavigate={id => {
             if (id === 'create')    { setCreatePostOpen(true); return; }
+            if (id === 'messages')  { setActiveConv(null); setShowAssets(false); return; }
             if (id === 'home')      onBack?.();
             if (id === 'courses')   onCoursesClick?.();
             if (id === 'library')   onLibraryClick?.();
@@ -942,7 +1029,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 onClick={() => openConversation(conv)}
               >
                 <div className="msg-avatar-wrap">
-                  <div className="msg-avatar msg-avatar--sm" style={{ background: conv.color }}>{initials(conv.name)}</div>
+                  <div
+                    className="msg-avatar msg-avatar--sm"
+                    style={{ background: conv.color, cursor: conv.type !== 'group' ? 'pointer' : 'default' }}
+                    title={conv.type !== 'group' ? 'View profile' : undefined}
+                    onClick={conv.type !== 'group' ? e => { e.stopPropagation(); handleUserClick(conv.participantId); } : undefined}
+                  >
+                    {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
+                  </div>
                   {conv.online && <span className="msg-online-dot" />}
                 </div>
                 <div className="msg-compact-body">
@@ -972,7 +1066,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
               >
                 <div className="msg-avatar-wrap">
-                  <div className="msg-avatar msg-avatar--md" style={{ background: liveActiveConv.color }}>{initials(liveActiveConv.name)}</div>
+                  <div className="msg-avatar msg-avatar--md" style={{ background: liveActiveConv.color }}>
+                    {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
+                  </div>
                   {liveActiveConv.online && <span className="msg-online-dot" />}
                 </div>
                 <div>
@@ -1004,8 +1100,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 return (
                 <div key={msg.id} className={`msg-bubble-row${msg.from === 'me' ? ' msg-bubble-row--me' : ''}`} style={msg.pending ? { opacity: 0.6 } : undefined}>
                   {msg.from !== 'me' && (
-                    <div className="msg-avatar msg-avatar--xs" style={{ background: activeConv.color, flexShrink: 0 }}>
-                      {initials(activeConv.name)}
+                    <div
+                      className="msg-avatar msg-avatar--xs"
+                      style={{ background: activeConv.color, flexShrink: 0, cursor: activeConv.type !== 'group' ? 'pointer' : 'default' }}
+                      title={activeConv.type !== 'group' ? 'View profile' : undefined}
+                      onClick={activeConv.type !== 'group' ? () => handleUserClick(activeConv.participantId) : undefined}
+                    >
+                      {activeConv.avatarUrl ? <img src={activeConv.avatarUrl} alt="" /> : initials(activeConv.name)}
                     </div>
                   )}
                   <div className="msg-bubble-col">
@@ -1075,7 +1176,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
               {typingUser && (
                 <div className="msg-bubble-row">
-                  <div className="msg-avatar msg-avatar--xs" style={{ background: activeConv.color, flexShrink: 0 }}>{initials(activeConv.name)}</div>
+                  <div
+                    className="msg-avatar msg-avatar--xs"
+                    style={{ background: activeConv.color, flexShrink: 0, cursor: activeConv.type !== 'group' ? 'pointer' : 'default' }}
+                    title={activeConv.type !== 'group' ? 'View profile' : undefined}
+                    onClick={activeConv.type !== 'group' ? () => handleUserClick(activeConv.participantId) : undefined}
+                  >
+                    {activeConv.avatarUrl ? <img src={activeConv.avatarUrl} alt="" /> : initials(activeConv.name)}
+                  </div>
                   <div className="msg-bubble msg-bubble--received" style={{ fontStyle: 'italic', color: '#94a3b8' }}>typing…</div>
                 </div>
               )}
@@ -1146,7 +1254,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                     </div>
                   )}
                 </div>
-                <button className="msg-input-icon-btn"><MicIcon /></button>
+                {/* Audio record — not implemented yet, hidden for now */}
+                {/* <button className="msg-input-icon-btn"><MicIcon /></button> */}
                 <button
                   className={`msg-send-btn${inputMsg.trim() ? ' msg-send-btn--active' : ''}`}
                   onClick={handleSend}
@@ -1162,6 +1271,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <NewMessageModal
               onClose={() => setNewMsgOpen(false)}
               onStartDM={handleStartDM}
+              onOpenConversation={handleOpenConnectionChat}
               onCreateGroup={handleCreateGroup}
               onViewProfile={handleUserClick}
             />
@@ -1174,7 +1284,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(liveActiveConv.participantId) : undefined}
               style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
             >
-              <div className="msg-contact-avatar" style={{ background: liveActiveConv.color }}>{initials(liveActiveConv.name)}</div>
+              <div className="msg-contact-avatar" style={{ background: liveActiveConv.color }}>
+                {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
+              </div>
               {liveActiveConv.online && <span className="msg-contact-online-dot" />}
             </div>
             <p
@@ -1392,6 +1504,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         activeId="messages"
         onNavigate={id => {
           if (id === 'create')   { setCreatePostOpen(true); return; }
+          if (id === 'messages') { setTab('All'); setSearch(''); return; }
           if (id === 'home')     onBack?.();
           if (id === 'courses')  onCoursesClick?.();
           if (id === 'library')  onLibraryClick?.();
@@ -1405,6 +1518,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         <NewMessageModal
           onClose={() => setNewMsgOpen(false)}
           onStartDM={handleStartDM}
+          onOpenConversation={handleOpenConnectionChat}
           onCreateGroup={handleCreateGroup}
           onViewProfile={handleUserClick}
         />
@@ -1435,20 +1549,85 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           <input
             className="msg-search"
             type="text"
-            placeholder="Search conversations..."
+            placeholder={tab === 'Blocked' ? 'Search blocked users...' : 'Search conversations...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
 
         <div className="msg-list">
+          {tab === 'Blocked' ? (
+            <>
+              {blockedUsersLoading && blockedUsers.length === 0 && (
+                <div className="msg-list-loading">
+                  <span className="msg-spinner" />
+                  <p>Loading blocked users…</p>
+                </div>
+              )}
+              {!blockedUsersLoading && blockedUsers.length === 0 && (
+                <div className="msg-list-empty">
+                  <span className="msg-list-empty-icon"><BlockIcon /></span>
+                  <p className="msg-list-empty-title">No blocked users</p>
+                  <p className="msg-list-empty-sub">Users you block will show up here.</p>
+                </div>
+              )}
+              {blockedUsers
+                .filter(u => !debouncedSearch || u.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
+                .map(u => (
+                <div key={u.id} className="msg-conv msg-conv--blocked" onClick={() => handleOpenChatWithUser(u)}>
+                  <div className="msg-avatar-wrap">
+                    <div
+                      className="msg-avatar"
+                      style={{ background: '#3b82f6', cursor: 'pointer' }}
+                      title="View profile"
+                      onClick={e => { e.stopPropagation(); handleUserClick(u.id); }}
+                    >
+                      {u.avatarUrl ? <img src={u.avatarUrl} alt="" /> : initials(u.name)}
+                    </div>
+                  </div>
+                  <div className="msg-conv-body">
+                    <div className="msg-conv-top">
+                      <span className="msg-conv-name">{u.name}</span>
+                    </div>
+                    <div className="msg-conv-bottom">
+                      <span className="msg-conv-preview">{[u.role, u.location].filter(Boolean).join(' · ')}</span>
+                    </div>
+                  </div>
+                  <div className="msg-blocked-row-actions" onClick={e => e.stopPropagation()}>
+                    <button className="msg-blocked-row-btn msg-blocked-row-btn--unblock" title="Unblock" onClick={() => openBlockedConfirm('unblock', u)}>
+                      <UnlockIcon /> Unblock
+                    </button>
+                    <button className="msg-blocked-row-btn msg-blocked-row-btn--danger" title="Delete Chat" onClick={() => openBlockedConfirm('delete', u)}>
+                      <TrashIcon /> Delete Chat
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
           {conversationsLoading && conversations.length === 0 && (
             <div className="msg-list-loading">
               <span className="msg-spinner" />
               <p>Loading conversations…</p>
             </div>
           )}
-          {!conversationsLoading && conversations.length === 0 && (
+          {!conversationsLoading && conversations.length === 0 && tab === 'Unread' && (
+            <div className="msg-list-empty">
+              <span className="msg-list-empty-icon">🎉</span>
+              <p className="msg-list-empty-title">You're all caught up! 🎉</p>
+              <p className="msg-list-empty-sub">No unread messages right now.</p>
+            </div>
+          )}
+          {!conversationsLoading && conversations.length === 0 && tab === 'Groups' && (
+            <div className="msg-list-empty">
+              <span className="msg-list-empty-icon"><GroupsNavIcon /></span>
+              <p className="msg-list-empty-title">No groups yet</p>
+              <p className="msg-list-empty-sub">Create a group, invite friends, and start the conversation.</p>
+              <button className="msg-list-empty-cta" onClick={() => setNewMsgOpen(true)}>Create Group</button>
+            </div>
+          )}
+          {!conversationsLoading && conversations.length === 0 && tab !== 'Unread' && tab !== 'Groups' && (
             <div className="msg-list-empty">
               <span className="msg-list-empty-icon"><MessagesNavIcon /></span>
               <p className="msg-list-empty-title">No conversations yet</p>
@@ -1463,7 +1642,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               onClick={() => openConversation(conv)}
             >
               <div className="msg-avatar-wrap">
-                <div className="msg-avatar" style={{ background: conv.color }}>{initials(conv.name)}</div>
+                <div
+                  className="msg-avatar"
+                  style={{ background: conv.color, cursor: conv.type !== 'group' ? 'pointer' : 'default' }}
+                  title={conv.type !== 'group' ? 'View profile' : undefined}
+                  onClick={conv.type !== 'group' ? e => { e.stopPropagation(); handleUserClick(conv.participantId); } : undefined}
+                >
+                  {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
+                </div>
                 {conv.online && <span className="msg-online-dot" />}
               </div>
               <div className="msg-conv-body">
@@ -1483,6 +1669,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               </div>
             </div>
           ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -1490,16 +1678,20 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         <div className="msg-panel">
           <div className="msg-panel-header">
             <span className="msg-panel-title">Quick Online</span>
-            <button className="msg-view-all">View All</button>
+            <button className="msg-view-all" onClick={() => setNewMsgOpen(true)}>View All</button>
           </div>
           <div className="msg-online-list">
-            {onlineUsers.slice(0, 5).map(u => (
-              <div key={u.id} className="msg-online-item">
-                <div className="msg-online-avatar" style={{ background: u.color }}>{initials(u.name)}</div>
+            {onlineConnections.length === 0 && (
+              <p style={{ color: '#5c6a8c', fontSize: 12.5, fontFamily: "'Plus Jakarta Sans', sans-serif", margin: 0 }}>No connections online.</p>
+            )}
+            {onlineConnections.slice(0, 5).map(c => (
+              <div key={c.id} className="msg-online-item" title={`Chat with ${c.name}`} style={{ cursor: 'pointer' }} onClick={() => handleOpenChatWithUser(c)}>
+                <div className="msg-online-avatar" style={{ background: '#3b82f6' }}>
+                  {c.avatar ? <img src={c.avatar} alt="" /> : initials(c.name)}
+                </div>
                 <span className="msg-online-dot msg-online-dot--sm" />
               </div>
             ))}
-            <button className="msg-online-add"><PlusCircleIcon /></button>
           </div>
         </div>
 
@@ -1510,6 +1702,35 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         </div>
       </div>
     </div>
+
+    {blockedConfirm && (
+      <div className="msg-confirm-overlay" onClick={closeBlockedConfirm}>
+        <div className="msg-confirm-box" onClick={e => e.stopPropagation()}>
+          <h2 className="msg-confirm-title">
+            {blockedConfirm.type === 'unblock' ? `Unblock ${blockedConfirm.user.name.split(' ')[0]}?` : 'Delete Chat?'}
+          </h2>
+          <p className="msg-confirm-desc">
+            {blockedConfirm.type === 'unblock'
+              ? `${blockedConfirm.user.name} will be able to message you again.`
+              : `This will delete the chat with ${blockedConfirm.user.name} from your inbox. They'll keep their copy, and the chat will come back if either of you sends a new message.`}
+          </p>
+          <div className="msg-confirm-actions">
+            <button className="msg-confirm-cancel-btn" onClick={closeBlockedConfirm} disabled={blockedConfirmSubmitting}>Cancel</button>
+            <button
+              className={`msg-confirm-confirm-btn${blockedConfirm.type === 'unblock' ? ' msg-confirm-confirm-btn--neutral' : ''}${blockedConfirmSubmitting ? ' msg-confirm-confirm-btn--loading' : ''}`}
+              onClick={handleBlockedConfirmAction}
+              disabled={blockedConfirmSubmitting}
+            >
+              {blockedConfirmSubmitting && <span className="msg-confirm-spinner" />}
+              {blockedConfirmSubmitting
+                ? (blockedConfirm.type === 'unblock' ? 'Unblocking…' : 'Deleting…')
+                : (blockedConfirm.type === 'unblock' ? 'Unblock' : 'Delete')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
     </>
   );

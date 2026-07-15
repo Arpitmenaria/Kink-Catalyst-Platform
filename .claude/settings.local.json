@@ -27,7 +27,8 @@
       "Bash(curl -s http://localhost:5183/)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5183/src/main.jsx)",
       "Bash(pkill -f \"vite --port 5183\")",
-      "Bash(lsof -i :5173 -sTCP:LISTEN -t)"
+      "Bash(lsof -i :5173 -sTCP:LISTEN -t)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5183/)"
     ]
   },
   "enableAllProjectMcpServers": true,

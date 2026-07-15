@@ -281,7 +281,10 @@
   font-weight: 700;
   color: #fff;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow: hidden;
 }
+
+.msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .msg-online-dot {
   position: absolute;
@@ -442,7 +445,10 @@
   color: #fff;
   font-family: 'Plus Jakarta Sans', sans-serif;
   border: 2px solid #1a1f35;
+  overflow: hidden;
 }
+
+.msg-online-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .msg-online-dot--sm {
   position: absolute;
@@ -514,6 +520,36 @@
 }
 
 .msg-support-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Blocked tab row actions (namespaced msg-blocked-row-* to avoid
+   colliding with the per-conversation .msg-blocked-btn footer below) ── */
+.msg-blocked-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.msg-blocked-row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.msg-blocked-row-btn--unblock { background: #2563eb; color: #fff; }
+.msg-blocked-row-btn--unblock:hover { background: #1d4ed8; }
+
+.msg-blocked-row-btn--danger { background: rgba(239,68,68,0.12); color: #ef4444; }
+.msg-blocked-row-btn--danger:hover { background: rgba(239,68,68,0.22); }
 
 /* ══════════════════════════════════════
    Chat view styles
@@ -963,11 +999,11 @@
 }
 
 .msg-blocked-btn--delete {
-  border: 1px solid #3a1f28;
-  background: none;
+  border: 1px solid rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.1);
   color: #ef4444;
 }
-.msg-blocked-btn--delete:hover { background: rgba(239,68,68,0.1); }
+.msg-blocked-btn--delete:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.5); }
 
 .msg-blocked-btn--unblock {
   border: none;
@@ -1123,7 +1159,10 @@
   color: #fff;
   font-family: 'Plus Jakarta Sans', sans-serif;
   border: 3px solid #1a1f35;
+  overflow: hidden;
 }
+
+.msg-contact-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .msg-contact-online-dot {
   position: absolute;
@@ -1353,11 +1392,10 @@
 }
 
 .sa-conv-name {
-  color: #3b82f6;
-  cursor: pointer;
+  color: #c8cfe0;
+  font-weight: 600;
+  margin-left: 4px;
 }
-
-.sa-conv-name:hover { text-decoration: underline; }
 
 /* Tabs */
 .sa-tabs {
@@ -1925,7 +1963,10 @@
   color: #fff;
   flex-shrink: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow: hidden;
 }
+
+.nm-contact-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .nm-contact-info { flex: 1; min-width: 0; }
 

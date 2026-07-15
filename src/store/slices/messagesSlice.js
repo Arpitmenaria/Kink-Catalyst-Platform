@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
-import { showToast } from './toastSlice';
 
 function normalizeConversation(c) {
   return {
@@ -79,7 +78,7 @@ export const fetchMessages = createAsyncThunk(
         hasMore: data.hasMore ?? false,
         // The list endpoint doesn't echo the other participant's profile or the
         // requester's persisted block/report state — this one does.
-        otherUserId: data.otherUser?.userId ?? data.otherUser?._id ?? null,
+        otherUserId: data.otherUser?.userId ?? data.otherUser?.id ?? data.otherUser?._id ?? null,
         otherUserLocation: data.otherUser?.location ?? '',
         isBlocked: typeof data.isBlocked === 'boolean' ? data.isBlocked : null,
         isReported: typeof data.isReported === 'boolean' ? data.isReported : null,
@@ -93,7 +92,7 @@ export const fetchMessages = createAsyncThunk(
 // 3. POST /api/conversations/:id/messages
 export const sendMessage = createAsyncThunk(
   'messages/sendMessage',
-  async ({ convId, type = 'text', text, file, files }, { getState, dispatch, rejectWithValue }) => {
+  async ({ convId, type = 'text', text, file, files }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       // API always expects multipart/form-data
@@ -108,7 +107,6 @@ export const sendMessage = createAsyncThunk(
       const data = await apiRequest(`/api/conversations/${convId}/messages`, { method: 'POST', token, body, isFormData });
       return { convId, message: normalizeMessage(data.message ?? {}) };
     } catch (err) {
-      if (err.status === 403) dispatch(showToast({ message: err.message || 'You can only message your connections.', type: 'error' }));
       return rejectWithValue(err.message);
     }
   }
@@ -131,7 +129,7 @@ export const markRead = createAsyncThunk(
 // 5. POST /api/conversations — start DM
 export const startDM = createAsyncThunk(
   'messages/startDM',
-  async (userId, { getState, dispatch, rejectWithValue }) => {
+  async (userId, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest('/api/conversations', { method: 'POST', token, body: { userId } });
@@ -141,7 +139,6 @@ export const startDM = createAsyncThunk(
       // "click avatar to view profile" never ends up with a null participantId.
       return { ...conv, participantId: conv.participantId ?? userId };
     } catch (err) {
-      if (err.status === 403) dispatch(showToast({ message: err.message || 'You can only message your connections.', type: 'error' }));
       return rejectWithValue(err.message);
     }
   }
@@ -238,6 +235,29 @@ export const reportConversation = createAsyncThunk(
   }
 );
 
+// 12. GET /api/users/me/blocked
+export const fetchBlockedUsers = createAsyncThunk(
+  'messages/fetchBlockedUsers',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/me/blocked', { token });
+      return {
+        blockedUsers: (data.blockedUsers ?? []).map(u => ({
+          id: u.id ?? u._id ?? '',
+          name: u.name ?? '',
+          avatarUrl: u.avatar?.startsWith?.('http') ? u.avatar : '',
+          role: u.role ?? '',
+          location: u.location ?? '',
+        })),
+        total: data.total ?? 0,
+      };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // 11. GET /api/users/online
 export const fetchOnlineUsers = createAsyncThunk(
   'messages/fetchOnlineUsers',
@@ -273,6 +293,9 @@ const messagesSlice = createSlice({
     assetsLoading: false,
     blockedConvIds: {},   // { [convId]: boolean }
     reportedConvIds: {},  // { [convId]: boolean }
+    blockedUsers: [],
+    blockedUsersTotal: 0,
+    blockedUsersLoading: false,
     pendingOpenConvId: null, // set by startDM so MessagesPage auto-opens that conversation
     lastFetchParams: { tab: 'all', search: '' }, // last args passed to fetchConversations, so a resurrected conversation (see receiveMessage in socket.js) refetches under the filter the user is actually looking at
     error: null,
@@ -286,6 +309,11 @@ const messagesSlice = createSlice({
     },
     clearPendingOpenConv(state) {
       state.pendingOpenConvId = null;
+    },
+    // Optimistic removal after unblocking a user / deleting their chat from the Blocked panel
+    removeBlockedUser(state, action) {
+      state.blockedUsers = state.blockedUsers.filter(u => u.id !== action.payload);
+      state.blockedUsersTotal = Math.max(0, state.blockedUsersTotal - 1);
     },
     // Socket: push incoming message
     receiveMessage(state, action) {
@@ -466,9 +494,17 @@ const messagesSlice = createSlice({
         const onlineIds = new Set(a.payload.map(u => u.id));
         s.conversations.forEach(c => { c.online = onlineIds.has(c.participantId); });
       })
-      .addCase(fetchOnlineUsers.rejected, s => { s.onlineLoading = false; });
+      .addCase(fetchOnlineUsers.rejected, s => { s.onlineLoading = false; })
+
+      .addCase(fetchBlockedUsers.pending, s => { s.blockedUsersLoading = true; })
+      .addCase(fetchBlockedUsers.fulfilled, (s, a) => {
+        s.blockedUsersLoading = false;
+        s.blockedUsers = a.payload.blockedUsers;
+        s.blockedUsersTotal = a.payload.total;
+      })
+      .addCase(fetchBlockedUsers.rejected, s => { s.blockedUsersLoading = false; });
   },
 });
 
-export const { clearUnread, clearPendingOpenConv, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
+export const { clearUnread, clearPendingOpenConv, removeBlockedUser, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
 export default messagesSlice.reducer;
