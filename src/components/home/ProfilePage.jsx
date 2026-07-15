@@ -15,6 +15,7 @@ import { fetchEvents } from '../../store/slices/eventsSlice';
 import { PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
+import ImageCropper from './ImageCropper';
 import './ProfilePage.css';
 
 const TABS = PROFILE_TABS;
@@ -1145,6 +1146,20 @@ export default function ProfilePage({
   const [creatorClicked,  setCreatorClicked]  = useState(false);
   const [coverUrl,        setCoverUrl]        = useState(null);
   const [localAvatar,     setAvatarUrl]       = useState(null);
+  // Crop flow for avatar/cover: { file, kind: 'avatar'|'cover' } | null
+  const [cropTarget,      setCropTarget]      = useState(null);
+
+  function applyCroppedImage(croppedFile) {
+    if (!cropTarget) return;
+    if (cropTarget.kind === 'cover') {
+      setCoverUrl(URL.createObjectURL(croppedFile));
+      dispatch(updateCover(croppedFile));
+    } else {
+      setAvatarUrl(URL.createObjectURL(croppedFile));
+      dispatch(updateAvatar(croppedFile));
+    }
+    setCropTarget(null);
+  }
 
   // Sync cover from profile
   useEffect(() => {
@@ -1229,10 +1244,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             style={{ display: 'none' }}
             onChange={e => {
               const file = e.target.files?.[0];
-              if (file) {
-                setCoverUrl(URL.createObjectURL(file));
-                dispatch(updateCover(file));
-              }
+              if (file) setCropTarget({ file, kind: 'cover' });
               e.target.value = '';
             }}
           />
@@ -1255,10 +1267,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
               style={{ display: 'none' }}
               onChange={e => {
                 const file = e.target.files?.[0];
-                if (file) {
-                  setAvatarUrl(URL.createObjectURL(file));
-                  dispatch(updateAvatar(file));
-                }
+                if (file) setCropTarget({ file, kind: 'avatar' });
                 e.target.value = '';
               }}
             />
@@ -1376,6 +1385,17 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
       </div>
     </div>
     {createPostOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreatePostOpen(false)} onNavigateToEvents={onEventsClick} />}
+
+    {cropTarget && (
+      <ImageCropper
+        file={cropTarget.file}
+        defaultAspect={cropTarget.kind === 'avatar' ? 'square' : 'landscape'}
+        cropShape={cropTarget.kind === 'avatar' ? 'round' : 'rect'}
+        onCancel={() => setCropTarget(null)}
+        onSkip={() => applyCroppedImage(cropTarget.file)}
+        onSave={applyCroppedImage}
+      />
+    )}
 
     {followPanel && (() => {
       const list = (followPanel === 'followers' ? followers : following)

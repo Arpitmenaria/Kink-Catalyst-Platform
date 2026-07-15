@@ -19,6 +19,21 @@ function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
 
+// Split caption text into plain runs + colored #hashtag / @mention tokens for
+// the highlight overlay behind the textarea (LinkedIn/Instagram style).
+const TAG_RE = /([#@][\w]+)/g;
+function renderHighlighted(text) {
+  const nodes = [];
+  let last = 0, m, i = 0;
+  while ((m = TAG_RE.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    nodes.push(<span key={i++} className="cp-tag">{m[0]}</span>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
 function PhotoTabIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
 }
@@ -115,6 +130,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   const emojiRef       = useRef(null);
   const mentionRef      = useRef(null);
   const textareaRef     = useRef(null);
+  const highlightRef    = useRef(null);
   const displayName = profile?.fullName ?? authUser?.fullName ?? 'You';
   const avatarUrl = profile?.avatar || '';
 
@@ -150,27 +166,35 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     return () => document.removeEventListener('mousedown', onOutsideClick);
   }, [mentionOpen]);
 
-  // Debounced @mention search — local fetch, not a Redux dispatch (avoids
-  // clobbering ProfilePage's shared connections list, see note above).
+  // Debounced @mention search — pulls from BOTH connections and followers
+  // (Instagram/LinkedIn suggest anyone you're linked to), merged + deduped +
+  // filtered by the typed text. Local fetch, not a Redux dispatch (avoids
+  // clobbering ProfilePage's shared connections list).
   useEffect(() => {
     if (!mentionOpen) return;
     let cancelled = false;
     setMentionLoading(true);
     const timer = setTimeout(() => {
-      const qs = mentionQuery ? `?search=${encodeURIComponent(mentionQuery)}&limit=6` : '?limit=6';
-      apiRequest(`/api/users/me/connections${qs}`, { token })
-        .then(data => {
+      const qs = mentionQuery ? `?search=${encodeURIComponent(mentionQuery)}&limit=10` : '?limit=10';
+      Promise.all([
+        apiRequest(`/api/users/me/connections${qs}`, { token }).catch(() => ({})),
+        apiRequest(`/api/users/me/followers${qs}`, { token }).catch(() => ({})),
+      ])
+        .then(([conn, folw]) => {
           if (cancelled) return;
-          const list = (data.connections ?? []).map(c => ({
-            id: c.id ?? c._id,
-            name: c.name ?? c.fullName ?? '',
-            avatar: c.avatar?.startsWith?.('http') ? c.avatar : '',
-          }));
-          setMentionResults(list);
+          const merged = [...(conn.connections ?? []), ...(folw.followers ?? [])];
+          const byId = {};
+          for (const u of merged) {
+            const id = u.id ?? u._id;
+            if (id && !byId[id]) byId[id] = { id, name: u.name ?? u.fullName ?? '', avatar: u.avatar?.startsWith?.('http') ? u.avatar : '' };
+          }
+          let list = Object.values(byId);
+          const q = mentionQuery.toLowerCase();
+          if (q) list = list.filter(u => u.name.toLowerCase().includes(q));
+          setMentionResults(list.slice(0, 6));
         })
-        .catch(() => { if (!cancelled) setMentionResults([]); })
         .finally(() => { if (!cancelled) setMentionLoading(false); });
-    }, 250);
+    }, 220);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [mentionOpen, mentionQuery, token]);
 
@@ -506,15 +530,21 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
           {/* Caption */}
           <div style={{ position: 'relative' }} ref={mentionRef}>
-            <textarea
-              ref={textareaRef}
-              className={`cp-textarea${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
-              placeholder="What's on your mind?"
-              value={caption}
-              onChange={handleCaptionChange}
-              rows={3}
-              maxLength={CAPTION_MAX + 50}
-            />
+            <div className="cp-input-wrap">
+              <div ref={highlightRef} className="cp-highlight" aria-hidden="true">
+                {renderHighlighted(caption)}{'​'}
+              </div>
+              <textarea
+                ref={textareaRef}
+                className={`cp-textarea cp-textarea--overlay${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
+                placeholder="What's on your mind?"
+                value={caption}
+                onChange={handleCaptionChange}
+                onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.target.scrollTop; }}
+                rows={3}
+                maxLength={CAPTION_MAX + 50}
+              />
+            </div>
             {caption.length > CAPTION_MAX - 100 && (
               <span style={{
                 position: 'absolute', bottom: 8, right: 10,

@@ -1064,3 +1064,6 @@ video.post-image {
 }
 .react-picker-btn:hover { transform: translateY(-6px) scale(1.35); }
 .react-current-emoji { font-size: 16px; line-height: 1; vertical-align: middle; }
+
+/* Hashtags / mentions in rendered captions */
+.post-caption-tag { color: #4a9eff; font-weight: 600; }

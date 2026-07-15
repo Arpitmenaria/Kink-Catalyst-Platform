@@ -93,7 +93,7 @@ export const fetchMessages = createAsyncThunk(
 // 3. POST /api/conversations/:id/messages
 export const sendMessage = createAsyncThunk(
   'messages/sendMessage',
-  async ({ convId, type = 'text', text, file, files }, { getState, rejectWithValue }) => {
+  async ({ convId, type = 'text', text, file, files }, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       // API always expects multipart/form-data

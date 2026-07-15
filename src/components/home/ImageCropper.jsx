@@ -23,7 +23,7 @@ function ZoomInIcon() {
 // One-photo-at-a-time cropper. `onSave` receives a cropped File; `onSkip`
 // keeps the original file untouched; `onCancel` abandons the whole
 // selection (used for the multi-image queue in CreatePostModal).
-export default function ImageCropper({ file, index = 0, total = 1, onCancel, onSkip, onSave }) {
+export default function ImageCropper({ file, index = 0, total = 1, defaultAspect = 'original', cropShape = 'rect', onCancel, onSkip, onSave }) {
   // NOTE: don't revoke this on unmount — React 18 StrictMode double-invokes
   // effects in dev (mount → cleanup → mount again), which would revoke the
   // blob right after creating it and leave the cropper showing a blank
@@ -31,7 +31,7 @@ export default function ImageCropper({ file, index = 0, total = 1, onCancel, onS
   const [imageUrl] = useState(() => URL.createObjectURL(file));
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [aspectId, setAspectId] = useState('original');
+  const [aspectId, setAspectId] = useState(defaultAspect);
   const [naturalAspect, setNaturalAspect] = useState(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -81,6 +81,7 @@ export default function ImageCropper({ file, index = 0, total = 1, onCancel, onS
             crop={crop}
             zoom={zoom}
             aspect={currentAspect || 1}
+            cropShape={cropShape}
             objectFit="contain"
             onCropChange={setCrop}
             onZoomChange={setZoom}

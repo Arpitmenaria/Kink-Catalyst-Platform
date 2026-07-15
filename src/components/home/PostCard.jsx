@@ -24,6 +24,20 @@ function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
 
+// Color #hashtags and @mentions in rendered post captions (feed display).
+const CAPTION_TAG_RE = /([#@][\w]+)/g;
+function renderCaption(text = '') {
+  const nodes = [];
+  let last = 0, m, i = 0;
+  while ((m = CAPTION_TAG_RE.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    nodes.push(<span key={i++} className="post-caption-tag">{m[0]}</span>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -379,7 +393,7 @@ export default function PostCard({ post, onUserClick }) {
         {/* Caption */}
         {post.caption && (
           <p className="post-text">
-            {captionShown}
+            {renderCaption(captionShown)}
             {captionIsLong && !captionExpanded && '… '}
             {captionIsLong && (
               <button type="button" className="post-caption-toggle" onClick={() => setCaptionExpanded(v => !v)}>
