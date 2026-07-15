@@ -1726,6 +1726,8 @@
   color: #94a3b8;
   line-height: 1.65;
   margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .about-bio-empty {
   font-size: 13px;
@@ -2392,3 +2394,62 @@
   color: #ef4444;
 }
 
+
+/* ── Connection invitations (incoming friend requests) ── */
+.prof-invites {
+  background: #0e1424;
+  border: 1px solid #1a2540;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.prof-invites-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 12px;
+}
+.prof-invites-list { display: flex; flex-direction: column; gap: 8px; }
+.prof-invite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #111b2e;
+}
+.prof-invite-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.prof-invite-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #1a2540;
+}
+.prof-invite-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prof-invite-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.prof-invite-btn {
+  border: none;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.prof-invite-btn--accept { background: #2563eb; color: #fff; }
+.prof-invite-btn--accept:hover { background: #1d4ed8; }
+.prof-invite-btn--ignore { background: transparent; border: 1px solid #2a3350; color: #9aa3bc; }
+.prof-invite-btn--ignore:hover { background: #1a2338; color: #cbd5e1; }

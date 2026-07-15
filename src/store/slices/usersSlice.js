@@ -54,6 +54,69 @@ export const unfollowUser = createAsyncThunk(
   }
 );
 
+// ── Friend requests / connections (LinkedIn-style) ──────────────────────────────
+// Send a connection request. Backend auto-accepts if the target already sent me
+// one, and 409s if we're already connected — both handled in the reducer.
+export const sendFriendRequest = createAsyncThunk(
+  'users/sendFriendRequest',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/${userId}/friend-request`, { method: 'POST', token });
+      const status = data.friendStatus ?? (data.accepted || data.connected ? 'connected' : 'requested');
+      return { userId, status };
+    } catch (err) {
+      return rejectWithValue({ userId, status: err.status, message: err.message });
+    }
+  }
+);
+
+export const acceptFriendRequest = createAsyncThunk(
+  'users/acceptFriendRequest',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/users/${userId}/friend-request/accept`, { method: 'POST', token });
+      return { userId };
+    } catch (err) {
+      return rejectWithValue({ userId, message: err.message });
+    }
+  }
+);
+
+// Reject an incoming request OR cancel one I sent (same DELETE endpoint).
+export const rejectFriendRequest = createAsyncThunk(
+  'users/rejectFriendRequest',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/users/${userId}/friend-request`, { method: 'DELETE', token });
+      return { userId };
+    } catch (err) {
+      return rejectWithValue({ userId, message: err.message });
+    }
+  }
+);
+
+export const fetchFriendRequests = createAsyncThunk(
+  'users/fetchFriendRequests',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/me/friend-requests', { token });
+      return (data.requests ?? []).map(r => ({
+        requestId: r._id,
+        userId: r.fromUser?._id ?? r.fromUser?.id ?? '',
+        name: r.fromUser?.name ?? r.fromUser?.fullName ?? '',
+        avatar: r.fromUser?.avatar?.startsWith?.('http') ? r.fromUser.avatar : '',
+        createdAt: r.createdAt,
+      }));
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const dismissSuggestion = createAsyncThunk(
   'users/dismiss',
   async (userId, { getState, rejectWithValue }) => {
@@ -87,11 +150,31 @@ const usersSlice = createSlice({
     suggestionsLoading: false,
     followingIds: [],
     dismissedIds: [],
+    // Optimistic relationship overrides keyed by userId. Any surface reads
+    // friendStatusMap[id] ?? user.friendStatus ?? 'none' so a click reflects
+    // instantly everywhere (suggestions, profile, connections).
+    friendStatusMap: {},
+    friendRequests: [],          // incoming pending, for the accept/reject UI
+    friendRequestsLoading: false,
     groups: [],
     groupsLoading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    // Driven by socket events (friend_request / friend_request_accepted).
+    setFriendStatus(state, action) {
+      const { userId, status } = action.payload;
+      if (userId) state.friendStatusMap[userId] = status;
+    },
+    addIncomingRequest(state, action) {
+      const req = action.payload;
+      if (!req?.userId) return;
+      if (!state.friendRequests.some(r => r.userId === req.userId)) {
+        state.friendRequests.unshift(req);
+      }
+      state.friendStatusMap[req.userId] = 'incoming';
+    },
+  },
   extraReducers: (builder) => {
     builder
       // ── Suggestions ───────────────────────
@@ -133,6 +216,51 @@ const usersSlice = createSlice({
         }
       })
 
+      // ── Send friend request ───────────────
+      .addCase(sendFriendRequest.pending, (state, action) => {
+        state.friendStatusMap[action.meta.arg] = 'requested';
+      })
+      .addCase(sendFriendRequest.fulfilled, (state, action) => {
+        const { userId, status } = action.payload;
+        state.friendStatusMap[userId] = status;
+        // Auto-accept case (reciprocal request) → connected implies following.
+        if (status === 'connected' && !state.followingIds.includes(userId)) {
+          state.followingIds.push(userId);
+        }
+      })
+      .addCase(sendFriendRequest.rejected, (state, action) => {
+        const { userId, status } = action.payload ?? {};
+        // 409 = already connected; otherwise roll back to none.
+        state.friendStatusMap[userId] = status === 409 ? 'connected' : 'none';
+      })
+
+      // ── Accept incoming request (auto-follows both ways) ──
+      .addCase(acceptFriendRequest.pending, (state, action) => {
+        const userId = action.meta.arg;
+        state.friendStatusMap[userId] = 'connected';
+        state.friendRequests = state.friendRequests.filter(r => r.userId !== userId);
+        if (!state.followingIds.includes(userId)) state.followingIds.push(userId);
+      })
+      .addCase(acceptFriendRequest.rejected, (state, action) => {
+        state.friendStatusMap[action.meta.arg] = 'incoming';
+      })
+
+      // ── Reject / cancel request ───────────
+      .addCase(rejectFriendRequest.pending, (state, action) => {
+        const userId = action.meta.arg;
+        state.friendStatusMap[userId] = 'none';
+        state.friendRequests = state.friendRequests.filter(r => r.userId !== userId);
+      })
+
+      // ── Fetch incoming requests ───────────
+      .addCase(fetchFriendRequests.pending, (state) => { state.friendRequestsLoading = true; })
+      .addCase(fetchFriendRequests.fulfilled, (state, action) => {
+        state.friendRequestsLoading = false;
+        state.friendRequests = action.payload;
+        action.payload.forEach(r => { if (!state.friendStatusMap[r.userId]) state.friendStatusMap[r.userId] = 'incoming'; });
+      })
+      .addCase(fetchFriendRequests.rejected, (state) => { state.friendRequestsLoading = false; })
+
       // ── Dismiss ───────────────────────────
       .addCase(dismissSuggestion.pending, (state, action) => {
         if (!state.dismissedIds.includes(action.meta.arg)) {
@@ -159,4 +287,5 @@ const usersSlice = createSlice({
   },
 });
 
+export const { setFriendStatus, addIncomingRequest } = usersSlice.actions;
 export default usersSlice.reducer;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchSuggestions, followUser, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
+import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
 import CreatePostModal from './CreatePostModal';
@@ -65,7 +65,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
-  const { suggestions, followingIds, dismissedIds, groups } = useSelector((state) => state.users);
+  const { suggestions, dismissedIds, groups, friendStatusMap } = useSelector((state) => state.users);
   const { conversations } = useSelector((state) => state.messages);
   const { events: upcomingEvents } = useSelector((state) => state.events);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
@@ -81,14 +81,14 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     dispatch(fetchEvents({ tab: 'upcoming', limit: 3 }));
   }, [dispatch]);
 
-  function handleAddFriend(id) {
+  function handleAddFriend(id, status) {
     if (!id) return;
     const selfId = authUser?._id ?? authUser?.id;
     if (selfId && id === selfId) return;
-    if (followingIds.includes(id)) return;
+    if (status === 'requested' || status === 'connected') return;
     setPoppingIds(prev => new Set([...prev, id]));
     setTimeout(() => setPoppingIds(prev => { const s = new Set(prev); s.delete(id); return s; }), 500);
-    dispatch(followUser(id));
+    dispatch(sendFriendRequest(id));
   }
 
   function handleDismiss(id) {
@@ -102,6 +102,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const followersCount = formatCount(authUser?.followerCount  ?? profile?.followers?.length ?? profile?.followersCount ?? 0);
   const rawAvatar      = profile?.avatar ?? authUser?.avatar ?? '';
   const avatarUrl      = rawAvatar?.startsWith?.('http') ? rawAvatar : '';
+  const rawCover       = profile?.coverPhoto ?? authUser?.coverPhoto ?? '';
+  const coverUrl       = rawCover?.startsWith?.('http') ? rawCover : '';
 
   function handleNavNavigate(id) {
     if (id === 'create')   { setCreateOpen(true); return; }
@@ -136,7 +138,10 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         {/* Profile card */}
         <div className="profile-card">
           <div className="profile-cover" style={{ position: 'relative', overflow: 'hidden' }}>
-            <SkeletonImg src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80&fit=crop" alt="cover" className="profile-cover-img" />
+            {coverUrl
+              ? <SkeletonImg src={coverUrl} alt="cover" className="profile-cover-img" />
+              : <div className="profile-cover-placeholder" />
+            }
           </div>
           <div className="profile-body">
             <div className="profile-avatar-wrap" onClick={onProfileClick} style={{ cursor: 'pointer' }}>
@@ -174,7 +179,9 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
           <div className="friend-list">
             {visibleSuggestions.map(f => {
               const id = f.id ?? f._id;
-              const isFollowing = followingIds.includes(id);
+              const status = friendStatusMap[id] ?? f.friendStatus ?? 'none';
+              const requested = status === 'requested';
+              const connected = status === 'connected';
               return (
                 <div
                   key={id}
@@ -210,15 +217,16 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                   </div>
                   <div className="friend-actions">
                     <button
-                      className={`friend-add-btn${isFollowing ? ' friend-add-btn--added' : ''}${poppingIds.has(id) ? ' friend-add-btn--pop' : ''}`}
-                      onClick={() => handleAddFriend(id)}
+                      className={`friend-add-btn${(requested || connected) ? ' friend-add-btn--added' : ''}${poppingIds.has(id) ? ' friend-add-btn--pop' : ''}`}
+                      onClick={() => handleAddFriend(id, status)}
+                      disabled={requested || connected}
                     >
-                      {isFollowing ? '✓ Added' : 'Add Friend'}
+                      {connected ? '✓ Connected' : requested ? 'Requested' : 'Add Friend'}
                     </button>
                     <button
-                      className={`friend-remove-btn${isFollowing ? ' friend-remove-btn--hidden' : ''}`}
+                      className={`friend-remove-btn${(requested || connected) ? ' friend-remove-btn--hidden' : ''}`}
                       onClick={() => handleDismiss(id)}
-                      tabIndex={isFollowing ? -1 : 0}
+                      tabIndex={(requested || connected) ? -1 : 0}
                     >
                       Remove
                     </button>

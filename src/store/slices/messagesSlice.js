@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
+import { showToast } from './toastSlice';
 
 function normalizeConversation(c) {
   return {
@@ -73,7 +74,7 @@ export const fetchMessages = createAsyncThunk(
 // 3. POST /api/conversations/:id/messages
 export const sendMessage = createAsyncThunk(
   'messages/sendMessage',
-  async ({ convId, type = 'text', text, file }, { getState, rejectWithValue }) => {
+  async ({ convId, type = 'text', text, file }, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       // API always expects multipart/form-data
@@ -85,6 +86,7 @@ export const sendMessage = createAsyncThunk(
       const data = await apiRequest(`/api/conversations/${convId}/messages`, { method: 'POST', token, body, isFormData });
       return { convId, message: normalizeMessage(data.message ?? {}) };
     } catch (err) {
+      if (err.status === 403) dispatch(showToast({ message: err.message || 'You can only message your connections.', type: 'error' }));
       return rejectWithValue(err.message);
     }
   }
@@ -107,7 +109,7 @@ export const markRead = createAsyncThunk(
 // 5. POST /api/conversations — start DM
 export const startDM = createAsyncThunk(
   'messages/startDM',
-  async (userId, { getState, rejectWithValue }) => {
+  async (userId, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest('/api/conversations', { method: 'POST', token, body: { userId } });
@@ -117,6 +119,7 @@ export const startDM = createAsyncThunk(
       // "click avatar to view profile" never ends up with a null participantId.
       return { ...conv, participantId: conv.participantId ?? userId };
     } catch (err) {
+      if (err.status === 403) dispatch(showToast({ message: err.message || 'You can only message your connections.', type: 'error' }));
       return rejectWithValue(err.message);
     }
   }

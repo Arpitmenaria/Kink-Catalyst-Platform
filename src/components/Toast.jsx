@@ -10,6 +10,14 @@ function CheckIcon() {
   );
 }
 
+function BellIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
 function XIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -18,9 +26,16 @@ function XIcon() {
   );
 }
 
+const TOAST_THEME = {
+  success: { bg: '#0f2718', border: '#16a34a', iconBg: '#16a34a22', iconColor: '#4ade80', bar: '#16a34a' },
+  info:    { bg: '#0d1b2e', border: '#2563eb', iconBg: '#2563eb22', iconColor: '#60a5fa', bar: '#2563eb' },
+  error:   { bg: '#2a0d0d', border: '#dc2626', iconBg: '#dc262622', iconColor: '#f87171', bar: '#dc2626' },
+};
+
 function ToastItem({ toast }) {
   const dispatch = useDispatch();
-  const isSuccess = toast.type === 'success';
+  const theme = TOAST_THEME[toast.type] ?? TOAST_THEME.error;
+  const Icon = toast.type === 'success' ? CheckIcon : toast.type === 'info' ? BellIcon : XIcon;
 
   useEffect(() => {
     const t = setTimeout(() => dispatch(removeToast(toast.id)), 3500);
@@ -34,8 +49,8 @@ function ToastItem({ toast }) {
       gap: 10,
       padding: '12px 16px',
       borderRadius: 10,
-      background: isSuccess ? '#0f2718' : '#2a0d0d',
-      border: `1px solid ${isSuccess ? '#16a34a' : '#dc2626'}`,
+      background: theme.bg,
+      border: `1px solid ${theme.border}`,
       color: '#f1f5f9',
       fontSize: 14,
       fontWeight: 500,
@@ -53,7 +68,7 @@ function ToastItem({ toast }) {
         left: 0,
         height: 3,
         width: '100%',
-        background: isSuccess ? '#16a34a' : '#dc2626',
+        background: theme.bar,
         animation: 'toast-progress 3.5s linear forwards',
         transformOrigin: 'left',
       }} />
@@ -65,11 +80,11 @@ function ToastItem({ toast }) {
         width: 28,
         height: 28,
         borderRadius: '50%',
-        background: isSuccess ? '#16a34a22' : '#dc262622',
-        color: isSuccess ? '#4ade80' : '#f87171',
+        background: theme.iconBg,
+        color: theme.iconColor,
         flexShrink: 0,
       }}>
-        {isSuccess ? <CheckIcon /> : <XIcon />}
+        <Icon />
       </span>
 
       <span style={{ flex: 1, lineHeight: 1.4 }}>{toast.message}</span>

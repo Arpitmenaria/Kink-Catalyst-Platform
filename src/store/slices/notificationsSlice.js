@@ -19,7 +19,7 @@ export const markNotificationsRead = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      await apiRequest('/api/notifications/mark-read', { method: 'PUT', token });
+      await apiRequest('/api/notifications/read', { method: 'PUT', token });
       return {};
     } catch (err) {
       return rejectWithValue(err.message);
@@ -35,7 +35,30 @@ const notificationsSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    // Prepend a live notification (from a socket event) and bump the bell count.
+    notificationReceived(state, action) {
+      const n = action.payload;
+      const nid = n.id ?? n._id;
+      const actorId = n.actor?._id ?? n.actor?.id;
+      const nTime = new Date(n.createdAt ?? Date.now()).getTime();
+      const isDup = state.notifications.some(x => {
+        // Same id → duplicate.
+        if (nid && (x.id ?? x._id) === nid) return true;
+        // No id (socket payloads often omit it) → same type + actor + post
+        // fired within 15s is the same event double-emitted.
+        const xActor = x.actor?._id ?? x.actor?.id;
+        if (x.type === n.type && actorId && xActor === actorId && (x.relatedPost ?? null) === (n.relatedPost ?? null)) {
+          const xTime = new Date(x.createdAt ?? Date.now()).getTime();
+          return Math.abs(xTime - nTime) < 15000;
+        }
+        return false;
+      });
+      if (isDup) return;
+      state.notifications.unshift(n);
+      state.unreadCount += 1;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchNotifications.pending, (state) => {
@@ -58,4 +81,5 @@ const notificationsSlice = createSlice({
   },
 });
 
+export const { notificationReceived } = notificationsSlice.actions;
 export default notificationsSlice.reducer;

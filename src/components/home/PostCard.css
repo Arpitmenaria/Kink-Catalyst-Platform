@@ -1020,3 +1020,47 @@ video.post-image {
 }
 .dpm-confirm-btn:hover { background: #dc2626; }
 .dpm-confirm-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Post visibility label (author-only) */
+.post-visibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── LinkedIn-style reaction picker ── */
+.react-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: #1b2135;
+  border: 1px solid #2a3350;
+  border-radius: 40px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  animation: reactPickerIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes reactPickerIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+.react-picker-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  line-height: 1;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+}
+.react-picker-emoji {
+  font-size: 26px;
+  display: block;
+  transform-origin: bottom center;
+}
+.react-picker-btn:hover { transform: translateY(-6px) scale(1.35); }
+.react-current-emoji { font-size: 16px; line-height: 1; vertical-align: middle; }

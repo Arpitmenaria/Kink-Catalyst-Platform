@@ -2,6 +2,33 @@ import { io } from 'socket.io-client';
 import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers } from '../store/slices/messagesSlice';
 import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
+import { setFriendStatus, addIncomingRequest } from '../store/slices/usersSlice';
+import { notificationReceived } from '../store/slices/notificationsSlice';
+import { showToast } from '../store/slices/toastSlice';
+
+// Build a bell-ready notification object from a raw socket payload.
+function buildNotif(data) {
+  const actor = data.actor ?? data.from ?? data.by ?? {};
+  const name = actor.name ?? actor.fullName ?? 'Someone';
+  const byType = {
+    like:                     { emoji: data.reaction === 'love' ? '❤️' : '👍', text: `${name} reacted to your post` },
+    comment:                  { emoji: '💬', text: `${name} commented on your post` },
+    follow:                   { emoji: '👤', text: `${name} started following you` },
+    friend_request:           { emoji: '🤝', text: `${name} sent you a connection request` },
+    friend_request_accepted:  { emoji: '🤝', text: `${name} accepted your connection request` },
+  };
+  const meta = byType[data.type] ?? { emoji: '🔔', text: 'New notification' };
+  return {
+    id: data.id ?? data._id,
+    type: data.type,
+    emoji: meta.emoji,
+    text: meta.text,
+    actor,
+    relatedPost: data.postId ?? data.relatedPost ?? null,
+    createdAt: data.createdAt ?? new Date().toISOString(),
+    unread: true,
+  };
+}
 
 const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
 
@@ -9,7 +36,10 @@ let socket = null;
 let storeRef = null; // full Redux store — gives us dispatch + getState
 
 export function initSocket(token, store) {
-  if (socket?.connected) return;
+  // Guard on the instance existing (not just `.connected`) — otherwise React
+  // StrictMode's double-mount in dev creates a 2nd socket while the 1st is
+  // still connecting, and every event fires twice.
+  if (socket) return;
   storeRef = store;
 
   socket = io(BASE_URL, {
@@ -76,6 +106,41 @@ export function initSocket(token, store) {
       followerCount: data.followerCount,
       followingCount: data.followingCount,
     }));
+  });
+
+  // Like / comment / follow → bell feed + toast.
+  socket.on('notification', (data) => {
+    const notif = buildNotif(data);
+    storeRef.dispatch(notificationReceived(notif));
+    storeRef.dispatch(showToast({ message: notif.text, type: 'info' }));
+  });
+
+  // Someone sent me a connection request → show it as incoming everywhere + bell.
+  socket.on('friend_request', (data) => {
+    const from = data.from ?? data.fromUser ?? data;
+    const userId = from?._id ?? from?.id;
+    if (!userId) return;
+    const name = from.name ?? from.fullName ?? 'Someone';
+    storeRef.dispatch(addIncomingRequest({
+      requestId: data._id ?? data.requestId,
+      userId,
+      name,
+      avatar: from.avatar?.startsWith?.('http') ? from.avatar : '',
+      createdAt: data.createdAt ?? new Date().toISOString(),
+    }));
+    storeRef.dispatch(notificationReceived(buildNotif({ ...data, type: 'friend_request', actor: from })));
+    storeRef.dispatch(showToast({ message: `${name} sent you a connection request`, type: 'info' }));
+  });
+
+  // Someone accepted my request → we're now connected + bell + toast.
+  socket.on('friend_request_accepted', (data) => {
+    const by = data.by ?? data.byUser ?? data.user ?? data;
+    const userId = by?._id ?? by?.id;
+    if (!userId) return;
+    const name = by.name ?? by.fullName ?? 'Someone';
+    storeRef.dispatch(setFriendStatus({ userId, status: 'connected' }));
+    storeRef.dispatch(notificationReceived(buildNotif({ ...data, type: 'friend_request_accepted', actor: by })));
+    storeRef.dispatch(showToast({ message: `${name} accepted your connection request`, type: 'success' }));
   });
 
   socket.on('event:seats_updated', data => {

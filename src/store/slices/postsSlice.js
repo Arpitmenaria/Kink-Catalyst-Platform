@@ -34,6 +34,7 @@ export function normalizePost(p) {
     ...p,
     likes: Array.isArray(p.likes) ? p.likes : [],
     likesCount: typeof p.likesCount === 'number' ? p.likesCount : (Array.isArray(p.likes) ? p.likes.length : 0),
+    myReaction: p.myReaction ?? (p.isLiked ? 'like' : null),
     recentReactors: Array.isArray(p.recentReactors) ? p.recentReactors : [],
     comments: commentsIsCount
       ? new Array(p.comments).fill(null)
@@ -82,6 +83,7 @@ function normalizeMyPost(p) {
     media,
     // likes is a number from this API — keep as-is for PostCard's isStatic path
     likes: typeof p.likes === 'number' ? p.likes : (Array.isArray(p.likes) ? p.likes : 0),
+    myReaction: p.myReaction ?? (p.isLiked ? 'like' : null),
     comments: typeof p.comments === 'number'
       ? new Array(p.comments).fill(null)
       : (Array.isArray(p.comments) ? p.comments : []),
@@ -142,11 +144,25 @@ export const fetchMyPostsCount = createAsyncThunk(
 
 export const likePost = createAsyncThunk(
   'posts/like',
-  async ({ postId, userId }, { getState, rejectWithValue }) => {
+  // reaction: 'like' | 'celebrate' | 'support' | 'love' | 'insightful' | 'funny'.
+  // remove: true when toggling the current reaction off. Backend sets/replaces/
+  // removes the caller's reaction and returns the new count + their reaction.
+  async ({ postId, userId, reaction = 'like', remove = false }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest(`/api/posts/${postId}/like`, { method: 'POST', token });
-      return { postId, liked: data.liked, likesCount: data.likesCount, recentReactors: data.recentReactors, userId };
+      const data = await apiRequest(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        token,
+        body: { reaction, remove },
+      });
+      return {
+        postId,
+        liked: data.liked,
+        likesCount: data.likesCount,
+        recentReactors: data.recentReactors,
+        myReaction: data.myReaction ?? (data.liked ? reaction : null),
+        userId,
+      };
     } catch (err) {
       return rejectWithValue({ postId, userId, message: err.message });
     }
@@ -389,32 +405,35 @@ const postsSlice = createSlice({
         state.myPostsTotal = action.payload.total;
       })
 
-      // ── Like (optimistic toggle) ────────────
+      // ── Like / React (optimistic) ────────────
       .addCase(likePost.pending, (state, action) => {
-        const { postId, userId } = action.meta.arg;
+        const { postId, userId, reaction = 'like', remove = false } = action.meta.arg;
         state.likingIds.push(postId);
         forEachMatchingPost(state, postId, (post) => {
-          const idx = post.likes.indexOf(userId);
-          if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
-          else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
+          const has = post.likes.includes(userId);
+          if (remove) {
+            // Toggle off: drop the reaction entirely.
+            if (has) { post.likes.splice(post.likes.indexOf(userId), 1); post.likesCount = Math.max(0, post.likesCount - 1); }
+            post.myReaction = null;
+          } else {
+            // Add (new) or switch (already reacted → count unchanged).
+            if (!has) { post.likes.push(userId); post.likesCount += 1; }
+            post.myReaction = reaction;
+          }
         });
       })
       .addCase(likePost.fulfilled, (state, action) => {
-        const { postId, likesCount, recentReactors } = action.payload;
+        const { postId, likesCount, recentReactors, myReaction } = action.payload;
         state.likingIds = state.likingIds.filter(id => id !== postId);
         forEachMatchingPost(state, postId, (post) => {
           if (typeof likesCount === 'number') post.likesCount = likesCount;
           if (Array.isArray(recentReactors)) post.recentReactors = recentReactors;
+          post.myReaction = myReaction ?? null;
         });
       })
       .addCase(likePost.rejected, (state, action) => {
-        const { postId, userId } = action.meta.arg;
+        const { postId } = action.meta.arg;
         state.likingIds = state.likingIds.filter(id => id !== postId);
-        forEachMatchingPost(state, postId, (post) => {
-          const idx = post.likes.indexOf(userId);
-          if (idx === -1) { post.likes.push(userId); post.likesCount += 1; }
-          else { post.likes.splice(idx, 1); post.likesCount = Math.max(0, post.likesCount - 1); }
-        });
       })
 
       // ── Comment ────────────────────────────

@@ -48,6 +48,17 @@ const VISIBILITY_META = {
   friends:  { Icon: FriendsIcon, label: 'Friends only' },
   only_me:  { Icon: LockIcon,    label: 'Only me' },
 };
+
+// LinkedIn-style reactions. `id` is what we send to the backend.
+const REACTIONS = [
+  { id: 'like',       emoji: '👍', label: 'Like',       color: '#378fe9' },
+  { id: 'celebrate',  emoji: '👏', label: 'Celebrate',  color: '#6dae4f' },
+  { id: 'support',    emoji: '🫶', label: 'Support',    color: '#b393c8' },
+  { id: 'love',       emoji: '❤️', label: 'Love',       color: '#df704d' },
+  { id: 'insightful', emoji: '💡', label: 'Insightful', color: '#f5bb5c' },
+  { id: 'funny',      emoji: '😄', label: 'Funny',      color: '#44bfd0' },
+];
+const REACTION_MAP = Object.fromEntries(REACTIONS.map(r => [r.id, r]));
 function ReactIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>; }
 function CommentIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function ShareIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>; }
@@ -109,10 +120,12 @@ export default function PostCard({ post, onUserClick }) {
   const isStatic = typeof post.likes === 'number';
 
   const [comment,         setComment]         = useState('');
-  const [localLiked,      setLocalLiked]      = useState(false);
+  const [localReaction,   setLocalReaction]   = useState(null);
   const [reacting,        setReacting]        = useState(false);
   const [particles,       setParticles]       = useState([]);
+  const [pickerOpen,      setPickerOpen]      = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
+  const pickerTimer = useRef(null);
   const [reportOpen,      setReportOpen]      = useState(false);
   const [showComments,    setShowComments]    = useState(false);
   const [expandedReplies, setExpandedReplies] = useState(new Set());
@@ -186,7 +199,11 @@ export default function PostCard({ post, onUserClick }) {
   const shareCount   = isStatic ? post.shares   : (post.shares?.length   ?? 0);
   const recentReactors = isStatic ? [] : (post.recentReactors ?? []);
 
-  const isLiked   = isStatic ? localLiked : (post.likes?.includes(userId) ?? false);
+  // Current reaction: local for static (profile) posts, Redux for feed posts.
+  const myReaction   = isStatic ? localReaction : (post.myReaction ?? null);
+  const myReactionMeta = myReaction ? REACTION_MAP[myReaction] : null;
+  const isLiked   = !!myReaction;
+  const displayLikeCount = isStatic ? (post.likes + (localReaction ? 1 : 0)) : likeCount;
   const isLiking  = isStatic ? false : likingIds.includes(post._id);
   const isCommenting = isStatic ? false : commentingId === post._id;
   const commentsLoading = !isStatic && commentsLoadingIds.includes(post._id);
@@ -201,6 +218,8 @@ export default function PostCard({ post, onUserClick }) {
     document.addEventListener('mousedown', onOut);
     return () => document.removeEventListener('mousedown', onOut);
   }, [menuOpen]);
+
+  useEffect(() => () => clearTimeout(pickerTimer.current), []);
 
   // Feed/list endpoints only return a comment count, not the real comments —
   // fetch the actual thread the first time this post's comments are opened.
@@ -223,17 +242,40 @@ export default function PostCard({ post, onUserClick }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [lightboxOpen, mediaItems.length]);
 
-  function handleLike() {
+  function triggerBurst() {
+    setReacting(true);
+    const burst = BURST_PATHS.map((p, i) => ({ id: Date.now() + i, emoji: BURST_EMOJIS[i], ...p }));
+    setParticles(burst);
+    setTimeout(() => { setReacting(false); setParticles([]); }, 700);
+  }
+
+  // Pick a specific reaction from the hover picker. Same reaction again = toggle off.
+  function pickReaction(reactionId) {
+    setPickerOpen(false);
+    const remove = myReaction === reactionId;
     if (isStatic) {
-      setLocalLiked(v => !v);
-      setReacting(true);
-      const burst = BURST_PATHS.map((p, i) => ({ id: Date.now() + i, emoji: BURST_EMOJIS[i], ...p }));
-      setParticles(burst);
-      setTimeout(() => { setReacting(false); setParticles([]); }, 700);
+      setLocalReaction(remove ? null : reactionId);
+      if (!remove) triggerBurst();
       return;
     }
-    if (isLiking || !userId) return;
-    dispatch(likePost({ postId: post._id, userId }));
+    if (!userId) return;
+    if (!remove) triggerBurst();
+    dispatch(likePost({ postId: post._id, userId, reaction: reactionId, remove }));
+  }
+
+  // Plain click on the button: toggle current reaction, defaulting to Like.
+  function handleReactClick() {
+    if (myReaction) pickReaction(myReaction); // toggles off
+    else pickReaction('like');
+  }
+
+  function openPicker() {
+    clearTimeout(pickerTimer.current);
+    setPickerOpen(true);
+  }
+  function closePickerSoon() {
+    clearTimeout(pickerTimer.current);
+    pickerTimer.current = setTimeout(() => setPickerOpen(false), 220);
   }
 
   function handleShare() {
@@ -295,7 +337,8 @@ export default function PostCard({ post, onUserClick }) {
               {authorName}
             </p>
             <p className="post-time">
-              {timeAgo(post.createdAt)} · <span title={visMeta.label}><visMeta.Icon /></span>
+              {timeAgo(post.createdAt)}
+              {isOwner && <> · <span className="post-visibility"><visMeta.Icon /> {visMeta.label}</span></>}
               {authorLocation && <> · <PinIcon /> {authorLocation}</>}
             </p>
           </div>
@@ -443,14 +486,41 @@ export default function PostCard({ post, onUserClick }) {
 
         {/* Actions */}
         <div className="post-actions">
-          <div className="react-burst-wrap">
+          <div
+            className="react-burst-wrap"
+            onMouseEnter={openPicker}
+            onMouseLeave={closePickerSoon}
+          >
+            {pickerOpen && (
+              <div
+                className="react-picker"
+                onMouseEnter={openPicker}
+                onMouseLeave={closePickerSoon}
+              >
+                {REACTIONS.map(r => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className="react-picker-btn"
+                    title={r.label}
+                    onClick={() => pickReaction(r.id)}
+                  >
+                    <span className="react-picker-emoji">{r.emoji}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               className={`post-action-btn${isLiked ? ' post-action-btn--active' : ''}`}
-              onClick={handleLike}
+              onClick={handleReactClick}
               disabled={isLiking}
+              style={myReactionMeta ? { color: myReactionMeta.color } : undefined}
             >
               <span className={`react-label${reacting ? ' react-label--spring' : ''}`}>
-                <ReactIcon /> {isLiked ? 'Reacted' : 'React'} ({likeCount + (isStatic && localLiked ? 1 : 0)})
+                {myReactionMeta
+                  ? <><span className="react-current-emoji">{myReactionMeta.emoji}</span> {myReactionMeta.label} ({displayLikeCount})</>
+                  : <><ReactIcon /> React ({displayLikeCount})</>
+                }
               </span>
             </button>
             {particles.map(p => (

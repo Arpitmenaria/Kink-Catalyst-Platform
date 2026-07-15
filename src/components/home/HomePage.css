@@ -606,6 +606,12 @@
 
 .profile-card:hover .profile-cover-img { transform: scale(1.05); }
 
+.profile-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a2036 0%, #131828 100%);
+}
+
 /* ── Body ── */
 .profile-body {
   padding: 0 16px 16px;

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion } from '../../store/slices/usersSlice';
+import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, fetchFriendRequests } from '../../store/slices/usersSlice';
 import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
   fetchConnections, removeConnection, fetchPhotos, uploadPhoto,
@@ -18,6 +18,13 @@ import { CustomDatePicker } from './DateTimePicker';
 import './ProfilePage.css';
 
 const TABS = PROFILE_TABS;
+
+// Latest allowed DOB = today − 18 years (must be 18+, no future dates).
+const MAX_DOB = (() => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+})();
 
 
 const PERSONAL_INFO = [
@@ -74,18 +81,16 @@ function SuggLocationIcon() {
 
 function FriendSuggestionsPanel({ onUserClick }) {
   const dispatch   = useDispatch();
-  const { suggestions, dismissedIds: reduxDismissed } = useSelector(s => s.users);
+  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap } = useSelector(s => s.users);
 
-  const [addedIds,   setAddedIds]   = useState(new Set());
   const [poppingIds, setPoppingIds] = useState(new Set());
   const [removingIds, setRemovingIds] = useState(new Set());
 
   useEffect(() => { dispatch(fetchSuggestions(5)); }, [dispatch]);
 
-  function handleAdd(id) {
-    if (addedIds.has(id)) return;
-    dispatch(followUser(id));
-    setAddedIds(p => new Set([...p, id]));
+  function handleAdd(id, status) {
+    if (status === 'requested' || status === 'connected') return;
+    dispatch(sendFriendRequest(id));
     setPoppingIds(p => new Set([...p, id]));
     setTimeout(() => setPoppingIds(p => { const s = new Set(p); s.delete(id); return s; }), 500);
   }
@@ -108,6 +113,8 @@ function FriendSuggestionsPanel({ onUserClick }) {
       </div>
       {visible.map(f => {
         const id = f.id ?? f._id;
+        const status = friendStatusMap[id] ?? f.friendStatus ?? 'none';
+        const isPendingOrConnected = status === 'requested' || status === 'connected';
         const hasMutual = !!f.mutualFriends;
         const locationText = f.location || f.city;
         const sub = hasMutual ? `${f.mutualFriends} mutual friends` : (locationText || f.sub || '');
@@ -131,15 +138,16 @@ function FriendSuggestionsPanel({ onUserClick }) {
             </div>
             <div className="prof-sugg-actions">
               <button
-                className={`prof-sugg-add-btn${addedIds.has(id) ? ' prof-sugg-add-btn--added' : ''}${poppingIds.has(id) ? ' prof-sugg-add-btn--pop' : ''}`}
-                onClick={() => handleAdd(id)}
+                className={`prof-sugg-add-btn${isPendingOrConnected ? ' prof-sugg-add-btn--added' : ''}${poppingIds.has(id) ? ' prof-sugg-add-btn--pop' : ''}`}
+                onClick={() => handleAdd(id, status)}
+                disabled={isPendingOrConnected}
               >
-                {addedIds.has(id) ? '✓ Added' : 'Add Friend'}
+                {status === 'connected' ? '✓ Connected' : status === 'requested' ? 'Requested' : 'Add Friend'}
               </button>
               <button
-                className={`prof-sugg-remove-btn${addedIds.has(id) ? ' prof-sugg-remove-btn--hidden' : ''}`}
+                className={`prof-sugg-remove-btn${isPendingOrConnected ? ' prof-sugg-remove-btn--hidden' : ''}`}
                 onClick={() => handleRemove(id)}
-                tabIndex={addedIds.has(id) ? -1 : 0}
+                tabIndex={isPendingOrConnected ? -1 : 0}
               >
                 Remove
               </button>
@@ -154,6 +162,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
 export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const dispatch = useDispatch();
   const { connections, connectionsTotal } = useSelector(s => s.profile);
+  const { friendRequests } = useSelector(s => s.users);
 
   const [viewMode,  setViewMode]  = useState('list');
   const [search,    setSearch]    = useState('');
@@ -162,7 +171,10 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const [openDrop,  setOpenDrop]  = useState(null); // 'loc' | 'ind' | null
   const filterBarRef = useRef(null);
 
-  useEffect(() => { dispatch(fetchConnections()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchConnections());
+    dispatch(fetchFriendRequests());
+  }, [dispatch]);
 
   useEffect(() => {
     if (!openDrop) return;
@@ -195,6 +207,28 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   return (
     <div className="prof-conn-layout">
     <div className="prof-conn-tab">
+      {friendRequests.length > 0 && (
+        <div className="prof-invites">
+          <h3 className="prof-invites-title">Invitations <span className="prof-conn-count">{friendRequests.length}</span></h3>
+          <div className="prof-invites-list">
+            {friendRequests.map(req => (
+              <div key={req.requestId ?? req.userId} className="prof-invite-item">
+                <div className="prof-invite-left" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>
+                  {req.avatar
+                    ? <img src={req.avatar} alt={req.name} className="prof-invite-avatar" />
+                    : <span className="prof-invite-avatar prof-conn-avatar--fallback">{initials(req.name)}</span>
+                  }
+                  <span className="prof-invite-name">{req.name}</span>
+                </div>
+                <div className="prof-invite-actions">
+                  <button className="prof-invite-btn prof-invite-btn--accept" onClick={() => dispatch(acceptFriendRequest(req.userId)).then(() => dispatch(fetchConnections()))}>Accept</button>
+                  <button className="prof-invite-btn prof-invite-btn--ignore" onClick={() => dispatch(rejectFriendRequest(req.userId))}>Ignore</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="prof-conn-header">
         <div className="prof-conn-header-left">
           <h3 className="prof-conn-title">Connections</h3>
@@ -920,6 +954,7 @@ export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed }) {
                           value={toInputDate(personalDraft.dob)}
                           onChange={e => setPersonalDraft(d => ({ ...d, dob: fromInputDate(e.target.value) }))}
                           placeholder="Select date of birth"
+                          max={MAX_DOB}
                         />
                       </div>
                     ) : item.id === 'gender' ? (

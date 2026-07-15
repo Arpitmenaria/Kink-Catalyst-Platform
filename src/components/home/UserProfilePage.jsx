@@ -5,7 +5,7 @@ import PostCard from "./PostCard";
 import SkeletonImg from "../SkeletonImg";
 import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
-import { followUser, unfollowUser } from "../../store/slices/usersSlice";
+import { followUser, unfollowUser, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from "../../store/slices/usersSlice";
 import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
 import { showToast } from "../../store/slices/toastSlice";
 import { apiRequest } from "../../services/api";
@@ -79,6 +79,13 @@ function PersonAddIcon() {
       <circle cx="9" cy="7" r="4" />
       <line x1="19" y1="8" x2="19" y2="14" />
       <line x1="22" y1="11" x2="16" y2="11" />
+    </svg>
+  );
+}
+function ClockIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
@@ -216,7 +223,7 @@ export default function UserProfilePage({
 }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector((s) => s.auth);
-  const { followingIds } = useSelector((s) => s.users);
+  const { followingIds, friendStatusMap } = useSelector((s) => s.users);
   // Posts live in Redux (not local state) so PostCard's like/comment/reply/share
   // dispatches — which update state.posts.viewedPosts — are reflected here.
   const viewedPosts = useSelector((s) => s.posts.viewedPosts);
@@ -295,14 +302,22 @@ export default function UserProfilePage({
   // normal editable ProfilePage rather than rendering the read-only one.
   const isSelf = authUser?._id === userId;
 
+  // Relationship: optimistic override wins, else the flag from the profile fetch.
+  const friendStatus = friendStatusMap[userId] ?? viewedUser?.friendStatus ?? 'none';
+  const isConnected  = friendStatus === 'connected';
+
   function handleFollowToggle() {
     setIsFollowing((prev) => !prev);
     dispatch(isFollowing ? unfollowUser(userId) : followUser(userId));
   }
 
+  function handleConnect()  { dispatch(sendFriendRequest(userId)); }
+  function handleAccept()   { dispatch(acceptFriendRequest(userId)); }
+  function handleReject()   { dispatch(rejectFriendRequest(userId)); }
+
   function handleChatClick() {
-    if (!isFollowing) {
-      dispatch(showToast({ message: `Follow ${displayName.split(' ')[0]} to start chatting with them.`, type: 'error' }));
+    if (!isConnected) {
+      dispatch(showToast({ message: `Connect with ${displayName.split(' ')[0]} to start messaging.`, type: 'error' }));
       return;
     }
     onMessageUser?.(userId);
@@ -414,6 +429,52 @@ export default function UserProfilePage({
           {/* ── Action buttons (replaces the edit/avatar controls on own profile) ── */}
           {!isSelf && (
             <div className="prof-actions">
+              {/* Primary relationship button */}
+              {friendStatus === 'incoming' ? (
+                <>
+                  <button
+                    className="prof-edit-btn"
+                    style={{ background: "#2563eb", border: "1px solid #2563eb", color: "#fff" }}
+                    onClick={handleAccept}
+                  >
+                    <CheckIcon /> Accept
+                  </button>
+                  <button
+                    className="prof-edit-btn"
+                    style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#cbd5e1" }}
+                    onClick={handleReject}
+                  >
+                    Ignore
+                  </button>
+                </>
+              ) : friendStatus === 'connected' ? (
+                <button
+                  className="prof-edit-btn"
+                  style={{ background: "#2563eb", border: "1px solid #2563eb", color: "#fff" }}
+                  onClick={() => onMessageUser?.(userId)}
+                >
+                  <MsgIcon /> Message
+                </button>
+              ) : friendStatus === 'requested' ? (
+                <button
+                  className="prof-edit-btn"
+                  style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#cbd5e1" }}
+                  onClick={handleReject}
+                  title="Cancel request"
+                >
+                  <ClockIcon /> Pending
+                </button>
+              ) : (
+                <button
+                  className="prof-edit-btn"
+                  style={{ background: "#2563eb", border: "1px solid #2563eb", color: "#fff" }}
+                  onClick={handleConnect}
+                >
+                  <PersonAddIcon /> Connect
+                </button>
+              )}
+
+              {/* Follow toggle — independent of connection */}
               <button
                 className="prof-edit-btn"
                 style={
@@ -436,20 +497,17 @@ export default function UserProfilePage({
                 )}
               </button>
 
-              <button
-                className="prof-edit-btn"
-                style={{
-                  background: "#1a2338",
-                  border: "1px solid #1e2a42",
-                  color: isFollowing ? "#cbd5e1" : "#5c6a8c",
-                  opacity: isFollowing ? 1 : 0.6,
-                  cursor: isFollowing ? "pointer" : "not-allowed",
-                }}
-                onClick={handleChatClick}
-                title={isFollowing ? undefined : `Follow ${displayName.split(' ')[0]} to start chatting`}
-              >
-                <MsgIcon /> Chat
-              </button>
+              {/* Chat — only when not connected show a disabled hint; connected uses Message above */}
+              {friendStatus !== 'connected' && (
+                <button
+                  className="prof-edit-btn"
+                  style={{ background: "#1a2338", border: "1px solid #1e2a42", color: "#5c6a8c", opacity: 0.6, cursor: "not-allowed" }}
+                  onClick={handleChatClick}
+                  title={`Connect with ${displayName.split(' ')[0]} to message`}
+                >
+                  <MsgIcon /> Chat
+                </button>
+              )}
 
               <button
                 className="prof-edit-btn"
