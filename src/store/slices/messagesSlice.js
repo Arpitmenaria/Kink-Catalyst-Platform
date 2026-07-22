@@ -188,6 +188,33 @@ export const createGroup = createAsyncThunk(
   }
 );
 
+// 6a2. PUT /api/conversations/:id/group — admin-only, edit name/description/photo.
+// Response is a flat PARTIAL update ({ conversationId, name, avatarUrl, description }),
+// not a full conversation object — merge just these fields, don't run it through
+// normalizeConversation (that would default missing type/memberCount/myRole and
+// clobber what's already in state, same reasoning as groupUpdatedRemote below).
+export const updateGroup = createAsyncThunk(
+  'messages/updateGroup',
+  async ({ convId, name, description, image }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const form = new FormData();
+      if (name !== undefined) form.append('name', name);
+      if (description !== undefined) form.append('description', description);
+      if (image) form.append('image', image);
+      const data = await apiRequest(`/api/conversations/${convId}/group`, { method: 'PUT', token, body: form, isFormData: true });
+      return {
+        convId,
+        name: data.name,
+        avatarUrl: data.avatarUrl?.startsWith?.('http') ? data.avatarUrl : undefined,
+        description: data.description,
+      };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // 6b. GET /api/conversations/:id — group details (member count, admin, description)
 export const fetchConversationDetail = createAsyncThunk(
   'messages/fetchConversationDetail',
@@ -632,6 +659,15 @@ const messagesSlice = createSlice({
       })
 
       .addCase(createGroup.fulfilled, (s, a) => { s.conversations.unshift(a.payload); })
+
+      .addCase(updateGroup.fulfilled, (s, a) => {
+        const { convId, name, avatarUrl, description } = a.payload;
+        const conv = s.conversations.find(c => c.id === convId);
+        if (!conv) return;
+        if (name !== undefined) conv.name = name;
+        if (avatarUrl !== undefined) conv.avatarUrl = avatarUrl;
+        if (description !== undefined) conv.description = description;
+      })
 
       .addCase(fetchConversationDetail.fulfilled, (s, a) => {
         const idx = s.conversations.findIndex(c => c.id === a.payload.id);

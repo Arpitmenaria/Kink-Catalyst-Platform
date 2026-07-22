@@ -9,7 +9,7 @@ import {
   toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread,
   fetchBlockedUsers, removeBlockedUser,
   fetchConversationDetail, fetchGroupMembers, deleteGroup, leaveGroup,
-  addGroupMembers, removeGroupMember, setActiveConvId,
+  addGroupMembers, removeGroupMember, setActiveConvId, updateGroup,
 } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
@@ -370,6 +370,7 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
 
 function CameraIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>; }
 function CheckSmIcon()     { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
+function EditIcon()        { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>; }
 function GroupNewIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function GroupBadgeIcon()  { return <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
@@ -647,6 +648,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [addMembersSelected, setAddMembersSelected] = useState([]);
   const [addMembersSubmitting, setAddMembersSubmitting] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState(null);
+  const [editingGroupInfo, setEditingGroupInfo] = useState(false);
+  const [editGroupName,    setEditGroupName]    = useState('');
+  const [editGroupDesc,    setEditGroupDesc]    = useState('');
+  const [editGroupImg,     setEditGroupImg]     = useState(null);
+  const [editGroupSubmitting, setEditGroupSubmitting] = useState(false);
   const [blockedConfirm,   setBlockedConfirm]  = useState(null); // { type: 'unblock' | 'delete', user } | null
   const [blockedConfirmSubmitting, setBlockedConfirmSubmitting] = useState(false);
 
@@ -658,6 +664,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const isTypingRef     = useRef(false);
   const fileInputRef    = useRef(null);
   const lightboxTouchX  = useRef(null);
+  const editGroupImgInputRef = useRef(null);
 
   /* Fetch online users (drives conversation online dots) + blocked users + connections (Quick Online panel) on mount */
   useEffect(() => {
@@ -886,6 +893,39 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     setShowAddMembers(false);
     setAddMembersSelected([]);
     setDescExpanded(false);
+    setEditingGroupInfo(false);
+    setEditGroupImg(null);
+  }
+
+  function startEditGroupInfo() {
+    setEditGroupName(liveActiveConv.name ?? '');
+    setEditGroupDesc(liveActiveConv.description ?? '');
+    setEditGroupImg(null);
+    setEditingGroupInfo(true);
+  }
+
+  function cancelEditGroupInfo() {
+    setEditingGroupInfo(false);
+    setEditGroupImg(null);
+  }
+
+  async function handleSaveGroupInfo() {
+    if (!activeConv || !editGroupName.trim()) return;
+    setEditGroupSubmitting(true);
+    const result = await dispatch(updateGroup({
+      convId: activeConv.id,
+      name: editGroupName.trim(),
+      description: editGroupDesc.trim(),
+      image: editGroupImg,
+    }));
+    if (updateGroup.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Group updated', type: 'success' }));
+      setEditingGroupInfo(false);
+      setEditGroupImg(null);
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to update group', type: 'error' }));
+    }
+    setEditGroupSubmitting(false);
   }
 
   function toggleAddMemberSelected(id) {
@@ -1609,7 +1649,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                       ? 'Delete Group?'
                       : confirmAction === 'leaveGroup'
                         ? 'Leave Group?'
-                        : 'Report Conversation'}
+                        : liveActiveConv.type === 'group' ? 'Report Group' : 'Report Conversation'}
               </h2>
               <p className="msg-confirm-desc">
                 {confirmAction === 'block'
@@ -1622,7 +1662,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                       ? `This will permanently delete "${liveActiveConv.name}" for everyone in the group. This can't be undone.`
                       : confirmAction === 'leaveGroup'
                         ? `You'll stop receiving messages from "${liveActiveConv.name}" unless someone adds you back.`
-                        : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
+                        : liveActiveConv.type === 'group'
+                          ? `Are you sure you want to report "${liveActiveConv.name}" for review? Our team will look into it.`
+                          : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
               </p>
               <div className="msg-confirm-actions">
                 <button className="msg-confirm-cancel-btn" onClick={closeConfirm} disabled={confirmSubmitting}>Cancel</button>
@@ -1658,27 +1700,80 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               </div>
 
               <div className="grp-info-identity">
-                <div className="grp-info-avatar" style={{ background: '#3b82f6' }}>
-                  {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
-                </div>
-                <p className="grp-info-name">{liveActiveConv.name}</p>
-                {liveActiveConv.description && (
+                {editingGroupInfo ? (
                   <>
-                    <p className={`grp-info-desc${descExpanded ? '' : ' grp-info-desc--clamped'}`}>
-                      {liveActiveConv.description}
+                    <div
+                      className="grp-info-avatar grp-info-avatar--editable"
+                      style={{ background: '#3b82f6', cursor: 'pointer' }}
+                      onClick={() => editGroupImgInputRef.current?.click()}
+                    >
+                      {editGroupImg
+                        ? <img src={URL.createObjectURL(editGroupImg)} alt="" />
+                        : (liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name))}
+                      <span className="grp-info-avatar-edit-badge"><CameraIcon /></span>
+                      <input
+                        ref={editGroupImgInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={e => e.target.files[0] && setEditGroupImg(e.target.files[0])}
+                      />
+                    </div>
+                    <input
+                      className="grp-info-edit-name-input"
+                      value={editGroupName}
+                      onChange={e => setEditGroupName(e.target.value)}
+                      placeholder="Group name"
+                      maxLength={80}
+                    />
+                    <textarea
+                      className="grp-info-edit-desc-input"
+                      value={editGroupDesc}
+                      onChange={e => setEditGroupDesc(e.target.value)}
+                      placeholder="Group description (optional)"
+                      rows={3}
+                    />
+                    <div className="grp-info-edit-actions">
+                      <button className="grp-info-edit-cancel-btn" onClick={cancelEditGroupInfo} disabled={editGroupSubmitting}>Cancel</button>
+                      <button
+                        className="grp-info-edit-save-btn"
+                        onClick={handleSaveGroupInfo}
+                        disabled={!editGroupName.trim() || editGroupSubmitting}
+                      >
+                        {editGroupSubmitting ? 'Saving…' : 'Save'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grp-info-avatar" style={{ background: '#3b82f6' }}>
+                      {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
+                    </div>
+                    <p className="grp-info-name">{liveActiveConv.name}</p>
+                    {liveActiveConv.description && (
+                      <>
+                        <p className={`grp-info-desc${descExpanded ? '' : ' grp-info-desc--clamped'}`}>
+                          {liveActiveConv.description}
+                        </p>
+                        {liveActiveConv.description.length > 180 && (
+                          <button className="grp-info-desc-toggle" onClick={() => setDescExpanded(v => !v)}>
+                            {descExpanded ? 'See less' : 'See more'}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    <p className="grp-info-member-count">
+                      {typeof liveActiveConv.memberCount === 'number'
+                        ? `${liveActiveConv.memberCount} member${liveActiveConv.memberCount === 1 ? '' : 's'}`
+                        : 'Members'}
                     </p>
-                    {liveActiveConv.description.length > 180 && (
-                      <button className="grp-info-desc-toggle" onClick={() => setDescExpanded(v => !v)}>
-                        {descExpanded ? 'See less' : 'See more'}
+                    {liveActiveConv.myRole === 'admin' && (
+                      <button className="grp-info-edit-btn" onClick={startEditGroupInfo}>
+                        <EditIcon /> Edit Group
                       </button>
                     )}
                   </>
                 )}
-                <p className="grp-info-member-count">
-                  {typeof liveActiveConv.memberCount === 'number'
-                    ? `${liveActiveConv.memberCount} member${liveActiveConv.memberCount === 1 ? '' : 's'}`
-                    : 'Members'}
-                </p>
               </div>
 
               <div className="grp-info-members">
@@ -1776,6 +1871,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 {liveActiveConv.myRole == null && (
                   <p style={{ color: '#5c6a8c', fontSize: 12.5, margin: 0 }}>Loading your role in this group…</p>
                 )}
+                <button
+                  className="grp-info-report-btn"
+                  disabled={isReported}
+                  onClick={() => { closeGroupInfo(); setConfirmAction('report'); }}
+                >
+                  {isReported ? 'Reported' : 'Report Group'}
+                </button>
               </div>
             </div>
           </div>

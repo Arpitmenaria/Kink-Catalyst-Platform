@@ -2889,7 +2889,76 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .grp-info-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.grp-info-avatar--editable { position: relative; }
+.grp-info-avatar-edit-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #161b2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
 .grp-info-name { font-size: 16px; font-weight: 700; color: #e8ecf8; margin: 0 0 4px; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+.grp-info-edit-name-input {
+  width: 100%;
+  background: #0d1020;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e8ecf8;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.grp-info-edit-desc-input {
+  width: 100%;
+  background: #0d1020;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #c8cfe0;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.grp-info-edit-actions { display: flex; gap: 8px; width: 100%; }
+.grp-info-edit-cancel-btn, .grp-info-edit-save-btn {
+  flex: 1;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.grp-info-edit-cancel-btn { background: none; border: 1px solid #252d4a; color: #8b9cc8; }
+.grp-info-edit-save-btn { background: #2563eb; border: none; color: #fff; }
+.grp-info-edit-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.grp-info-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 0;
+}
+.grp-info-edit-btn:hover { text-decoration: underline; }
 .grp-info-desc { font-size: 13px; color: #8b9cc8; margin: 0 0 4px; }
 .grp-info-desc--clamped {
   display: -webkit-box;
@@ -3007,6 +3076,23 @@
   transition: background 0.15s;
 }
 .grp-info-danger-btn:hover { background: rgba(239,68,68,0.1); }
+
+.grp-info-report-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: none;
+  border: 1px solid #3a2f1a;
+  color: #f59e0b;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s;
+}
+.grp-info-report-btn:hover { background: rgba(245,158,11,0.1); }
+.grp-info-report-btn:disabled { opacity: 0.6; cursor: default; }
 
 .msg-confirm-cancel-btn {
   padding: 9px 20px;
