@@ -53,8 +53,17 @@ export const loginUser = createAsyncThunk(
         body: { email, password },
       });
       const payload = data.data ?? data;
+      // TEMP DIAGNOSTIC — remove after debugging the Vercel login issue.
+      console.log('[LOGIN OK] raw response:', data);
       return { user: payload.user ?? null, token: payload.token ?? null };
     } catch (err) {
+      // TEMP DIAGNOSTIC — shows exactly what the backend returned on failure.
+      console.error('[LOGIN FAILED]', {
+        status: err.status,
+        message: err.message,
+        data: err.data,
+        requiresPlanSelection: err.data?.requiresPlanSelection,
+      });
       // Backend returns this on a non-2xx status when the account exists but
       // never finished plan setup — route to PlansPage instead of showing
       // "invalid credentials" for what is actually a successful login.
