@@ -540,17 +540,28 @@ const postsSlice = createSlice({
 
       // ── Share ──────────────────────────────
       .addCase(sharePost.pending, (state, action) => {
-        state.sharingId = action.meta.arg;
-      })
-      .addCase(sharePost.fulfilled, (state, action) => {
-        state.sharingId = null;
-        const { postId } = action.payload;
+        const postId = action.meta.arg;
+        state.sharingId = postId;
         forEachMatchingPost(state, postId, (post) => {
           if (Array.isArray(post.shares)) post.shares.push('shared');
         });
       })
-      .addCase(sharePost.rejected, (state) => {
+      .addCase(sharePost.fulfilled, (state, action) => {
         state.sharingId = null;
+        const { postId, sharesCount } = action.payload;
+        // Trust the server's authoritative count over the optimistic push above.
+        if (typeof sharesCount === 'number') {
+          forEachMatchingPost(state, postId, (post) => {
+            if (Array.isArray(post.shares)) post.shares = new Array(sharesCount).fill(null);
+          });
+        }
+      })
+      .addCase(sharePost.rejected, (state, action) => {
+        state.sharingId = null;
+        const postId = action.meta.arg;
+        forEachMatchingPost(state, postId, (post) => {
+          if (Array.isArray(post.shares) && post.shares.length > 0) post.shares.pop();
+        });
       })
 
       // ── Edit Post ──────────────────────────

@@ -11,6 +11,7 @@ import {
   fetchComments, postComment, likeComment,
 } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
+import { fetchConnections } from '../../store/slices/profileSlice';
 import { joinEventRoom, leaveEventRoom } from '../../services/socket';
 
 /* ── Sidebar nav icons ── */
@@ -216,13 +217,9 @@ function EventCarousel({ images, alt }) {
   );
 }
 
-const REVIEW_FRIENDS = [
-  { id: '1', name: 'Alex Johnson',  color: '#7c3aed' },
-  { id: '2', name: 'Sarah Miller',  color: '#0891b2' },
-  { id: '3', name: 'David Chen',    color: '#059669' },
-];
+const INVITE_AVATAR_COLORS = ['#7c3aed', '#0891b2', '#059669', '#f59e0b', '#ef4444', '#3b82f6'];
 
-function reviewInitials(name) { return name.split(' ').map(w => w[0]).join('').toUpperCase(); }
+function reviewInitials(name = '') { return name.split(' ').map(w => w[0]).join('').toUpperCase(); }
 function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function BackArrowIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function SendIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
@@ -348,10 +345,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [coverImagePreview, setCoverImagePreview] = useState('');
+  const [inviteSearch, setInviteSearch] = useState('');
 
   // Redux
   const dispatch = useDispatch();
   const { user: authUser } = useSelector(s => s.auth);
+  const { connections } = useSelector(s => s.profile);
   const {
     events: rdxEvents, eventsLoading,
     bookedEvents, bookedLoading,
@@ -361,6 +360,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     comments: evtComments, commentsLoading,
     bookingLoading, createLoading,
   } = useSelector(s => s.events);
+
+  // Step 4's Invite Friends panel needs the real connections list, not
+  // fetched until the review step is actually reached.
+  useEffect(() => {
+    if (step === 4) dispatch(fetchConnections());
+  }, [step]);
 
   // Fetch on tab / category change
   useEffect(() => {
@@ -538,6 +543,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   ]);
   const [selectedTicketId, setSelectedTicketId] = useState('1');
   const [showNewForm, setShowNewForm] = useState(true);
+  const [editingTicketId, setEditingTicketId] = useState(null);
   const [newTicket, setNewTicket] = useState({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
   const [registration, setRegistration] = useState({ ticketPrice: '150', totalSeats: '', maxPerUser: '4', deadline: '' });
 
@@ -547,6 +553,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [parking, setParking] = useState('');
   const [organizer, setOrganizer] = useState({ fullName: '', email: '', phone: '' });
   const [virtual, setVirtual] = useState({ link: '', instructions: '' });
+
+  // Step 3's location tab defaults to whichever option matches Step 1's Event
+  // Type — Online → "Online Event" tab, Offline → "Physical Event" tab —
+  // instead of always opening on Physical regardless of that choice.
+  useEffect(() => {
+    setLocationTab(form.eventType === 'online' ? 'online' : 'physical');
+  }, [form.eventType]);
 
   const [dateErrors, setDateErrors] = useState({ startDate: '', endDate: '', endTime: '' });
   const [stepErrors, setStepErrors] = useState({});
@@ -598,9 +611,38 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   function saveNewTicket() {
     if (!newTicket.name.trim()) return;
-    setTickets(prev => [...prev, { id: Date.now().toString(), name: newTicket.name, price: newTicket.price, iconType: 'ticket' }]);
+    if (editingTicketId) {
+      setTickets(prev => prev.map(t => t.id === editingTicketId ? { ...t, ...newTicket } : t));
+      setEditingTicketId(null);
+    } else {
+      setTickets(prev => [...prev, { id: Date.now().toString(), ...newTicket, iconType: 'ticket' }]);
+    }
     setNewTicket({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
     setShowNewForm(false);
+  }
+
+  function startEditTicket(tk) {
+    setEditingTicketId(tk.id);
+    setNewTicket({
+      name: tk.name ?? '',
+      description: tk.description ?? '',
+      price: tk.price ?? '0.00',
+      seats: tk.seats ?? '100',
+      maxPerUser: tk.maxPerUser ?? '1',
+    });
+    setShowNewForm(true);
+  }
+
+  function cancelTicketForm() {
+    setShowNewForm(false);
+    setEditingTicketId(null);
+    setNewTicket({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
+  }
+
+  function removeTicket(id) {
+    setTickets(prev => prev.filter(t => t.id !== id));
+    setSelectedTicketId(prev => (prev === id ? null : prev));
+    if (editingTicketId === id) cancelTicketForm();
   }
 
   function handleBack() {
@@ -725,7 +767,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             <div className="ev-detail-hero-info">
               <p className="ev-detail-datetime">{selectedEvent.fullDate}</p>
               <h1 className="ev-detail-title">{selectedEvent.title}</h1>
-              <p className="ev-detail-location"><MapPinIcon /> {selectedEvent.location}</p>
+              <p className="ev-detail-location"><MapPinIcon /> {selectedEvent.location || 'N/A'}</p>
             </div>
           </div>
 
@@ -851,7 +893,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <h3 className="ev-detail-card-title">Event Info</h3>
                     <div className="ev-detail-info-rows">
                       <div className="ev-detail-info-row"><CalendarIcon /><span>{selectedEvent.fullDate}</span></div>
-                      <div className="ev-detail-info-row"><MapPinIcon /><span>{selectedEvent.venue || selectedEvent.location}</span></div>
+                      <div className="ev-detail-info-row"><MapPinIcon /><span>{selectedEvent.venue || selectedEvent.location || 'N/A'}</span></div>
                       <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{selectedEvent.category}</span></div>
                     </div>
                   </div>
@@ -863,11 +905,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-detail-map-card">
                     <div className="ev-detail-map-bg">
                       <div className="ev-detail-map-overlay">
-                        <span className="ev-detail-map-label"><MapPinIcon /> {selectedEvent.location}</span>
+                        <span className="ev-detail-map-label"><MapPinIcon /> {selectedEvent.location || 'N/A'}</span>
                       </div>
                     </div>
                     <div className="ev-detail-map-footer">
-                      <p className="ev-detail-map-venue">{selectedEvent.venue || selectedEvent.location}</p>
+                      <p className="ev-detail-map-venue">{selectedEvent.venue || selectedEvent.location || 'N/A'}</p>
                       <button className="ev-detail-map-btn"><ExternalLinkIcon /> Open in Maps</button>
                     </div>
                   </div>
@@ -975,7 +1017,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-detail-info-row">
                         <MapPinIcon />
-                        <span>{selectedEvent.location}</span>
+                        <span>{selectedEvent.location || 'N/A'}</span>
                       </div>
                       <div className="ev-detail-info-row">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -1088,7 +1130,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
                 <div className="ev-disc-card-body">
                   <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'}</p>
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   <div className="ev-disc-card-footer">
@@ -1121,7 +1163,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <div className="ev-list-top">
                     <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location}</p>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'}</p>
                   </div>
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <p className="ev-list-desc">{ev.desc}</p>
@@ -1490,6 +1532,24 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           <div className="ev-ticket-icon">{TICKET_ICONS[tk.iconType]}</div>
                           <p className="ev-ticket-name">{tk.name}</p>
                           <p className={`ev-ticket-price${isActive ? ' ev-ticket-price--active' : ''}`}>${Number(tk.price).toFixed(2)}</p>
+                          <div className="ev-ticket-row-actions">
+                            <button
+                              type="button"
+                              className="ev-ticket-edit-btn"
+                              aria-label="Edit ticket"
+                              onClick={(e) => { e.stopPropagation(); startEditTicket(tk); }}
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              type="button"
+                              className="ev-ticket-remove-btn"
+                              aria-label="Remove ticket"
+                              onClick={(e) => { e.stopPropagation(); removeTicket(tk.id); }}
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -1499,8 +1559,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   {showNewForm && (
                     <div className="ev-new-ticket-form">
                       <div className="ev-new-ticket-header">
-                        <span>New Ticket Type</span>
-                        <button type="button" className="ev-cancel-ticket-btn" onClick={() => setShowNewForm(false)}>✕</button>
+                        <span>{editingTicketId ? 'Edit Ticket Type' : 'New Ticket Type'}</span>
+                        <button type="button" className="ev-cancel-ticket-btn" onClick={cancelTicketForm}>✕</button>
                       </div>
                       <div className="ev-new-ticket-body">
                         <div className="ev-field">
@@ -1531,15 +1591,23 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           </div>
                         </div>
                         <div className="ev-new-ticket-actions">
-                          <button type="button" className="ev-save-ticket-btn" onClick={saveNewTicket}>Save Ticket</button>
-                          <button type="button" className="ev-cancel-ticket-btn-text" onClick={() => setShowNewForm(false)}>Cancel</button>
+                          <button type="button" className="ev-save-ticket-btn" onClick={saveNewTicket}>{editingTicketId ? 'Save Changes' : 'Save Ticket'}</button>
+                          <button type="button" className="ev-cancel-ticket-btn-text" onClick={cancelTicketForm}>Cancel</button>
                         </div>
                       </div>
                     </div>
                   )}
 
                   {/* Add another — always visible */}
-                  <button type="button" className="ev-add-ticket-btn" onClick={() => setShowNewForm(true)}>
+                  <button
+                    type="button"
+                    className="ev-add-ticket-btn"
+                    onClick={() => {
+                      setEditingTicketId(null);
+                      setNewTicket({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
+                      setShowNewForm(true);
+                    }}
+                  >
                     <PlusIcon /> Add Another Ticket Type
                   </button>
                   {stepErrors.tickets && <p className="ev-field-error" style={{ marginTop: 8 }}>{stepErrors.tickets}</p>}
@@ -1779,16 +1847,32 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <p className="ev-s4-panel-title">INVITE FRIENDS</p>
                   <div className="ev-invite-search-wrap">
                     <SearchIcon />
-                    <input className="ev-invite-search" type="text" placeholder="Search friends..." />
+                    <input
+                      className="ev-invite-search"
+                      type="text"
+                      placeholder="Search friends..."
+                      value={inviteSearch}
+                      onChange={(e) => setInviteSearch(e.target.value)}
+                    />
                   </div>
                   <div className="ev-invite-list">
-                    {REVIEW_FRIENDS.map(f => (
-                      <div key={f.id} className="ev-invite-friend">
-                        <div className="ev-invite-avatar" style={{ background: f.color }}>{reviewInitials(f.name)}</div>
-                        <span className="ev-invite-name">{f.name}</span>
-                        <button type="button" className="ev-invite-btn">Invite</button>
-                      </div>
-                    ))}
+                    {connections
+                      .filter(c => c.name?.toLowerCase().includes(inviteSearch.toLowerCase()))
+                      .map((f, i) => {
+                        const fid = f.id ?? f._id;
+                        return (
+                          <div key={fid} className="ev-invite-friend">
+                            {f.avatar
+                              ? <img className="ev-invite-avatar ev-invite-avatar--img" src={f.avatar} alt={f.name} />
+                              : <div className="ev-invite-avatar" style={{ background: INVITE_AVATAR_COLORS[i % INVITE_AVATAR_COLORS.length] }}>{reviewInitials(f.name)}</div>}
+                            <span className="ev-invite-name">{f.name}</span>
+                            <button type="button" className="ev-invite-btn">Invite</button>
+                          </div>
+                        );
+                      })}
+                    {connections.length === 0 && (
+                      <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No connections yet.</p>
+                    )}
                   </div>
                 </div>
 

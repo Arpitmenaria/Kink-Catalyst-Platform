@@ -122,7 +122,7 @@ function normalizeComment(c) {
 export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
-  const { likingIds, commentingId, commentsLoadingIds, deletingId } = useSelector(s => s.posts);
+  const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId } = useSelector(s => s.posts);
   const { connections } = useSelector(s => s.profile);
 
   const isStatic = typeof post.likes === 'number';
@@ -262,6 +262,7 @@ export default function PostCard({ post, onUserClick }) {
   const isLiked   = !!myReaction;
   const displayLikeCount = isStatic ? (post.likes + (localReaction ? 1 : 0)) : likeCount;
   const isLiking  = isStatic ? false : likingIds.includes(post._id);
+  const isSharing = isStatic ? false : sharingId === post._id;
   const isCommenting = isStatic ? false : commentingId === post._id;
   const commentsLoading = !isStatic && commentsLoadingIds.includes(post._id);
 
@@ -335,9 +336,30 @@ export default function PostCard({ post, onUserClick }) {
     pickerTimer.current = setTimeout(() => setPickerOpen(false), 220);
   }
 
-  function handleShare() {
-    if (isStatic) return;
-    dispatch(sharePost(post._id));
+  // No per-post URL exists to deep-link to, so the share sheet carries the
+  // post's own content (author + caption) rather than a link. Only counts
+  // as a share (API hit) once the user actually completes the share/copy —
+  // canceling the native share sheet throws AbortError and shouldn't count.
+  async function handleShare() {
+    if (isStatic || isSharing) return;
+    const authorName = post.author?.fullName || post.author?.name || 'Someone';
+    const text = post.caption ? `${authorName}: ${post.caption}` : `A post by ${authorName}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: authorName, text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        dispatch(showToast({ message: 'Post copied to clipboard', type: 'success' }));
+      } else {
+        return;
+      }
+      dispatch(sharePost(post._id));
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        dispatch(showToast({ message: 'Could not share this post', type: 'error' }));
+      }
+    }
   }
 
   function handleCommentTextChange(e) {
@@ -621,7 +643,7 @@ export default function PostCard({ post, onUserClick }) {
             <CommentIcon /> Comment ({commentCount})
           </button>
           <div className="post-action-sep" />
-          <button className="post-action-btn" onClick={handleShare}>
+          <button className="post-action-btn" onClick={handleShare} disabled={isSharing}>
             <ShareIcon /> {shareCount > 1 ? 'Shares' : 'Share'} ({shareCount})
           </button>
         </div>

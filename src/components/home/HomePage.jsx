@@ -37,7 +37,6 @@ export default function HomePage() {
   const [groupsCreate,    setGroupsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
   const [profileAutoEdit, setProfileAutoEdit] = useState(false);
-  const [profileAutoEditEducation, setProfileAutoEditEducation] = useState(false);
   const [profileInitFollowPanel, setProfileInitFollowPanel] = useState(null); // 'following' | 'followers' | null
   const [viewedUserId,    setViewedUserId]    = useState(null);
   const [viewedGroupId,   setViewedGroupId]   = useState(null);
@@ -57,7 +56,6 @@ export default function HomePage() {
   function goToEventsCreate() { setEventsCreate(true); setSection('events'); }
   function goToGroupsCreate() { setGroupsCreate(true); setSection('groups'); }
   function goToProfileTab(tab) { setProfileInitTab(tab); setSection('profile'); }
-  function goToProfileEducation() { setProfileInitTab('About'); setProfileAutoEditEducation(true); setSection('profile'); }
   function goToProfileFollowPanel(panel) { setProfileInitFollowPanel(panel); setSection('profile'); }
 
   // Open someone's profile. If it's the logged-in user, send them to their
@@ -122,8 +120,6 @@ export default function HomePage() {
             onInitTabConsumed={() => setProfileInitTab(null)}
             autoEditPersonal={profileAutoEdit}
             onAutoEditConsumed={() => setProfileAutoEdit(false)}
-            autoEditEducation={profileAutoEditEducation}
-            onAutoEditEducationConsumed={() => setProfileAutoEditEducation(false)}
             initFollowPanel={profileInitFollowPanel}
             onInitFollowPanelConsumed={() => setProfileInitFollowPanel(null)}
             onUserClick={goToUserProfile}
@@ -240,7 +236,7 @@ export default function HomePage() {
               onCreateEvent={goToEventsCreate}
               onUserClick={goToUserProfile}
             />
-            <RightSidebar onAddEducationClick={goToProfileEducation} onGalleryClick={() => goToProfileTab('Photos')} />
+            <RightSidebar onAddEducationClick={() => setSection('courses')} onGalleryClick={() => goToProfileTab('Photos')} />
           </>
         )}
       </div>

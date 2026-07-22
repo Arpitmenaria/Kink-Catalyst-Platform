@@ -1366,6 +1366,30 @@
 
 .ev-ticket-price--active { color: #3b82f6; }
 
+.ev-ticket-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ev-ticket-edit-btn,
+.ev-ticket-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: #5c6a8c;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.ev-ticket-edit-btn:hover { color: #3b82f6; background: rgba(59,130,246,0.12); }
+.ev-ticket-remove-btn:hover { color: #ef4444; background: rgba(239,68,68,0.12); }
+
 /* New ticket form */
 .ev-new-ticket-form {
   border: 1px solid #1e2238;
@@ -1871,6 +1895,9 @@
   color: #fff;
   flex-shrink: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.ev-invite-avatar--img {
+  object-fit: cover;
 }
 
 .ev-invite-name {

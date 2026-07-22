@@ -1,6 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { selectPlan } from './plansSlice';
 import { apiRequest } from '../../services/api';
+import { showToast } from './toastSlice';
+
+// Backend sends a plain { success:false, message } on a suspended-account
+// login (no structured flag like the mid-session `suspended: true`) — detect
+// it by status + message so we can surface the real "contact support" text
+// instead of the generic "Invalid credentials" the login button shows.
+function isSuspendedError(err) {
+  return err.status === 403 && /suspended/i.test(err.message || '');
+}
 
 export const fetchMe = createAsyncThunk(
   'auth/fetchMe',
@@ -46,7 +55,7 @@ const { token: savedToken, user: savedUser } = loadSession();
 
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password }, { dispatch, rejectWithValue }) => {
     try {
       const data = await apiRequest('/api/auth/user/login', {
         method: 'POST',
@@ -73,6 +82,9 @@ export const loginUser = createAsyncThunk(
           setupToken: err.data.setupToken ?? null,
         });
       }
+      if (isSuspendedError(err)) {
+        dispatch(showToast({ message: err.message, type: 'error' }));
+      }
       return rejectWithValue(err.message);
     }
   }
@@ -83,7 +95,7 @@ export const loginUser = createAsyncThunk(
 // { user, token } shape as normal login (or requiresPlanSelection).
 export const googleLogin = createAsyncThunk(
   'auth/googleLogin',
-  async (credential, { rejectWithValue }) => {
+  async (credential, { dispatch, rejectWithValue }) => {
     try {
       const data = await apiRequest('/api/auth/google', {
         method: 'POST',
@@ -97,6 +109,9 @@ export const googleLogin = createAsyncThunk(
           requiresPlanSelection: true,
           setupToken: err.data.setupToken ?? null,
         });
+      }
+      if (isSuspendedError(err)) {
+        dispatch(showToast({ message: err.message, type: 'error' }));
       }
       return rejectWithValue(err.message);
     }

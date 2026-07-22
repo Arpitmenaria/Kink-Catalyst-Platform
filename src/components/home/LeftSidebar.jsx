@@ -89,7 +89,9 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     if (status === 'requested' || status === 'connected') return;
     setPoppingIds(prev => new Set([...prev, id]));
     setTimeout(() => setPoppingIds(prev => { const s = new Set(prev); s.delete(id); return s; }), 500);
-    dispatch(sendFriendRequest(id));
+    dispatch(sendFriendRequest(id)).then((result) => {
+      if (sendFriendRequest.fulfilled.match(result)) dispatch(fetchSuggestions(5));
+    });
   }
 
   function handleDismiss(id) {

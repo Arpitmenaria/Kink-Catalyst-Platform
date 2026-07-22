@@ -3,8 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
 import { logout } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
-import { fetchNotifications, markNotificationsRead } from '../../store/slices/notificationsSlice';
+import { fetchNotifications, markNotificationsRead, markNotificationRead } from '../../store/slices/notificationsSlice';
 import { fetchMyPostsCount } from '../../store/slices/postsSlice';
+import { disconnectSocket } from '../../services/socket';
 
 function BellIcon() {
   return (
@@ -111,9 +112,6 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
 
   function handleBell() {
     setNotifOpen(v => !v);
-    if (!notifOpen && unreadCount > 0) {
-      dispatch(markNotificationsRead());
-    }
   }
 
   return (
@@ -156,20 +154,37 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
             <div className="navbar-notif-dropdown">
               <div className="navbar-notif-header">
                 <span className="navbar-notif-title">Notifications</span>
-                <span className="navbar-notif-pill">{notifications.length} new</span>
+                {unreadCount > 0 ? (
+                  <button
+                    className="navbar-notif-mark-all"
+                    onClick={() => dispatch(markNotificationsRead())}
+                  >
+                    Mark all as read
+                  </button>
+                ) : (
+                  <span className="navbar-notif-pill">{notifications.length} new</span>
+                )}
               </div>
-              {notifications.map((n, i) => (
-                <div key={n.id ?? n._id ?? i} className="navbar-notif-item" style={{ '--ni': i }}>
-                  <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>
-                    {n.emoji ?? '🔔'}
+              {notifications.map((n, i) => {
+                const nid = n.id ?? n._id;
+                return (
+                  <div
+                    key={nid ?? i}
+                    className="navbar-notif-item"
+                    style={{ '--ni': i, cursor: n.unread ? 'pointer' : 'default' }}
+                    onClick={() => { if (n.unread && nid) dispatch(markNotificationRead(nid)); }}
+                  >
+                    <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>
+                      {n.emoji ?? '🔔'}
+                    </div>
+                    <div className="navbar-notif-body">
+                      <p className="navbar-notif-text">{n.text}</p>
+                      <p className="navbar-notif-sub">{timeAgo(n.createdAt)}</p>
+                    </div>
+                    {n.unread && <span className="navbar-notif-dot" />}
                   </div>
-                  <div className="navbar-notif-body">
-                    <p className="navbar-notif-text">{n.text}</p>
-                    <p className="navbar-notif-sub">{timeAgo(n.createdAt)}</p>
-                  </div>
-                  {n.unread && <span className="navbar-notif-dot" />}
-                </div>
-              ))}
+                );
+              })}
               {notifications.length === 0 && (
                 <p style={{ padding: '12px 16px', color: '#5c6a8c', fontSize: '13px' }}>No notifications yet.</p>
               )}
@@ -216,7 +231,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                 <SettingsIcon /> Settings
               </button> */}
               <div className="navbar-ud-divider" />
-              <button className="navbar-ud-item navbar-ud-item--logout" onClick={() => { dispatch(logout()); dispatch(showLogin()); }}>
+              <button className="navbar-ud-item navbar-ud-item--logout" onClick={() => { disconnectSocket(); dispatch(logout()); dispatch(showLogin()); }}>
                 <LogoutIcon /> Log Out
               </button>
             </div>

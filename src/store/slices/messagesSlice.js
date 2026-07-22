@@ -14,6 +14,24 @@ function normalizeConversation(c) {
     unreadCount: c.unreadCount ?? 0,
     participantId: c.participantId ?? c.participant?.id ?? c.participant?._id ?? null,
     location: c.location ?? '',
+    // Group-only fields. The list endpoint (fetchConversations) now sends
+    // these directly for type:"group" entries, so they're usually populated
+    // immediately — but fetchConversationDetail can also (re)supply them, and
+    // every group render must still treat missing values as "unknown", not "zero".
+    description: c.description ?? '',
+    memberCount: typeof c.memberCount === 'number' ? c.memberCount : null,
+    createdBy: c.createdBy ?? null,
+    myRole: c.myRole ?? null, // 'admin' | 'member' | null (unknown)
+  };
+}
+
+function normalizeGroupMember(m) {
+  return {
+    id: m.id ?? m._id ?? '',
+    name: m.name ?? m.fullName ?? '',
+    avatarUrl: m.avatarUrl?.startsWith?.('http') ? m.avatarUrl : (m.avatar?.startsWith?.('http') ? m.avatar : ''),
+    role: m.role ?? 'member', // 'admin' | 'member'
+    joinedAt: m.joinedAt ?? null,
   };
 }
 
@@ -35,7 +53,14 @@ function normalizeMessage(m) {
   return {
     id: m.id ?? m._id ?? '',
     from: m.from ?? 'them',
+    // 'text' | 'image' | 'video' | 'file' | 'system'. System messages ("X
+    // joined", "X left", "Group created by Y") carry no `from`/bubble side —
+    // they render as a centered line keyed off `systemAction` + `actor`
+    // (+ `target` for actions someone did TO someone else, e.g. 'removed').
     type: m.type ?? 'text',
+    systemAction: m.systemAction ?? null, // 'created' | 'joined' | 'left' | 'removed' | 'renamed'
+    actor: m.actor ? { id: m.actor.id ?? m.actor._id ?? '', name: m.actor.name ?? '' } : null,
+    target: m.target ? { id: m.target.id ?? m.target._id ?? '', name: m.target.name ?? '' } : null,
     text: m.text ?? '',
     media,
     time: m.time ?? '',
@@ -163,6 +188,91 @@ export const createGroup = createAsyncThunk(
   }
 );
 
+// 6b. GET /api/conversations/:id — group details (member count, admin, description)
+export const fetchConversationDetail = createAsyncThunk(
+  'messages/fetchConversationDetail',
+  async (convId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/conversations/${convId}`, { token });
+      return normalizeConversation(data.conversation ?? data);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// 6c. GET /api/conversations/:id/members — full member list for the group info panel
+export const fetchGroupMembers = createAsyncThunk(
+  'messages/fetchGroupMembers',
+  async (convId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/conversations/${convId}/members`, { token });
+      const members = (data.members ?? []).map(normalizeGroupMember);
+      return { convId, members, total: data.total ?? members.length };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// 6d. DELETE /api/conversations/:id/group — admin-only, removes the group for everyone
+export const deleteGroup = createAsyncThunk(
+  'messages/deleteGroup',
+  async (convId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/conversations/${convId}/group`, { method: 'DELETE', token });
+      return { convId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// 6e. POST /api/conversations/:id/leave — any non-admin member leaves the group
+export const leaveGroup = createAsyncThunk(
+  'messages/leaveGroup',
+  async (convId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/conversations/${convId}/leave`, { method: 'POST', token });
+      return { convId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// 6f. POST /api/conversations/:id/members — admin-only, add members
+export const addGroupMembers = createAsyncThunk(
+  'messages/addGroupMembers',
+  async ({ convId, memberIds }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/conversations/${convId}/members`, { method: 'POST', token, body: { memberIds } });
+      return { convId, members: (data.members ?? []).map(normalizeGroupMember), memberCount: data.memberCount };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// 6g. DELETE /api/conversations/:id/members/:memberId — admin-only, remove a member
+export const removeGroupMember = createAsyncThunk(
+  'messages/removeGroupMember',
+  async ({ convId, memberId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/conversations/${convId}/members/${memberId}`, { method: 'DELETE', token });
+      return { convId, memberId, memberCount: data?.memberCount };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // 7. GET /api/conversations/:id/assets
 export const fetchAssets = createAsyncThunk(
   'messages/fetchAssets',
@@ -284,6 +394,7 @@ const messagesSlice = createSlice({
     conversationsTotal: 0,
     conversationsLoading: false,
     latestConversationsRequestId: null, // guards against an out-of-order fetchConversations response clobbering a newer tab/search switch
+    activeConvId: null,    // which conversation is currently open in the UI — lets socket.js decide whether a group-membership event needs a live messages refetch
     messages: {},         // { [convId]: message[] }
     messagesLoading: false,
     messagesHasMore: {},  // { [convId]: boolean }
@@ -297,10 +408,17 @@ const messagesSlice = createSlice({
     blockedUsers: [],
     blockedUsersTotal: 0,
     blockedUsersLoading: false,
+    groupMembers: [],       // members of whichever group's info panel is currently open
+    groupMembersTotal: 0,
+    groupMembersLoading: false,
+    groupMembersConvId: null, // which conversation `groupMembers` belongs to
     lastFetchParams: { tab: 'all', search: '' }, // last args passed to fetchConversations, so a resurrected conversation (see receiveMessage in socket.js) refetches under the filter the user is actually looking at
     error: null,
   },
   reducers: {
+    setActiveConvId(state, action) {
+      state.activeConvId = action.payload;
+    },
     // Immediately clear unread badge when user opens a conversation (before API responds)
     clearUnread(state, action) {
       const { convId } = action.payload;
@@ -347,6 +465,64 @@ const messagesSlice = createSlice({
       const { userId } = action.payload;
       state.conversations.forEach(c => { if (c.participantId === userId) c.online = false; });
       state.onlineUsers = state.onlineUsers.filter(u => u.id !== userId);
+    },
+    // Socket: group:member_joined — someone (possibly added by an admin) joined
+    groupMemberJoinedRemote(state, action) {
+      const { convId, member, memberCount } = action.payload;
+      const conv = state.conversations.find(c => c.id === convId);
+      if (conv && typeof memberCount === 'number') conv.memberCount = memberCount;
+      if (state.groupMembersConvId === convId && member?.id && !state.groupMembers.find(m => m.id === member.id)) {
+        state.groupMembers.push(normalizeGroupMember(member));
+        state.groupMembersTotal += 1;
+      }
+    },
+    // Socket: group:member_left — `newAdmin` is set only when the departing
+    // member WAS the admin (backend auto-promotes the earliest-joined member).
+    groupMemberLeftRemote(state, action) {
+      const { convId, userId, newAdmin, memberCount, myUserId } = action.payload;
+      const conv = state.conversations.find(c => c.id === convId);
+      if (conv) {
+        if (typeof memberCount === 'number') conv.memberCount = memberCount;
+        if (newAdmin?.id && newAdmin.id === myUserId) conv.myRole = 'admin';
+      }
+      if (state.groupMembersConvId === convId) {
+        state.groupMembers = state.groupMembers.filter(m => m.id !== userId);
+        if (newAdmin?.id) {
+          const promoted = state.groupMembers.find(m => m.id === newAdmin.id);
+          if (promoted) promoted.role = 'admin';
+        }
+      }
+    },
+    // Socket: group:member_removed — an admin kicked someone. If it's ME, this
+    // is functionally identical to the group being deleted for my client.
+    groupMemberRemovedRemote(state, action) {
+      const { convId, userId, memberCount, myUserId } = action.payload;
+      if (userId === myUserId) {
+        state.conversations = state.conversations.filter(c => c.id !== convId);
+        delete state.messages[convId];
+        return;
+      }
+      const conv = state.conversations.find(c => c.id === convId);
+      if (conv && typeof memberCount === 'number') conv.memberCount = memberCount;
+      if (state.groupMembersConvId === convId) {
+        state.groupMembers = state.groupMembers.filter(m => m.id !== userId);
+        state.groupMembersTotal = Math.max(0, state.groupMembersTotal - 1);
+      }
+    },
+    // Socket: group:deleted — every member's client drops it without a refetch
+    groupDeletedRemote(state, action) {
+      const { convId } = action.payload;
+      state.conversations = state.conversations.filter(c => c.id !== convId);
+      delete state.messages[convId];
+    },
+    // Socket: group:updated — name/photo/description edited by another member
+    groupUpdatedRemote(state, action) {
+      const { convId, name, avatarUrl, description } = action.payload;
+      const conv = state.conversations.find(c => c.id === convId);
+      if (!conv) return;
+      if (name !== undefined) conv.name = name;
+      if (avatarUrl !== undefined) conv.avatarUrl = avatarUrl;
+      if (description !== undefined) conv.description = description;
     },
   },
   extraReducers: builder => {
@@ -457,6 +633,57 @@ const messagesSlice = createSlice({
 
       .addCase(createGroup.fulfilled, (s, a) => { s.conversations.unshift(a.payload); })
 
+      .addCase(fetchConversationDetail.fulfilled, (s, a) => {
+        const idx = s.conversations.findIndex(c => c.id === a.payload.id);
+        if (idx !== -1) s.conversations[idx] = { ...s.conversations[idx], ...a.payload };
+        else s.conversations.push(a.payload);
+      })
+
+      .addCase(fetchGroupMembers.pending, (s, a) => {
+        s.groupMembersLoading = true;
+        s.groupMembersConvId = a.meta.arg;
+      })
+      .addCase(fetchGroupMembers.fulfilled, (s, a) => {
+        s.groupMembersLoading = false;
+        s.groupMembers = a.payload.members;
+        s.groupMembersTotal = a.payload.total;
+        const conv = s.conversations.find(c => c.id === a.payload.convId);
+        if (conv && conv.memberCount === null) conv.memberCount = a.payload.total;
+      })
+      .addCase(fetchGroupMembers.rejected, s => { s.groupMembersLoading = false; })
+
+      .addCase(deleteGroup.fulfilled, (s, a) => {
+        const { convId } = a.payload;
+        s.conversations = s.conversations.filter(c => c.id !== convId);
+        delete s.messages[convId];
+      })
+
+      .addCase(leaveGroup.fulfilled, (s, a) => {
+        const { convId } = a.payload;
+        s.conversations = s.conversations.filter(c => c.id !== convId);
+        delete s.messages[convId];
+      })
+
+      .addCase(addGroupMembers.fulfilled, (s, a) => {
+        const { convId, members, memberCount } = a.payload;
+        if (s.groupMembersConvId === convId) {
+          members.forEach(m => { if (!s.groupMembers.find(x => x.id === m.id)) s.groupMembers.push(m); });
+          s.groupMembersTotal = typeof memberCount === 'number' ? memberCount : s.groupMembers.length;
+        }
+        const conv = s.conversations.find(c => c.id === convId);
+        if (conv && typeof memberCount === 'number') conv.memberCount = memberCount;
+      })
+
+      .addCase(removeGroupMember.fulfilled, (s, a) => {
+        const { convId, memberId, memberCount } = a.payload;
+        if (s.groupMembersConvId === convId) {
+          s.groupMembers = s.groupMembers.filter(m => m.id !== memberId);
+          s.groupMembersTotal = typeof memberCount === 'number' ? memberCount : Math.max(0, s.groupMembersTotal - 1);
+        }
+        const conv = s.conversations.find(c => c.id === convId);
+        if (conv && typeof memberCount === 'number') conv.memberCount = memberCount;
+      })
+
       .addCase(fetchAssets.pending, s => { s.assetsLoading = true; })
       .addCase(fetchAssets.fulfilled, (s, a) => {
         const { convId, tab, items, total, storage } = a.payload;
@@ -511,5 +738,8 @@ const messagesSlice = createSlice({
   },
 });
 
-export const { clearUnread, removeBlockedUser, receiveMessage, markMessagesRead, setUserOnline, setUserOffline } = messagesSlice.actions;
+export const {
+  setActiveConvId, clearUnread, removeBlockedUser, receiveMessage, markMessagesRead, setUserOnline, setUserOffline,
+  groupMemberJoinedRemote, groupMemberLeftRemote, groupMemberRemovedRemote, groupDeletedRemote, groupUpdatedRemote,
+} = messagesSlice.actions;
 export default messagesSlice.reducer;

@@ -8,8 +8,9 @@ import {
   startDM, createGroup, fetchAssets, uploadAssets,
   toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread,
   fetchBlockedUsers, removeBlockedUser,
+  fetchConversationDetail, fetchGroupMembers, deleteGroup, leaveGroup,
+  addGroupMembers, removeGroupMember, setActiveConvId,
 } from '../../store/slices/messagesSlice';
-import { fetchSuggestions } from '../../store/slices/usersSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import {
@@ -370,11 +371,11 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
 function CameraIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>; }
 function CheckSmIcon()     { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function GroupNewIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
+function GroupBadgeIcon()  { return <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 
 function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup, onViewProfile }) {
   const dispatch = useDispatch();
-  const { suggestions, friendStatusMap } = useSelector(s => s.users);
   const { connections, connectionsLoading } = useSelector(s => s.profile);
 
   const [view,        setView]        = useState('dm');
@@ -383,24 +384,12 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
   const [description, setDescription] = useState('');
   const [selected,    setSelected]    = useState([]);
   const [groupImg,    setGroupImg]    = useState(null);
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const imgInputRef = useRef(null);
 
   useEffect(() => {
-    dispatch(fetchSuggestions(20));
     dispatch(fetchConnections({ limit: 50 }));
   }, [dispatch]);
-
-  const contacts = suggestions.map(s => ({
-    id: s.id ?? s._id ?? '',
-    name: s.name ?? s.fullName ?? '',
-    role: s.role ?? s.bio ?? '',
-    color: s.color ?? '#3b82f6',
-    friendStatus: friendStatusMap[s.id ?? s._id ?? ''] ?? s.friendStatus ?? 'none',
-  })).filter(c => c.id);
-
-  const filtered = contacts.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   // "New Message" is scoped to people you're already connected with — chat directly via
   // the conversationId the connections endpoint already resolves, or create one on first message.
@@ -437,9 +426,14 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
   }
 
   async function handleCreateGroupSubmit() {
-    if (!groupName.trim() || selected.length === 0) return;
-    await onCreateGroup?.({ name: groupName.trim(), description: description.trim(), memberIds: selected, image: groupImg });
-    onClose();
+    if (!groupName.trim() || selected.length === 0 || creatingGroup) return;
+    setCreatingGroup(true);
+    try {
+      const result = await onCreateGroup?.({ name: groupName.trim(), description: description.trim(), memberIds: selected, image: groupImg });
+      if (!result || createGroup.fulfilled.match(result)) onClose();
+    } finally {
+      setCreatingGroup(false);
+    }
   }
 
   function switchToGroup() { setSearch(''); setSelected([]); setView('group'); }
@@ -552,18 +546,26 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
                       <SearchIcon />
                       <input className="nm-contact-search" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
-                    <button className="nm-select-all" onClick={() => setSelected(contacts.map(c => c.id))}>Select All</button>
+                    <button className="nm-select-all" onClick={() => setSelected(connectionContacts.map(c => c.id))}>Select All</button>
                   </div>
                 </div>
                 <div className="nm-contact-list">
-                  {filtered.map(c => {
+                  {connectionsLoading && filteredConnections.length === 0 && (
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>Loading connections…</p>
+                  )}
+                  {!connectionsLoading && filteredConnections.length === 0 && (
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No connections found.</p>
+                  )}
+                  {filteredConnections.map(c => {
                     const checked = selected.includes(c.id);
                     return (
                       <div key={c.id} className={`nm-contact-item${checked ? ' nm-contact-item--selected' : ''}`} onClick={() => toggleContact(c.id)}>
-                        <div className="nm-contact-avatar" style={{ background: c.color }}>{initials(c.name)}</div>
+                        <div className="nm-contact-avatar" style={{ background: '#3b82f6' }}>
+                          {c.avatarUrl ? <img src={c.avatarUrl} alt="" /> : initials(c.name)}
+                        </div>
                         <div className="nm-contact-info">
                           <p className="nm-contact-name">{c.name}</p>
-                          <p className="nm-contact-role">{c.role}</p>
+                          <p className="nm-contact-role">{[c.role, c.location].filter(Boolean).join(' · ')}</p>
                         </div>
                         <div className={`nm-checkbox${checked ? ' nm-checkbox--checked' : ''}`}>{checked && <CheckSmIcon />}</div>
                       </div>
@@ -580,9 +582,14 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
             <button className="nm-cancel-btn" onClick={onClose}>Cancel</button>
           ) : (
             <>
-              <button className="nm-cancel-btn" onClick={switchToDM}>Back</button>
-              <button className="nm-create-btn" disabled={!groupName.trim() || selected.length === 0} onClick={handleCreateGroupSubmit}>
-                Create Group <ArrowRightSmIcon />
+              <button className="nm-cancel-btn" onClick={switchToDM} disabled={creatingGroup}>Back</button>
+              <button
+                className={`nm-create-btn${creatingGroup ? ' nm-create-btn--loading' : ''}`}
+                disabled={!groupName.trim() || selected.length === 0 || creatingGroup}
+                onClick={handleCreateGroupSubmit}
+              >
+                {creatingGroup && <span className="msg-confirm-spinner" />}
+                {creatingGroup ? 'Creating…' : <>Create Group <ArrowRightSmIcon /></>}
               </button>
             </>
           )}
@@ -607,8 +614,12 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     blockedUsers,
     blockedUsersLoading,
     sending,
+    groupMembers,
+    groupMembersLoading,
   } = useSelector(s => s.messages);
   const { connections } = useSelector(s => s.profile);
+  const { user: authUser } = useSelector(s => s.auth);
+  const myUserId = authUser?._id ?? authUser?.id ?? null;
   const onlineConnections = connections.filter(c => c.online);
 
   const [tab,              setTab]             = useState('All');
@@ -628,8 +639,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [previewFailed,    setPreviewFailed]   = useState(false);
   const [emojiOpen,        setEmojiOpen]       = useState(false);
   const [attachOpen,       setAttachOpen]      = useState(false);
-  const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | null
+  const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | 'deleteGroup' | 'leaveGroup' | null
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
+  const [groupInfoOpen,   setGroupInfoOpen]    = useState(false);
+  const [showAddMembers,  setShowAddMembers]   = useState(false);
+  const [addMembersSelected, setAddMembersSelected] = useState([]);
+  const [addMembersSubmitting, setAddMembersSubmitting] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState(null);
   const [blockedConfirm,   setBlockedConfirm]  = useState(null); // { type: 'unblock' | 'delete', user } | null
   const [blockedConfirmSubmitting, setBlockedConfirmSubmitting] = useState(false);
 
@@ -753,6 +769,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
   function openConversation(conv) {
     setActiveConv(conv);
+    dispatch(setActiveConvId(conv.id));
     setChatKey(k => k + 1);
     setShowAssets(false);
     dispatch(clearUnread({ convId: conv.id })); // instant badge clear
@@ -847,7 +864,55 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
   async function handleCreateGroup(groupData) {
     const result = await dispatch(createGroup(groupData));
-    if (createGroup.fulfilled.match(result)) openConversation(result.payload);
+    if (createGroup.fulfilled.match(result)) {
+      openConversation(result.payload);
+    } else {
+      dispatch(showToast({ message: result.payload || 'Failed to create group', type: 'error' }));
+    }
+    return result;
+  }
+
+  function openGroupInfo() {
+    if (!activeConv || activeConv.type !== 'group') return;
+    setGroupInfoOpen(true);
+    dispatch(fetchConversationDetail(activeConv.id));
+    dispatch(fetchGroupMembers(activeConv.id));
+  }
+
+  function closeGroupInfo() {
+    setGroupInfoOpen(false);
+    setShowAddMembers(false);
+    setAddMembersSelected([]);
+  }
+
+  function toggleAddMemberSelected(id) {
+    setAddMembersSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  async function handleAddMembersSubmit() {
+    if (!activeConv || addMembersSelected.length === 0) return;
+    setAddMembersSubmitting(true);
+    const result = await dispatch(addGroupMembers({ convId: activeConv.id, memberIds: addMembersSelected }));
+    if (addGroupMembers.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Members added', type: 'success' }));
+      setShowAddMembers(false);
+      setAddMembersSelected([]);
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to add members', type: 'error' }));
+    }
+    setAddMembersSubmitting(false);
+  }
+
+  async function handleRemoveMember(memberId) {
+    if (!activeConv) return;
+    setRemovingMemberId(memberId);
+    const result = await dispatch(removeGroupMember({ convId: activeConv.id, memberId }));
+    if (removeGroupMember.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Member removed', type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to remove member', type: 'error' }));
+    }
+    setRemovingMemberId(null);
   }
 
   function closeConfirm() { setConfirmAction(null); }
@@ -873,9 +938,27 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       const result = await dispatch(deleteConversation(activeConv.id));
       if (deleteConversation.fulfilled.match(result)) {
         dispatch(showToast({ message: 'Chat deleted', type: 'success' }));
-        setActiveConv(null);
+        setActiveConv(null); dispatch(setActiveConvId(null));
       } else {
         dispatch(showToast({ message: result.payload ?? 'Failed to delete chat', type: 'error' }));
+      }
+    } else if (confirmAction === 'deleteGroup') {
+      const result = await dispatch(deleteGroup(activeConv.id));
+      if (deleteGroup.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Group deleted', type: 'success' }));
+        setActiveConv(null); dispatch(setActiveConvId(null));
+        setGroupInfoOpen(false);
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to delete group', type: 'error' }));
+      }
+    } else if (confirmAction === 'leaveGroup') {
+      const result = await dispatch(leaveGroup(activeConv.id));
+      if (leaveGroup.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'You left the group', type: 'success' }));
+        setActiveConv(null); dispatch(setActiveConvId(null));
+        setGroupInfoOpen(false);
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to leave group', type: 'error' }));
       }
     }
     setConfirmSubmitting(false);
@@ -1021,7 +1104,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           activeId="messages"
           onNavigate={id => {
             if (id === 'create')    { setCreatePostOpen(true); return; }
-            if (id === 'messages')  { setActiveConv(null); setShowAssets(false); return; }
+            if (id === 'messages')  { setActiveConv(null); dispatch(setActiveConvId(null)); setShowAssets(false); return; }
             if (id === 'home')      onBack?.();
             if (id === 'courses')   onCoursesClick?.();
             if (id === 'library')   onLibraryClick?.();
@@ -1056,6 +1139,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                     {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
                   </div>
                   {getOnlineStatus(conv) && <span className="msg-online-dot" />}
+                  {conv.type === 'group' && <span className="msg-group-icon-badge"><GroupBadgeIcon /></span>}
                 </div>
                 <div className="msg-compact-body">
                   <div className="msg-compact-top">
@@ -1080,8 +1164,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             <div className="msg-chat-header">
               <div
                 className="msg-chat-header-user"
-                onClick={liveActiveConv.type !== 'group' ? () => handleUserClick(getParticipantId(liveActiveConv)) : undefined}
-                style={{ cursor: liveActiveConv.type !== 'group' ? 'pointer' : 'default' }}
+                onClick={liveActiveConv.type === 'group' ? openGroupInfo : () => handleUserClick(getParticipantId(liveActiveConv))}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="msg-avatar-wrap">
                   <div className="msg-avatar msg-avatar--md" style={{ background: '#3b82f6' }}>
@@ -1091,9 +1175,15 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 </div>
                 <div>
                   <p className="msg-chat-name">{liveActiveConv.name}</p>
-                  <p className={`msg-chat-status${activeOnline ? ' msg-chat-status--online' : ''}`}>
-                    {activeOnline ? '● Online' : 'Offline'}
-                  </p>
+                  {liveActiveConv.type === 'group' ? (
+                    <p className="msg-chat-status">
+                      {typeof liveActiveConv.memberCount === 'number' ? `${liveActiveConv.memberCount} members` : 'Group'}
+                    </p>
+                  ) : (
+                    <p className={`msg-chat-status${activeOnline ? ' msg-chat-status--online' : ''}`}>
+                      {activeOnline ? '● Online' : 'Offline'}
+                    </p>
+                  )}
                 </div>
               </div>
               <button className="msg-chat-search-btn"><SearchIcon /></button>
@@ -1111,6 +1201,23 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               )}
 
               {messages.map(msg => {
+                if (msg.type === 'system') {
+                  const actorName = msg.actor?.name || 'Someone';
+                  const targetName = msg.target?.name || 'a member';
+                  const systemText = {
+                    created: `${actorName} created this group`,
+                    joined: `${actorName} joined the group`,
+                    left: `${actorName} left the group`,
+                    // actor = the admin who removed someone; target = who got removed.
+                    removed: `${actorName} removed ${targetName} from the group`,
+                    renamed: `${actorName} renamed the group`,
+                  }[msg.systemAction] ?? msg.text ?? `${actorName} updated the group`;
+                  return (
+                    <div key={msg.id} className="msg-system-row">
+                      <span className="msg-system-text">{systemText}</span>
+                    </div>
+                  );
+                }
                 const mediaVisuals = msg.media.filter(m => m.type === 'image' || m.type === 'video');
                 const mediaDocs = msg.media.filter(m => m.type !== 'image' && m.type !== 'video');
                 const isMediaMsg = msg.type === 'image' || msg.type === 'video';
@@ -1226,7 +1333,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <div className="msg-blocked-bar">
                 <p className="msg-blocked-text">You have blocked this conversation</p>
                 <div className="msg-blocked-actions">
-                  <button className="msg-blocked-btn msg-blocked-btn--delete" type="button" onClick={() => setConfirmAction('delete')}>Delete Chat</button>
+                  <button
+                    className="msg-blocked-btn msg-blocked-btn--delete"
+                    type="button"
+                    onClick={() => setConfirmAction(
+                      liveActiveConv.type !== 'group' ? 'delete'
+                        : liveActiveConv.myRole === 'admin' ? 'deleteGroup'
+                        : 'leaveGroup'
+                    )}
+                  >
+                    {liveActiveConv.type !== 'group' ? 'Delete Chat' : liveActiveConv.myRole === 'admin' ? 'Delete Group' : 'Leave Group'}
+                  </button>
                   <button className="msg-blocked-btn msg-blocked-btn--unblock" type="button" onClick={() => setConfirmAction('block')}>Unblock</button>
                 </div>
               </div>
@@ -1327,13 +1444,15 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
             </div>
 
             <div className="msg-contact-actions">
-              <button className="msg-action-item" onClick={() => setConfirmAction('block')}>
-                <span className="msg-action-icon msg-action-icon--red"><BlockIcon /></span>
-                <span className="msg-action-label">
-                  {isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}` : `Block ${liveActiveConv.name.split(' ')[0]}`}
-                </span>
-                <ChevronRightIcon />
-              </button>
+              {liveActiveConv.type !== 'group' && (
+                <button className="msg-action-item" onClick={() => setConfirmAction('block')}>
+                  <span className="msg-action-icon msg-action-icon--red"><BlockIcon /></span>
+                  <span className="msg-action-label">
+                    {isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}` : `Block ${liveActiveConv.name.split(' ')[0]}`}
+                  </span>
+                  <ChevronRightIcon />
+                </button>
+              )}
               <button
                 className={`msg-action-item${isReported ? ' msg-action-item--disabled' : ''}`}
                 onClick={() => !isReported && setConfirmAction('report')}
@@ -1483,7 +1602,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   ? (isBlocked ? `Unblock ${liveActiveConv.name.split(' ')[0]}?` : `Block ${liveActiveConv.name.split(' ')[0]}?`)
                   : confirmAction === 'delete'
                     ? 'Delete Chat?'
-                    : 'Report Conversation'}
+                    : confirmAction === 'deleteGroup'
+                      ? 'Delete Group?'
+                      : confirmAction === 'leaveGroup'
+                        ? 'Leave Group?'
+                        : 'Report Conversation'}
               </h2>
               <p className="msg-confirm-desc">
                 {confirmAction === 'block'
@@ -1492,7 +1615,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                       : `${liveActiveConv.name} won't be able to send you messages, and you won't see theirs either. You can unblock them anytime.`)
                   : confirmAction === 'delete'
                     ? `This will delete the chat with ${liveActiveConv.name} from your inbox. They'll keep their copy, and the chat will come back if either of you sends a new message.`
-                    : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
+                    : confirmAction === 'deleteGroup'
+                      ? `This will permanently delete "${liveActiveConv.name}" for everyone in the group. This can't be undone.`
+                      : confirmAction === 'leaveGroup'
+                        ? `You'll stop receiving messages from "${liveActiveConv.name}" unless someone adds you back.`
+                        : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
               </p>
               <div className="msg-confirm-actions">
                 <button className="msg-confirm-cancel-btn" onClick={closeConfirm} disabled={confirmSubmitting}>Cancel</button>
@@ -1503,9 +1630,138 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 >
                   {confirmSubmitting && <span className="msg-confirm-spinner" />}
                   {confirmSubmitting
-                    ? (confirmAction === 'block' ? (isBlocked ? 'Unblocking…' : 'Blocking…') : confirmAction === 'delete' ? 'Deleting…' : 'Reporting…')
-                    : (confirmAction === 'block' ? (isBlocked ? 'Unblock' : 'Block') : confirmAction === 'delete' ? 'Delete' : 'Report')}
+                    ? (confirmAction === 'block' ? (isBlocked ? 'Unblocking…' : 'Blocking…')
+                        : confirmAction === 'delete' ? 'Deleting…'
+                        : confirmAction === 'deleteGroup' ? 'Deleting…'
+                        : confirmAction === 'leaveGroup' ? 'Leaving…'
+                        : 'Reporting…')
+                    : (confirmAction === 'block' ? (isBlocked ? 'Unblock' : 'Block')
+                        : confirmAction === 'delete' ? 'Delete'
+                        : confirmAction === 'deleteGroup' ? 'Delete Group'
+                        : confirmAction === 'leaveGroup' ? 'Leave Group'
+                        : 'Report')}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {groupInfoOpen && liveActiveConv && (
+          <div className="msg-confirm-overlay" onClick={closeGroupInfo}>
+            <div className="grp-info-box" onClick={e => e.stopPropagation()}>
+              <div className="grp-info-header">
+                <h2 className="msg-confirm-title">Group Info</h2>
+                <button className="grp-info-close-btn" onClick={closeGroupInfo}>✕</button>
+              </div>
+
+              <div className="grp-info-identity">
+                <div className="grp-info-avatar" style={{ background: '#3b82f6' }}>
+                  {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
+                </div>
+                <p className="grp-info-name">{liveActiveConv.name}</p>
+                {liveActiveConv.description && <p className="grp-info-desc">{liveActiveConv.description}</p>}
+                <p className="grp-info-member-count">
+                  {typeof liveActiveConv.memberCount === 'number'
+                    ? `${liveActiveConv.memberCount} member${liveActiveConv.memberCount === 1 ? '' : 's'}`
+                    : 'Members'}
+                </p>
+              </div>
+
+              <div className="grp-info-members">
+                <div className="grp-info-section-head">
+                  <p className="grp-info-section-title">Members</p>
+                  {liveActiveConv.myRole === 'admin' && (
+                    <button className="grp-info-add-btn" onClick={() => setShowAddMembers(v => !v)}>
+                      {showAddMembers ? 'Cancel' : '+ Add'}
+                    </button>
+                  )}
+                </div>
+
+                {showAddMembers && (
+                  <div className="grp-info-add-panel">
+                    <div className="grp-info-add-list">
+                      {connections.filter(c => !groupMembers.find(m => m.id === c.id)).map(c => {
+                        const checked = addMembersSelected.includes(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            className={`grp-info-add-row${checked ? ' grp-info-add-row--selected' : ''}`}
+                            onClick={() => toggleAddMemberSelected(c.id)}
+                          >
+                            <div className="msg-avatar msg-avatar--xs" style={{ background: '#3b82f6' }}>
+                              {c.avatar ? <img src={c.avatar} alt="" /> : initials(c.name)}
+                            </div>
+                            <span className="grp-info-member-name">{c.name}</span>
+                            <div className={`nm-checkbox${checked ? ' nm-checkbox--checked' : ''}`}>{checked && <CheckSmIcon />}</div>
+                          </div>
+                        );
+                      })}
+                      {connections.filter(c => !groupMembers.find(m => m.id === c.id)).length === 0 && (
+                        <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>All your connections are already in this group.</p>
+                      )}
+                    </div>
+                    <button
+                      className="grp-info-add-confirm-btn"
+                      disabled={addMembersSelected.length === 0 || addMembersSubmitting}
+                      onClick={handleAddMembersSubmit}
+                    >
+                      {addMembersSubmitting ? 'Adding…' : `Add ${addMembersSelected.length || ''} to group`}
+                    </button>
+                  </div>
+                )}
+
+                {groupMembersLoading && (
+                  <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>Loading members…</p>
+                )}
+                {!groupMembersLoading && groupMembers.length === 0 && (
+                  <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No members to show yet.</p>
+                )}
+                {groupMembers.map(m => (
+                  <div
+                    key={m.id}
+                    className="grp-info-member-row"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleUserClick(m.id)}
+                  >
+                    <div className="msg-avatar msg-avatar--xs" style={{ background: '#3b82f6' }}>
+                      {m.avatarUrl ? <img src={m.avatarUrl} alt="" /> : initials(m.name)}
+                    </div>
+                    <span className="grp-info-member-name">{m.name}</span>
+                    {m.role === 'admin' && <span className="grp-info-admin-badge">Admin</span>}
+                    {liveActiveConv.myRole === 'admin' && m.id !== myUserId && (
+                      <button
+                        className="grp-info-remove-member-btn"
+                        aria-label={`Remove ${m.name}`}
+                        disabled={removingMemberId === m.id}
+                        onClick={(e) => { e.stopPropagation(); handleRemoveMember(m.id); }}
+                      >
+                        {removingMemberId === m.id ? '…' : '✕'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grp-info-actions">
+                {liveActiveConv.myRole === 'admin' && (
+                  <button
+                    className="grp-info-danger-btn"
+                    onClick={() => { closeGroupInfo(); setConfirmAction('deleteGroup'); }}
+                  >
+                    Delete Group
+                  </button>
+                )}
+                {liveActiveConv.myRole === 'member' && (
+                  <button
+                    className="grp-info-danger-btn"
+                    onClick={() => { closeGroupInfo(); setConfirmAction('leaveGroup'); }}
+                  >
+                    Leave Group
+                  </button>
+                )}
+                {liveActiveConv.myRole == null && (
+                  <p style={{ color: '#5c6a8c', fontSize: 12.5, margin: 0 }}>Loading your role in this group…</p>
+                )}
               </div>
             </div>
           </div>
@@ -1669,6 +1925,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   {conv.avatarUrl ? <img src={conv.avatarUrl} alt="" /> : initials(conv.name)}
                 </div>
                 {getOnlineStatus(conv) && <span className="msg-online-dot" />}
+                {conv.type === 'group' && <span className="msg-group-icon-badge"><GroupBadgeIcon /></span>}
               </div>
               <div className="msg-conv-body">
                 <div className="msg-conv-top">
