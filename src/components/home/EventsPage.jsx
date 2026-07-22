@@ -1129,7 +1129,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                 </div>
                 <div className="ev-disc-card-body">
-                  <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
+                  <div className="ev-disc-pill-row">
+                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
+                    <span className={`ev-disc-type-pill${ev.eventType === 'online' ? ' ev-disc-type-pill--online' : ''}`}>
+                      {ev.eventType === 'online' ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
                   <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'}</p>
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
@@ -1163,6 +1168,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <div className="ev-list-top">
                     <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
+                    <span className={`ev-disc-type-pill${ev.eventType === 'online' ? ' ev-disc-type-pill--online' : ''}`}>
+                      {ev.eventType === 'online' ? 'Online' : 'Offline'}
+                    </span>
                     <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'}</p>
                   </div>
                   <p className="ev-disc-card-title">{ev.title}</p>

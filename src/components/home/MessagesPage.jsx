@@ -642,6 +642,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | 'deleteGroup' | 'leaveGroup' | null
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
   const [groupInfoOpen,   setGroupInfoOpen]    = useState(false);
+  const [descExpanded,    setDescExpanded]     = useState(false);
   const [showAddMembers,  setShowAddMembers]   = useState(false);
   const [addMembersSelected, setAddMembersSelected] = useState([]);
   const [addMembersSubmitting, setAddMembersSubmitting] = useState(false);
@@ -875,6 +876,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   function openGroupInfo() {
     if (!activeConv || activeConv.type !== 'group') return;
     setGroupInfoOpen(true);
+    setDescExpanded(false);
     dispatch(fetchConversationDetail(activeConv.id));
     dispatch(fetchGroupMembers(activeConv.id));
   }
@@ -883,6 +885,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     setGroupInfoOpen(false);
     setShowAddMembers(false);
     setAddMembersSelected([]);
+    setDescExpanded(false);
   }
 
   function toggleAddMemberSelected(id) {
@@ -1659,7 +1662,18 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   {liveActiveConv.avatarUrl ? <img src={liveActiveConv.avatarUrl} alt="" /> : initials(liveActiveConv.name)}
                 </div>
                 <p className="grp-info-name">{liveActiveConv.name}</p>
-                {liveActiveConv.description && <p className="grp-info-desc">{liveActiveConv.description}</p>}
+                {liveActiveConv.description && (
+                  <>
+                    <p className={`grp-info-desc${descExpanded ? '' : ' grp-info-desc--clamped'}`}>
+                      {liveActiveConv.description}
+                    </p>
+                    {liveActiveConv.description.length > 180 && (
+                      <button className="grp-info-desc-toggle" onClick={() => setDescExpanded(v => !v)}>
+                        {descExpanded ? 'See less' : 'See more'}
+                      </button>
+                    )}
+                  </>
+                )}
                 <p className="grp-info-member-count">
                   {typeof liveActiveConv.memberCount === 'number'
                     ? `${liveActiveConv.memberCount} member${liveActiveConv.memberCount === 1 ? '' : 's'}`
