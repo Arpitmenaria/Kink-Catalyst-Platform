@@ -31,7 +31,7 @@ function buildNotif(data) {
   };
 }
 
-const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
+const BASE_URL = 'https://kick-analyst-backend-production.jay886631.workers.dev';
 
 let socket = null;
 let storeRef = null; // full Redux store — gives us dispatch + getState

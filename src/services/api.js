@@ -1,4 +1,4 @@
-const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
+const BASE_URL = 'https://kick-analyst-backend-production.jay886631.workers.dev';
 
 export async function apiRequest(path, { method = 'GET', body, token, isFormData = false } = {}) {
   const headers = {};
