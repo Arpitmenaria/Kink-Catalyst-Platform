@@ -1099,6 +1099,40 @@ video.post-image {
   min-width: 200px;
 }
 
+/* Comment emoji picker — same clipping concern/fix as .mention-dropdown above
+   (comment bar is the last element in a card with overflow:hidden), so this
+   opens upward from the emoji button too, anchored to its own small wrapper
+   rather than the whole .comment-input-wrap. */
+.comment-emoji-wrap { position: relative; }
+
+.comment-emoji-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  background: #161a2c;
+  border: 1px solid #262c47;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  min-width: 264px;
+}
+
+.comment-emoji-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.comment-emoji-btn:hover { background: #1e2438; }
+
 .mention-dropdown-item {
   display: flex;
   align-items: center;

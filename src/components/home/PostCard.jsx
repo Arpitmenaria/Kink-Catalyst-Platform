@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
-import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost } from '../../store/slices/postsSlice';
+import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost, reportPost } from '../../store/slices/postsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
 import CreatePostModal from './CreatePostModal';
@@ -11,6 +11,12 @@ import './PostCard.css';
 
 const CAPTION_TRUNCATE_LENGTH = 200;
 const BURST_EMOJIS = ['😊', '❤️', '🔥', '✨', '💫', '⭐', '🎉', '👏'];
+const EMOJI_LIST = [
+  '😀','😁','😂','🤣','😊','😍','😘','😎','🤔','🙄','😴','😭',
+  '😢','😅','😉','😇','🥳','😱','🤩','😜','🤗','🙌','👏','👍',
+  '👎','🙏','💪','🔥','✨','🎉','❤️','🧡','💛','💚','💙','💜',
+  '🖤','💯','⭐','🌟','☀️','🌈','🍕','🍔','☕','🎂','🎁','📸',
+];
 const BURST_PATHS = [
   { dx: -48, dy: -64, rot: -30 },
   { dx: -22, dy: -78, rot:  15 },
@@ -130,7 +136,9 @@ export default function PostCard({ post, onUserClick }) {
   const [comment,         setComment]         = useState('');
   const [commentMentions, setCommentMentions] = useState([]);
   const [commentDropdown, setCommentDropdown] = useState(null); // { start, end, candidates } | null
+  const [commentEmojiOpen, setCommentEmojiOpen] = useState(false);
   const commentInputRef = useRef(null);
+  const commentEmojiRef = useRef(null);
   const [localReaction,   setLocalReaction]   = useState(null);
   const [reacting,        setReacting]        = useState(false);
   const [particles,       setParticles]       = useState([]);
@@ -383,6 +391,29 @@ export default function PostCard({ post, onUserClick }) {
     });
   }
 
+  function insertCommentEmoji(emoji) {
+    const input = commentInputRef.current;
+    const start = input?.selectionStart ?? comment.length;
+    const end = input?.selectionEnd ?? comment.length;
+    const next = comment.slice(0, start) + emoji + comment.slice(end);
+    // Keep any already-tagged @mention offsets correct if this emoji lands before them.
+    setCommentMentions(prev => shiftMentionsOnEdit(comment, next, prev));
+    setComment(next);
+    const cursor = start + emoji.length;
+    requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+      commentInputRef.current?.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (commentEmojiRef.current && !commentEmojiRef.current.contains(e.target)) setCommentEmojiOpen(false);
+    }
+    if (commentEmojiOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [commentEmojiOpen]);
+
   function handleComment() {
     if (!comment.trim()) return;
     if (isStatic) { setComment(''); return; }
@@ -397,6 +428,18 @@ export default function PostCard({ post, onUserClick }) {
   }
 
   function openReport() { setMenuOpen(false); setReportOpen(true); }
+
+  // Unlike "Report Post" (openReport, above), this skips the reason-picker
+  // modal entirely and submits a fixed reason straight away.
+  async function handleFlagInappropriate() {
+    setMenuOpen(false);
+    const result = await dispatch(reportPost({ postId: post._id, reason: 'Misinformation' }));
+    if (reportPost.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Post reported', type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to report post', type: 'error' }));
+    }
+  }
 
   function openEdit() { setMenuOpen(false); setEditOpen(true); }
 
@@ -470,7 +513,7 @@ export default function PostCard({ post, onUserClick }) {
                       <span className="post-menu-text"><span className="post-menu-item-title">Report Post</span><span className="post-menu-item-sub">Submit a report for review</span></span>
                     </button>
                     <div className="post-menu-divider" />
-                    <button className="post-menu-item" onClick={openReport}>
+                    <button className="post-menu-item" onClick={handleFlagInappropriate}>
                       <span className="post-menu-icon post-menu-icon--blue"><FlagIcon /></span>
                       <span className="post-menu-text"><span className="post-menu-item-title">Flag as inappropriate</span><span className="post-menu-item-sub">Mark as offensive content</span></span>
                     </button>
@@ -758,7 +801,16 @@ export default function PostCard({ post, onUserClick }) {
             />
             {commentDropdown && <MentionDropdown candidates={commentDropdown.candidates} onPick={pickCommentMention} />}
             <div className="comment-input-icons">
-              <button className="comment-icon-btn" tabIndex={-1}><EmojiIcon /></button>
+              <div className="comment-emoji-wrap" ref={commentEmojiRef}>
+                <button className="comment-icon-btn" onClick={() => setCommentEmojiOpen(v => !v)}><EmojiIcon /></button>
+                {commentEmojiOpen && (
+                  <div className="comment-emoji-popover">
+                    {EMOJI_LIST.map(em => (
+                      <button key={em} type="button" className="comment-emoji-btn" onClick={() => insertCommentEmoji(em)}>{em}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className={`comment-icon-btn comment-send-btn${comment.trim() ? ' active' : ''}`} tabIndex={-1} onClick={handleComment}><SendIcon /></button>
             </div>
           </div>
