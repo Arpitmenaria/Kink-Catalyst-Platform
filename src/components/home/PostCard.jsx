@@ -133,16 +133,13 @@ export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId } = useSelector(s => s.posts);
-<<<<<<< Updated upstream
   const { connections, profile } = useSelector(s => s.profile);
   // Logged-in user's avatar for the comment composer (profile is the freshest
   // source; auth.user is the fallback right after login).
   const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
   const myAvatar = rawMyAvatar?.startsWith?.('http') ? rawMyAvatar : '';
-=======
-  const { connections } = useSelector(s => s.profile);
+  
   const { blockingId } = useSelector(s => s.users);
->>>>>>> Stashed changes
 
   const isStatic = typeof post.likes === 'number';
 
