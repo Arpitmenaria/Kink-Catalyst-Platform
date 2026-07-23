@@ -1129,7 +1129,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 20px;
+  padding: 14px 20px 0;
   flex-shrink: 0;
 }
 
@@ -1952,6 +1952,44 @@
   font-weight: 700;
   color: #fff;
 }
+
+/* Sidebar gallery thumbnail lightbox — clicking a thumb previously did
+   nothing (no handler at all), so the click just fell through and the
+   page looked like it "went back to the home feed". */
+.rs-gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.rs-gallery-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+}
+
+.rs-gallery-lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.rs-gallery-lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
 .gallery-add-first-btn {
   width: 100%;

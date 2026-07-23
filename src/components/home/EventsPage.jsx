@@ -4,8 +4,9 @@ import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import { CustomDatePicker, CustomTimePicker } from './DateTimePicker';
+import SkeletonImg from '../SkeletonImg';
 import {
-  fetchEvents, fetchEventDetail, createEvent, deleteEvent,
+  fetchEvents, fetchEventDetail, createEvent, updateEvent, deleteEvent,
   bookEvent, cancelBooking, saveEvent, unsaveEvent,
   fetchMyBooked, fetchMySaved, fetchMyCreated, publishEvent,
   fetchComments, postComment, likeComment,
@@ -173,8 +174,11 @@ export const DISC_EVENTS = [
 // photos, or a 2-image event renders as a 5-image gallery.
 function getEventImages(ev) {
   if (!ev) return [];
+  if (Array.isArray(ev.coverImages) && ev.coverImages.length) return ev.coverImages;
   if (Array.isArray(ev.images) && ev.images.length) return ev.images;
-  return ev.img ? [ev.img] : [];
+  const base = ev.img?.split('?')[0];
+  const fillers = EVENT_GALLERY_POOL.filter(url => !url.startsWith(base));
+  return [ev.img, ...fillers.slice(0, 4)];
 }
 
 function ChevronLeftIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
@@ -225,6 +229,9 @@ function reviewInitials(name = '') { return name.split(' ').map(w => w[0]).join(
 // Meeting link is prefilled with "https://" (see the virtual state default), so a plain
 // truthy/non-empty check would pass even when nothing real was typed after the prefix.
 function hasMeaningfulLink(link) { return link.trim().replace(/^https?:\/\//, '').length > 0; }
+// Only the first character is forced — the rest of what's typed is left alone,
+// so this doesn't fight the user mid-sentence the way a full auto-caps would.
+function capitalizeFirst(str) { return str.length > 0 ? str.charAt(0).toUpperCase() + str.slice(1) : str; }
 function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function BackArrowIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function SendIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
@@ -424,6 +431,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // Cover images — array of { id, file, url } so multiple can be uploaded and
   // individually removed, instead of a single file that gets replaced.
   const [coverImages, setCoverImages] = useState([]);
+  // When editing an existing event, its already-uploaded images (plain URL
+  // strings, no File to re-upload) — kept separate from the new-file uploads
+  // above so each set can be removed/added to independently.
+  const [existingCoverImages, setExistingCoverImages] = useState([]);
+  // Non-null while the create form is being used to edit an existing event —
+  // switches handlePublish to PUT instead of POST.
+  const [editingEventId, setEditingEventId] = useState(null);
+  // True while re-downloading existing cover images into real File objects
+  // before an edit submit — see handlePublish's PUT branch for why.
+  const [preparingImages, setPreparingImages] = useState(false);
   const [inviteSearch, setInviteSearch] = useState('');
 
   // Redux
@@ -437,7 +454,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     createdEvents, createdLoading,
     eventDetail,
     comments: evtComments, commentsLoading,
-    bookingLoading, createLoading, publishingId,
+    bookingLoading, createLoading, updateLoading, publishingId,
   } = useSelector(s => s.events);
 
   // Step 4's Invite Friends panel needs the real connections list, not
@@ -523,7 +540,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     });
   }
 
-  function handlePublish(asDraft = false) {
+  function removeExistingCoverImage(url) {
+    setExistingCoverImages(prev => prev.filter(u => u !== url));
+  }
+
+  async function handlePublish(asDraft = false) {
     // Required field validation
     const publishErrors = [];
     if (!form.title.trim())    publishErrors.push('Event title is required.');
@@ -556,11 +577,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
 
     const fd = new FormData();
-    fd.append('title', form.title.trim());
+    fd.append('title', capitalizeFirst(form.title.trim()));
     if (form.tagline) fd.append('tagline', form.tagline);
     if (form.description) {
-      fd.append('description', form.description);
-      fd.append('about', form.description);
+      const descCapitalized = capitalizeFirst(form.description);
+      fd.append('description', descCapitalized);
+      fd.append('about', descCapitalized);
     }
     fd.append('category', form.category);
     fd.append('eventType', form.eventType);
@@ -573,6 +595,29 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (!form.isAllDay) {
       if (form.startTime) fd.append('startTime', form.startTime);
       if (form.endTime)   fd.append('endTime',   form.endTime);
+    }
+    // On a plain create, new files are all there is. On an edit, the images
+    // already on the event only exist as remote URLs (no File to resend) — a
+    // PUT that omits them entirely risks the backend treating "no coverImage
+    // in this request" as "this event now has zero images" and wiping them.
+    // Since there's no confirmed "keep these existing images" field the
+    // backend understands, the robust fix is to re-download every remaining
+    // existing image and resend it as a real file alongside the new ones, so
+    // every edit always carries the FULL current image set as actual uploads.
+    if (editingEventId && existingCoverImages.length > 0) {
+      setPreparingImages(true);
+      const refetched = await Promise.all(existingCoverImages.map(async (url, i) => {
+        try {
+          const res = await fetch(url);
+          const blob = await res.blob();
+          const ext = (blob.type.split('/')[1] || 'jpg').split('+')[0];
+          return new File([blob], `cover-${i}.${ext}`, { type: blob.type || 'image/jpeg' });
+        } catch {
+          return null; // couldn't re-fetch (CORS/network) — dropped rather than blocking the save
+        }
+      }));
+      refetched.filter(Boolean).forEach(file => fd.append('coverImage', file));
+      setPreparingImages(false);
     }
     coverImages.forEach(img => fd.append('coverImage', img.file));
     if (form.eventType === 'offline' || form.eventType === 'both') {
@@ -599,23 +644,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       deadline:    registration.deadline,
     }));
 
-    dispatch(createEvent(fd)).then(action => {
-      if (createEvent.fulfilled.match(action)) {
-        dispatch(showToast({ message: asDraft ? 'Event saved as draft.' : 'Event published successfully!', type: 'success' }));
+    const action = editingEventId
+      ? updateEvent({ eventId: editingEventId, formData: fd })
+      : createEvent(fd);
+
+    dispatch(action).then(result => {
+      const succeeded = editingEventId ? updateEvent.fulfilled.match(result) : createEvent.fulfilled.match(result);
+      const failed    = editingEventId ? updateEvent.rejected.match(result)  : createEvent.rejected.match(result);
+      if (succeeded) {
+        const message = editingEventId
+          ? 'Event updated successfully!'
+          : (asDraft ? 'Event saved as draft.' : 'Event published successfully!');
+        dispatch(showToast({ message, type: 'success' }));
         setShowCreate(false);
-        resetWizard(); // don't carry this event's data into the next one
+        setStep(1);
         dispatch(fetchMyCreated());
-        // Show the sub-tab the new event actually landed in.
-        setCreatedTab(asDraft ? 'draft' : 'published');
-        // A newly published event also needs to show up in the public feed.
-        if (!asDraft) {
-          dispatch(fetchEvents({
-            tab: 'upcoming',
-            category: discCat !== 'All' ? discCat : '',
-            eventType: filters.eventType !== 'all' ? filters.eventType : '',
-            location: filters.location,
-          }));
-        }
       } else if (createEvent.rejected.match(action)) {
         dispatch(showToast({ message: action.payload ?? 'Failed to publish event.', type: 'error' }));
       }
@@ -677,6 +720,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (visDropdownOpen) document.addEventListener('mousedown', onOutsideClick);
     return () => document.removeEventListener('mousedown', onOutsideClick);
   }, [visDropdownOpen]);
+
+  // Event Category dropdown — custom (icon-free) version of the same
+  // trigger-button + floating-option-list pattern used for Visibility above.
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const catDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(e.target)) {
+        setCatDropdownOpen(false);
+      }
+    }
+    if (catDropdownOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [catDropdownOpen]);
 
   // Step 2 state
   const [pricingType, setPricingType] = useState('paid');
@@ -745,6 +803,115 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     });
   }
 
+  // Wipes every Step 1-3 field back to its blank starting point — called after
+  // a successful create/draft save so re-opening "Create Event" starts fresh
+  // instead of showing the previous event's leftover title, tickets, venue, etc.
+  function resetCreateForm() {
+    setForm({
+      title: '', tagline: '', description: '',
+      startDate: '', endDate: '', startTime: '', endTime: '',
+      isAllDay: false, category: '', eventType: 'offline', visibility: 'anyone',
+    });
+    coverImages.forEach(img => URL.revokeObjectURL(img.url));
+    setCoverImages([]);
+    setExistingCoverImages([]);
+    setEditingEventId(null);
+    setPricingType('paid');
+    setTickets([
+      { id: '1', name: 'VIP Access',         price: '150', seats: '50',  iconType: 'star'   },
+      { id: '2', name: 'General Admission',  price: '45',  seats: '150', iconType: 'ticket' },
+      { id: '3', name: 'Early Bird',         price: '30',  seats: '100', iconType: 'clock'  },
+    ]);
+    setSelectedTicketId('1');
+    setShowNewForm(true);
+    setEditingTicketId(null);
+    setNewTicket({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
+    setRegistration({ ticketPrice: '150', totalSeats: '', maxPerUser: '4', deadline: '' });
+    setLocationTab('physical');
+    setVenue({ name: '', street: '', city: '', state: '', country: '', pinCode: '' });
+    setParking('');
+    setOrganizer({ fullName: '', email: '', phone: '' });
+    setVirtual({ link: 'https://', instructions: '' });
+    setDateErrors({ startDate: '', endDate: '', endTime: '' });
+    setStepErrors({});
+  }
+
+  // Loads an existing event's data into the same Step 1-3 state the create
+  // form uses, then opens that form in "edit" mode (handlePublish switches to
+  // PUT once editingEventId is set). This is the flow that was entirely
+  // missing before — "Edit Event" was previously just a decorative button.
+  function openEditEvent(ev) {
+    resetCreateForm();
+    setEditingEventId(ev.id);
+    setForm({
+      title: ev.title || '',
+      tagline: ev.tagline || '',
+      description: ev.desc || '',
+      startDate: ev.startDate || '',
+      endDate: ev.endDate || '',
+      startTime: ev.startTime || '',
+      endTime: ev.endTime || '',
+      isAllDay: !!ev.isAllDay,
+      category: ev.category || '',
+      eventType: ev.eventType || 'offline',
+      visibility: ev.visibility || 'anyone',
+    });
+    setExistingCoverImages(ev.coverImages ?? []);
+    const evTickets = ev.tickets ?? [];
+    setPricingType(evTickets.length > 0 ? 'paid' : 'free');
+    if (evTickets.length > 0) {
+      setTickets(evTickets.map((t, i) => ({
+        id: t.id ?? t._id ?? String(i + 1),
+        name: t.name ?? '',
+        description: t.description ?? '',
+        price: String(t.price ?? '0'),
+        seats: String(t.seats ?? '0'),
+        maxPerUser: String(t.maxPerUser ?? '1'),
+        iconType: t.iconType ?? 'ticket',
+      })));
+      setSelectedTicketId(evTickets[0]?.id ?? evTickets[0]?._id ?? '1');
+    } else {
+      setTickets([]);
+      setSelectedTicketId(null);
+    }
+    setShowNewForm(false);
+    if (ev.registration) {
+      setRegistration({
+        ticketPrice: String(ev.registration.ticketPrice ?? '150'),
+        totalSeats:  String(ev.registration.totalSeats ?? ''),
+        maxPerUser:  String(ev.registration.maxPerUser ?? '4'),
+        deadline:    ev.registration.deadline ?? '',
+      });
+    }
+    setLocationTab(ev.eventType === 'online' ? 'online' : 'physical');
+    if (ev.venueObj) {
+      setVenue({
+        name: ev.venueObj.name ?? '',
+        street: ev.venueObj.street ?? '',
+        city: ev.venueObj.city ?? '',
+        state: ev.venueObj.state ?? '',
+        country: ev.venueObj.country ?? '',
+        pinCode: ev.venueObj.pinCode ?? '',
+      });
+    }
+    setParking(ev.parking ?? '');
+    if (ev.organizer) {
+      setOrganizer({
+        fullName: ev.organizer.fullName ?? '',
+        email: ev.organizer.email ?? '',
+        phone: ev.organizer.phone ?? '',
+      });
+    }
+    setVirtual({
+      link: ev.virtualLink || 'https://',
+      instructions: ev.virtualInstructions ?? '',
+    });
+    setStep(1);
+    setShowCreate(true);
+    setSelectedEvent(null);
+    setMoreOpen(false);
+  }
+
   // Step 3's location tab defaults to whichever option matches Step 1's Event
   // Type — Online → "Online Event" tab, Offline → "Physical Event" tab —
   // instead of always opening on Physical regardless of that choice.
@@ -773,7 +940,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    const next = type === 'checkbox' ? checked : value;
+    let next = type === 'checkbox' ? checked : value;
+    if ((name === 'title' || name === 'description') && typeof next === 'string') {
+      next = capitalizeFirst(next);
+    }
     setForm(prev => {
       const updated = { ...prev, [name]: next };
       const errors = { ...dateErrors };
@@ -882,7 +1052,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   function handleBack() {
     setStepErrors({});
     setAnimDir('back');
-    if (step === 1) { setShowCreate(false); setStep(1); }
+    if (step === 1) { setShowCreate(false); setStep(1); resetCreateForm(); }
     else setStep(s => s - 1);
   }
 
@@ -950,6 +1120,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (filters.location.trim() && !ev.location.toLowerCase().includes(filters.location.trim().toLowerCase())) return false;
     return true;
   });
+  const currentTabLoading = discTab === 'booked'    ? bookedLoading
+    : discTab === 'favorites' ? savedLoading
+    : discTab === 'created'   ? createdLoading
+    : eventsLoading;
 
   function openFilter() { setPendingF({ ...filters, categories: new Set(filters.categories), amenities: new Set(filters.amenities) }); setShowFilter(true); }
   function applyFilters() {
@@ -994,7 +1168,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
           {/* Cover image */}
           <div className="ev-detail-cover">
-            <EventCarousel key={selectedEvent.id} images={getEventImages(selectedEvent)} alt={selectedEvent.title} />
+            {getEventImages(selectedEvent).length > 0
+              ? <EventCarousel key={selectedEvent.id} images={getEventImages(selectedEvent)} alt={selectedEvent.title} />
+              : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                  <span style={{ width: 48, height: 48 }}><CalendarIcon /></span>
+                </div>
+              )}
             <button className="ev-detail-cover-back-btn" onClick={() => eventFromHome ? onBack?.() : setSelectedEvent(null)} title="Back to Events">
               <BackArrowIcon />
             </button>
@@ -1027,7 +1207,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             </div>
             <div className="ev-detail-actions">
               {selectedEvent._sourceTab === 'created' ? (
-                <button className="ev-detail-going-btn">
+                <button className="ev-detail-going-btn" onClick={() => openEditEvent(eventDetail?.id === selectedEvent.id ? { ...selectedEvent, ...eventDetail } : selectedEvent)}>
                   <EditIcon /> Edit Event
                 </button>
               ) : (
@@ -1080,7 +1260,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-more-divider" />
                       {(selectedEvent._sourceTab === 'created' ? [
-                        { icon: <EditIcon />,     label: 'Edit Event' },
+                        { icon: <EditIcon />,     label: 'Edit Event', onClick: () => openEditEvent(eventDetail?.id === selectedEvent.id ? { ...selectedEvent, ...eventDetail } : selectedEvent) },
                         { icon: <BookmarkIcon />, label: 'Save' },
                         { icon: <CalendarIcon />, label: 'Add to Calendar' },
                         { icon: <FlagIcon />,     label: 'Cancel Event' },
@@ -1091,7 +1271,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         { icon: <CalendarIcon />, label: 'Add to Calendar' },
                         { icon: <FlagIcon />,     label: 'Report Event' },
                       ]).map(item => (
-                        <button key={item.label} className="ev-more-item" onClick={() => setMoreOpen(false)}>
+                        <button key={item.label} className="ev-more-item" onClick={() => { setMoreOpen(false); item.onClick?.(); }}>
                           <span className="ev-more-item-icon">{item.icon}</span>
                           <span>{item.label}</span>
                         </button>
@@ -1304,7 +1484,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </button>
             </div>
             <div className="ev-disc-topbar-right">
-              <button className="ev-disc-create-btn" onClick={() => { resetWizard(); setShowCreate(true); }}>
+              <button className="ev-disc-create-btn" onClick={() => { setStep(1); setShowCreate(true); }}>
                 <PlusIcon /> Create Event
               </button>
               <button className={`ev-disc-filter-btn${activeFilterCount > 0 ? ' ev-disc-filter-btn--active' : ''}`} onClick={openFilter}>
@@ -1354,6 +1534,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           </div>
 
           {/* Event cards — grid or list */}
+          {currentTabLoading ? (
+            <div className="ev-disc-loading">
+              <div className="ev-disc-spinner" />
+              <p>Loading events…</p>
+            </div>
+          ) : (
+          <>
           {filteredEvents.length === 0 && (
             <div className="ev-disc-empty">
               {discTab === 'favorites' ? (
@@ -1373,9 +1560,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             {filteredEvents.map(ev => viewMode === 'grid' ? (
               <div key={ev.id} className="ev-disc-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-disc-card-img-wrap">
-                  {ev.img
-                    ? <img src={ev.img} alt={ev.title} className="ev-disc-card-img" />
-                    : <div className="ev-disc-card-img ev-img-placeholder" />}
+                  <img src={ev.img} alt={ev.title} className="ev-disc-card-img" />
                   <div className="ev-disc-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
                     <span className="ev-disc-date-month">{ev.month}</span>
@@ -1433,9 +1618,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             ) : (
               <div key={ev.id} className="ev-list-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-list-img-wrap">
-                  {ev.img
-                    ? <img src={ev.img} alt={ev.title} className="ev-list-img" />
-                    : <div className="ev-list-img ev-img-placeholder" />}
+                  <img src={ev.img} alt={ev.title} className="ev-list-img" />
                   <div className="ev-disc-date-badge ev-list-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
                     <span className="ev-disc-date-month">{ev.month}</span>
@@ -1491,6 +1674,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </div>
             ))}
           </div>
+          </>
+          )}
 
           {/* Newsletter strip */}
           <div className="ev-disc-newsletter">
@@ -1734,12 +1919,38 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-field-row">
                   <div className="ev-field">
                     <label className="ev-label">Event Category <span style={{ color: '#ef4444' }}>*</span></label>
-                    <div className={`ev-select-wrap${stepErrors.category ? ' ev-select-wrap--error' : ''}`}>
-                      <select className="ev-select" name="category" value={form.category} onChange={e => { handleChange(e); if (stepErrors.category) setStepErrors(p => ({ ...p, category: '' })); }}>
-                        <option value="">Select a category</option>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <ChevronDownIcon />
+                    <div className={`ev-cat-wrap${stepErrors.category ? ' ev-cat-wrap--error' : ''}`} ref={catDropdownRef}>
+                      <button
+                        type="button"
+                        className={`ev-cat-select-btn${catDropdownOpen ? ' ev-cat-select-btn--open' : ''}`}
+                        onClick={() => setCatDropdownOpen(v => !v)}
+                        aria-haspopup="listbox"
+                        aria-expanded={catDropdownOpen}
+                      >
+                        <span className={form.category ? '' : 'ev-cat-placeholder'}>{form.category || 'Select a category'}</span>
+                        <span className={`ev-vis-chevron${catDropdownOpen ? ' ev-vis-chevron--up' : ''}`}><ChevronDownIcon /></span>
+                      </button>
+
+                      {catDropdownOpen && (
+                        <ul className="ev-vis-dropdown ev-cat-dropdown" role="listbox">
+                          {CATEGORIES.map(c => (
+                            <li key={c} role="option" aria-selected={form.category === c}>
+                              <button
+                                type="button"
+                                className={`ev-vis-option${form.category === c ? ' ev-vis-option--active' : ''}`}
+                                onClick={() => {
+                                  setForm(prev => ({ ...prev, category: c }));
+                                  if (stepErrors.category) setStepErrors(p => ({ ...p, category: '' }));
+                                  setCatDropdownOpen(false);
+                                }}
+                              >
+                                <span className="ev-vis-label">{c}</span>
+                                {form.category === c && <span className="ev-vis-check"><CheckIcon /></span>}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     {stepErrors.category && <span className="ev-field-error">{stepErrors.category}</span>}
                   </div>
@@ -1801,10 +2012,23 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
                 {/* Cover Image(s) */}
                 <div className="ev-field">
-                  <label className="ev-label">Cover Image{coverImages.length > 1 ? 's' : ''}</label>
+                  <label className="ev-label">Cover Image{(existingCoverImages.length + coverImages.length) > 1 ? 's' : ''}</label>
 
-                  {coverImages.length > 0 && (
+                  {(existingCoverImages.length > 0 || coverImages.length > 0) && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                      {existingCoverImages.map(url => (
+                        <div key={url} style={{ position: 'relative', width: 80, height: 50, flexShrink: 0 }}>
+                          <img src={url} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                          <button
+                            type="button"
+                            onClick={() => removeExistingCoverImage(url)}
+                            aria-label="Remove image"
+                            style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#1a1f35', border: '1px solid rgba(255,255,255,0.2)', color: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+                          >
+                            <CoverCloseIcon />
+                          </button>
+                        </div>
+                      ))}
                       {coverImages.map(img => (
                         <div key={img.id} style={{ position: 'relative', width: 80, height: 50, flexShrink: 0 }}>
                           <img src={img.url} alt="cover preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
@@ -1824,7 +2048,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <label className="ev-cover-upload-label" style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '14px 18px', background: 'rgba(255,255,255,0.03)' }}>
                     <div style={{ width: 80, height: 50, background: 'rgba(255,255,255,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 22, flexShrink: 0 }}>+</div>
                     <div>
-                      <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{coverImages.length > 0 ? 'Add more images' : 'Upload cover image'}</p>
+                      <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{(existingCoverImages.length + coverImages.length) > 0 ? 'Add more images' : 'Upload cover image'}</p>
                       <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Recommended: 1200 × 628 px · JPG, PNG, WebP</p>
                     </div>
                     <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleCoverChange} />
@@ -2170,7 +2394,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             <div className="ev-s4-wrap">
               {/* Main review cards */}
               <div className="ev-s4-main">
-                <h2 className="ev-s4-title">Review &amp; Publish</h2>
+                <h2 className="ev-s4-title">{editingEventId ? 'Review & Save Changes' : 'Review & Publish'}</h2>
 
                 {/* Basic Info card */}
                 <div className="ev-review-card">
@@ -2288,12 +2512,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
 
                 {/* Publish actions */}
-                <button type="button" className="ev-publish-btn" disabled={createLoading} onClick={() => handlePublish(false)}>
-                  {createLoading ? 'Publishing…' : 'Publish Event'}
+                <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages} onClick={() => handlePublish(false)}>
+                  {editingEventId
+                    ? (preparingImages ? 'Preparing images…' : updateLoading ? 'Saving…' : 'Save Changes')
+                    : (createLoading ? 'Publishing…' : 'Publish Event')}
                 </button>
-                <button type="button" className="ev-draft-btn" disabled={createLoading} onClick={() => handlePublish(true)}>
-                  Save as Draft
-                </button>
+                {!editingEventId && (
+                  <button type="button" className="ev-draft-btn" disabled={createLoading} onClick={() => handlePublish(true)}>
+                    Save as Draft
+                  </button>
+                )}
                 <p className="ev-publish-notice">By publishing, you agree to our <span>Terms of Service</span> and <span>Event Guidelines.</span></p>
               </div>
             </div>

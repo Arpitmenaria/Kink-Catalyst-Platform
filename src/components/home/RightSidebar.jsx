@@ -11,6 +11,7 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
   const { profile, gallery, galleryTotal } = useSelector(s => s.profile);
   const photoInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   useEffect(() => {
     dispatch(fetchGallery());
@@ -93,7 +94,12 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
         ) : (
           <div className="gallery-grid">
             {displayedGallery.map((src, i) => (
-              <div key={i} className="gallery-thumb" style={{ overflow: 'hidden', position: 'relative' }}>
+              <div
+                key={i}
+                className="gallery-thumb"
+                style={{ overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
+                onClick={() => setLightboxSrc(src)}
+              >
                 <SkeletonImg src={src} alt="" />
                 {i === 5 && extraCount > 0 && <div className="gallery-more">+{extraCount}</div>}
               </div>
@@ -101,6 +107,13 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
           </div>
         )}
       </div>
+
+      {lightboxSrc && (
+        <div className="rs-gallery-lightbox" onClick={() => setLightboxSrc(null)}>
+          <button className="rs-gallery-lightbox-close" onClick={() => setLightboxSrc(null)} aria-label="Close">✕</button>
+          <img src={lightboxSrc} alt="" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
 
     </aside>
   );

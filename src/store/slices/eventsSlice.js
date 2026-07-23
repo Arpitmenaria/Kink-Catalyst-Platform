@@ -26,8 +26,11 @@ function normalizeEvent(e) {
     month:       valid ? MONTHS[d.getMonth()] : '',
     monthFull:   valid ? MONTH_FULL[d.getMonth()] : '',
     fullDate:    fmtFullDate(e.startDate, e.startTime),
-    img:         coverImages[0] ?? '',
-    images:      coverImages,
+    // coverImage (singular) is the legacy single-file field; the backend now
+    // returns coverImages (array, multi-upload) — prefer that, fall back to
+    // the old field for events created before the change.
+    img:         e.coverImages?.[0] ?? e.coverImage ?? '',
+    coverImages: e.coverImages ?? (e.coverImage ? [e.coverImage] : []),
     category:    e.category ?? '',
     catColor:    e.categoryColor ?? '#3b82f6',
     location:    locLabel,
@@ -44,6 +47,11 @@ function normalizeEvent(e) {
     soldOut:     e.soldOut ?? false,
     responded:   e.attendingCount != null ? Number(e.attendingCount).toLocaleString() : '0',
     venue:       (typeof loc === 'object' && loc?.venue) ? loc.venue : locLabel,
+    // Raw structured venue object (name/street/city/state/country/pinCode) as
+    // returned by the backend under its own 'venue' field — distinct from the
+    // display-string `venue` above. Needed to prefill the edit-event form.
+    venueObj:    e.venue ?? null,
+    visibility:  e.visibility ?? 'anyone',
     isSaved:     e.isSaved ?? false,
     isBooked:    e.isBooked ?? false,
     tickets:     e.tickets ?? [],
@@ -163,20 +171,15 @@ export const createEvent = createAsyncThunk(
   }
 );
 
-// 4. PUT /api/events/:id
+// 4. PUT /api/events/:id — expects a pre-built FormData (same shape createEvent
+// sends), so the edit form can reuse identical field-building logic, including
+// multiple `coverImage` files under the same key.
 export const updateEvent = createAsyncThunk(
   'events/updateEvent',
-  async ({ eventId, ...payload }, { getState, rejectWithValue }) => {
+  async ({ eventId, formData }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const form = new FormData();
-      Object.entries(payload).forEach(([k, v]) => {
-        if (v == null) return;
-        if (v instanceof File) form.append(k, v);
-        else if (typeof v === 'object') form.append(k, JSON.stringify(v));
-        else form.append(k, String(v));
-      });
-      const data = await apiRequest(`/api/events/${eventId}`, { method: 'PUT', token, body: form, isFormData: true });
+      const data = await apiRequest(`/api/events/${eventId}`, { method: 'PUT', token, body: formData, isFormData: true });
       return { eventId, ...data };
     } catch (err) { return rejectWithValue(err.message); }
   }

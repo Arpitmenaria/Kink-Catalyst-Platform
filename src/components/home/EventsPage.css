@@ -553,6 +553,30 @@
   font-size: 14px;
 }
 
+.ev-disc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 80px 0;
+  color: #4b5a7a;
+  font-size: 14px;
+}
+
+.ev-disc-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid #1e2338;
+  border-top-color: #3b82f6;
+  animation: evDiscSpin 0.7s linear infinite;
+}
+
+@keyframes evDiscSpin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── List view ── */
 .ev-disc-list {
   display: flex;
@@ -1336,6 +1360,40 @@
   height: 1px;
   background: #1a1f35;
   margin: 4px 0 0;
+}
+
+/* ── Event Category custom dropdown (trigger styled like .ev-select,
+   floating list reuses .ev-vis-dropdown/.ev-vis-option) ── */
+.ev-cat-wrap { position: relative; width: 100%; }
+
+.ev-cat-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: #0d1020;
+  border: 1px solid #1e2238;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #c8cfe0;
+  font-size: 13.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ev-cat-select-btn:hover,
+.ev-cat-select-btn--open { border-color: #2d3a5e; }
+
+.ev-cat-placeholder { color: #3e4460; }
+
+.ev-cat-wrap--error .ev-cat-select-btn { border-color: #ef4444 !important; }
+
+.ev-cat-dropdown {
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 /* ── Footer ── */

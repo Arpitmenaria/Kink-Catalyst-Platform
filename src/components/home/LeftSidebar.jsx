@@ -295,8 +295,16 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
             <div className="event-list">
               {upcomingEvents.map(e => (
                 <div key={e.id} className="sidebar-event-item" style={{ cursor: 'pointer' }} onClick={() => onEventClick?.(e.id)}>
-                  <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8 }}>
-                    <img src={e.img} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="event-thumb" style={{ overflow: 'hidden', borderRadius: 8, position: 'relative' }}>
+                    <SkeletonImg
+                      src={e.img}
+                      alt={e.title}
+                      fallback={
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a2540', color: '#3b82f6' }}>
+                          <span style={{ width: 18, height: 18 }}><CalendarIcon /></span>
+                        </div>
+                      }
+                    />
                   </div>
                   <div className="friend-info">
                     <p className="friend-name">{e.title}</p>
