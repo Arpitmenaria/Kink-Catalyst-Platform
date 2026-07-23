@@ -18,6 +18,7 @@ import { initSocket } from '../../services/socket';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
 import { consumeJustSelectedPlan } from '../../store/slices/plansSlice';
+import { readSharedPostId, clearSharedPostId } from '../../utils/permalink';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -34,7 +35,8 @@ export default function HomePage() {
   }, [token]);
 
   const [section,         setSection]         = useState('feed');
-  const [detailPostId,    setDetailPostId]    = useState(null); // post-detail modal
+  // Seeded from /?post=<id> so a shared permalink opens straight into the post.
+  const [detailPostId,    setDetailPostId]    = useState(readSharedPostId); // post-detail modal
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [groupsCreate,    setGroupsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
@@ -44,6 +46,10 @@ export default function HomePage() {
   const [viewedGroupId,   setViewedGroupId]   = useState(null);
   const [viewedEventId,   setViewedEventId]   = useState(null);
   const [profileReturnSection, setProfileReturnSection] = useState('feed');
+
+  // The id above came from the URL; strip the param now that it's in state, so
+  // a refresh (or sharing the address bar) doesn't keep reopening the post.
+  useEffect(() => { clearSharedPostId(); }, []);
 
   // Just came from signup → plan selection: land on Profile → About with
   // Personal Information edit mode already open so the user can fill it in.

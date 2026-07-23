@@ -18,4 +18,9 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Vercel serverless functions — Node runtime, not part of the Vite bundle.
+    files: ['api/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

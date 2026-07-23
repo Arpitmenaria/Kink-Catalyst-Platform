@@ -7,6 +7,9 @@ import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
 import CreatePostModal from './CreatePostModal';
 import ReactionsModal from './ReactionsModal';
+import ShareSheet from './ShareSheet';
+import './ShareSheet.css';
+import { postPermalink } from '../../utils/permalink';
 import { getMentionQuery, shiftMentionsOnEdit, insertMention, trimWithMentions, renderTaggedText, MentionDropdown } from './mentionUtils.jsx';
 import './PostCard.css';
 
@@ -155,6 +158,8 @@ export default function PostCard({ post, onUserClick }) {
   const [pickerOpen,      setPickerOpen]      = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
   const pickerTimer = useRef(null);
+  const [shareOpen,       setShareOpen]       = useState(false);
+  const shareCounted = useRef(false);
   const [reportOpen,      setReportOpen]      = useState(false);
   const [showComments,    setShowComments]    = useState(false);
   const [expandedReplies, setExpandedReplies] = useState(new Set());
@@ -355,30 +360,19 @@ export default function PostCard({ post, onUserClick }) {
     pickerTimer.current = setTimeout(() => setPickerOpen(false), 220);
   }
 
-  // No per-post URL exists to deep-link to, so the share sheet carries the
-  // post's own content (author + caption) rather than a link. Only counts
-  // as a share (API hit) once the user actually completes the share/copy —
-  // canceling the native share sheet throws AbortError and shouldn't count.
-  async function handleShare() {
+  // Opens the share sheet, which shares a real permalink (/p/:id) so the link
+  // unfurls with the post's photo and caption on WhatsApp and friends.
+  function handleShare() {
     if (isStatic || isSharing) return;
-    const authorName = post.author?.fullName || post.author?.name || 'Someone';
-    const text = post.caption ? `${authorName}: ${post.caption}` : `A post by ${authorName}`;
+    setShareOpen(true);
+  }
 
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: authorName, text });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        dispatch(showToast({ message: 'Post copied to clipboard', type: 'success' }));
-      } else {
-        return;
-      }
-      dispatch(sharePost(post._id));
-    } catch (err) {
-      if (err?.name !== 'AbortError') {
-        dispatch(showToast({ message: 'Could not share this post', type: 'error' }));
-      }
-    }
+  // Counted once per opened sheet, and only when a share actually happens —
+  // browsing the sheet and closing it shouldn't inflate the counter.
+  function handleShared() {
+    if (shareCounted.current) return;
+    shareCounted.current = true;
+    dispatch(sharePost(post._id));
   }
 
   function handleCommentTextChange(e) {
@@ -857,6 +851,15 @@ export default function PostCard({ post, onUserClick }) {
           </div>
         </div>
       </article>
+
+      {shareOpen && (
+        <ShareSheet
+          post={post}
+          url={postPermalink(post._id)}
+          onShared={handleShared}
+          onClose={() => { setShareOpen(false); shareCounted.current = false; }}
+        />
+      )}
 
       {reportOpen && <ReportModal postId={post._id} onClose={() => setReportOpen(false)} />}
 

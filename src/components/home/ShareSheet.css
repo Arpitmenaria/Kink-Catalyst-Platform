@@ -1,0 +1,158 @@
+/* ── Share sheet ─────────────────────────────────────────── */
+.ss-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 16, 0.72);
+  backdrop-filter: blur(3px);
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: ss-fade 0.16s ease;
+}
+
+@keyframes ss-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ss-sheet {
+  width: 100%;
+  max-width: 430px;
+  background: #10151f;
+  border: 1px solid #1e2a42;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  animation: ss-rise 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes ss-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ss-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  border-bottom: 1px solid #1a2338;
+}
+
+.ss-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #e0e6f8;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.ss-close {
+  background: none;
+  border: none;
+  color: #5c6a8c;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 7px;
+  display: flex;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ss-close:hover { background: #1a2338; color: #e0e6f8; }
+
+/* Targets grid */
+.ss-targets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 18px 14px 14px;
+}
+
+.ss-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 4px;
+  border: none;
+  background: none;
+  border-radius: 11px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.ss-target:hover { background: #161d2c; }
+
+.ss-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ss-whatsapp { background: #25d366; }
+.ss-telegram { background: #29a9eb; }
+.ss-x        { background: #000; border: 1px solid #2a3550; }
+.ss-facebook { background: #1877f2; }
+.ss-linkedin { background: #0a66c2; }
+.ss-email    { background: #2a3550; }
+.ss-more     { background: #2a3550; }
+
+.ss-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #93a0bd;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Copy-link row */
+.ss-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px 18px;
+}
+
+.ss-link {
+  flex: 1;
+  min-width: 0;
+  background: #0b101a;
+  border: 1px solid #1e2a42;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: #93a0bd;
+  font-family: inherit;
+  text-overflow: ellipsis;
+}
+.ss-link:focus { outline: none; border-color: #2f4a86; color: #e0e6f8; }
+
+.ss-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.ss-copy:hover { background: #2563eb; }
+.ss-copy--done { background: #15803d; }
+.ss-copy--done:hover { background: #15803d; }
+
+@media (max-width: 420px) {
+  .ss-targets { grid-template-columns: repeat(3, 1fr); }
+}
