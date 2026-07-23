@@ -483,8 +483,8 @@ export default function PostCard({ post, onUserClick }) {
               >
                 {authorName}
               </span>
-              {authorLocation && <span className="post-author-loc"> · <PinIcon /> {authorLocation}</span>}
             </p>
+            {authorLocation && <p className="post-author-loc"><PinIcon /> {authorLocation}</p>}
             <p className="post-time">{timeAgo(post.createdAt)}</p>
           </div>
           {isOwner && (
