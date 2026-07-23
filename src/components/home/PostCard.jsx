@@ -101,6 +101,7 @@ function normalizeComment(c) {
   return {
     id: cid,
     authorId: c.author?._id ?? c.author?.id ?? null,
+    avatar: c.author?.avatar?.startsWith?.('http') ? c.author.avatar : '',
     initials: nameInitials(name),
     color: nameColor(name),
     name,
@@ -113,6 +114,7 @@ function normalizeComment(c) {
       return {
         id: r._id ?? r.id,
         authorId: r.author?._id ?? r.author?.id ?? null,
+        avatar: r.author?.avatar?.startsWith?.('http') ? r.author.avatar : '',
         initials: nameInitials(rName),
         color: nameColor(rName),
         name: rName,
@@ -129,7 +131,11 @@ export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId } = useSelector(s => s.posts);
-  const { connections } = useSelector(s => s.profile);
+  const { connections, profile } = useSelector(s => s.profile);
+  // Logged-in user's avatar for the comment composer (profile is the freshest
+  // source; auth.user is the fallback right after login).
+  const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
+  const myAvatar = rawMyAvatar?.startsWith?.('http') ? rawMyAvatar : '';
 
   const isStatic = typeof post.likes === 'number';
 
@@ -704,7 +710,9 @@ export default function PostCard({ post, onUserClick }) {
               <div key={c.id} className="pc-thread">
                 {/* Top-level comment */}
                 <div className="pc-comment">
-                  <div className="pc-avatar" style={{ background: c.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.initials}</div>
+                  <div className="pc-avatar" style={{ background: c.avatar ? 'transparent' : c.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>
+                    {c.avatar ? <img src={c.avatar} alt={c.name} className="pc-avatar-img" /> : c.initials}
+                  </div>
                   <div className="pc-body">
                     <div className="pc-bubble">
                       <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.name}</span>
@@ -751,7 +759,9 @@ export default function PostCard({ post, onUserClick }) {
                       <div className="pc-replies">
                         {c.replies.map(r => (
                           <div key={r.id} className="pc-comment pc-comment--reply">
-                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.initials}</div>
+                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.avatar ? 'transparent' : r.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>
+                              {r.avatar ? <img src={r.avatar} alt={r.name} className="pc-avatar-img" /> : r.initials}
+                            </div>
                             <div className="pc-body">
                               <div className="pc-bubble pc-bubble--reply">
                                 <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.name}</span>
@@ -785,9 +795,13 @@ export default function PostCard({ post, onUserClick }) {
         <div className="post-comment-bar">
           <div
             className="comment-avatar"
-            style={{ cursor: userId ? 'pointer' : 'default' }}
+            style={{ cursor: userId ? 'pointer' : 'default', background: myAvatar ? 'transparent' : undefined }}
             onClick={() => handleCommentAuthorClick(userId)}
-          >{getInitials(user?.fullName ?? 'A')}</div>
+          >
+            {myAvatar
+              ? <img src={myAvatar} alt={user?.fullName ?? ''} className="pc-avatar-img" />
+              : getInitials(user?.fullName ?? 'A')}
+          </div>
           <div className="comment-input-wrap">
             <input
               ref={commentInputRef}
