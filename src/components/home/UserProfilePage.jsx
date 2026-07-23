@@ -7,6 +7,7 @@ import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
 import { followUser, unfollowUser, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from "../../store/slices/usersSlice";
 import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
+import { fetchConnections } from "../../store/slices/profileSlice";
 import { apiRequest } from "../../services/api";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
@@ -235,6 +236,10 @@ export default function UserProfilePage({
     let cancelled = false;
     setLoading(true);
     dispatch(setViewedPostsAction([]));
+    // PostCard's @mention comment box reads state.profile.connections — this
+    // page never populated it otherwise, so mentions silently degraded to
+    // whatever (if anything) an earlier Feed visit happened to leave behind.
+    dispatch(fetchConnections());
     Promise.all([
       apiRequest(`/api/users/${userId}`, { token }),
       apiRequest(`/api/users/${userId}/posts`, { token }),

@@ -268,6 +268,20 @@
   padding: 2px 8px;
 }
 
+.navbar-notif-mark-all {
+  font-size: 11.5px;
+  color: #6366f1;
+  font-weight: 600;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.navbar-notif-mark-all:hover {
+  text-decoration: underline;
+}
+
 @keyframes navNotifItemIn {
   from { opacity: 0; transform: translateX(8px); }
   to   { opacity: 1; transform: translateX(0);   }

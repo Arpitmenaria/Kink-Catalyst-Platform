@@ -19,7 +19,7 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
   const displayedGallery = gallery.slice(0, 6);
   const extraCount = galleryTotal > 6 ? galleryTotal - 6 : 0;
 
-  const education = profile?.education ?? [];
+  const education = [];
 
   function handlePhotoChosen(e) {
     const file = e.target.files?.[0];
@@ -37,7 +37,7 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
       {/* Education */}
       <div className="right-card">
         <div className="right-section-header" style={{ padding: '12px 14px 10px' }}>
-          <p className="right-section-title">Education</p>
+          <p className="right-section-title">Learning</p>
           {education.length > 0 && (
             <button className="section-link" style={{ marginLeft: 'auto' }} onClick={onAddEducationClick}>Edit</button>
           )}
@@ -45,7 +45,7 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
         {education.length === 0 ? (
           <div style={{ padding: '0 14px 14px' }}>
             <button className="gallery-add-first-btn" onClick={onAddEducationClick}>
-              <GradCapIcon /> Add your education
+              <GradCapIcon /> Add your first chapter
             </button>
           </div>
         ) : (

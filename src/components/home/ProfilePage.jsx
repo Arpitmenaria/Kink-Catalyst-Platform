@@ -95,7 +95,9 @@ function FriendSuggestionsPanel({ onUserClick }) {
 
   function handleAdd(id, status) {
     if (status === 'requested' || status === 'connected') return;
-    dispatch(sendFriendRequest(id));
+    dispatch(sendFriendRequest(id)).then((result) => {
+      if (sendFriendRequest.fulfilled.match(result)) dispatch(fetchSuggestions(5));
+    });
     setPoppingIds(p => new Set([...p, id]));
     setTimeout(() => setPoppingIds(p => { const s = new Set(p); s.delete(id); return s; }), 500);
   }
@@ -786,7 +788,7 @@ export function EventsTab({ onEventsClick, onCreateEvent, onEventClick, readOnly
                 </span>
                 <span className="ev-meta-item">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  {ev.location}
+                  {ev.location || 'N/A'}
                 </span>
                 <span className="ev-meta-item">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -859,7 +861,7 @@ function profileToEdu(p) {
   return (p?.education ?? []).map(e => ({ id: e._id ?? e.id, school: e.school ?? '', degree: e.degree ?? '', years: e.years ?? '', type: e.type ?? '' }));
 }
 
-export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed, autoEditEducation, onAutoEditEducationConsumed }) {
+export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed }) {
   const dispatch = useDispatch();
   const { profile } = useSelector(s => s.profile);
   const infoTabsRef = useRef(null);
@@ -902,18 +904,6 @@ export function AboutTab({ readOnly, autoEditPersonal, onAutoEditConsumed, autoE
       infoTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }, [autoEditPersonal]);
-
-  // Same as above, but for the "Add your education" CTA on the home screen's Education card.
-  useEffect(() => {
-    if (!autoEditEducation || readOnly) return;
-    setInfoTab('education');
-    setEduDraft(eduItems.map(i => ({ ...i })));
-    setEditingEdu(true);
-    onAutoEditEducationConsumed?.();
-    requestAnimationFrame(() => {
-      infoTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }, [autoEditEducation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleEdit() {
     setDraftBio(bio ?? '');
@@ -1188,7 +1178,6 @@ export default function ProfilePage({
   onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick,
   initialTab, onInitTabConsumed, onUserClick, onEventClick, onMessageUser,
   autoEditPersonal, onAutoEditConsumed,
-  autoEditEducation, onAutoEditEducationConsumed,
   initFollowPanel, onInitFollowPanelConsumed,
 }) {
   const dispatch = useDispatch();
@@ -1456,7 +1445,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             </div>
           )}
 
-          {activeTab === 'About'       && <AboutTab autoEditPersonal={autoEditPersonal} onAutoEditConsumed={onAutoEditConsumed} autoEditEducation={autoEditEducation} onAutoEditEducationConsumed={onAutoEditEducationConsumed} />}
+          {activeTab === 'About'       && <AboutTab autoEditPersonal={autoEditPersonal} onAutoEditConsumed={onAutoEditConsumed} />}
           {activeTab === 'Connections' && <ConnectionsTab onUserClick={onUserClick} onMessageUser={onMessageUser} />}
           {activeTab === 'Photos'      && <MediaTab />}
           {activeTab === 'Events'      && <EventsTab onEventsClick={onEventsClick} onCreateEvent={onEventsCreateClick} onEventClick={onEventClick} />}
@@ -1518,15 +1507,19 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
               {list.map(person => (
                 <div className="fp-person" key={person.id}>
                   {person.avatar?.startsWith?.('http')
-                    ? <img className="fp-avatar" src={person.avatar} alt={person.name} />
+                    ? <img className="fp-avatar" style={{ cursor: 'pointer' }} src={person.avatar} alt={person.name} onClick={() => onUserClick?.(person.id)} />
                     : (
-                      <div className="fp-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+                      <div
+                        className="fp-avatar"
+                        style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0, cursor: 'pointer' }}
+                        onClick={() => onUserClick?.(person.id)}
+                      >
                         {initials(person.name)}
                       </div>
                     )
                   }
                   <div className="fp-info">
-                    <span className="fp-name">{person.name}</span>
+                    <span className="fp-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(person.id)}>{person.name}</span>
                     <span className="fp-role">{person.role}</span>
                     {person.mutual > 0 && (
                       <span className="fp-mutual">

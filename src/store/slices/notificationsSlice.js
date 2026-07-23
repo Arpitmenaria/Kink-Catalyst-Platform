@@ -19,8 +19,21 @@ export const markNotificationsRead = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      await apiRequest('/api/notifications/read', { method: 'PUT', token });
-      return {};
+      const data = await apiRequest('/api/notifications/mark-read', { method: 'PUT', token });
+      return { unreadCount: data?.unreadCount };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const markNotificationRead = createAsyncThunk(
+  'notifications/markOneRead',
+  async (notificationId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/notifications/${notificationId}/read`, { method: 'PATCH', token });
+      return { notificationId, unreadCount: data?.unreadCount };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -74,9 +87,19 @@ const notificationsSlice = createSlice({
         state.error = action.payload;
       })
 
-      .addCase(markNotificationsRead.fulfilled, (state) => {
-        state.unreadCount = 0;
+      .addCase(markNotificationsRead.fulfilled, (state, action) => {
+        state.unreadCount = typeof action.payload.unreadCount === 'number' ? action.payload.unreadCount : 0;
         state.notifications = state.notifications.map(n => ({ ...n, unread: false }));
+      })
+
+      .addCase(markNotificationRead.fulfilled, (state, action) => {
+        const { notificationId, unreadCount } = action.payload;
+        const n = state.notifications.find(x => (x.id ?? x._id) === notificationId);
+        const wasUnread = !!n?.unread;
+        if (n) n.unread = false;
+        state.unreadCount = typeof unreadCount === 'number'
+          ? unreadCount
+          : Math.max(0, state.unreadCount - (wasUnread ? 1 : 0));
       });
   },
 });

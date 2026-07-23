@@ -325,6 +325,31 @@
   width: fit-content;
 }
 
+.ev-disc-pill-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ev-disc-type-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  width: fit-content;
+  color: #8b9cc8;
+  background: rgba(139,156,200,0.12);
+  border: 1px solid rgba(139,156,200,0.3);
+}
+.ev-disc-type-pill--online {
+  color: #10b981;
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.35);
+}
+
 .ev-disc-card-loc {
   display: flex;
   align-items: center;
@@ -1366,6 +1391,30 @@
 
 .ev-ticket-price--active { color: #3b82f6; }
 
+.ev-ticket-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ev-ticket-edit-btn,
+.ev-ticket-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: #5c6a8c;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.ev-ticket-edit-btn:hover { color: #3b82f6; background: rgba(59,130,246,0.12); }
+.ev-ticket-remove-btn:hover { color: #ef4444; background: rgba(239,68,68,0.12); }
+
 /* New ticket form */
 .ev-new-ticket-form {
   border: 1px solid #1e2238;
@@ -1871,6 +1920,9 @@
   color: #fff;
   flex-shrink: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.ev-invite-avatar--img {
+  object-fit: cover;
 }
 
 .ev-invite-name {

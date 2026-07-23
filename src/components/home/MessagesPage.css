@@ -323,6 +323,22 @@
   text-overflow: ellipsis;
 }
 
+/* Small group-chat indicator overlaid on the avatar corner (mutually exclusive
+   with .msg-online-dot — only DMs show online status, only groups show this) */
+.msg-group-icon-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #0b0d17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .msg-conv-meta {
   display: flex;
   align-items: center;
@@ -747,6 +763,41 @@
 
 .msg-chat-search-btn:hover { color: #c8cfe0; background: #131626; }
 
+.msg-chat-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  margin-left: 16px;
+  background: #131626;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #5c6a8c;
+}
+.msg-chat-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #e0e6f8;
+  font-size: 13.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  min-width: 0;
+}
+.msg-chat-search-input::placeholder { color: #4a5270; }
+.msg-chat-search-close-btn {
+  background: none;
+  border: none;
+  color: #5c6a8c;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.msg-chat-search-close-btn:hover { color: #c8cfe0; }
+
 /* Messages scroll area */
 .msg-chat-messages {
   flex: 1;
@@ -786,6 +837,21 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+/* ── Group activity log ("X joined", "X left", "Group created by Y") ── */
+.msg-system-row {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0;
+}
+.msg-system-text {
+  font-size: 12px;
+  color: #5c6a8c;
+  background: #131829;
+  border-radius: 10px;
+  padding: 5px 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
 /* Message bubbles */
 .msg-bubble-row {
   display: flex;
@@ -809,6 +875,9 @@
   border-radius: 16px;
   line-height: 1.55;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .msg-bubble--received {
@@ -1076,7 +1145,7 @@
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 2px;
-  width: 264px;
+  min-width: 264px;
 }
 
 .msg-emoji-btn {
@@ -2047,6 +2116,8 @@
 }
 
 .nm-create-btn:hover { background: #1d4ed8; }
+.nm-create-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.nm-create-btn:disabled:hover { background: #2563eb; }
 
 /* ══════════════════════════════════════
    Shared Assets — Links & Docs tabs
@@ -2802,7 +2873,284 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+.msg-report-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #252d4a;
+}
+.msg-report-reason-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 4px;
+  font-size: 13.5px;
+  color: #c8cfe0;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.msg-report-reason-item input[type="radio"] { accent-color: #3b82f6; cursor: pointer; }
+
 .msg-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+/* ── Group Info panel ── */
+.grp-info-box {
+  background: #161b2e;
+  border: 1px solid #252d4a;
+  border-radius: 14px;
+  padding: 22px 22px 20px;
+  width: 400px;
+  max-width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+}
+.grp-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.grp-info-close-btn {
+  background: none;
+  border: none;
+  color: #5c6a8c;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s;
+}
+.grp-info-close-btn:hover { color: #8b9cc8; }
+
+.grp-info-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 16px 18px;
+  border-bottom: 1px solid #252d4a;
+}
+.grp-info-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  margin-bottom: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.grp-info-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.grp-info-avatar--editable { position: relative; }
+.grp-info-avatar-edit-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #161b2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.grp-info-name { font-size: 16px; font-weight: 700; color: #e8ecf8; margin: 0 0 4px; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+.grp-info-edit-name-input {
+  width: 100%;
+  background: #0d1020;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e8ecf8;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.grp-info-edit-desc-input {
+  width: 100%;
+  background: #0d1020;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #c8cfe0;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.grp-info-edit-actions { display: flex; gap: 8px; width: 100%; }
+.grp-info-edit-cancel-btn, .grp-info-edit-save-btn {
+  flex: 1;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.grp-info-edit-cancel-btn { background: none; border: 1px solid #252d4a; color: #8b9cc8; }
+.grp-info-edit-save-btn { background: #2563eb; border: none; color: #fff; }
+.grp-info-edit-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.grp-info-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 0;
+}
+.grp-info-edit-btn:hover { text-decoration: underline; }
+.grp-info-desc { font-size: 13px; color: #8b9cc8; margin: 0 0 4px; overflow-wrap: break-word; word-break: break-word; }
+.grp-info-desc--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.grp-info-desc-toggle {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 0 6px;
+}
+.grp-info-desc-toggle:hover { text-decoration: underline; }
+.grp-info-member-count { font-size: 12.5px; color: #5c6a8c; margin: 0; }
+
+.grp-info-members { padding: 14px 0; }
+.grp-info-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.grp-info-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5c6a8c;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.grp-info-add-btn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.grp-info-add-btn:hover { text-decoration: underline; }
+
+.grp-info-add-panel {
+  background: #0d1020;
+  border: 1px solid #252d4a;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+.grp-info-add-list { max-height: 160px; overflow-y: auto; }
+.grp-info-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.grp-info-add-row:hover { background: #161b2e; }
+.grp-info-add-row--selected { background: rgba(59,130,246,0.1); }
+.grp-info-add-confirm-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.grp-info-add-confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.grp-info-member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+}
+.grp-info-member-name { flex: 1; font-size: 13.5px; color: #c8cfe0; font-family: 'Plus Jakarta Sans', sans-serif; }
+.grp-info-admin-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #3b82f6;
+  background: rgba(59,130,246,0.14);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+.grp-info-remove-member-btn {
+  background: none;
+  border: none;
+  color: #5c6a8c;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 0.15s;
+}
+.grp-info-remove-member-btn:hover { color: #ef4444; }
+.grp-info-remove-member-btn:disabled { opacity: 0.5; cursor: default; }
+
+.grp-info-actions { padding-top: 14px; border-top: 1px solid #252d4a; }
+.grp-info-danger-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid #3a1f2a;
+  color: #ef4444;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s;
+}
+.grp-info-danger-btn:hover { background: rgba(239,68,68,0.1); }
+
+.grp-info-report-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: none;
+  border: 1px solid #3a2f1a;
+  color: #f59e0b;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s;
+}
+.grp-info-report-btn:hover { background: rgba(245,158,11,0.1); }
+.grp-info-report-btn:disabled { opacity: 0.6; cursor: default; }
 
 .msg-confirm-cancel-btn {
   padding: 9px 20px;

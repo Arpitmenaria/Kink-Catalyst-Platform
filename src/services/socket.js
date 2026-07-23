@@ -1,11 +1,12 @@
 import { io } from 'socket.io-client';
-import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers, fetchConversations } from '../store/slices/messagesSlice';
+import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers, fetchConversations, syncMessages, groupMemberJoinedRemote, groupMemberLeftRemote, groupMemberRemovedRemote, groupDeletedRemote, groupUpdatedRemote } from '../store/slices/messagesSlice';
 import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
-import { fetchMe, updateFollowCounts } from '../store/slices/authSlice';
+import { fetchMe, updateFollowCounts, logout } from '../store/slices/authSlice';
 import { setFriendStatus, addIncomingRequest } from '../store/slices/usersSlice';
 import { setConnectionOnline, setConnectionOffline } from '../store/slices/profileSlice';
 import { notificationReceived } from '../store/slices/notificationsSlice';
 import { showToast } from '../store/slices/toastSlice';
+import { showLogin } from '../store/slices/uiSlice';
 
 // Build a bell-ready notification object from a raw socket payload.
 function buildNotif(data) {
@@ -31,7 +32,7 @@ function buildNotif(data) {
   };
 }
 
-const BASE_URL = 'https://kick-analyst-backend-production.up.railway.app';
+const BASE_URL = 'https://kick-analyst-backend-production.jay886631.workers.dev';
 
 let socket = null;
 let storeRef = null; // full Redux store — gives us dispatch + getState
@@ -179,10 +180,86 @@ export function initSocket(token, store) {
   socket.on('reconnect', () => {
     // Resync authoritative counts after reconnect (per API contract)
     storeRef.dispatch(fetchMe());
+    // Whatever the open chat missed while disconnected won't arrive via
+    // socket now (it already happened) — pull it from the API immediately
+    // instead of waiting for the next background poll.
+    const activeConvId = storeRef.getState().messages.activeConvId;
+    if (activeConvId) storeRef.dispatch(syncMessages({ convId: activeConvId }));
   });
 
   socket.on('error', ({ event, message }) => {
     console.warn('[socket] error:', event, message);
+  });
+
+  // Backend killed this session (e.g. account suspended) — log out immediately
+  // rather than leaving a dead connection the user thinks is still live.
+  socket.on('force_logout', ({ reason, message }) => {
+    console.warn('[socket] force_logout:', reason, message);
+    storeRef.dispatch(showToast({ message: message || 'You have been logged out.', type: 'error' }));
+    storeRef.dispatch(logout());
+    storeRef.dispatch(showLogin());
+    disconnectSocket();
+  });
+
+  // The backend only interleaves "X joined"/"X left" system messages into the
+  // REST GET /:id/messages response — it doesn't push their text over the
+  // socket. So a membership event for the conversation the user has open
+  // right now needs a fresh page-1 fetch to actually show that line; for any
+  // other conversation, the lightweight reducer below (count/member-list only)
+  // is enough, and the system message will show next time it's opened.
+  function refetchIfOpen(conversationId) {
+    if (storeRef.getState().messages.activeConvId === conversationId) {
+      storeRef.dispatch(syncMessages({ convId: conversationId }));
+    }
+  }
+
+  // Group membership changed elsewhere (someone joined/left/was removed) —
+  // keep the member count (and the open member-list panel, if any) live.
+  socket.on('group:member_joined', ({ conversationId, member, memberCount }) => {
+    console.log('[socket] group:member_joined', conversationId, member, memberCount);
+    storeRef.dispatch(groupMemberJoinedRemote({ convId: conversationId, member, memberCount }));
+    refetchIfOpen(conversationId);
+  });
+
+  // `newAdmin` is only present when the departing member WAS the admin —
+  // the backend auto-promotes whoever joined earliest.
+  socket.on('group:member_left', ({ conversationId, userId, newAdmin, memberCount }) => {
+    console.log('[socket] group:member_left', conversationId, userId, newAdmin, memberCount);
+    const myUserId = storeRef.getState().auth.user?._id ?? storeRef.getState().auth.user?.id;
+    storeRef.dispatch(groupMemberLeftRemote({ convId: conversationId, userId, newAdmin, memberCount, myUserId }));
+    if (newAdmin?.id && newAdmin.id === myUserId) {
+      storeRef.dispatch(showToast({ message: "You're now the admin of this group", type: 'info' }));
+    }
+    refetchIfOpen(conversationId);
+  });
+
+  // Admin kicked someone — emitted to the room AND the removed user's personal
+  // room, so the removed user's own client hears about it even after leaving.
+  socket.on('group:member_removed', ({ conversationId, userId, removedBy, memberCount }) => {
+    console.log('[socket] group:member_removed', conversationId, userId, removedBy, memberCount);
+    const myUserId = storeRef.getState().auth.user?._id ?? storeRef.getState().auth.user?.id;
+    storeRef.dispatch(groupMemberRemovedRemote({ convId: conversationId, userId, removedBy, memberCount, myUserId }));
+    if (userId === myUserId) {
+      storeRef.dispatch(showToast({ message: 'You were removed from this group', type: 'info' }));
+    } else {
+      refetchIfOpen(conversationId);
+    }
+  });
+
+  // Group admin deleted it — drop it from every other member's list immediately.
+  socket.on('group:deleted', ({ conversationId }) => {
+    storeRef.dispatch(groupDeletedRemote({ convId: conversationId }));
+    storeRef.dispatch(showToast({ message: 'This group was deleted', type: 'info' }));
+  });
+
+  // Group name/photo/description edited by another member.
+  socket.on('group:updated', (data) => {
+    storeRef.dispatch(groupUpdatedRemote({
+      convId: data.conversationId,
+      name: data.name,
+      avatarUrl: data.avatarUrl,
+      description: data.description,
+    }));
   });
 }
 
