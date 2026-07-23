@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
+import { blockUser } from './usersSlice';
 
 // The same post can exist as separate copies in the main feed, the logged-in
 // user's own post list, and a viewed profile's post list simultaneously —
@@ -47,6 +48,7 @@ export function normalizePost(p) {
     shares: typeof p.shares === 'number'
       ? new Array(p.shares).fill(null)
       : (Array.isArray(p.shares) ? p.shares : []),
+    isReported: p.isReported ?? false,
   };
 }
 
@@ -95,6 +97,7 @@ function normalizeMyPost(p) {
     shares: typeof p.shares === 'number'
       ? new Array(p.shares).fill(null)
       : (Array.isArray(p.shares) ? p.shares : []),
+    isReported: p.isReported ?? false,
   };
 }
 
@@ -669,8 +672,14 @@ const postsSlice = createSlice({
       .addCase(reportPost.pending, (state) => {
         state.reportSubmitting = true;
       })
-      .addCase(reportPost.fulfilled, (state) => {
+      .addCase(reportPost.fulfilled, (state, action) => {
         state.reportSubmitting = false;
+        // Session-local until the backend also returns `isReported` on the
+        // post itself (GET /api/posts, /api/users/me/posts) — without that,
+        // this resets to showing the "..." menu again after a page refresh.
+        forEachMatchingPost(state, action.payload.postId, (post) => {
+          post.isReported = true;
+        });
       })
       .addCase(reportPost.rejected, (state) => {
         state.reportSubmitting = false;
@@ -685,6 +694,17 @@ const postsSlice = createSlice({
       })
       .addCase(reportUser.rejected, (state) => {
         state.reportSubmitting = false;
+      })
+
+      // Blocking a user (usersSlice.blockUser) — the backend excludes their
+      // posts from GET /api/posts going forward, but that only takes effect
+      // on the NEXT fetch; drop their posts from what's already loaded now
+      // so blocking has an immediate visible effect instead of waiting for a refetch.
+      .addCase(blockUser.fulfilled, (state, action) => {
+        const { userId } = action.payload;
+        const authorIdOf = (p) => p.author?._id ?? p.author?.id ?? p.authorId ?? p.userId;
+        state.posts = state.posts.filter(p => authorIdOf(p) !== userId);
+        state.viewedPosts = state.viewedPosts.filter(p => authorIdOf(p) !== userId);
       });
   },
 });

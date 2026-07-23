@@ -39,7 +39,8 @@
       "Bash(awk -F: '$1>=375 && $1<=606')",
       "Bash(gh pr *)",
       "Bash(awk 'NR==1150,NR==1165' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/MessagesPage.jsx)",
-      "Bash(git -C /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend log --oneline -10 -- src/components/home/UserProfilePage.jsx src/components/home/ProfilePage.jsx src/components/home/PostCard.jsx src/components/home/GroupsPage.jsx)"
+      "Bash(git -C /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend log --oneline -10 -- src/components/home/UserProfilePage.jsx src/components/home/ProfilePage.jsx src/components/home/PostCard.jsx src/components/home/GroupsPage.jsx)",
+      "Bash(sort -t: -k2 -n)"
     ]
   },
   "enableAllProjectMcpServers": true,

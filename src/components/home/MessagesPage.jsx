@@ -630,6 +630,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     sending,
     groupMembers,
     groupMembersLoading,
+    groupMembersConvId,
+    onlineUsers,
   } = useSelector(s => s.messages);
   const { connections } = useSelector(s => s.profile);
   const { user: authUser } = useSelector(s => s.auth);
@@ -818,6 +820,10 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     dispatch(clearUnread({ convId: conv.id })); // instant badge clear
     dispatch(fetchMessages({ convId: conv.id }));
     dispatch(markRead(conv.id));
+    // Member IDs are needed to compute "N online" in the header (cross-referenced
+    // against the platform-wide online-users list) — previously only fetched when
+    // the Group Info panel itself was opened, so the header couldn't show it.
+    if (conv.type === 'group') dispatch(fetchGroupMembers(conv.id));
   }
 
   async function handleSend() {
@@ -1181,6 +1187,14 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const activeOnline = getOnlineStatus(liveActiveConv);
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
+  // "N online" in the group header — cross-references this group's member IDs
+  // (fetched in openConversation) against the platform-wide online-users list
+  // (already used for the DM online dot). Only valid once groupMembers has
+  // actually loaded for THIS conversation, not a stale copy from another group.
+  const groupOnlineCount = (liveActiveConv?.type === 'group' && groupMembersConvId === liveActiveConv.id)
+    ? groupMembers.filter(m => onlineUsers.some(u => u.id === m.id)).length
+    : null;
+
   // Whether the group description actually overflows its 4-line clamp —
   // measured from the real rendered box instead of guessing off character
   // count, which can be wrong for text with unusually long/short average
@@ -1274,6 +1288,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   {liveActiveConv.type === 'group' ? (
                     <p className="msg-chat-status">
                       {typeof liveActiveConv.memberCount === 'number' ? `${liveActiveConv.memberCount} members` : 'Group'}
+                      {typeof groupOnlineCount === 'number' && groupOnlineCount > 0 && ` · ${groupOnlineCount} online`}
                     </p>
                   ) : (
                     <p className={`msg-chat-status${activeOnline ? ' msg-chat-status--online' : ''}`}>

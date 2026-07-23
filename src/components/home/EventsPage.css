@@ -136,6 +136,37 @@
   gap: 8px;
 }
 
+/* Published / Drafts sub-tabs under My Created Events — same pill pattern as
+   .ev-disc-tabs, just smaller/secondary since it's a filter within a tab. */
+.ev-created-subtabs {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 9px;
+  padding: 3px;
+  margin-bottom: 14px;
+}
+
+.ev-created-subtab {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: #4b5a7a;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.ev-created-subtab--active { background: #1d4ed8; color: #fff; }
+.ev-created-subtab:not(.ev-created-subtab--active):hover { color: #7c8fb0; }
+
 .ev-disc-create-btn {
   display: flex;
   align-items: center;
@@ -437,6 +468,12 @@
   border: 1px solid #1e2e4a;
   cursor: default;
 }
+.ev-disc-book-btn--publish {
+  background: #059669;
+  margin-right: 6px;
+}
+.ev-disc-book-btn--publish:hover { background: #10b981; }
+.ev-disc-book-btn--publish:disabled { opacity: 0.6; cursor: default; }
 
 /* ── Newsletter strip ── */
 .ev-disc-newsletter {
@@ -973,7 +1010,12 @@
   border-radius: 14px;
   max-width: 860px;
   margin: 0 auto;
-  overflow: hidden;
+  /* Not overflow:hidden — the date/time pickers' calendar & time-scroll
+     dropdowns are absolutely positioned popovers that need to extend past
+     the card's own height without being clipped at its bottom edge.
+     Header/body/footer are all padded (none touch the card's own edges),
+     so nothing relies on this clip for the rounded corners. */
+  position: relative;
 }
 
 .ev-form-header {
@@ -1204,6 +1246,91 @@
   background: rgba(37, 99, 235, 0.08);
 }
 
+/* ── Visibility chip + dropdown (mirrors post create's .cp-audience-chip / .cp-visibility-dropdown,
+   but sized like the rest of this form's full-width fields instead of a small floating pill —
+   avoids the field looking half-empty next to Event Category / Event Type / Cover Image). ── */
+.ev-vis-wrap { position: relative; width: 100%; max-width: 320px; }
+
+.ev-vis-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: #0d1020;
+  border: 1px solid #1e2238;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #c8cfe0;
+  font-size: 13.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.ev-vis-chip-main { display: flex; align-items: center; gap: 8px; }
+
+.ev-vis-chip:hover,
+.ev-vis-chip--open { border-color: #2d3a5e; }
+
+.ev-vis-chevron { display: flex; transition: transform 0.2s ease; }
+.ev-vis-chevron--up { transform: rotate(180deg); }
+
+@keyframes evVisDropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.ev-vis-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 168px;
+  background: #131726;
+  border: 1px solid #252d4a;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 60;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  animation: evVisDropdownIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.ev-vis-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: #8b9cc8;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ev-vis-option:hover { background: #1e2438; color: #e0e6f8; }
+
+.ev-vis-option--active { color: #a5b4fc; }
+.ev-vis-option--active:hover { background: rgba(99,102,241,0.1); color: #a5b4fc; }
+
+.ev-vis-icon  { display: flex; flex-shrink: 0; }
+.ev-vis-label { flex: 1; }
+
+.ev-vis-check {
+  display: flex;
+  align-items: center;
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
 /* ── Divider ── */
 .ev-form-divider {
   height: 1px;
@@ -1354,6 +1481,8 @@
   border-color: #2563eb;
   background: rgba(37, 99, 235, 0.07);
 }
+
+.ev-ticket-item--readonly { cursor: default; }
 
 .ev-ticket-icon {
   width: 32px;
@@ -1569,6 +1698,8 @@
   color: #fff;
   font-weight: 600;
 }
+
+.ev-loc-tab:disabled { color: #3e4460; cursor: not-allowed; }
 
 /* Subsection card */
 .ev-loc-section {

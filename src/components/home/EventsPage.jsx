@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
@@ -7,7 +7,7 @@ import { CustomDatePicker, CustomTimePicker } from './DateTimePicker';
 import {
   fetchEvents, fetchEventDetail, createEvent, deleteEvent,
   bookEvent, cancelBooking, saveEvent, unsaveEvent,
-  fetchMyBooked, fetchMySaved, fetchMyCreated,
+  fetchMyBooked, fetchMySaved, fetchMyCreated, publishEvent,
   fetchComments, postComment, likeComment,
 } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
@@ -24,12 +24,26 @@ function MessagesNavIcon() { return <svg width="16" height="16" viewBox="0 0 24 
 /* ── Event type icons ── */
 function OnlineIcon()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; }
 function OfflineIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
+function BothIcon()    { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><path d="M8 21h13a2 2 0 0 0 2-2V8"/></svg>; }
+
+/* ── Visibility icons (same set/values as post visibility) ── */
+function GlobeIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
+function FriendsIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
+function LockIcon()    { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
+
+const VISIBILITY_OPTIONS = [
+  { id: 'anyone',  label: 'Anyone',       icon: <GlobeIcon />   },
+  { id: 'friends', label: 'Friends only', icon: <FriendsIcon /> },
+  { id: 'only_me', label: 'Only me',      icon: <LockIcon />    },
+];
 
 /* ── Misc icons ── */
 function ChevronDownIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>; }
 function ArrowRightIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 function ArrowLeftIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function StarIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>; }
+function CoverCloseIcon()  { return <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function TrashIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>; }
 function TicketIcon()      { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>; }
 function ClockIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function PlusIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -220,6 +234,9 @@ function EventCarousel({ images, alt }) {
 const INVITE_AVATAR_COLORS = ['#7c3aed', '#0891b2', '#059669', '#f59e0b', '#ef4444', '#3b82f6'];
 
 function reviewInitials(name = '') { return name.split(' ').map(w => w[0]).join('').toUpperCase(); }
+// Meeting link is prefilled with "https://" (see the virtual state default), so a plain
+// truthy/non-empty check would pass even when nothing real was typed after the prefix.
+function hasMeaningfulLink(link) { return link.trim().replace(/^https?:\/\//, '').length > 0; }
 function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function BackArrowIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function SendIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
@@ -295,6 +312,7 @@ const CATEGORIES = [
 const EVENT_TYPES = [
   { id: 'online',  label: 'Online',  icon: <OnlineIcon /> },
   { id: 'offline', label: 'Offline', icon: <OfflineIcon /> },
+  { id: 'both',    label: 'Both',    icon: <BothIcon /> },
 ];
 
 const HEART_BURST_PATHS = [
@@ -307,9 +325,61 @@ const HEART_BURST_PATHS = [
   { dx:  -8, dy: -58, rot: -18 },
 ];
 
+// Shared by both the "add new ticket" panel (always at the bottom of the list)
+// and the "edit ticket" panel (rendered inline, right under the ticket being
+// edited) so editing a ticket doesn't visually jump you down to the bottom.
+function TicketFormPanel({ isEditing, newTicket, onChange, onSave, onCancel }) {
+  function blockNegativeKeys(e) {
+    if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') e.preventDefault();
+  }
+  return (
+    <div className="ev-new-ticket-form">
+      <div className="ev-new-ticket-header">
+        <span>{isEditing ? 'Edit Ticket Type' : 'New Ticket Type'}</span>
+        <button type="button" className="ev-cancel-ticket-btn" onClick={onCancel}>✕</button>
+      </div>
+      <div className="ev-new-ticket-body">
+        <div className="ev-field">
+          <label className="ev-label ev-label--small">Ticket Name</label>
+          <input className="ev-input" name="name" value={newTicket.name} onChange={onChange} placeholder="e.g. Student Discount" />
+        </div>
+        <div className="ev-field">
+          <label className="ev-label ev-label--small">Description</label>
+          <textarea className="ev-textarea ev-textarea--sm" name="description" value={newTicket.description} onChange={onChange} placeholder="e.g. Valid ID required at entry" rows={3} />
+        </div>
+        <div className="ev-field-row">
+          <div className="ev-field">
+            <label className="ev-label ev-label--small">Price ($)</label>
+            <input className="ev-input" name="price" type="number" min="0" step="0.01" value={newTicket.price} onChange={onChange} onKeyDown={blockNegativeKeys} />
+          </div>
+          <div className="ev-field">
+            <label className="ev-label ev-label--small">Total Seats</label>
+            <input className="ev-input" name="seats" type="number" min="1" value={newTicket.seats} onChange={onChange} onKeyDown={blockNegativeKeys} placeholder="e.g. 50" />
+          </div>
+        </div>
+        <div className="ev-field">
+          <label className="ev-label ev-label--small">Max Tickets Per User</label>
+          <div className="ev-select-wrap">
+            <select className="ev-select" name="maxPerUser" value={newTicket.maxPerUser} onChange={onChange}>
+              {MAX_PER_USER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <ChevronDownIcon />
+          </div>
+        </div>
+        <div className="ev-new-ticket-actions">
+          <button type="button" className="ev-save-ticket-btn" onClick={onSave}>{isEditing ? 'Save Changes' : 'Save Ticket'}</button>
+          <button type="button" className="ev-cancel-ticket-btn-text" onClick={onCancel}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate, initialEventId, onInitEventConsumed, onUserClick }) {
   const [showCreate,    setShowCreate]    = useState(startCreate || false);
   const [discTab,       setDiscTab]       = useState('upcoming');
+  // Sub-tab within "My Created Events" — filters createdEvents by status.
+  const [createdTab,    setCreatedTab]    = useState('published');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [evDetailTab,   setEvDetailTab]   = useState('about');
   const [eventFromHome, setEventFromHome] = useState(false);
@@ -343,8 +413,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [step, setStep] = useState(1);
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [coverImageFile, setCoverImageFile] = useState(null);
-  const [coverImagePreview, setCoverImagePreview] = useState('');
+  // Cover images — array of { id, file, url } so multiple can be uploaded and
+  // individually removed, instead of a single file that gets replaced.
+  const [coverImages, setCoverImages] = useState([]);
   const [inviteSearch, setInviteSearch] = useState('');
 
   // Redux
@@ -358,7 +429,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     createdEvents, createdLoading,
     eventDetail,
     comments: evtComments, commentsLoading,
-    bookingLoading, createLoading,
+    bookingLoading, createLoading, publishingId,
   } = useSelector(s => s.events);
 
   // Step 4's Invite Friends panel needs the real connections list, not
@@ -427,10 +498,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }, [evtComments, selectedEvent?.id]); // eslint-disable-line
 
   function handleCoverChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCoverImageFile(file);
-    setCoverImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    setCoverImages(prev => [
+      ...prev,
+      ...files.map(file => ({ id: `${Date.now()}-${file.name}-${Math.random()}`, file, url: URL.createObjectURL(file) })),
+    ]);
+    e.target.value = '';
+  }
+
+  function removeCoverImage(id) {
+    setCoverImages(prev => {
+      const target = prev.find(img => img.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter(img => img.id !== id);
+    });
   }
 
   function handlePublish(asDraft = false) {
@@ -438,20 +520,30 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     const publishErrors = [];
     if (!form.title.trim())    publishErrors.push('Event title is required.');
     if (!form.category)        publishErrors.push('Event category is required.');
-    if (!form.eventType)       publishErrors.push('Event type (online / offline) is required.');
+    if (!form.eventType)       publishErrors.push('Event type (online / offline / both) is required.');
     if (!form.startDate)       publishErrors.push('Start date is required.');
-    if (form.eventType === 'offline' && locationTab === 'physical' && !venue.city.trim()) {
-      publishErrors.push('City is required for offline events.');
+    // 'both' events need a venue AND a meeting link — the location tab is just
+    // which section is currently in view, not which data actually gets submitted
+    // (both venue and virtual state persist regardless of the active tab).
+    const needsVenue  = form.eventType === 'offline' || form.eventType === 'both';
+    const needsVirtual = form.eventType === 'online' || form.eventType === 'both';
+    const venueIncomplete = needsVenue && (!venue.name.trim() || !venue.street.trim() || !venue.city.trim() || !venue.state.trim());
+    const organizerIncomplete = needsVenue && (!organizer.fullName.trim() || !organizer.phone.trim());
+    const virtualIncomplete = needsVirtual && !hasMeaningfulLink(virtual.link);
+    if (venueIncomplete) {
+      publishErrors.push('Venue name, street address, city and state are required for offline events.');
     }
-    if (form.eventType === 'online' && locationTab === 'online' && !virtual.link.trim()) {
+    if (organizerIncomplete) {
+      publishErrors.push('Organizer name and phone number are required.');
+    }
+    if (virtualIncomplete) {
       publishErrors.push('Meeting link is required for online events.');
     }
     if (publishErrors.length > 0) {
       dispatch(showToast({ message: publishErrors[0], type: 'error' }));
       // Jump to the step that has the first error
       if (!form.title.trim() || !form.category || !form.eventType || !form.startDate) setStep(1);
-      else if (form.eventType === 'offline' && !venue.city.trim()) setStep(3);
-      else if (form.eventType === 'online' && !virtual.link.trim()) setStep(3);
+      else if (venueIncomplete || organizerIncomplete || virtualIncomplete) setStep(3);
       return;
     }
 
@@ -464,6 +556,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
     fd.append('category', form.category);
     fd.append('eventType', form.eventType);
+    fd.append('visibility', form.visibility);
     fd.append('pricingType', pricingType);
     fd.append('status', asDraft ? 'draft' : 'published');
     fd.append('startDate', form.startDate);
@@ -473,12 +566,15 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       if (form.startTime) fd.append('startTime', form.startTime);
       if (form.endTime)   fd.append('endTime',   form.endTime);
     }
-    if (coverImageFile) fd.append('coverImage', coverImageFile);
-    if (locationTab === 'physical') {
-      fd.append('location', JSON.stringify({ venue: venue.name, street: venue.street, city: venue.city, state: venue.state, country: venue.country, pinCode: venue.pinCode }));
+    coverImages.forEach(img => fd.append('coverImage', img.file));
+    if (form.eventType === 'offline' || form.eventType === 'both') {
+      // Field name is 'venue' (not 'location'), and the venue's own name is
+      // the 'name' key (not 'venue') — matches the backend's confirmed shape.
+      fd.append('venue', JSON.stringify({ name: venue.name, street: venue.street, city: venue.city, state: venue.state, country: venue.country, pinCode: venue.pinCode }));
       if (parking) fd.append('parking', parking);
       fd.append('organizer', JSON.stringify(organizer));
-    } else {
+    }
+    if (form.eventType === 'online' || form.eventType === 'both') {
       if (virtual.link)         fd.append('virtualLink', virtual.link);
       if (virtual.instructions) fd.append('virtualInstructions', virtual.instructions);
     }
@@ -527,12 +623,36 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     else dispatch(saveEvent(id));
   }
 
+  async function handlePublishDraft(eventId) {
+    const result = await dispatch(publishEvent(eventId));
+    if (publishEvent.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Event published successfully!', type: 'success' }));
+      setCreatedTab('published');
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to publish event', type: 'error' }));
+    }
+  }
+
   // Step 1 state
   const [form, setForm] = useState({
     title: '', tagline: '', description: '',
     startDate: '', endDate: '', startTime: '', endTime: '',
-    isAllDay: false, category: '', eventType: 'offline',
+    isAllDay: false, category: '', eventType: 'offline', visibility: 'anyone',
   });
+
+  // Visibility dropdown (same chip + option-list pattern as post create's audience picker)
+  const [visDropdownOpen, setVisDropdownOpen] = useState(false);
+  const visDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (visDropdownRef.current && !visDropdownRef.current.contains(e.target)) {
+        setVisDropdownOpen(false);
+      }
+    }
+    if (visDropdownOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [visDropdownOpen]);
 
   // Step 2 state
   const [pricingType, setPricingType] = useState('paid');
@@ -545,6 +665,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [showNewForm, setShowNewForm] = useState(true);
   const [editingTicketId, setEditingTicketId] = useState(null);
   const [newTicket, setNewTicket] = useState({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
+  // Guards against silently losing an in-progress (unsaved) ticket draft when
+  // switching to add/edit a different one — see requestTicketFormSwitch below.
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const [pendingTicketAction, setPendingTicketAction] = useState(null);
   const [registration, setRegistration] = useState({ ticketPrice: '150', totalSeats: '', maxPerUser: '4', deadline: '' });
 
   // Step 3 state
@@ -552,7 +676,33 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [venue, setVenue] = useState({ name: '', street: '', city: '', state: '', country: '', pinCode: '' });
   const [parking, setParking] = useState('');
   const [organizer, setOrganizer] = useState({ fullName: '', email: '', phone: '' });
-  const [virtual, setVirtual] = useState({ link: '', instructions: '' });
+  const [virtual, setVirtual] = useState({ link: 'https://', instructions: '' });
+  const instructionsRef = useRef(null);
+
+  // Instructions field auto-formats as a bullet list: the first character
+  // typed seeds a bullet, and every Enter press starts a fresh bulleted line
+  // (instead of a single-line input with no structure).
+  function handleInstructionsFocus() {
+    if (virtual.instructions) return;
+    setVirtual(p => ({ ...p, instructions: '• ' }));
+    requestAnimationFrame(() => {
+      if (instructionsRef.current) instructionsRef.current.setSelectionRange(2, 2);
+    });
+  }
+
+  function handleInstructionsKeyDown(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const ta = e.target;
+    const { selectionStart, selectionEnd, value } = ta;
+    const insertion = '\n• ';
+    const nextValue = value.slice(0, selectionStart) + insertion + value.slice(selectionEnd);
+    const nextCursor = selectionStart + insertion.length;
+    setVirtual(p => ({ ...p, instructions: nextValue }));
+    requestAnimationFrame(() => {
+      if (instructionsRef.current) instructionsRef.current.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
 
   // Step 3's location tab defaults to whichever option matches Step 1's Event
   // Type — Online → "Online Event" tab, Offline → "Physical Event" tab —
@@ -564,6 +714,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [dateErrors, setDateErrors] = useState({ startDate: '', endDate: '', endTime: '' });
   const [stepErrors, setStepErrors] = useState({});
   const todayStr = new Date().toISOString().split('T')[0];
+  const MIN_EVENT_MINUTES = 60;
+
+  function timeDiffMinutes(st, et) {
+    const [sh, sm] = st.split(':').map(Number);
+    const [eh, em] = et.split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }
+
+  function computeEndTimeError(st, et, sameDay) {
+    if (!sameDay || !st || !et) return '';
+    const diff = timeDiffMinutes(st, et);
+    if (diff < 0) return 'End time cannot be before start time';
+    if (diff < MIN_EVENT_MINUTES) return 'End time must be at least 1 hour after start time';
+    return '';
+  }
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -575,24 +740,18 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
         errors.startDate = next && next < todayStr ? 'Start date cannot be in the past' : '';
         const ed = updated.endDate;
         errors.endDate = ed && next && ed < next ? 'End date cannot be before start date' : '';
-        if (updated.endTime && updated.startTime) {
-          const sameDay = next === updated.endDate;
-          errors.endTime = sameDay && updated.endTime < updated.startTime ? 'End time cannot be before start time' : '';
-        }
+        errors.endTime = computeEndTimeError(updated.startTime, updated.endTime, next === updated.endDate);
       }
       if (name === 'endDate') {
         const sd = updated.startDate;
         errors.endDate = next && sd && next < sd ? 'End date cannot be before start date' : '';
-        if (updated.endTime && updated.startTime) {
-          const sameDay = updated.startDate === next;
-          errors.endTime = sameDay && updated.endTime < updated.startTime ? 'End time cannot be before start time' : '';
-        }
+        errors.endTime = computeEndTimeError(updated.startTime, updated.endTime, updated.startDate === next);
       }
       if (name === 'startTime' || name === 'endTime') {
         const st = name === 'startTime' ? next : updated.startTime;
         const et = name === 'endTime'   ? next : updated.endTime;
         const sameDay = updated.startDate && updated.endDate && updated.startDate === updated.endDate;
-        errors.endTime = sameDay && et && st && et < st ? 'End time cannot be before start time' : '';
+        errors.endTime = computeEndTimeError(st, et, sameDay);
       }
       setDateErrors(errors);
       return updated;
@@ -601,6 +760,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   function handleNewTicketChange(e) {
     const { name, value } = e.target;
+    if ((name === 'price' || name === 'seats') && value !== '' && parseFloat(value) < 0) return;
     setNewTicket(prev => ({ ...prev, [name]: value }));
   }
 
@@ -645,6 +805,39 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (editingTicketId === id) cancelTicketForm();
   }
 
+  function hasUnsavedTicketDraft() {
+    return showNewForm && newTicket.name.trim().length > 0;
+  }
+
+  // Routes any "open a different ticket form" action (add new / edit another)
+  // through an unsaved-draft check first, so a typed-but-unsaved ticket name
+  // never silently disappears.
+  function requestTicketFormSwitch(action) {
+    if (hasUnsavedTicketDraft()) {
+      setPendingTicketAction(() => action);
+      setDiscardConfirmOpen(true);
+    } else {
+      action();
+    }
+  }
+
+  function openBlankTicketForm() {
+    setEditingTicketId(null);
+    setNewTicket({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
+    setShowNewForm(true);
+  }
+
+  function confirmDiscardTicketDraft() {
+    setDiscardConfirmOpen(false);
+    if (pendingTicketAction) pendingTicketAction();
+    setPendingTicketAction(null);
+  }
+
+  function cancelDiscardTicketDraft() {
+    setDiscardConfirmOpen(false);
+    setPendingTicketAction(null);
+  }
+
   function handleBack() {
     setStepErrors({});
     setAnimDir('back');
@@ -672,13 +865,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       if (pricingType === 'paid' && tickets.some(t => parseFloat(t.price) < 0)) {
         errs.tickets = 'Ticket price cannot be negative.';
       }
+      if (pricingType === 'paid' && tickets.some(t => parseFloat(t.seats) < 0)) {
+        errs.tickets = 'Total seats cannot be negative.';
+      }
     }
     if (s === 3) {
-      if (form.eventType === 'offline' || locationTab === 'physical') {
-        if (!venue.city.trim()) errs.city = 'City is required for offline events.';
+      if (form.eventType === 'offline' || form.eventType === 'both') {
+        if (!venue.name.trim())   errs.venueName = 'Venue name is required for offline events.';
+        if (!venue.street.trim()) errs.street     = 'Street address is required for offline events.';
+        if (!venue.city.trim())   errs.city       = 'City is required for offline events.';
+        if (!venue.state.trim())  errs.state      = 'State / Province is required for offline events.';
+        if (!organizer.fullName.trim()) errs.organizerName  = 'Organizer name is required.';
+        if (!organizer.phone.trim())    errs.organizerPhone = 'Organizer phone number is required.';
       }
-      if (locationTab === 'online' || form.eventType === 'online') {
-        if (!virtual.link.trim()) errs.virtualLink = 'Meeting link is required for online events.';
+      if (form.eventType === 'online' || form.eventType === 'both') {
+        if (!hasMeaningfulLink(virtual.link)) errs.virtualLink = 'Meeting link is required for online events.';
       }
     }
     return errs;
@@ -697,7 +898,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   const baseEvents = discTab === 'booked'    ? bookedEvents
     : discTab === 'favorites' ? savedEvents
-    : discTab === 'created'   ? createdEvents
+    : discTab === 'created'   ? createdEvents.filter(ev => ev.status === createdTab)
     : rdxEvents;
   const filteredEvents = baseEvents.filter(ev => {
     if (discCat !== 'All' && !ev.category.toLowerCase().includes(discCat.toLowerCase())) return false;
@@ -1080,6 +1281,26 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             </div>
           </div>
 
+          {/* Published / Drafts sub-tabs — only under My Created Events */}
+          {discTab === 'created' && (
+            <div className="ev-created-subtabs">
+              <button
+                type="button"
+                className={`ev-created-subtab${createdTab === 'published' ? ' ev-created-subtab--active' : ''}`}
+                onClick={() => setCreatedTab('published')}
+              >
+                Published{createdEvents.filter(ev => ev.status === 'published').length > 0 && <span className="ev-fav-count">{createdEvents.filter(ev => ev.status === 'published').length}</span>}
+              </button>
+              <button
+                type="button"
+                className={`ev-created-subtab${createdTab === 'draft' ? ' ev-created-subtab--active' : ''}`}
+                onClick={() => setCreatedTab('draft')}
+              >
+                Drafts{createdEvents.filter(ev => ev.status === 'draft').length > 0 && <span className="ev-fav-count">{createdEvents.filter(ev => ev.status === 'draft').length}</span>}
+              </button>
+            </div>
+          )}
+
           {/* Category chips */}
           <div className="ev-disc-cats">
             {DISC_CATEGORIES.map(cat => (
@@ -1149,6 +1370,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         {ev.seats}
                       </span>}
                     </div>
+                    {discTab === 'created' && ev.status === 'draft' && (
+                      <button
+                        type="button"
+                        className="ev-disc-book-btn ev-disc-book-btn--publish"
+                        disabled={publishingId === ev.id}
+                        onClick={e => { e.stopPropagation(); handlePublishDraft(ev.id); }}
+                      >
+                        {publishingId === ev.id ? 'Publishing…' : 'Publish'}
+                      </button>
+                    )}
                     {ev.soldOut
                       ? <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
                       : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
@@ -1195,6 +1426,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
                         ))}
                       </div>
+                      {discTab === 'created' && ev.status === 'draft' && (
+                        <button
+                          type="button"
+                          className="ev-disc-book-btn ev-disc-book-btn--publish"
+                          disabled={publishingId === ev.id}
+                          onClick={e => { e.stopPropagation(); handlePublishDraft(ev.id); }}
+                        >
+                          {publishingId === ev.id ? 'Publishing…' : 'Publish'}
+                        </button>
+                      )}
                       {ev.soldOut
                         ? <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
                         : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
@@ -1433,8 +1674,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       {dateErrors.endDate && <span className="ev-field-error">{dateErrors.endDate}</span>}
                     </div>
                     <div className="ev-field">
-                      <label className="ev-label ev-label--small" style={{ opacity: form.isAllDay ? 0.4 : 1 }}>Start Time</label>
-                      <CustomTimePicker name="startTime" value={form.startTime} onChange={handleChange} disabled={form.isAllDay} placeholder="Pick start time" />
+                      <label className="ev-label ev-label--small">Start Time</label>
+                      <CustomTimePicker name="startTime" value={form.startTime} onChange={handleChange} placeholder="Pick start time" />
                     </div>
                     <div className="ev-field">
                       <label className="ev-label ev-label--small" style={{ opacity: form.isAllDay ? 0.4 : 1 }}>End Time</label>
@@ -1474,19 +1715,74 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </div>
                   </div>
                 </div>
-                {/* Cover Image */}
+
+                {/* Visibility — same chip + dropdown UI as post create's audience picker */}
                 <div className="ev-field">
-                  <label className="ev-label">Cover Image</label>
+                  <label className="ev-label">Visibility</label>
+                  <div className="ev-vis-wrap" ref={visDropdownRef}>
+                    <button
+                      type="button"
+                      className={`ev-vis-chip${visDropdownOpen ? ' ev-vis-chip--open' : ''}`}
+                      onClick={() => setVisDropdownOpen(v => !v)}
+                      aria-haspopup="listbox"
+                      aria-expanded={visDropdownOpen}
+                    >
+                      <span className="ev-vis-chip-main">
+                        {VISIBILITY_OPTIONS.find(o => o.id === form.visibility)?.icon}
+                        {VISIBILITY_OPTIONS.find(o => o.id === form.visibility)?.label}
+                      </span>
+                      <span className={`ev-vis-chevron${visDropdownOpen ? ' ev-vis-chevron--up' : ''}`}><ChevronDownIcon /></span>
+                    </button>
+
+                    {visDropdownOpen && (
+                      <ul className="ev-vis-dropdown" role="listbox">
+                        {VISIBILITY_OPTIONS.map(opt => (
+                          <li key={opt.id} role="option" aria-selected={form.visibility === opt.id}>
+                            <button
+                              type="button"
+                              className={`ev-vis-option${form.visibility === opt.id ? ' ev-vis-option--active' : ''}`}
+                              onClick={() => { setForm(prev => ({ ...prev, visibility: opt.id })); setVisDropdownOpen(false); }}
+                            >
+                              <span className="ev-vis-icon">{opt.icon}</span>
+                              <span className="ev-vis-label">{opt.label}</span>
+                              {form.visibility === opt.id && <span className="ev-vis-check"><CheckIcon /></span>}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cover Image(s) */}
+                <div className="ev-field">
+                  <label className="ev-label">Cover Image{coverImages.length > 1 ? 's' : ''}</label>
+
+                  {coverImages.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                      {coverImages.map(img => (
+                        <div key={img.id} style={{ position: 'relative', width: 80, height: 50, flexShrink: 0 }}>
+                          <img src={img.url} alt="cover preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                          <button
+                            type="button"
+                            onClick={() => removeCoverImage(img.id)}
+                            aria-label="Remove image"
+                            style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#1a1f35', border: '1px solid rgba(255,255,255,0.2)', color: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+                          >
+                            <CoverCloseIcon />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <label className="ev-cover-upload-label" style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '14px 18px', background: 'rgba(255,255,255,0.03)' }}>
-                    {coverImagePreview
-                      ? <img src={coverImagePreview} alt="cover preview" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 6 }} />
-                      : <div style={{ width: 80, height: 50, background: 'rgba(255,255,255,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 22 }}>+</div>
-                    }
+                    <div style={{ width: 80, height: 50, background: 'rgba(255,255,255,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 22, flexShrink: 0 }}>+</div>
                     <div>
-                      <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{coverImagePreview ? 'Change cover image' : 'Upload cover image'}</p>
+                      <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{coverImages.length > 0 ? 'Add more images' : 'Upload cover image'}</p>
                       <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Recommended: 1200 × 628 px · JPG, PNG, WebP</p>
                     </div>
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCoverChange} />
+                    <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleCoverChange} />
                   </label>
                 </div>
               </div>
@@ -1524,104 +1820,109 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   {/* Section title */}
                   <p className="ev-s2-section-title">Ticket Types</p>
 
-                  {/* Ticket list */}
-                  <div className="ev-ticket-list">
-                    {tickets.map(tk => {
-                      const isActive = selectedTicketId === tk.id;
-                      return (
-                        <div
-                          key={tk.id}
-                          className={`ev-ticket-item${isActive ? ' ev-ticket-item--active' : ''}`}
-                          onClick={() => {
-                            setSelectedTicketId(tk.id);
-                            setRegistration(prev => ({ ...prev, ticketPrice: tk.price }));
-                          }}
-                        >
-                          <div className="ev-ticket-icon">{TICKET_ICONS[tk.iconType]}</div>
-                          <p className="ev-ticket-name">{tk.name}</p>
-                          <p className={`ev-ticket-price${isActive ? ' ev-ticket-price--active' : ''}`}>${Number(tk.price).toFixed(2)}</p>
-                          <div className="ev-ticket-row-actions">
-                            <button
-                              type="button"
-                              className="ev-ticket-edit-btn"
-                              aria-label="Edit ticket"
-                              onClick={(e) => { e.stopPropagation(); startEditTicket(tk); }}
-                            >
-                              <EditIcon />
-                            </button>
-                            <button
-                              type="button"
-                              className="ev-ticket-remove-btn"
-                              aria-label="Remove ticket"
-                              onClick={(e) => { e.stopPropagation(); removeTicket(tk.id); }}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* New ticket form */}
-                  {showNewForm && (
-                    <div className="ev-new-ticket-form">
-                      <div className="ev-new-ticket-header">
-                        <span>{editingTicketId ? 'Edit Ticket Type' : 'New Ticket Type'}</span>
-                        <button type="button" className="ev-cancel-ticket-btn" onClick={cancelTicketForm}>✕</button>
-                      </div>
-                      <div className="ev-new-ticket-body">
-                        <div className="ev-field">
-                          <label className="ev-label ev-label--small">Ticket Name</label>
-                          <input className="ev-input" name="name" value={newTicket.name} onChange={handleNewTicketChange} placeholder="e.g. Student Discount" />
-                        </div>
-                        <div className="ev-field">
-                          <label className="ev-label ev-label--small">Description</label>
-                          <textarea className="ev-textarea ev-textarea--sm" name="description" value={newTicket.description} onChange={handleNewTicketChange} placeholder="e.g. Valid ID required at entry" rows={3} />
-                        </div>
-                        <div className="ev-field-row">
-                          <div className="ev-field">
-                            <label className="ev-label ev-label--small">Price ($)</label>
-                            <input className="ev-input" name="price" type="number" min="0" value={newTicket.price} onChange={handleNewTicketChange} />
-                          </div>
-                          <div className="ev-field">
-                            <label className="ev-label ev-label--small">Total Seats</label>
-                            <input className="ev-input" name="seats" type="number" min="1" value={newTicket.seats} onChange={handleNewTicketChange} placeholder="e.g. 50" />
-                          </div>
-                        </div>
-                        <div className="ev-field">
-                          <label className="ev-label ev-label--small">Max Tickets Per User</label>
-                          <div className="ev-select-wrap">
-                            <select className="ev-select" name="maxPerUser" value={newTicket.maxPerUser} onChange={handleNewTicketChange}>
-                              {MAX_PER_USER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                            <ChevronDownIcon />
-                          </div>
-                        </div>
-                        <div className="ev-new-ticket-actions">
-                          <button type="button" className="ev-save-ticket-btn" onClick={saveNewTicket}>{editingTicketId ? 'Save Changes' : 'Save Ticket'}</button>
-                          <button type="button" className="ev-cancel-ticket-btn-text" onClick={cancelTicketForm}>Cancel</button>
-                        </div>
+                  {pricingType === 'free' ? (
+                    /* Free events don't have priced ticket tiers — show a single
+                       fixed "Free" entry instead of the paid ticket-type list. */
+                    <div className="ev-ticket-list">
+                      <div className="ev-ticket-item ev-ticket-item--active ev-ticket-item--readonly">
+                        <div className="ev-ticket-icon"><TicketIcon /></div>
+                        <p className="ev-ticket-name">Free Ticket</p>
+                        <p className="ev-ticket-price ev-ticket-price--active">Free</p>
                       </div>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Ticket list */}
+                      <div className="ev-ticket-list">
+                        {tickets.map(tk => {
+                          const isActive = selectedTicketId === tk.id;
+                          const isEditingThis = editingTicketId === tk.id;
+                          return (
+                            <div key={tk.id} className="ev-ticket-block">
+                              <div
+                                className={`ev-ticket-item${isActive ? ' ev-ticket-item--active' : ''}`}
+                                onClick={() => {
+                                  setSelectedTicketId(tk.id);
+                                  setRegistration(prev => ({ ...prev, ticketPrice: tk.price }));
+                                }}
+                              >
+                                <div className="ev-ticket-icon">{TICKET_ICONS[tk.iconType]}</div>
+                                <p className="ev-ticket-name">{tk.name}</p>
+                                <p className={`ev-ticket-price${isActive ? ' ev-ticket-price--active' : ''}`}>${Number(tk.price).toFixed(2)}</p>
+                                <div className="ev-ticket-row-actions">
+                                  <button
+                                    type="button"
+                                    className="ev-ticket-edit-btn"
+                                    aria-label="Edit ticket"
+                                    onClick={(e) => { e.stopPropagation(); if (isEditingThis) return; requestTicketFormSwitch(() => startEditTicket(tk)); }}
+                                  >
+                                    <EditIcon />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ev-ticket-remove-btn"
+                                    aria-label="Delete ticket"
+                                    onClick={(e) => { e.stopPropagation(); removeTicket(tk.id); }}
+                                  >
+                                    <TrashIcon />
+                                  </button>
+                                </div>
+                              </div>
 
-                  {/* Add another — always visible */}
-                  <button
-                    type="button"
-                    className="ev-add-ticket-btn"
-                    onClick={() => {
-                      setEditingTicketId(null);
-                      setNewTicket({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
-                      setShowNewForm(true);
-                    }}
-                  >
-                    <PlusIcon /> Add Another Ticket Type
-                  </button>
-                  {stepErrors.tickets && <p className="ev-field-error" style={{ marginTop: 8 }}>{stepErrors.tickets}</p>}
+                              {/* Edit form opens right under the ticket being edited,
+                                  not always pinned to the bottom of the list. */}
+                              {isEditingThis && (
+                                <TicketFormPanel
+                                  isEditing
+                                  newTicket={newTicket}
+                                  onChange={handleNewTicketChange}
+                                  onSave={saveNewTicket}
+                                  onCancel={cancelTicketForm}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* New ticket form — only for adding a brand-new one */}
+                      {showNewForm && !editingTicketId && (
+                        <TicketFormPanel
+                          isEditing={false}
+                          newTicket={newTicket}
+                          onChange={handleNewTicketChange}
+                          onSave={saveNewTicket}
+                          onCancel={cancelTicketForm}
+                        />
+                      )}
+
+                      {/* Add another — always visible */}
+                      <button
+                        type="button"
+                        className="ev-add-ticket-btn"
+                        onClick={() => requestTicketFormSwitch(openBlankTicketForm)}
+                      >
+                        <PlusIcon /> Add Another Ticket Type
+                      </button>
+                      {stepErrors.tickets && <p className="ev-field-error" style={{ marginTop: 8 }}>{stepErrors.tickets}</p>}
+                    </>
+                  )}
                 </div>
 
               </div>
+
+              {discardConfirmOpen && (
+                <div className="dpm-overlay" onClick={cancelDiscardTicketDraft}>
+                  <div className="dpm-box" onClick={e => e.stopPropagation()}>
+                    <h2 className="dpm-title">Unsaved ticket type</h2>
+                    <p className="dpm-desc">You have an unsaved ticket type ("{newTicket.name}"). Save it first, or continuing will delete it.</p>
+                    <div className="dpm-actions">
+                      <button className="dpm-cancel-btn" onClick={cancelDiscardTicketDraft} type="button">Go back</button>
+                      <button className="dpm-confirm-btn" onClick={confirmDiscardTicketDraft} type="button">Discard it</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -1632,12 +1933,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </div>
 
               <div className="ev-form-body">
-                {/* Physical / Online tab toggle */}
+                {/* Physical / Online tab toggle — locked to whichever Event Type was
+                    chosen in Step 1 (Online disables Physical, Offline disables Online);
+                    "Both" leaves both switchable since that event needs both sections. */}
                 <div className="ev-loc-tabs">
                   <button
                     type="button"
                     className={`ev-loc-tab${locationTab === 'physical' ? ' ev-loc-tab--active' : ''}`}
                     onClick={() => setLocationTab('physical')}
+                    disabled={form.eventType === 'online'}
+                    title={form.eventType === 'online' ? 'Switch Event Type to "Offline" or "Both" in Step 1 to enable this' : undefined}
                   >
                     Physical Event
                   </button>
@@ -1645,6 +1950,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     type="button"
                     className={`ev-loc-tab${locationTab === 'online' ? ' ev-loc-tab--active' : ''}`}
                     onClick={() => setLocationTab('online')}
+                    disabled={form.eventType === 'offline'}
+                    title={form.eventType === 'offline' ? 'Switch Event Type to "Online" or "Both" in Step 1 to enable this' : undefined}
                   >
                     Online Event
                   </button>
@@ -1659,12 +1966,24 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-loc-section-body">
                         <div className="ev-field">
-                          <label className="ev-label ev-label--small">Venue Name</label>
-                          <input className="ev-input" value={venue.name} onChange={e => setVenue(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Grand Plaza Convention Center" />
+                          <label className="ev-label ev-label--small">Venue Name <span style={{ color: '#ef4444' }}>*</span></label>
+                          <input
+                            className={`ev-input${stepErrors.venueName ? ' ev-input--error' : ''}`}
+                            value={venue.name}
+                            onChange={e => { setVenue(p => ({ ...p, name: e.target.value })); if (stepErrors.venueName) setStepErrors(p => ({ ...p, venueName: '' })); }}
+                            placeholder="e.g. Grand Plaza Convention Center"
+                          />
+                          {stepErrors.venueName && <span className="ev-field-error">{stepErrors.venueName}</span>}
                         </div>
                         <div className="ev-field">
-                          <label className="ev-label ev-label--small">Street Address</label>
-                          <input className="ev-input" value={venue.street} onChange={e => setVenue(p => ({ ...p, street: e.target.value }))} placeholder="123 Event Lane, Downtown" />
+                          <label className="ev-label ev-label--small">Street Address <span style={{ color: '#ef4444' }}>*</span></label>
+                          <input
+                            className={`ev-input${stepErrors.street ? ' ev-input--error' : ''}`}
+                            value={venue.street}
+                            onChange={e => { setVenue(p => ({ ...p, street: e.target.value })); if (stepErrors.street) setStepErrors(p => ({ ...p, street: '' })); }}
+                            placeholder="123 Event Lane, Downtown"
+                          />
+                          {stepErrors.street && <span className="ev-field-error">{stepErrors.street}</span>}
                         </div>
                         <div className="ev-field-row">
                           <div className="ev-field">
@@ -1678,8 +1997,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             {stepErrors.city && <span className="ev-field-error">{stepErrors.city}</span>}
                           </div>
                           <div className="ev-field">
-                            <label className="ev-label ev-label--small">State / Province</label>
-                            <input className="ev-input" value={venue.state} onChange={e => setVenue(p => ({ ...p, state: e.target.value }))} placeholder="State" />
+                            <label className="ev-label ev-label--small">State / Province <span style={{ color: '#ef4444' }}>*</span></label>
+                            <input
+                              className={`ev-input${stepErrors.state ? ' ev-input--error' : ''}`}
+                              value={venue.state}
+                              onChange={e => { setVenue(p => ({ ...p, state: e.target.value })); if (stepErrors.state) setStepErrors(p => ({ ...p, state: '' })); }}
+                              placeholder="State"
+                            />
+                            {stepErrors.state && <span className="ev-field-error">{stepErrors.state}</span>}
                           </div>
                         </div>
                         <div className="ev-field-row">
@@ -1729,17 +2054,30 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-loc-section-body">
                         <div className="ev-field">
-                          <label className="ev-label ev-label--small">Full Name</label>
-                          <input className="ev-input" value={organizer.fullName} onChange={e => setOrganizer(p => ({ ...p, fullName: e.target.value }))} placeholder="John Doe" />
+                          <label className="ev-label ev-label--small">Full Name <span style={{ color: '#ef4444' }}>*</span></label>
+                          <input
+                            className={`ev-input${stepErrors.organizerName ? ' ev-input--error' : ''}`}
+                            value={organizer.fullName}
+                            onChange={e => { setOrganizer(p => ({ ...p, fullName: e.target.value })); if (stepErrors.organizerName) setStepErrors(p => ({ ...p, organizerName: '' })); }}
+                            placeholder="John Doe"
+                          />
+                          {stepErrors.organizerName && <span className="ev-field-error">{stepErrors.organizerName}</span>}
                         </div>
                         <div className="ev-field-row">
                           <div className="ev-field">
-                            <label className="ev-label ev-label--small">Email Address</label>
+                            <label className="ev-label ev-label--small">Email Address <span style={{ color: '#5c6a8c', fontWeight: 400 }}>(optional)</span></label>
                             <input className="ev-input" type="email" value={organizer.email} onChange={e => setOrganizer(p => ({ ...p, email: e.target.value }))} placeholder="john@example.com" />
                           </div>
                           <div className="ev-field">
-                            <label className="ev-label ev-label--small">Phone Number</label>
-                            <input className="ev-input" type="tel" value={organizer.phone} onChange={e => setOrganizer(p => ({ ...p, phone: e.target.value }))} placeholder="+1(555) 000-0000" />
+                            <label className="ev-label ev-label--small">Phone Number <span style={{ color: '#ef4444' }}>*</span></label>
+                            <input
+                              className={`ev-input${stepErrors.organizerPhone ? ' ev-input--error' : ''}`}
+                              type="tel"
+                              value={organizer.phone}
+                              onChange={e => { setOrganizer(p => ({ ...p, phone: e.target.value })); if (stepErrors.organizerPhone) setStepErrors(p => ({ ...p, organizerPhone: '' })); }}
+                              placeholder="+1(555) 000-0000"
+                            />
+                            {stepErrors.organizerPhone && <span className="ev-field-error">{stepErrors.organizerPhone}</span>}
                           </div>
                         </div>
                       </div>
@@ -1765,7 +2103,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-field">
                         <label className="ev-label ev-label--small">Instructions for Joiners</label>
-                        <input className="ev-input" value={virtual.instructions} onChange={e => setVirtual(p => ({ ...p, instructions: e.target.value }))} placeholder="Password will be sent via email" />
+                        <textarea
+                          ref={instructionsRef}
+                          className="ev-textarea"
+                          value={virtual.instructions}
+                          onChange={e => setVirtual(p => ({ ...p, instructions: e.target.value }))}
+                          onFocus={handleInstructionsFocus}
+                          onKeyDown={handleInstructionsKeyDown}
+                          placeholder="e.g. Password will be sent via email&#10;Join 5 minutes early&#10;Camera optional"
+                          rows={4}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1917,9 +2264,18 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <ArrowLeftIcon /> Back
               </button>
             )}
-            <button className="ev-next-btn" disabled={step === 4 && createLoading} onClick={step < 4 ? handleNext : () => handlePublish(false)}>
-              {step < 4 ? 'Next Step' : (createLoading ? 'Publishing…' : 'Publish')} <ArrowRightIcon />
-            </button>
+            {/* Step 4 has its own explicit "Publish Event" / "Save as Draft" buttons
+                further up (with a terms notice) — this generic wizard-nav button used
+                to also always call handlePublish(false) here, silently overriding
+                whichever of those two the user actually meant to press and making
+                a "Save as Draft" click surface a "Publishing…" label from this
+                unrelated button (both read the same createLoading flag). Simplest
+                fix: don't duplicate a second, ambiguous "publish" action here. */}
+            {step < 4 && (
+              <button className="ev-next-btn" onClick={handleNext}>
+                Next Step <ArrowRightIcon />
+              </button>
+            )}
           </div>
         </div>
       </div>

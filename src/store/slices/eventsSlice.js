@@ -58,6 +58,7 @@ function normalizeEvent(e) {
     isAllDay:    e.isAllDay ?? false,
     createdBy:   e.createdBy ?? null,
     createdAt:   e.createdAt ?? '',
+    status:      e.status ?? 'published',
   };
 }
 
@@ -144,6 +145,21 @@ export const updateEvent = createAsyncThunk(
         else form.append(k, String(v));
       });
       const data = await apiRequest(`/api/events/${eventId}`, { method: 'PUT', token, body: form, isFormData: true });
+      return { eventId, ...data };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// PATCH /api/events/:id/publish — turns a draft into a published event.
+// Editing a draft's fields still goes through updateEvent (PUT) above with
+// status left as 'draft'; this is the dedicated action for the final publish
+// step once the creator is happy with it.
+export const publishEvent = createAsyncThunk(
+  'events/publishEvent',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/publish`, { method: 'PATCH', token });
       return { eventId, ...data };
     } catch (err) { return rejectWithValue(err.message); }
   }
@@ -238,10 +254,14 @@ export const fetchMySaved = createAsyncThunk(
 // 12. GET /api/events/my/created
 export const fetchMyCreated = createAsyncThunk(
   'events/fetchMyCreated',
-  async ({ page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
+  async ({ page = 1, limit = 20, status } = {}, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest(`/api/events/my/created?page=${page}&limit=${limit}`, { token });
+      // `status` ('draft' | 'published') is optional — passed through once the
+      // backend supports server-side filtering; until then the Published/Drafts
+      // tabs filter client-side on the `status` field every event now carries.
+      const statusParam = status ? `&status=${status}` : '';
+      const data = await apiRequest(`/api/events/my/created?page=${page}&limit=${limit}${statusParam}`, { token });
       return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
     } catch (err) { return rejectWithValue(err.message); }
   }
@@ -314,6 +334,7 @@ const eventsSlice = createSlice({
     createLoading: false,
     updateLoading: false,
     deleteLoading: false,
+    publishingId: null,
 
     error: null,
   },
@@ -383,6 +404,17 @@ const eventsSlice = createSlice({
       .addCase(updateEvent.pending, s => { s.updateLoading = true; })
       .addCase(updateEvent.fulfilled, s => { s.updateLoading = false; })
       .addCase(updateEvent.rejected, s => { s.updateLoading = false; })
+
+      // publishEvent — flip status locally so the event moves from the Drafts
+      // sub-tab to Published immediately, without waiting on a refetch.
+      .addCase(publishEvent.pending, (s, a) => { s.publishingId = a.meta.arg; })
+      .addCase(publishEvent.fulfilled, (s, a) => {
+        const { eventId } = a.payload;
+        s.publishingId = null;
+        s.createdEvents = patchEventInList(s.createdEvents, eventId, { status: 'published' });
+        s.events        = patchEventInList(s.events,        eventId, { status: 'published' });
+      })
+      .addCase(publishEvent.rejected, s => { s.publishingId = null; })
 
       // deleteEvent
       .addCase(deleteEvent.pending, s => { s.deleteLoading = true; })

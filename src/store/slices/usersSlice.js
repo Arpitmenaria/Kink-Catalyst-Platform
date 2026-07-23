@@ -172,6 +172,48 @@ export const fetchGroups = createAsyncThunk(
   }
 );
 
+// User-level block (distinct from messagesSlice's toggleBlock, which blocks a
+// CONVERSATION id) — blocking a user here also makes the backend exclude
+// their posts from GET /api/posts and 403 their profile/posts going forward.
+export const blockUser = createAsyncThunk(
+  'users/blockUser',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/${userId}/block`, { method: 'POST', token });
+      return { userId, isBlocked: data.isBlocked ?? true };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const unblockUser = createAsyncThunk(
+  'users/unblockUser',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/${userId}/block`, { method: 'DELETE', token });
+      return { userId, isBlocked: data.isBlocked ?? false };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const fetchBlockStatus = createAsyncThunk(
+  'users/fetchBlockStatus',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/${userId}/block-status`, { token });
+      return { userId, isBlocked: !!data.isBlocked };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: 'users',
   initialState: {
@@ -189,6 +231,8 @@ const usersSlice = createSlice({
     friendRequestsLoading: false,
     groups: [],
     groupsLoading: false,
+    blockedUserIds: [],
+    blockingId: null, // userId currently mid-block/unblock request
     error: null,
   },
   reducers: {
@@ -332,6 +376,30 @@ const usersSlice = createSlice({
       .addCase(fetchGroups.rejected, (state, action) => {
         state.groupsLoading = false;
         state.error = action.payload;
+      })
+
+      // ── Block / Unblock a user ────────────
+      .addCase(blockUser.pending, (state, action) => { state.blockingId = action.meta.arg; })
+      .addCase(blockUser.fulfilled, (state, action) => {
+        state.blockingId = null;
+        if (action.payload.isBlocked && !state.blockedUserIds.includes(action.payload.userId)) {
+          state.blockedUserIds.push(action.payload.userId);
+        }
+      })
+      .addCase(blockUser.rejected, (state) => { state.blockingId = null; })
+
+      .addCase(unblockUser.pending, (state, action) => { state.blockingId = action.meta.arg; })
+      .addCase(unblockUser.fulfilled, (state, action) => {
+        state.blockingId = null;
+        state.blockedUserIds = state.blockedUserIds.filter(id => id !== action.payload.userId);
+      })
+      .addCase(unblockUser.rejected, (state) => { state.blockingId = null; })
+
+      .addCase(fetchBlockStatus.fulfilled, (state, action) => {
+        const { userId, isBlocked } = action.payload;
+        const already = state.blockedUserIds.includes(userId);
+        if (isBlocked && !already) state.blockedUserIds.push(userId);
+        if (!isBlocked && already) state.blockedUserIds = state.blockedUserIds.filter(id => id !== userId);
       });
   },
 });

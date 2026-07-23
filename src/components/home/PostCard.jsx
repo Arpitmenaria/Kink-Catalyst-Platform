@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
 import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost, reportPost } from '../../store/slices/postsSlice';
+import { blockUser } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
 import CreatePostModal from './CreatePostModal';
@@ -45,6 +46,7 @@ function timeAgo(dateStr) {
 function MoreIcon()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function ReportIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>; }
 function FlagIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
+function BlockIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>; }
 function EditIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>; }
 function TrashIcon()   { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>; }
 function GlobeIcon()   { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline', verticalAlign:'middle' }}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
@@ -131,11 +133,16 @@ export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId } = useSelector(s => s.posts);
+<<<<<<< Updated upstream
   const { connections, profile } = useSelector(s => s.profile);
   // Logged-in user's avatar for the comment composer (profile is the freshest
   // source; auth.user is the fallback right after login).
   const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
   const myAvatar = rawMyAvatar?.startsWith?.('http') ? rawMyAvatar : '';
+=======
+  const { connections } = useSelector(s => s.profile);
+  const { blockingId } = useSelector(s => s.users);
+>>>>>>> Stashed changes
 
   const isStatic = typeof post.likes === 'number';
 
@@ -163,6 +170,7 @@ export default function PostCard({ post, onUserClick }) {
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [editOpen,        setEditOpen]        = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reactionsModalOpen, setReactionsModalOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -461,6 +469,19 @@ export default function PostCard({ post, onUserClick }) {
     }
   }
 
+  function openBlockConfirm() { setMenuOpen(false); setBlockConfirmOpen(true); }
+
+  async function handleBlockConfirm() {
+    if (!authorId) return;
+    const result = await dispatch(blockUser(authorId));
+    if (blockUser.fulfilled.match(result)) {
+      setBlockConfirmOpen(false);
+      dispatch(showToast({ message: `${authorName} has been blocked`, type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to block user', type: 'error' }));
+    }
+  }
+
   return (
     <>
       <article className="post-card">
@@ -496,6 +517,9 @@ export default function PostCard({ post, onUserClick }) {
           {isOwner && (
             <span className="post-visibility post-visibility--header"><visMeta.Icon /> {visMeta.label}</span>
           )}
+          {post.isReported ? (
+            <span className="post-reported-label">Reported</span>
+          ) : (
           <div className="post-menu-wrap" ref={menuRef}>
             <button className="post-more-btn" onClick={() => setMenuOpen(v => !v)}><MoreIcon /></button>
             {menuOpen && (
@@ -523,11 +547,17 @@ export default function PostCard({ post, onUserClick }) {
                       <span className="post-menu-icon post-menu-icon--blue"><FlagIcon /></span>
                       <span className="post-menu-text"><span className="post-menu-item-title">Flag as inappropriate</span><span className="post-menu-item-sub">Mark as offensive content</span></span>
                     </button>
+                    <div className="post-menu-divider" />
+                    <button className="post-menu-item" onClick={openBlockConfirm}>
+                      <span className="post-menu-icon post-menu-icon--red"><BlockIcon /></span>
+                      <span className="post-menu-text"><span className="post-menu-item-title">Block {authorName}</span><span className="post-menu-item-sub">You won't see their posts anymore</span></span>
+                    </button>
                   </>
                 )}
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Caption */}
@@ -848,6 +878,21 @@ export default function PostCard({ post, onUserClick }) {
               <button className="dpm-cancel-btn" onClick={() => setDeleteConfirmOpen(false)} type="button">Cancel</button>
               <button className="dpm-confirm-btn" onClick={handleDeleteConfirm} disabled={deletingId === post._id} type="button">
                 {deletingId === post._id ? 'Deleting...' : 'Delete Post'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {blockConfirmOpen && (
+        <div className="dpm-overlay" onClick={() => setBlockConfirmOpen(false)}>
+          <div className="dpm-box" onClick={e => e.stopPropagation()}>
+            <h2 className="dpm-title">Block {authorName}?</h2>
+            <p className="dpm-desc">They won't be able to see your profile or posts, and you won't see theirs either. You can unblock them anytime from your settings.</p>
+            <div className="dpm-actions">
+              <button className="dpm-cancel-btn" onClick={() => setBlockConfirmOpen(false)} type="button">Cancel</button>
+              <button className="dpm-confirm-btn" onClick={handleBlockConfirm} disabled={blockingId === authorId} type="button">
+                {blockingId === authorId ? 'Blocking...' : 'Block User'}
               </button>
             </div>
           </div>
