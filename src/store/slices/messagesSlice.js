@@ -114,6 +114,24 @@ export const fetchMessages = createAsyncThunk(
   }
 );
 
+// 2b. GET /api/conversations/:id/messages — silent background resync, used as a
+// fallback in case the socket missed a message (dropped connection, blocked
+// websockets, etc). Deliberately doesn't touch messagesLoading (no spinner
+// flicker every poll) and merges rather than replaces, so it can't wipe out
+// an optimistic message that's still mid-send when a poll happens to land.
+export const syncMessages = createAsyncThunk(
+  'messages/syncMessages',
+  async ({ convId, page = 1, limit = 50 }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/conversations/${convId}/messages?page=${page}&limit=${limit}`, { token });
+      return { convId, messages: (data.messages ?? []).map(normalizeMessage) };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // 3. POST /api/conversations/:id/messages
 export const sendMessage = createAsyncThunk(
   'messages/sendMessage',
@@ -578,7 +596,15 @@ const messagesSlice = createSlice({
       .addCase(fetchMessages.fulfilled, (s, a) => {
         const { convId, messages, page, hasMore, otherUserId, otherUserLocation, isBlocked, isReported } = a.payload;
         s.messagesLoading = false;
-        s.messages[convId] = page === 1 ? messages : [...messages, ...(s.messages[convId] ?? [])];
+        if (page === 1) {
+          // Keep any optimistic (not-yet-confirmed) message alive across a
+          // page-1 refresh — it hasn't hit the server yet, so it won't be in
+          // this response, and a raw replace would make it vanish mid-send.
+          const pending = (s.messages[convId] ?? []).filter(m => m.pending);
+          s.messages[convId] = [...messages, ...pending];
+        } else {
+          s.messages[convId] = [...messages, ...(s.messages[convId] ?? [])];
+        }
         s.messagesHasMore[convId] = hasMore;
         if (otherUserId) {
           const conv = s.conversations.find(c => c.id === convId);
@@ -593,6 +619,15 @@ const messagesSlice = createSlice({
         if (isReported !== null) s.reportedConvIds[convId] = isReported;
       })
       .addCase(fetchMessages.rejected, s => { s.messagesLoading = false; })
+
+      // Silent background resync (see syncMessages above) — same merge
+      // strategy as fetchMessages' page-1 case, but never touches
+      // messagesLoading, so it can run every few seconds with no UI flicker.
+      .addCase(syncMessages.fulfilled, (s, a) => {
+        const { convId, messages } = a.payload;
+        const pending = (s.messages[convId] ?? []).filter(m => m.pending);
+        s.messages[convId] = [...messages, ...pending];
+      })
 
       .addCase(sendMessage.pending, (s, a) => {
         s.sending = true;

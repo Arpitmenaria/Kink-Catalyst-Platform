@@ -1080,11 +1080,16 @@ video.post-image {
 .post-caption-tag { color: #4a9eff; font-weight: 600; }
 .post-caption-mention:hover { text-decoration: underline; }
 
-/* @mention autocomplete dropdown */
+/* @mention autocomplete dropdown — the comment bar is the last element in
+   the card and .post-card itself has overflow:hidden, so opening downward
+   (the old behavior, no top/bottom offset — just static flow position)
+   pushed this past the card's own bottom edge and got silently clipped.
+   Opening upward keeps it within the card's already-rendered height instead. */
 .mention-dropdown {
   position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
   z-index: 40;
-  margin-top: 4px;
   background: #161a2c;
   border: 1px solid #262c47;
   border-radius: 10px;

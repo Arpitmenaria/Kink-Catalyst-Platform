@@ -1507,15 +1507,19 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
               {list.map(person => (
                 <div className="fp-person" key={person.id}>
                   {person.avatar?.startsWith?.('http')
-                    ? <img className="fp-avatar" src={person.avatar} alt={person.name} />
+                    ? <img className="fp-avatar" style={{ cursor: 'pointer' }} src={person.avatar} alt={person.name} onClick={() => onUserClick?.(person.id)} />
                     : (
-                      <div className="fp-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+                      <div
+                        className="fp-avatar"
+                        style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0, cursor: 'pointer' }}
+                        onClick={() => onUserClick?.(person.id)}
+                      >
                         {initials(person.name)}
                       </div>
                     )
                   }
                   <div className="fp-info">
-                    <span className="fp-name">{person.name}</span>
+                    <span className="fp-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(person.id)}>{person.name}</span>
                     <span className="fp-role">{person.role}</span>
                     {person.mutual > 0 && (
                       <span className="fp-mutual">

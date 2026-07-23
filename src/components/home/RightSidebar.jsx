@@ -19,7 +19,7 @@ export default function RightSidebar({ onAddEducationClick, onGalleryClick }) {
   const displayedGallery = gallery.slice(0, 6);
   const extraCount = galleryTotal > 6 ? galleryTotal - 6 : 0;
 
-  const education = profile?.education ?? [];
+  const education = [];
 
   function handlePhotoChosen(e) {
     const file = e.target.files?.[0];

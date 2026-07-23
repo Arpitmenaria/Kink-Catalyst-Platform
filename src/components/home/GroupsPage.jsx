@@ -11,6 +11,7 @@ import {
   fetchAdminDashboard, sendFriendRequest,
 } from '../../store/slices/groupsSlice';
 import { startDM } from '../../store/slices/messagesSlice';
+import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
 
 
@@ -433,6 +434,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     dispatch(fetchGroupPosts({ groupId, page: 1 }));
     if (group?.privacy === 'private') dispatch(fetchPendingRequests({ groupId }));
     dispatch(fetchAdminDashboard(groupId));
+    // PostCard's @mention comment box reads state.profile.connections.
+    dispatch(fetchConnections());
   }, [dispatch, groupId]);
 
   useEffect(() => {
@@ -1339,6 +1342,8 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     if (!groupId) return;
     dispatch(fetchGroupPosts({ groupId, page: 1 }));
     dispatch(fetchGroupMembers({ groupId }));
+    // PostCard's @mention comment box reads state.profile.connections.
+    dispatch(fetchConnections());
   }, [dispatch, groupId]);
 
   useEffect(() => {

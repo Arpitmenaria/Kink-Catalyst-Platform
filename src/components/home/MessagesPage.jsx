@@ -9,7 +9,7 @@ import {
   toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread,
   fetchBlockedUsers, removeBlockedUser,
   fetchConversationDetail, fetchGroupMembers, deleteGroup, leaveGroup,
-  addGroupMembers, removeGroupMember, setActiveConvId, updateGroup,
+  addGroupMembers, removeGroupMember, setActiveConvId, updateGroup, syncMessages,
 } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
@@ -475,10 +475,10 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
                 <span className="nm-contacts-title">Your Connections</span>
                 <div className="nm-contact-list">
                   {connectionsLoading && filteredConnections.length === 0 && (
-                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>Loading connections…</p>
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 16px' }}>Loading connections…</p>
                   )}
                   {!connectionsLoading && filteredConnections.length === 0 && (
-                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No connections found.</p>
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 16px' }}>No connections found.</p>
                   )}
                   {filteredConnections.map(c => (
                     <div key={c.id} className="nm-contact-item" onClick={() => handleChatWithConnection(c)}>
@@ -547,15 +547,17 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
                       <SearchIcon />
                       <input className="nm-contact-search" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
-                    <button className="nm-select-all" onClick={() => setSelected(connectionContacts.map(c => c.id))}>Select All</button>
+                    {connectionContacts.length > 0 && (
+                      <button className="nm-select-all" onClick={() => setSelected(connectionContacts.map(c => c.id))}>Select All</button>
+                    )}
                   </div>
                 </div>
                 <div className="nm-contact-list">
                   {connectionsLoading && filteredConnections.length === 0 && (
-                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>Loading connections…</p>
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 16px' }}>Loading connections…</p>
                   )}
                   {!connectionsLoading && filteredConnections.length === 0 && (
-                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No connections found.</p>
+                    <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 16px' }}>No connections found.</p>
                   )}
                   {filteredConnections.map(c => {
                     const checked = selected.includes(c.id);
@@ -604,6 +606,17 @@ const TABS = ['All', 'Unread', 'Groups', 'Online', 'Blocked'];
 
 const TAB_PARAM = { All: 'all', Unread: 'unread', Groups: 'groups', Online: 'online' };
 
+// Same POST /api/conversations/:id/report endpoint as before — this list is
+// just a static frontend picker (no backend reasons endpoint for
+// conversations/groups), unlike posts which fetch theirs via fetchReportReasons.
+const CONVERSATION_REPORT_REASONS = [
+  'Spam',
+  'Harassment or bullying',
+  'Inappropriate content',
+  'Scam or fraud',
+  'Other',
+];
+
 export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick, onUserClick, initialUserId, onInitUserConsumed }) {
   const dispatch = useDispatch();
   const {
@@ -632,6 +645,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [inputMsg,         setInputMsg]        = useState('');
   const [newMsgOpen,       setNewMsgOpen]      = useState(false);
   const [showAssets,       setShowAssets]      = useState(false);
+  const [chatSearchOpen,   setChatSearchOpen]  = useState(false);
+  const [chatSearchQuery,  setChatSearchQuery] = useState('');
   const [typingUser,       setTypingUser]      = useState(null);
   const [lightbox,         setLightbox]        = useState(null); // { items: [{url,type}], index } | null
   const [docPreview,       setDocPreview]      = useState(null);
@@ -642,8 +657,11 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const [attachOpen,       setAttachOpen]      = useState(false);
   const [confirmAction,    setConfirmAction]   = useState(null); // 'block' | 'report' | 'delete' | 'deleteGroup' | 'leaveGroup' | null
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
+  const [reportReason,    setReportReason]     = useState(CONVERSATION_REPORT_REASONS[0]);
   const [groupInfoOpen,   setGroupInfoOpen]    = useState(false);
   const [descExpanded,    setDescExpanded]     = useState(false);
+  const [descOverflowing, setDescOverflowing]  = useState(false);
+  const descRef = useRef(null);
   const [showAddMembers,  setShowAddMembers]   = useState(false);
   const [addMembersSelected, setAddMembersSelected] = useState([]);
   const [addMembersSubmitting, setAddMembersSubmitting] = useState(false);
@@ -710,6 +728,21 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   useEffect(() => {
     if (tab === 'Blocked') dispatch(fetchBlockedUsers());
   }, [tab, dispatch]);
+
+  /* Fallback for when the socket misses something (dropped connection, a
+     network/proxy that blocks websockets entirely, etc) — silently resync
+     the open conversation from the API every few seconds. Cheap and safe:
+     syncMessages doesn't touch messagesLoading (no spinner flicker) and
+     merges rather than replaces, so it can't clobber a message that's still
+     mid-send. This is a backstop, not the primary delivery path — sockets
+     still handle real-time delivery when they're working. */
+  useEffect(() => {
+    if (!activeConv) return;
+    const interval = setInterval(() => {
+      dispatch(syncMessages({ convId: activeConv.id }));
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [activeConv?.id, dispatch]);
 
   /* Join/leave socket room + typing listeners when conversation changes */
   useEffect(() => {
@@ -780,6 +813,8 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     dispatch(setActiveConvId(conv.id));
     setChatKey(k => k + 1);
     setShowAssets(false);
+    setChatSearchOpen(false);
+    setChatSearchQuery('');
     dispatch(clearUnread({ convId: conv.id })); // instant badge clear
     dispatch(fetchMessages({ convId: conv.id }));
     dispatch(markRead(conv.id));
@@ -958,7 +993,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     setRemovingMemberId(null);
   }
 
-  function closeConfirm() { setConfirmAction(null); }
+  function closeConfirm() { setConfirmAction(null); setReportReason(CONVERSATION_REPORT_REASONS[0]); }
 
   async function handleConfirmAction() {
     if (!activeConv) return closeConfirm();
@@ -971,7 +1006,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         dispatch(showToast({ message: result.payload ?? 'Failed to update block status', type: 'error' }));
       }
     } else if (confirmAction === 'report') {
-      const result = await dispatch(reportConversation({ convId: activeConv.id, reason: 'Inappropriate content' }));
+      const result = await dispatch(reportConversation({ convId: activeConv.id, reason: reportReason }));
       if (reportConversation.fulfilled.match(result)) {
         dispatch(showToast({ message: 'Conversation reported for review', type: 'success' }));
       } else {
@@ -1130,6 +1165,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   }, [lightbox]);
 
   const messages   = activeConv ? (allMessages[activeConv.id] ?? []) : [];
+  // Client-side filter over whatever's currently loaded — doesn't reach further
+  // back than the chat has already paginated in. Search only affects what's
+  // rendered below; `messages` itself stays the true list for scroll/count logic.
+  const searchActive = chatSearchOpen && chatSearchQuery.trim().length > 0;
+  const displayedMessages = searchActive
+    ? messages.filter(m => (m.text ?? '').toLowerCase().includes(chatSearchQuery.trim().toLowerCase()))
+    : messages;
   const isBlocked  = activeConv ? (blockedConvIds[activeConv.id] ?? false) : false;
   const isReported = activeConv ? (reportedConvIds[activeConv.id] ?? false) : false;
   // activeConv is a snapshot taken when the chat was opened, so it goes stale as soon as the
@@ -1138,6 +1180,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   const liveActiveConv = activeConv ? (conversations.find(c => c.id === activeConv.id) ?? activeConv) : null;
   const activeOnline = getOnlineStatus(liveActiveConv);
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+
+  // Whether the group description actually overflows its 4-line clamp —
+  // measured from the real rendered box instead of guessing off character
+  // count, which can be wrong for text with unusually long/short average
+  // word length. Deliberately excludes descExpanded from the deps: this
+  // should only re-measure the CLAMPED box (the expanded one never
+  // overflows itself), so "See more"/"See less" doesn't flicker once toggled.
+  useEffect(() => {
+    if (!groupInfoOpen || !descRef.current) return;
+    setDescOverflowing(descRef.current.scrollHeight > descRef.current.clientHeight + 1);
+  }, [groupInfoOpen, liveActiveConv?.description]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Chat view ── */
   if (activeConv) {
@@ -1229,7 +1282,27 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   )}
                 </div>
               </div>
-              <button className="msg-chat-search-btn"><SearchIcon /></button>
+              {chatSearchOpen ? (
+                <div className="msg-chat-search-bar">
+                  <SearchIcon />
+                  <input
+                    className="msg-chat-search-input"
+                    type="text"
+                    placeholder="Search in this conversation..."
+                    value={chatSearchQuery}
+                    onChange={e => setChatSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  <button
+                    className="msg-chat-search-close-btn"
+                    onClick={() => { setChatSearchOpen(false); setChatSearchQuery(''); }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button className="msg-chat-search-btn" onClick={() => setChatSearchOpen(true)}><SearchIcon /></button>
+              )}
             </div>
 
             <div className="msg-chat-messages">
@@ -1237,13 +1310,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 <div style={{ textAlign: 'center', padding: '32px 0', color: '#5c6a8c', fontSize: 13 }}>Loading messages…</div>
               )}
 
-              {!messagesLoading && <div className="msg-date-sep"><span>TODAY</span></div>}
+              {!messagesLoading && !searchActive && <div className="msg-date-sep"><span>TODAY</span></div>}
 
               {!messagesLoading && messages.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#5c6a8c', fontSize: 13 }}>No messages yet. Say hello!</div>
               )}
 
-              {messages.map(msg => {
+              {!messagesLoading && searchActive && displayedMessages.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#5c6a8c', fontSize: 13 }}>No messages match "{chatSearchQuery.trim()}".</div>
+              )}
+
+              {displayedMessages.map(msg => {
                 if (msg.type === 'system') {
                   const actorName = msg.actor?.name || 'Someone';
                   const targetName = msg.target?.name || 'a member';
@@ -1666,6 +1743,21 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                           ? `Are you sure you want to report "${liveActiveConv.name}" for review? Our team will look into it.`
                           : 'Are you sure you want to report this conversation for review? Our team will look into it.'}
               </p>
+              {confirmAction === 'report' && (
+                <div className="msg-report-reasons">
+                  {CONVERSATION_REPORT_REASONS.map(r => (
+                    <label key={r} className="msg-report-reason-item">
+                      <input
+                        type="radio"
+                        name="conv-report-reason"
+                        checked={reportReason === r}
+                        onChange={() => setReportReason(r)}
+                      />
+                      {r}
+                    </label>
+                  ))}
+                </div>
+              )}
               <div className="msg-confirm-actions">
                 <button className="msg-confirm-cancel-btn" onClick={closeConfirm} disabled={confirmSubmitting}>Cancel</button>
                 <button
@@ -1752,10 +1844,10 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                     <p className="grp-info-name">{liveActiveConv.name}</p>
                     {liveActiveConv.description && (
                       <>
-                        <p className={`grp-info-desc${descExpanded ? '' : ' grp-info-desc--clamped'}`}>
+                        <p ref={descRef} className={`grp-info-desc${descExpanded ? '' : ' grp-info-desc--clamped'}`}>
                           {liveActiveConv.description}
                         </p>
-                        {liveActiveConv.description.length > 180 && (
+                        {descOverflowing && (
                           <button className="grp-info-desc-toggle" onClick={() => setDescExpanded(v => !v)}>
                             {descExpanded ? 'See less' : 'See more'}
                           </button>

@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers, fetchConversations, fetchMessages, groupMemberJoinedRemote, groupMemberLeftRemote, groupMemberRemovedRemote, groupDeletedRemote, groupUpdatedRemote } from '../store/slices/messagesSlice';
+import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers, fetchConversations, syncMessages, groupMemberJoinedRemote, groupMemberLeftRemote, groupMemberRemovedRemote, groupDeletedRemote, groupUpdatedRemote } from '../store/slices/messagesSlice';
 import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts, logout } from '../store/slices/authSlice';
 import { setFriendStatus, addIncomingRequest } from '../store/slices/usersSlice';
@@ -180,6 +180,11 @@ export function initSocket(token, store) {
   socket.on('reconnect', () => {
     // Resync authoritative counts after reconnect (per API contract)
     storeRef.dispatch(fetchMe());
+    // Whatever the open chat missed while disconnected won't arrive via
+    // socket now (it already happened) — pull it from the API immediately
+    // instead of waiting for the next background poll.
+    const activeConvId = storeRef.getState().messages.activeConvId;
+    if (activeConvId) storeRef.dispatch(syncMessages({ convId: activeConvId }));
   });
 
   socket.on('error', ({ event, message }) => {
@@ -204,7 +209,7 @@ export function initSocket(token, store) {
   // is enough, and the system message will show next time it's opened.
   function refetchIfOpen(conversationId) {
     if (storeRef.getState().messages.activeConvId === conversationId) {
-      storeRef.dispatch(fetchMessages({ convId: conversationId, page: 1 }));
+      storeRef.dispatch(syncMessages({ convId: conversationId }));
     }
   }
 
