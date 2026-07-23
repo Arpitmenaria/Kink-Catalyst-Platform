@@ -13,6 +13,7 @@ import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
 import UserProfilePage from './UserProfilePage';
 import MiniSitesPage from './MiniSitesPage';
+import PostDetailModal from './PostDetailModal';
 import { initSocket } from '../../services/socket';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
@@ -33,6 +34,7 @@ export default function HomePage() {
   }, [token]);
 
   const [section,         setSection]         = useState('feed');
+  const [detailPostId,    setDetailPostId]    = useState(null); // post-detail modal
   const [eventsCreate,    setEventsCreate]    = useState(false);
   const [groupsCreate,    setGroupsCreate]    = useState(false);
   const [profileInitTab,  setProfileInitTab]  = useState(null);
@@ -83,6 +85,14 @@ export default function HomePage() {
     setSection('events');
   }
 
+  // Notification click (mention/comment/like) → open the post in a detail
+  // modal. Uses GET /api/posts/:id, so it works for any post even when the
+  // feed only has the first page loaded.
+  function goToPost(postId) {
+    if (!postId) return;
+    setDetailPostId(postId);
+  }
+
   // Jump into Messages with a specific person pre-selected (used by the
   // "Message" button on UserProfilePage).
   function goToMessagesWithUser(userId) {
@@ -92,7 +102,7 @@ export default function HomePage() {
 
   return (
     <div className={`home-page${section === 'messages' ? ' home-page--chat' : ''}`}>
-      <Navbar onMessagesClick={() => setSection('messages')} onProfileClick={() => setSection('profile')} onConnectionsClick={() => goToProfileTab('Connections')} onPostsClick={() => goToProfileTab('Feed')} />
+      <Navbar onMessagesClick={() => setSection('messages')} onProfileClick={() => setSection('profile')} onConnectionsClick={() => goToProfileTab('Connections')} onPostsClick={() => goToProfileTab('Feed')} onPostClick={goToPost} />
       <div className="home-body">
         {section === 'minisites' ? (
           <MiniSitesPage
@@ -240,6 +250,14 @@ export default function HomePage() {
           </>
         )}
       </div>
+
+      {detailPostId && (
+        <PostDetailModal
+          postId={detailPostId}
+          onClose={() => setDetailPostId(null)}
+          onUserClick={(uid) => { setDetailPostId(null); goToUserProfile(uid); }}
+        />
+      )}
     </div>
   );
 }

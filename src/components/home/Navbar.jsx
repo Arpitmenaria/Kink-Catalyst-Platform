@@ -62,7 +62,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick }) {
+export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
@@ -171,8 +171,13 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                   <div
                     key={nid ?? i}
                     className="navbar-notif-item"
-                    style={{ '--ni': i, cursor: n.unread ? 'pointer' : 'default' }}
-                    onClick={() => { if (n.unread && nid) dispatch(markNotificationRead(nid)); }}
+                    style={{ '--ni': i, cursor: (n.unread || n.relatedPost) ? 'pointer' : 'default' }}
+                    onClick={() => {
+                      if (n.unread && nid) dispatch(markNotificationRead(nid));
+                      // mention/comment/like notifications carry the post they
+                      // refer to — jump to it in the feed.
+                      if (n.relatedPost) { setNotifOpen(false); onPostClick?.(n.relatedPost); }
+                    }}
                   >
                     <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>
                       {n.emoji ?? '🔔'}

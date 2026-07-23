@@ -15,6 +15,7 @@ function buildNotif(data) {
   const byType = {
     like:                     { emoji: data.reaction === 'love' ? '❤️' : '👍', text: `${name} reacted to your post` },
     comment:                  { emoji: '💬', text: `${name} commented on your post` },
+    mention:                  { emoji: '@',  text: `${name} mentioned you in a post` },
     follow:                   { emoji: '👤', text: `${name} started following you` },
     friend_request:           { emoji: '🤝', text: `${name} sent you a connection request` },
     friend_request_accepted:  { emoji: '🤝', text: `${name} accepted your connection request` },
@@ -23,8 +24,10 @@ function buildNotif(data) {
   return {
     id: data.id ?? data._id,
     type: data.type,
-    emoji: meta.emoji,
-    text: meta.text,
+    // Backend already sends ready-to-render emoji/text for socket
+    // notifications — prefer those, fall back to building them locally.
+    emoji: data.emoji ?? meta.emoji,
+    text: data.text ?? meta.text,
     actor,
     relatedPost: data.postId ?? data.relatedPost ?? null,
     createdAt: data.createdAt ?? new Date().toISOString(),

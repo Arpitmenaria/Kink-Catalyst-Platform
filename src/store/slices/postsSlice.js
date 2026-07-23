@@ -11,6 +11,9 @@ function forEachMatchingPost(state, postId, fn) {
     const post = list.find(p => p._id === postId);
     if (post) fn(post);
   }
+  // The single-post modal holds its own copy — keep it in sync too, so
+  // reacting/commenting from the modal updates what's on screen.
+  if (state.postDetail?._id === postId) fn(state.postDetail);
 }
 
 function findComment(comments, commentId) {
@@ -104,6 +107,21 @@ export const fetchFeedPosts = createAsyncThunk(
       return (data.posts ?? []).map(normalizePost);
     } catch (err) {
       return rejectWithValue(err.message);
+    }
+  }
+);
+
+// Single post + its full comment thread — powers the post-detail modal opened
+// from a notification, so it works for any post regardless of feed pagination.
+export const fetchPostById = createAsyncThunk(
+  'posts/fetchById',
+  async (postId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}`, { token });
+      return normalizePost(data.post ?? data);
+    } catch (err) {
+      return rejectWithValue({ status: err.status, message: err.message });
     }
   }
 );
@@ -380,6 +398,9 @@ const postsSlice = createSlice({
     myPostsLoading: false,
     myPostsHasMore: false,
     viewedPosts: [],
+    postDetail: null,          // single post shown in the detail modal
+    postDetailLoading: false,
+    postDetailError: null,     // { status, message } on 404/403
     likingIds: [],
     commentingId: null,
     commentsLoadingIds: [],
@@ -396,9 +417,29 @@ const postsSlice = createSlice({
     setViewedPosts(state, action) {
       state.viewedPosts = action.payload ?? [];
     },
+    clearPostDetail(state) {
+      state.postDetail = null;
+      state.postDetailLoading = false;
+      state.postDetailError = null;
+    },
   },
   extraReducers: (builder) => {
     builder
+      // ── Fetch single post (detail modal) ───
+      .addCase(fetchPostById.pending, (state) => {
+        state.postDetailLoading = true;
+        state.postDetailError = null;
+        state.postDetail = null;
+      })
+      .addCase(fetchPostById.fulfilled, (state, action) => {
+        state.postDetailLoading = false;
+        state.postDetail = action.payload;
+      })
+      .addCase(fetchPostById.rejected, (state, action) => {
+        state.postDetailLoading = false;
+        state.postDetailError = action.payload ?? { message: 'Could not load this post.' };
+      })
+
       // ── Fetch Feed ─────────────────────────
       .addCase(fetchFeedPosts.pending, (state) => {
         state.loading = true;
@@ -648,5 +689,5 @@ const postsSlice = createSlice({
   },
 });
 
-export const { setViewedPosts } = postsSlice.actions;
+export const { setViewedPosts, clearPostDetail } = postsSlice.actions;
 export default postsSlice.reducer;

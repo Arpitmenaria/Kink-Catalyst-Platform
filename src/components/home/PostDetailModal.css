@@ -1,0 +1,63 @@
+.pdm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+
+.pdm-modal {
+  width: 100%;
+  max-width: 620px;
+  background: #111422;
+  border: 1px solid #1a1f35;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  height: fit-content;
+}
+
+.pdm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1e2238;
+}
+
+.pdm-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e8ecf8;
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.pdm-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #1a2040;
+  border: 1px solid #252d4a;
+  color: #8b9cc8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.pdm-close:hover { background: #252d4a; color: #e0e6f8; }
+
+.pdm-body { padding: 14px; }
+
+.pdm-state {
+  text-align: center;
+  padding: 40px 16px;
+  color: #5c6a8c;
+  font-size: 13.5px;
+}
