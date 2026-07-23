@@ -2738,3 +2738,8 @@
   padding: 0; transition: color 0.15s;
 }
 .ev-disc-like-btn:hover, .ev-disc-reply-btn:hover { color: #60a5fa; }
+
+/* Fallback block when an event has no cover image (avoids a broken <img>) */
+.ev-img-placeholder {
+  background: linear-gradient(135deg, #1a2036 0%, #131828 100%);
+}

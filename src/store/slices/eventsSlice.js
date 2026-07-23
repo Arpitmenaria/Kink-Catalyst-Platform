@@ -19,13 +19,15 @@ function normalizeEvent(e) {
   const loc   = e.location;
   const locLabel = typeof loc === 'string' ? loc
     : (loc?.label ?? [loc?.city, loc?.state, loc?.country].filter(Boolean).join(', ') ?? '');
+  const coverImages = readCoverImages(e);
   return {
     id:          e.id ?? e._id ?? '',
     day:         valid ? String(d.getDate()).padStart(2, '0') : '',
     month:       valid ? MONTHS[d.getMonth()] : '',
     monthFull:   valid ? MONTH_FULL[d.getMonth()] : '',
     fullDate:    fmtFullDate(e.startDate, e.startTime),
-    img:         e.coverImage ?? '',
+    img:         coverImages[0] ?? '',
+    images:      coverImages,
     category:    e.category ?? '',
     catColor:    e.categoryColor ?? '#3b82f6',
     location:    locLabel,
@@ -58,8 +60,38 @@ function normalizeEvent(e) {
     isAllDay:    e.isAllDay ?? false,
     createdBy:   e.createdBy ?? null,
     createdAt:   e.createdAt ?? '',
-    status:      e.status ?? 'published',
+    status:      readStatus(e),
   };
+}
+
+// An event can be created with several coverImage files, so the API may send
+// back a single URL, an array of URLs, or an array of { url } objects (and
+// under a few different key names). Return them all: the card shows the first,
+// the detail carousel shows the whole set. Assigning a raw array to <img src>
+// is what renders a broken-image icon.
+function readCoverImages(e) {
+  const candidates = [e.coverImages, e.coverImage, e.images, e.image, e.banner];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.startsWith('http')) return [c];
+    if (Array.isArray(c)) {
+      const urls = c
+        .map(item => (typeof item === 'string' ? item : item?.url))
+        .filter(u => typeof u === 'string' && u.startsWith('http'));
+      if (urls.length) return urls;
+    }
+  }
+  return [];
+}
+
+// Drafts must never be mistaken for published (they'd leak into the Published
+// tab and the public feed), so accept the common shapes a backend might use
+// and only fall back to 'published' when there's genuinely no signal.
+function readStatus(e) {
+  const raw = typeof e.status === 'string' ? e.status.trim().toLowerCase() : '';
+  if (raw) return raw;
+  if (e.isDraft === true || e.draft === true) return 'draft';
+  if (e.isPublished === false || e.published === false) return 'draft';
+  return 'published';
 }
 
 function normalizeComment(c) {
@@ -409,10 +441,13 @@ const eventsSlice = createSlice({
       // sub-tab to Published immediately, without waiting on a refetch.
       .addCase(publishEvent.pending, (s, a) => { s.publishingId = a.meta.arg; })
       .addCase(publishEvent.fulfilled, (s, a) => {
-        const { eventId } = a.payload;
+        const { eventId, event } = a.payload;
         s.publishingId = null;
-        s.createdEvents = patchEventInList(s.createdEvents, eventId, { status: 'published' });
-        s.events        = patchEventInList(s.events,        eventId, { status: 'published' });
+        // Trust the server's status (it may not always be plain 'published',
+        // e.g. a future-dated event could come back 'scheduled').
+        const status = (typeof event?.status === 'string' && event.status) || 'published';
+        s.createdEvents = patchEventInList(s.createdEvents, eventId, { status });
+        s.events        = patchEventInList(s.events,        eventId, { status });
       })
       .addCase(publishEvent.rejected, s => { s.publishingId = null; })
 

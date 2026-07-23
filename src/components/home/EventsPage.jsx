@@ -169,24 +169,12 @@ export const DISC_EVENTS = [
   },
 ];
 
-const EVENT_GALLERY_POOL = [
-  'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1559223607-b4d0555ae227?w=1200&q=80&fit=crop',
-];
-
+// Show exactly the images the event actually has — never pad with stock
+// photos, or a 2-image event renders as a 5-image gallery.
 function getEventImages(ev) {
   if (!ev) return [];
   if (Array.isArray(ev.images) && ev.images.length) return ev.images;
-  const base = ev.img?.split('?')[0];
-  const fillers = EVENT_GALLERY_POOL.filter(url => !url.startsWith(base));
-  return [ev.img, ...fillers.slice(0, 4)];
+  return ev.img ? [ev.img] : [];
 }
 
 function ChevronLeftIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
@@ -374,6 +362,26 @@ function TicketFormPanel({ isEditing, newTicket, onChange, onSave, onCancel }) {
     </div>
   );
 }
+
+// Create-wizard defaults. Kept at module level so opening the wizard and
+// resetting it after a save use the exact same starting state — otherwise the
+// form keeps the previously created event's data and "Create Event" opens
+// pre-filled with the last event.
+const EMPTY_EVENT_FORM = {
+  title: '', tagline: '', description: '',
+  startDate: '', endDate: '', startTime: '', endTime: '',
+  isAllDay: false, category: '', eventType: 'offline', visibility: 'anyone',
+};
+const DEFAULT_TICKETS = [
+  { id: '1', name: 'VIP Access',        price: '150', seats: '50',  iconType: 'star'   },
+  { id: '2', name: 'General Admission', price: '45',  seats: '150', iconType: 'ticket' },
+  { id: '3', name: 'Early Bird',        price: '30',  seats: '100', iconType: 'clock'  },
+];
+const EMPTY_NEW_TICKET  = { name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' };
+const DEFAULT_REGISTRATION = { ticketPrice: '150', totalSeats: '', maxPerUser: '4', deadline: '' };
+const EMPTY_VENUE     = { name: '', street: '', city: '', state: '', country: '', pinCode: '' };
+const EMPTY_ORGANIZER = { fullName: '', email: '', phone: '' };
+const DEFAULT_VIRTUAL = { link: 'https://', instructions: '' };
 
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate, initialEventId, onInitEventConsumed, onUserClick }) {
   const [showCreate,    setShowCreate]    = useState(startCreate || false);
@@ -595,8 +603,19 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       if (createEvent.fulfilled.match(action)) {
         dispatch(showToast({ message: asDraft ? 'Event saved as draft.' : 'Event published successfully!', type: 'success' }));
         setShowCreate(false);
-        setStep(1);
+        resetWizard(); // don't carry this event's data into the next one
         dispatch(fetchMyCreated());
+        // Show the sub-tab the new event actually landed in.
+        setCreatedTab(asDraft ? 'draft' : 'published');
+        // A newly published event also needs to show up in the public feed.
+        if (!asDraft) {
+          dispatch(fetchEvents({
+            tab: 'upcoming',
+            category: discCat !== 'All' ? discCat : '',
+            eventType: filters.eventType !== 'all' ? filters.eventType : '',
+            location: filters.location,
+          }));
+        }
       } else if (createEvent.rejected.match(action)) {
         dispatch(showToast({ message: action.payload ?? 'Failed to publish event.', type: 'error' }));
       }
@@ -628,17 +647,22 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (publishEvent.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Event published successfully!', type: 'success' }));
       setCreatedTab('published');
+      // Re-pull both lists: the draft was never in the public feed, so the
+      // optimistic status patch can't put it there — only a refetch can.
+      dispatch(fetchMyCreated());
+      dispatch(fetchEvents({
+        tab: 'upcoming',
+        category: discCat !== 'All' ? discCat : '',
+        eventType: filters.eventType !== 'all' ? filters.eventType : '',
+        location: filters.location,
+      }));
     } else {
       dispatch(showToast({ message: result.payload ?? 'Failed to publish event', type: 'error' }));
     }
   }
 
   // Step 1 state
-  const [form, setForm] = useState({
-    title: '', tagline: '', description: '',
-    startDate: '', endDate: '', startTime: '', endTime: '',
-    isAllDay: false, category: '', eventType: 'offline', visibility: 'anyone',
-  });
+  const [form, setForm] = useState(EMPTY_EVENT_FORM);
 
   // Visibility dropdown (same chip + option-list pattern as post create's audience picker)
   const [visDropdownOpen, setVisDropdownOpen] = useState(false);
@@ -656,28 +680,45 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   // Step 2 state
   const [pricingType, setPricingType] = useState('paid');
-  const [tickets, setTickets] = useState([
-    { id: '1', name: 'VIP Access',         price: '150', seats: '50',  iconType: 'star'   },
-    { id: '2', name: 'General Admission',  price: '45',  seats: '150', iconType: 'ticket' },
-    { id: '3', name: 'Early Bird',         price: '30',  seats: '100', iconType: 'clock'  },
-  ]);
+  const [tickets, setTickets] = useState(() => DEFAULT_TICKETS.map(t => ({ ...t })));
   const [selectedTicketId, setSelectedTicketId] = useState('1');
   const [showNewForm, setShowNewForm] = useState(true);
   const [editingTicketId, setEditingTicketId] = useState(null);
-  const [newTicket, setNewTicket] = useState({ name: '', description: '', price: '0.00', seats: '100', maxPerUser: '1' });
+  const [newTicket, setNewTicket] = useState(EMPTY_NEW_TICKET);
   // Guards against silently losing an in-progress (unsaved) ticket draft when
   // switching to add/edit a different one — see requestTicketFormSwitch below.
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [pendingTicketAction, setPendingTicketAction] = useState(null);
-  const [registration, setRegistration] = useState({ ticketPrice: '150', totalSeats: '', maxPerUser: '4', deadline: '' });
+  const [registration, setRegistration] = useState(DEFAULT_REGISTRATION);
 
   // Step 3 state
   const [locationTab, setLocationTab] = useState('physical');
-  const [venue, setVenue] = useState({ name: '', street: '', city: '', state: '', country: '', pinCode: '' });
+  const [venue, setVenue] = useState(EMPTY_VENUE);
   const [parking, setParking] = useState('');
-  const [organizer, setOrganizer] = useState({ fullName: '', email: '', phone: '' });
-  const [virtual, setVirtual] = useState({ link: 'https://', instructions: '' });
+  const [organizer, setOrganizer] = useState(EMPTY_ORGANIZER);
+  const [virtual, setVirtual] = useState(DEFAULT_VIRTUAL);
   const instructionsRef = useRef(null);
+
+  // Clear every step of the create wizard back to its defaults. Without this
+  // the state survives after a save, so reopening "Create Event" shows the
+  // previously created event's details instead of a blank form.
+  function resetWizard() {
+    setForm(EMPTY_EVENT_FORM);
+    setCoverImages([]);
+    setPricingType('paid');
+    setTickets(DEFAULT_TICKETS.map(t => ({ ...t })));
+    setSelectedTicketId('1');
+    setShowNewForm(true);
+    setEditingTicketId(null);
+    setNewTicket(EMPTY_NEW_TICKET);
+    setRegistration(DEFAULT_REGISTRATION);
+    setLocationTab('physical');
+    setVenue(EMPTY_VENUE);
+    setParking('');
+    setOrganizer(EMPTY_ORGANIZER);
+    setVirtual(DEFAULT_VIRTUAL);
+    setStep(1);
+  }
 
   // Instructions field auto-formats as a bullet list: the first character
   // typed seeds a bullet, and every Enter press starts a fresh bulleted line
@@ -1263,7 +1304,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </button>
             </div>
             <div className="ev-disc-topbar-right">
-              <button className="ev-disc-create-btn" onClick={() => { setStep(1); setShowCreate(true); }}>
+              <button className="ev-disc-create-btn" onClick={() => { resetWizard(); setShowCreate(true); }}>
                 <PlusIcon /> Create Event
               </button>
               <button className={`ev-disc-filter-btn${activeFilterCount > 0 ? ' ev-disc-filter-btn--active' : ''}`} onClick={openFilter}>
@@ -1332,7 +1373,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             {filteredEvents.map(ev => viewMode === 'grid' ? (
               <div key={ev.id} className="ev-disc-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-disc-card-img-wrap">
-                  <img src={ev.img} alt={ev.title} className="ev-disc-card-img" />
+                  {ev.img
+                    ? <img src={ev.img} alt={ev.title} className="ev-disc-card-img" />
+                    : <div className="ev-disc-card-img ev-img-placeholder" />}
                   <div className="ev-disc-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
                     <span className="ev-disc-date-month">{ev.month}</span>
@@ -1390,7 +1433,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             ) : (
               <div key={ev.id} className="ev-list-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-list-img-wrap">
-                  <img src={ev.img} alt={ev.title} className="ev-list-img" />
+                  {ev.img
+                    ? <img src={ev.img} alt={ev.title} className="ev-list-img" />
+                    : <div className="ev-list-img ev-img-placeholder" />}
                   <div className="ev-disc-date-badge ev-list-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
                     <span className="ev-disc-date-month">{ev.month}</span>
