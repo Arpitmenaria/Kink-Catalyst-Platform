@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm test *)",
       "Bash(node --input-type=module --experimental-vm-modules)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(awk '/^  async function handlePublish/,/^  async function|^  function/ {print NR\": \"$0}' src/components/home/EventsPage.jsx)"
     ]
   }
 }
