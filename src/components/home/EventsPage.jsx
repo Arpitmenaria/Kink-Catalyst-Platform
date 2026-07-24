@@ -1682,7 +1682,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               <div key={ev.id} className="ev-disc-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-disc-card-img-wrap" style={{ position: 'relative' }}>
                   <SkeletonImg src={ev.img} alt={ev.title} className="ev-disc-card-img" fallback={<EventImgPlaceholder size={30} />} />
-                  <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <div style={{ position: 'absolute', bottom: '8px', left: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                     <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{ev.category}</span>
                   </div>
                   <div className="ev-disc-date-badge">
@@ -1738,7 +1738,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               <div key={ev.id} className="ev-list-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
                 <div className="ev-list-img-wrap" style={{ position: 'relative' }}>
                   <SkeletonImg src={ev.img} alt={ev.title} className="ev-list-img" fallback={<EventImgPlaceholder size={30} />} />
-                  <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                  <div style={{ position: 'absolute', bottom: '8px', left: '8px' }}>
                     <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{ev.category}</span>
                   </div>
                   <div className="ev-disc-date-badge ev-list-date-badge">
