@@ -653,8 +653,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   };
 
   const handleShareEvent = (platform) => {
-    const eventTitle = form.title || 'Check out this event';
-    const eventUrl = `${window.location.origin}/events/${editingEventId || 'new'}`;
+    // Use selectedEvent.id if in detail view, otherwise use editingEventId
+    const eventId = selectedEvent?.id || editingEventId;
+    const eventTitle = selectedEvent?.title || form.title || 'Check out this event';
+    const eventUrl = `${window.location.origin}/events/${eventId}`;
     const shareText = `${eventTitle} on Social Platform`;
 
     switch (platform) {
@@ -1502,6 +1504,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* Share Event Panel */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('link')} title="Copy event link"><LinkIcon /><span>LINK</span></button>
+                <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('facebook')} title="Share on Facebook"><FacebookIcon /><span>FACEBOOK</span></button>
+                <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('twitter')} title="Share on Twitter"><TwitterXIcon /><span>X/TWITTER</span></button>
+                <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('whatsapp')} title="Share on WhatsApp"><WhatsAppIcon /><span>WHATSAPP</span></button>
               </div>
             </div>
           </div>
@@ -2703,17 +2713,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
               {/* Right sidebar */}
               <div className="ev-s4-sidebar">
-                {/* Share Event */}
-                <div className="ev-s4-panel">
-                  <p className="ev-s4-panel-title">SHARE EVENT</p>
-                  <div className="ev-share-btns">
-                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('link')}><LinkIcon /><span>LINK</span></button>
-                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('facebook')}><FacebookIcon /><span>FACEBOOK</span></button>
-                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('twitter')}><TwitterXIcon /><span>X/TWITTER</span></button>
-                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('whatsapp')}><WhatsAppIcon /><span>WHATSAPP</span></button>
-                  </div>
-                </div>
-
                 {/* Publish actions */}
                 <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages || draftLoading} onClick={() => handlePublish(false)}>
                   {editingEventId
