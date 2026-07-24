@@ -464,6 +464,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [inviteSearch, setInviteSearch] = useState('');
   const [invitingFriendIds, setInvitingFriendIds] = useState(new Set());
   const [invitedFriendIds, setInvitedFriendIds] = useState(new Set());
+  const [draftLoading, setDraftLoading] = useState(false);
 
   // Redux
   const dispatch = useDispatch();
@@ -850,7 +851,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       } else if (createEvent.rejected.match(action)) {
         dispatch(showToast({ message: action.payload ?? 'Failed to publish event.', type: 'error' }));
       }
-    });
+    }).finally(() => setDraftLoading(false));
   }
 
   function toggleSave(id) {
@@ -2743,14 +2744,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
 
                 {/* Publish actions */}
-                <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages} onClick={() => handlePublish(false)}>
+                <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages || draftLoading} onClick={() => handlePublish(false)}>
                   {editingEventId
                     ? (preparingImages ? 'Preparing images…' : updateLoading ? 'Saving…' : 'Save Changes')
                     : (createLoading ? 'Publishing…' : 'Publish Event')}
                 </button>
                 {!editingEventId && (
-                  <button type="button" className="ev-draft-btn" disabled={createLoading} onClick={() => handlePublish(true)}>
-                    Save as Draft
+                  <button type="button" className="ev-draft-btn" disabled={createLoading || draftLoading} onClick={() => { setDraftLoading(true); handlePublish(true); }}>
+                    {draftLoading ? 'Saving…' : 'Save as Draft'}
                   </button>
                 )}
                 <p className="ev-publish-notice">By publishing, you agree to our <span>Terms of Service</span> and <span>Event Guidelines.</span></p>
