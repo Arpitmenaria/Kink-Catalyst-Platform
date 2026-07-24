@@ -144,6 +144,11 @@
 }
 
 /* ── Grid wrapper ── */
+/* Mobile-only alternative to .cal-grid-wrap (a single-day agenda list) —
+   hidden by default, shown instead of the grid at mobile widths (see the
+   max-width:700px block below). */
+.cal-day-agenda { display: none; }
+
 .cal-grid-wrap {
   flex: 1;
   min-height: 0;
@@ -785,6 +790,139 @@
      reserved left margin and leave room at the bottom instead. */
   .cal-main {
     margin-left: 0;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* Today's Events was a fixed 220px side column competing with the day
+     grid for width on a phone, which is what squeezed the grid down to
+     one barely-visible column. Stack it below instead. */
+  .cal-page { flex-direction: column; overflow-y: auto; }
+  .cal-right {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #181c30;
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .cal-header { padding: 0 16px 16px; }
+  .cal-header-row { flex-wrap: wrap; row-gap: 10px; }
+
+  /* The 7-column hour grid doesn't work on a phone even with horizontal
+     scroll — cramming a week's worth of columns sideways isn't how mobile
+     calendars behave. Hide it in favor of the single-day agenda
+     (.cal-day-agenda, rendered alongside it in the JSX) instead. */
+  .cal-grid-wrap { display: none; }
+
+  /* Month view keeps the grid (it's still a recognizable month layout at
+     phone width, unlike the week view) but needs the same "columns were
+     crushed instead of scrolling" fix, plus an explicit height — it
+     previously got its height implicitly from .cal-main filling the exact
+     remaining space of a row-direction .cal-page, which no longer applies
+     once .cal-page stacks into a column. */
+  .cal-month-wrap {
+    flex: none;
+    height: 60vh;
+    margin: 0 16px 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .cal-month-col-hdr,
+  .cal-month-week {
+    grid-template-columns: repeat(7, minmax(92px, 1fr));
+    width: max-content;
+    min-width: 100%;
+  }
+
+  /* ── Mobile day agenda ── */
+  .cal-day-agenda {
+    display: flex;
+    flex-direction: column;
+    margin: 0 16px 16px;
+    border: 1px solid #1e2238;
+    border-radius: 14px;
+    background: #0f1120;
+    overflow: hidden;
+  }
+
+  .cal-day-agenda-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #1e2238;
+    flex-shrink: 0;
+  }
+
+  .cal-day-agenda-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e8ecf8;
+  }
+
+  .cal-day-agenda-today-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #3b82f6;
+    background: rgba(37, 99, 235, 0.15);
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  .cal-day-agenda-list {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 4px;
+  }
+
+  .cal-day-agenda-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: #4b5a7a;
+    font-size: 13px;
+  }
+
+  .cal-day-agenda-item {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    transition: background 0.15s;
+  }
+  .cal-day-agenda-item:hover { background: rgba(255,255,255,0.03); }
+
+  .cal-day-agenda-bar {
+    width: 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .cal-day-agenda-bar--blue  { background: #3b82f6; }
+  .cal-day-agenda-bar--slate { background: #64748b; }
+  .cal-day-agenda-bar--teal  { background: #14b8a6; }
+  .cal-day-agenda-bar--red   { background: #ef4444; }
+
+  .cal-day-agenda-body { flex: 1; min-width: 0; }
+
+  .cal-day-agenda-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin: 0 0 4px;
+  }
+
+  .cal-day-agenda-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7399;
+    margin: 0;
   }
 }

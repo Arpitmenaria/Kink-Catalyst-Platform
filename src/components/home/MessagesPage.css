@@ -3234,4 +3234,16 @@
   .msg-contact-panel {
     display: none;
   }
+
+  /* "All / Unread / Groups / Online / Blocked" had no overflow handling —
+     the last tab just got clipped off the edge of the screen instead of
+     being reachable. Scroll instead of clip. */
+  .msg-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .msg-tabs::-webkit-scrollbar { display: none; }
+  .msg-tab { flex-shrink: 0; white-space: nowrap; }
 }

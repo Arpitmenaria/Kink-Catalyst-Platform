@@ -2121,4 +2121,20 @@
 @media (max-width: 480px) {
   .navbar-center { display: none; }
   .navbar-logo { font-size: 16px; }
+
+  /* .navbar-center's margin:0 auto was the only thing pushing .navbar-right
+     to the edge — hiding it collapsed the icons back next to the logo. */
+  .navbar-right { margin-left: auto; }
+
+  /* Anchored to the bell icon (position:absolute; right:0; width:300px),
+     which isn't at the true screen edge (the avatar sits further right) —
+     on a narrow phone that ran the panel off the left side of the
+     viewport. Position it against the viewport instead of the icon. */
+  .navbar-notif-dropdown {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
 }

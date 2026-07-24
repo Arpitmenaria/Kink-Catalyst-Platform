@@ -116,6 +116,33 @@ function buildTodayEvents(events) {
     }));
 }
 
+// One day's events for the mobile day-agenda view — a plain sorted list,
+// not clamped to the 9am-6pm hour grid the desktop week view uses, since
+// there's no fixed-height grid to fit into here.
+function buildDayEvents(events, iso) {
+  return events
+    .filter(ev => ev.startDate === iso)
+    .map(ev => {
+      const start = parseHM(ev.startTime);
+      const end = parseHM(ev.endTime);
+      return {
+        id: ev.id,
+        title: ev.title || 'Untitled event',
+        color: colorFor(ev.category || ev.title),
+        sortKey: start ? start.h * 60 + start.m : -1, // all-day events float to the top
+        timeLabel: start
+          ? `${fmtT(start.h, start.m)} ${fmtPeriod(start.h)}${end ? ` – ${fmtT(end.h, end.m)} ${fmtPeriod(end.h)}` : ''}`
+          : 'All day',
+      };
+    })
+    .sort((a, b) => a.sortKey - b.sortKey);
+}
+
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function formatDayHeader(d) {
+  return `${WEEKDAY_SHORT[d.getDay()]}, ${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+}
+
 /* ── Helpers ── */
 function getMondayOf(date) {
   const d = new Date(date);
@@ -221,6 +248,10 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(new Date());
   const [view,      setView]      = useState('week');
+  // Independent of the desktop week grid's `monday` anchor — the mobile
+  // day-agenda (see the "Mobile calendar" section below) navigates one day
+  // at a time rather than one week at a time, so it tracks its own date.
+  const [mobileDay, setMobileDay] = useState(new Date());
 
   useEffect(() => {
     dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
@@ -233,6 +264,11 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   const weekEvents  = buildWeekEvents(allEvents, weekDays);
   const monthEvents = buildMonthEvents(allEvents, monthDate.getFullYear(), monthDate.getMonth());
   const todayEvents = buildTodayEvents(allEvents);
+  const dayEvents    = buildDayEvents(allEvents, toISODate(mobileDay));
+  const isMobileToday = toISODate(mobileDay) === toISODate(new Date());
+
+  function prevMobileDay() { const d = new Date(mobileDay); d.setDate(d.getDate() - 1); setMobileDay(d); }
+  function nextMobileDay() { const d = new Date(mobileDay); d.setDate(d.getDate() + 1); setMobileDay(d); }
 
   /* Current-time indicator */
   const now         = new Date();
@@ -297,6 +333,10 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
 
         {/* ── WEEK VIEW ── */}
         {view === 'week' && (
+          <>
+          {/* Desktop/tablet: 7-column hour grid. Hidden on mobile (see
+              CalendarPage.css) in favor of the day agenda below — cramming
+              7 columns into a phone width doesn't work even with scrolling. */}
           <div className="cal-grid-wrap">
             <div className="cal-col-headers">
               <div className="cal-time-header">TIME</div>
@@ -334,6 +374,40 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
               </div>
             </div>
           </div>
+
+          {/* Mobile: single-day agenda instead of the grid — one day's
+              events as a plain list, with its own day-by-day navigation
+              independent of the desktop week ("monday") anchor. */}
+          <div className="cal-day-agenda">
+            <div className="cal-day-agenda-nav">
+              <button className="cal-arrow-btn" onClick={prevMobileDay}><ChevronLeftIcon /></button>
+              <span className="cal-day-agenda-date">
+                {formatDayHeader(mobileDay)}
+                {isMobileToday && <span className="cal-day-agenda-today-pill">Today</span>}
+              </span>
+              <button className="cal-arrow-btn" onClick={nextMobileDay}><ChevronRightIcon /></button>
+            </div>
+            <div className="cal-day-agenda-list">
+              {dayEvents.length === 0 && (
+                <p className="cal-day-agenda-empty">No events this day.</p>
+              )}
+              {dayEvents.map(ev => (
+                <div
+                  key={ev.id}
+                  className="cal-day-agenda-item"
+                  style={{ cursor: onEventClick ? 'pointer' : undefined }}
+                  onClick={() => onEventClick?.(ev.id)}
+                >
+                  <span className={`cal-day-agenda-bar cal-day-agenda-bar--${ev.color}`} />
+                  <div className="cal-day-agenda-body">
+                    <p className="cal-day-agenda-title">{ev.title}</p>
+                    <p className="cal-day-agenda-time"><ClockIcon /> {ev.timeLabel}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          </>
         )}
 
         {/* ── MONTH VIEW ── */}
