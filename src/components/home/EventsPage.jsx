@@ -469,6 +469,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const dispatch = useDispatch();
   const { user: authUser, token: authToken } = useSelector(s => s.auth);
   const { connections } = useSelector(s => s.profile);
+  const { blockedUserIds } = useSelector(s => s.users);
   const {
     events: rdxEvents, eventsLoading,
     bookedEvents, bookedLoading,
@@ -2701,7 +2702,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                   <div className="ev-invite-list">
                     {connections
-                      .filter(c => c.name?.toLowerCase().includes(inviteSearch.toLowerCase()))
+                      .filter(c =>
+                        c.name?.toLowerCase().includes(inviteSearch.toLowerCase()) &&
+                        !blockedUserIds?.has(c.id ?? c._id)
+                      )
                       .map((f, i) => {
                         const fid = f.id ?? f._id;
                         return (
