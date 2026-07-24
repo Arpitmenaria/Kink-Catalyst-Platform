@@ -1137,6 +1137,8 @@
   box-sizing: border-box;
 }
 
+.ev-cat-other-input { margin-top: 8px; }
+
 .ev-input::placeholder { color: #3e4460; }
 .ev-input:focus { border-color: #2d3a5e; }
 .ev-input--error { border-color: #ef4444 !important; }
@@ -2887,6 +2889,72 @@
   padding: 0; transition: color 0.15s;
 }
 .ev-disc-like-btn:hover, .ev-disc-reply-btn:hover { color: #60a5fa; }
+.ev-disc-like-btn--active { color: #3b82f6; }
+
+.ev-disc-av-fallback {
+  display: flex; align-items: center; justify-content: center;
+  background: #3b82f6; color: #fff; font-weight: 700; font-size: 12px;
+}
+
+/* Discussion feed — posts (caption + media) with nested comments/replies */
+
+/* Trigger card that opens the modal composer (.cp-* classes, shared with
+   the main Feed's "Create Post" for a consistent look) */
+.ev-disc-composer-trigger {
+  display: flex; align-items: center; gap: 10px;
+  background: #111422; border: 1px solid #1a1f35;
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 18px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.ev-disc-composer-trigger:hover { border-color: #2d3a5e; }
+.ev-disc-composer-trigger-text { flex: 1; font-size: 13.5px; color: #4a5578; }
+.ev-disc-composer-trigger-icon { color: #7a8aaa; display: flex; }
+
+.ev-disc-posts { display: flex; flex-direction: column; gap: 16px; }
+
+.ev-disc-post {
+  background: #111422; border: 1px solid #1a1f35;
+  border-radius: 14px; padding: 14px 16px;
+}
+
+.ev-disc-post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ev-disc-post-time { display: block; font-size: 11.5px; color: #4a5270; margin-top: 2px; }
+
+.ev-disc-post-caption { font-size: 13.5px; color: #c8d3e8; line-height: 1.6; margin: 0 0 10px; word-break: break-word; overflow-wrap: break-word; }
+
+.ev-disc-post-media {
+  display: grid; gap: 4px; border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+}
+.ev-disc-post-media--1 { grid-template-columns: 1fr; }
+.ev-disc-post-media--2 { grid-template-columns: 1fr 1fr; }
+.ev-disc-post-media--3 { grid-template-columns: 1fr 1fr; }
+.ev-disc-post-media--4 { grid-template-columns: 1fr 1fr; }
+.ev-disc-post-media img, .ev-disc-post-media video {
+  width: 100%; height: 100%; max-height: 360px; object-fit: cover; display: block; background: #0d1022;
+}
+
+.ev-disc-post-actions {
+  display: flex; align-items: center; gap: 18px;
+  padding-top: 10px; border-top: 1px solid #1a1f35;
+}
+.ev-disc-post-actions .ev-disc-like-btn,
+.ev-disc-post-actions .ev-disc-reply-btn { font-size: 12.5px; }
+
+.ev-disc-post .ev-disc-comments { margin-top: 14px; padding-top: 14px; border-top: 1px solid #1a1f35; }
+
+.ev-disc-compose--reply { margin-bottom: 12px; }
+
+.ev-disc-comment--nested { margin-top: 10px; }
+.ev-disc-replies { margin-top: 10px; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+
+.ev-disc-loadmore-btn {
+  align-self: center;
+  background: none; border: 1px solid #1a2338; color: #7a8aaa;
+  border-radius: 20px; padding: 8px 18px; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.ev-disc-loadmore-btn:hover { color: #60a5fa; border-color: #2563eb; }
+.ev-disc-loadmore-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ── Event Detail Page — responsive ──
    Placed after every .ev-detail-* base rule above: with equal specificity,
@@ -2911,4 +2979,249 @@
     gap: 16px;
   }
   .ev-detail-sidebar { position: static; }
+}
+
+/* ── "+ Join" ticket → attendee details modal ── */
+.ev-join-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ev-join-modal {
+  background: #10131f;
+  border: 1px solid #1e2338;
+  border-radius: 14px;
+  width: 420px;
+  max-width: 100%;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.ev-join-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  flex-shrink: 0;
+}
+
+.ev-join-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e8ecf8;
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.ev-join-modal-close {
+  background: none;
+  border: none;
+  color: #5c6a8c;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+
+.ev-join-modal-close:hover { color: #c8cfe0; }
+
+.ev-join-modal-body {
+  padding: 4px 20px 20px;
+  overflow-y: auto;
+}
+
+.ev-join-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px 14px;
+  color: #8a93b8;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ev-join-type-row svg { width: 15px; height: 15px; color: #5c6a8c; }
+
+.ev-join-loading {
+  color: #5c6a8c;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.ev-join-seats-left {
+  font-size: 11px;
+  color: #5c6a8c;
+  margin: 0 0 0 8px;
+  flex-shrink: 0;
+}
+
+.ev-join-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 16px;
+}
+
+.ev-join-qty-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8cfe0;
+}
+
+.ev-join-qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ev-join-qty-stepper button {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #1e2238;
+  background: #0d1020;
+  color: #c8cfe0;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ev-join-qty-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ev-join-qty-stepper span {
+  min-width: 18px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8ecf8;
+}
+
+.ev-join-member-row {
+  padding: 12px 0;
+  border-top: 1px solid #1a1e30;
+}
+
+.ev-join-member-num {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5c6a8c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.ev-join-member-fields {
+  display: flex;
+  gap: 8px;
+}
+
+.ev-join-member-fields input {
+  flex: 1;
+  min-width: 0;
+  background: #0d1020;
+  border: 1px solid #1e2238;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: #e8ecf8;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.ev-join-member-fields input:nth-child(2) { flex: 0 0 80px; }
+
+.ev-join-member-fields input:focus { outline: none; border-color: #2563eb; }
+
+.ev-join-summary {
+  background: #0d1020;
+  border: 1px solid #1e2238;
+  border-radius: 10px;
+  padding: 4px 14px;
+  margin-bottom: 14px;
+}
+
+.ev-join-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #1a1e30;
+  font-size: 13px;
+  color: #c8cfe0;
+}
+
+.ev-join-summary-row:last-child { border-bottom: none; }
+
+.ev-join-summary-row span:first-child { color: #5c6a8c; }
+.ev-join-summary-row span:last-child { font-weight: 600; text-align: right; }
+
+.ev-join-summary-row--total {
+  border-top: 1px solid #1e2238;
+  margin-top: 2px;
+}
+.ev-join-summary-row--total span { color: #e8ecf8 !important; font-size: 14px; font-weight: 700 !important; }
+
+.ev-join-summary-attendees {
+  background: #0d1020;
+  border: 1px solid #1e2238;
+  border-radius: 10px;
+  padding: 4px 14px;
+  margin-bottom: 14px;
+}
+
+.ev-join-refund-note {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #eab308;
+}
+
+.ev-join-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #1a1e30;
+  flex-shrink: 0;
+}
+
+.ev-join-back-btn {
+  padding: 10px 16px;
+  border-radius: 9px;
+  border: 1px solid #1e2238;
+  background: transparent;
+  color: #c8cfe0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ev-join-done-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 9px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ev-join-done-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .ev-join-modal { width: 100%; }
 }

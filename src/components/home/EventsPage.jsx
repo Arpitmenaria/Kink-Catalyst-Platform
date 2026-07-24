@@ -10,7 +10,6 @@ import {
   fetchEvents, fetchEventDetail, createEvent, updateEvent, deleteEvent,
   bookEvent, cancelBooking, saveEvent, unsaveEvent,
   fetchMyBooked, fetchMySaved, fetchMyCreated, publishEvent,
-  fetchComments, postComment, likeComment,
 } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { apiRequest } from '../../services/api';
@@ -33,6 +32,16 @@ function BothIcon()    { return <svg width="20" height="20" viewBox="0 0 24 24" 
 function GlobeIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
 function FriendsIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function LockIcon()    { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
+function ImageIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
+
+function timeAgo(dateStr) {
+  if (!dateStr) return 'Just now';
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60)    return 'Just now';
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
 
 const VISIBILITY_OPTIONS = [
   { id: 'anyone',  label: 'Anyone',       icon: <GlobeIcon />   },
@@ -209,6 +218,67 @@ function getEventImages(ev) {
   return ev.img ? [ev.img] : [];
 }
 
+// 'Other' is stored literally as the category, with the actual typed value
+// kept separately in customCategory — this is what should show to users.
+function displayCategory(ev) {
+  if (!ev) return '';
+  return ev.category === 'Other' ? (ev.customCategory || ev.category) : ev.category;
+}
+
+// Defensive field-name fallbacks — the discussions API's exact response
+// shape (id vs _id, likes vs likeCount, isLiked vs likedByMe, ...) wasn't
+// pinned down before implementing, so each normalizer accepts the common
+// naming variants rather than assuming one.
+function normalizeDiscussionAuthor(a) {
+  if (!a) return { id: '', name: 'Someone', avatar: '' };
+  return {
+    id: a.id ?? a._id ?? a.userId ?? '',
+    name: a.fullName ?? a.name ?? 'Someone',
+    avatar: a.avatar?.startsWith?.('http') ? a.avatar : '',
+  };
+}
+
+function normalizeDiscReply(r) {
+  return {
+    id: r.id ?? r._id,
+    author: normalizeDiscussionAuthor(r.author ?? r.user),
+    text: r.text ?? r.content ?? '',
+    time: timeAgo(r.createdAt ?? r.time),
+    likeCount: r.likeCount ?? r.likesCount ?? r.likes ?? 0,
+    likedByMe: !!(r.isLiked ?? r.likedByMe ?? r.hasLiked),
+  };
+}
+
+function normalizeDiscComment(c) {
+  return {
+    id: c.id ?? c._id,
+    author: normalizeDiscussionAuthor(c.author ?? c.user),
+    text: c.text ?? c.content ?? '',
+    time: timeAgo(c.createdAt ?? c.time),
+    likeCount: c.likeCount ?? c.likesCount ?? c.likes ?? 0,
+    likedByMe: !!(c.isLiked ?? c.likedByMe ?? c.hasLiked),
+    replies: (c.replies ?? []).map(normalizeDiscReply),
+  };
+}
+
+function normalizeDiscussion(d) {
+  const rawMedia = d.media ?? d.images ?? [];
+  return {
+    id: d.id ?? d._id,
+    author: normalizeDiscussionAuthor(d.author ?? d.user),
+    caption: d.caption ?? d.text ?? '',
+    media: rawMedia.map(m => (typeof m === 'string'
+      ? { url: m, type: /\.(mp4|mov|webm)$/i.test(m) ? 'video' : 'image' }
+      : { url: m.url ?? m.secure_url ?? '', type: m.type ?? (m.resourceType === 'video' ? 'video' : 'image') }
+    )),
+    likeCount: d.likeCount ?? d.likesCount ?? d.likes ?? 0,
+    likedByMe: !!(d.isLiked ?? d.likedByMe ?? d.hasLiked),
+    commentCount: d.commentCount ?? d.commentsCount ?? (d.comments?.length ?? 0),
+    comments: (d.comments ?? []).map(normalizeDiscComment),
+    time: timeAgo(d.createdAt ?? d.time),
+  };
+}
+
 function ChevronLeftIcon()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>; }
 function ChevronRightIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
 
@@ -294,12 +364,6 @@ export const CREATED_EVENTS = [
     about: 'Design Spectrum is a premier design conference that brings together the world\'s most innovative designers, creative directors, and product thinkers. Explore workshops, keynotes, and exhibitions spanning UI/UX, motion, brand identity, and emerging creative tools. A one-of-a-kind event where craft meets culture.',
     venue: 'Nesco Exhibition Centre, Goregaon',
   },
-];
-
-const DISCUSSION_COMMENTS = [
-  { id: 1, _id: 'priya-nair',  name: 'Priya Nair',    avatar: 'https://i.pravatar.cc/36?img=5',  time: '2 hours ago',  text: 'Super excited for this! Will there be recordings available for those who miss a session?', likes: 14 },
-  { id: 2, _id: 'rohan-mehta', name: 'Rohan Mehta',   avatar: 'https://i.pravatar.cc/36?img=12', time: '5 hours ago',  text: 'Attended last year — absolute top-tier event. The networking alone is worth it.', likes: 31 },
-  { id: 3, _id: 'sneha-kapoor', name: 'Sneha Kapoor',  avatar: 'https://i.pravatar.cc/36?img=20', time: '1 day ago',    text: 'Will there be a beginner-friendly track this year? First-time attendee here!', likes: 8 },
 ];
 
 const RESPONDED_AVATARS = [
@@ -405,7 +469,7 @@ function TicketFormPanel({ isEditing, newTicket, onChange, onSave, onCancel }) {
 const EMPTY_EVENT_FORM = {
   title: '', tagline: '', description: '',
   startDate: '', endDate: '', startTime: '', endTime: '',
-  isAllDay: false, category: '', eventType: 'offline', visibility: 'anyone',
+  isAllDay: false, category: '', categoryOther: '', eventType: 'offline', visibility: 'anyone',
 };
 const DEFAULT_TICKETS = [
   { id: '1', name: 'VIP Access',        price: '150', seats: '50',  iconType: 'star'   },
@@ -435,8 +499,34 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const canViewDiscussion = !!selectedEvent && (selectedEvent._sourceTab === 'created' || joinedIds.has(selectedEvent.id));
   const [attendeeCount, setAttendeeCount] = useState({});
   const [joiningId,     setJoiningId]     = useState(null);
-  const [comment,       setComment]       = useState('');
-  const [comments,      setComments]      = useState(DISCUSSION_COMMENTS);
+  // "+ Join" ticket → attendee-details flow. null when closed.
+  // { eventId, step: 'ticket'|'members', tickets, ticketsLoading, ticketId, quantity, members, submitting }
+  const [joinFlow,      setJoinFlow]      = useState(null);
+  // Event discussion feed — posts (with optional photo/video) rather than
+  // flat comments, each with its own nested comments/replies/likes.
+  const [discussions,        setDiscussions]        = useState([]);
+  const [discussionsLoading, setDiscussionsLoading]  = useState(false);
+  const [discussionsPage,    setDiscussionsPage]     = useState(1);
+  const [discussionsHasMore, setDiscussionsHasMore]  = useState(false);
+  const [discPostCaption,    setDiscPostCaption]     = useState('');
+  const [discPostMedia,      setDiscPostMedia]       = useState([]); // [{ file, url, type }]
+  const [discPosting,        setDiscPosting]         = useState(false);
+  // Proper modal composer (matches the main Feed's "Create Post") instead of
+  // a single-line inline bar — images go through the same crop flow the
+  // Create Event cover photo upload already uses.
+  const [discComposerOpen,   setDiscComposerOpen]    = useState(false);
+  const [discCropQueue,      setDiscCropQueue]       = useState([]);
+  const [discCropIndex,      setDiscCropIndex]       = useState(0);
+  // Which single post currently has its comment section expanded — like a
+  // normal feed, only one at a time to keep the per-post input state simple.
+  const [discExpandedId,     setDiscExpandedId]      = useState(null);
+  const [discCommentText,    setDiscCommentText]     = useState({}); // { [discussionId]: text }
+  const [discCommentBusy,    setDiscCommentBusy]     = useState(false);
+  // Which comment a reply box is open under — { discussionId, commentId } | null
+  const [discReplyTarget,    setDiscReplyTarget]     = useState(null);
+  const [discReplyText,      setDiscReplyText]       = useState('');
+  const [discReplyBusy,      setDiscReplyBusy]       = useState(false);
+  const discMediaInputRef = useRef(null);
   const [moreOpen,      setMoreOpen]      = useState(false);
   const [discCat,       setDiscCat]       = useState('All');
   const [savedIds,       setSavedIds]       = useState(new Set());
@@ -479,7 +569,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     savedEvents, savedLoading,
     createdEvents, createdLoading,
     eventDetail,
-    comments: evtComments, commentsLoading,
     bookingLoading, createLoading, updateLoading, publishingId,
   } = useSelector(s => s.events);
 
@@ -554,6 +643,25 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     setGoingIds(ids);
   }, [rdxEvents, bookedEvents]);
 
+  // Sync joinedIds from Redux's isAttending flag — without this, an event
+  // the user already joined (in a previous session, or just fetched fresh)
+  // had no way to show as joined until they clicked "+ Join" again in the
+  // current session. Merged rather than replaced (unlike goingIds/savedIds
+  // above): join/leave here call the API directly instead of through a
+  // redux thunk, so isAttending on rdxEvents/bookedEvents/eventDetail only
+  // refreshes once fetchEvents/fetchEventDetail re-run — merging preserves
+  // the immediate local join/leave state in between.
+  useEffect(() => {
+    const attendingIds = [
+      ...rdxEvents.filter(e => e.isAttending).map(e => e.id),
+      ...bookedEvents.filter(e => e.isAttending).map(e => e.id),
+      ...createdEvents.filter(e => e.isAttending).map(e => e.id),
+      ...(eventDetail?.isAttending ? [eventDetail.id] : []),
+    ];
+    if (attendingIds.length === 0) return;
+    setJoinedIds(prev => new Set([...prev, ...attendingIds]));
+  }, [rdxEvents, bookedEvents, createdEvents, eventDetail]);
+
   // Join socket room + fetch detail when event selected
   useEffect(() => {
     if (!selectedEvent?.id) return;
@@ -595,19 +703,288 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     return () => { leaveEventRoom(selectedEvent.id); };
   }, [selectedEvent?.id]); // eslint-disable-line
 
-  const handleJoinEvent = async () => {
-    if (!selectedEvent?.id || joiningId === selectedEvent.id) return;
-    setJoiningId(selectedEvent.id);
+  // "+ Join" no longer joins immediately — it opens the ticket → attendee
+  // details flow below, and the actual join API call happens once that's
+  // filled in (see submitJoinFlow).
+  const handleJoinEvent = () => {
+    if (!selectedEvent?.id) return;
+    openJoinFlow(selectedEvent.id, selectedEvent.eventType);
+  };
+
+  // Loads this event's ticket tiers and opens the join modal on step 1 (or
+  // straight to attendee details for a free event with no ticket tiers).
+  // eventType ('online'|'offline'|'both') is shown alongside the tickets so
+  // it's visible while picking one, not just on the event detail page.
+  async function openJoinFlow(eventId, eventType) {
+    if (!eventId) return;
+    setJoinFlow({ eventId, eventType, step: 'ticket', tickets: [], ticketsLoading: true, ticketId: null, quantity: 1, members: [{ name: '', age: '' }], submitting: false });
     try {
-      await apiRequest(`/api/events/${selectedEvent.id}/join`, { method: 'POST', token: authToken });
-      setJoinedIds(prev => new Set([...prev, selectedEvent.id]));
+      const data = await apiRequest(`/api/events/${eventId}/tickets`, { token: authToken });
+      const tickets = Array.isArray(data) ? data : (data.tickets ?? []);
+      setJoinFlow(prev => (prev && prev.eventId === eventId)
+        ? { ...prev, tickets, ticketsLoading: false, step: tickets.length === 0 ? 'members' : 'ticket' }
+        : prev);
+    } catch (err) {
+      setJoinFlow(null);
+      dispatch(showToast({ message: err.message || 'Failed to load tickets.', type: 'error' }));
+    }
+  }
+
+  function closeJoinFlow() { setJoinFlow(null); }
+
+  function selectJoinTicket(ticket) {
+    setJoinFlow(prev => prev ? { ...prev, ticketId: ticket.id, step: 'members' } : prev);
+  }
+
+  function setJoinQuantity(qty) {
+    setJoinFlow(prev => {
+      if (!prev) return prev;
+      const n = Math.max(1, qty);
+      const members = Array.from({ length: n }, (_, i) => prev.members[i] ?? { name: '', age: '' });
+      return { ...prev, quantity: n, members };
+    });
+  }
+
+  function updateJoinMember(index, field, value) {
+    setJoinFlow(prev => {
+      if (!prev) return prev;
+      const members = prev.members.map((m, i) => i === index ? { ...m, [field]: value } : m);
+      return { ...prev, members };
+    });
+  }
+
+  async function submitJoinFlow() {
+    if (!joinFlow || joinFlow.submitting) return;
+    const { eventId, ticketId, quantity, members } = joinFlow;
+    setJoinFlow(prev => prev ? { ...prev, submitting: true } : prev);
+    try {
+      await apiRequest(`/api/events/${eventId}/join`, {
+        method: 'POST',
+        token: authToken,
+        body: {
+          ticketId,
+          quantity,
+          members: members.map(m => ({ name: m.name.trim(), age: Number(m.age) })),
+        },
+      });
+      setJoinedIds(prev => new Set([...prev, eventId]));
       dispatch(showToast({ message: 'Joined event!', type: 'success' }));
+      setJoinFlow(null);
     } catch (err) {
       dispatch(showToast({ message: err.message || 'Failed to join event.', type: 'error' }));
-    } finally {
-      setJoiningId(null);
+      setJoinFlow(prev => prev ? { ...prev, submitting: false } : prev);
     }
-  };
+  }
+
+  // ── Event discussion feed (posts, not flat comments) ──
+  async function loadDiscussions(eventId, page) {
+    setDiscussionsLoading(true);
+    try {
+      const data = await apiRequest(`/api/events/${eventId}/discussions?page=${page}&limit=10`, { token: authToken });
+      const raw = data.discussions ?? data.data ?? (Array.isArray(data) ? data : []);
+      const list = raw.map(normalizeDiscussion);
+      setDiscussions(prev => (page === 1 ? list : [...prev, ...list]));
+      setDiscussionsPage(page);
+      setDiscussionsHasMore(!!data.hasMore || (typeof data.totalPages === 'number' && page < data.totalPages));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to load discussions.', type: 'error' }));
+    } finally {
+      setDiscussionsLoading(false);
+    }
+  }
+
+  function loadMoreDiscussions() {
+    if (!selectedEvent?.id || discussionsLoading || !discussionsHasMore) return;
+    loadDiscussions(selectedEvent.id, discussionsPage + 1);
+  }
+
+  function openDiscComposer() { setDiscComposerOpen(true); }
+
+  function closeDiscComposer() {
+    if (discPosting) return;
+    setDiscComposerOpen(false);
+    setDiscPostCaption('');
+    discPostMedia.forEach(m => URL.revokeObjectURL(m.url));
+    setDiscPostMedia([]);
+    setDiscCropQueue([]);
+    setDiscCropIndex(0);
+  }
+
+  // Images go through the same one-at-a-time crop flow the Create Event
+  // cover photo upload uses; videos aren't croppable so they attach directly.
+  function handleDiscMediaPick(e) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const images = files.filter(f => f.type.startsWith('image'));
+    const videos = files.filter(f => f.type.startsWith('video'));
+    if (images.length > 0) setDiscCropQueue(prev => [...prev, ...images]);
+    if (videos.length > 0) {
+      setDiscPostMedia(prev => [...prev, ...videos.map(file => ({ file, url: URL.createObjectURL(file), type: 'video' }))]);
+    }
+    e.target.value = '';
+  }
+
+  function advanceDiscCropQueue() {
+    if (discCropIndex + 1 >= discCropQueue.length) {
+      setDiscCropQueue([]);
+      setDiscCropIndex(0);
+    } else {
+      setDiscCropIndex(i => i + 1);
+    }
+  }
+
+  function handleDiscCropSave(croppedFile) {
+    setDiscPostMedia(prev => [...prev, { file: croppedFile, url: URL.createObjectURL(croppedFile), type: 'image' }]);
+    advanceDiscCropQueue();
+  }
+
+  function handleDiscCropSkip() {
+    const original = discCropQueue[discCropIndex];
+    setDiscPostMedia(prev => [...prev, { file: original, url: URL.createObjectURL(original), type: 'image' }]);
+    advanceDiscCropQueue();
+  }
+
+  function handleDiscCropCancelAll() {
+    setDiscCropQueue([]);
+    setDiscCropIndex(0);
+  }
+
+  function removeDiscMedia(idx) {
+    setDiscPostMedia(prev => {
+      const target = prev[idx];
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter((_, i) => i !== idx);
+    });
+  }
+
+  async function handlePostDiscussion() {
+    if (!selectedEvent?.id || discPosting) return;
+    if (!discPostCaption.trim() && discPostMedia.length === 0) return;
+    setDiscPosting(true);
+    try {
+      const fd = new FormData();
+      if (discPostCaption.trim()) fd.append('caption', discPostCaption.trim());
+      discPostMedia.forEach(m => fd.append('media', m.file));
+      const data = await apiRequest(`/api/events/${selectedEvent.id}/discussions`, {
+        method: 'POST', token: authToken, body: fd, isFormData: true,
+      });
+      const post = normalizeDiscussion(data.discussion ?? data);
+      setDiscussions(prev => [post, ...prev]);
+      setDiscPostCaption('');
+      discPostMedia.forEach(m => URL.revokeObjectURL(m.url));
+      setDiscPostMedia([]);
+      setDiscComposerOpen(false);
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to post.', type: 'error' }));
+    } finally {
+      setDiscPosting(false);
+    }
+  }
+
+  async function handleLikeDiscussion(discussionId) {
+    if (!selectedEvent?.id) return;
+    // Optimistic toggle — calling this same updater again on failure flips it right back.
+    const toggle = prev => prev.map(d => d.id === discussionId
+      ? { ...d, likedByMe: !d.likedByMe, likeCount: d.likeCount + (d.likedByMe ? -1 : 1) }
+      : d);
+    setDiscussions(toggle);
+    try {
+      await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/like`, { method: 'POST', token: authToken });
+    } catch (err) {
+      setDiscussions(toggle);
+      dispatch(showToast({ message: err.message || 'Failed to like post.', type: 'error' }));
+    }
+  }
+
+  function toggleDiscExpanded(discussionId) {
+    setDiscExpandedId(prev => (prev === discussionId ? null : discussionId));
+    setDiscReplyTarget(null);
+  }
+
+  async function handlePostDiscComment(discussionId) {
+    if (!selectedEvent?.id || discCommentBusy) return;
+    const text = (discCommentText[discussionId] || '').trim();
+    if (!text) return;
+    setDiscCommentBusy(true);
+    try {
+      const data = await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/comments`, {
+        method: 'POST', token: authToken, body: { text },
+      });
+      const c = normalizeDiscComment(data.comment ?? data);
+      setDiscussions(prev => prev.map(d => d.id === discussionId
+        ? { ...d, comments: [...d.comments, c], commentCount: d.commentCount + 1 }
+        : d));
+      setDiscCommentText(prev => ({ ...prev, [discussionId]: '' }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to comment.', type: 'error' }));
+    } finally {
+      setDiscCommentBusy(false);
+    }
+  }
+
+  async function handleLikeDiscComment(discussionId, commentId) {
+    if (!selectedEvent?.id) return;
+    const toggle = prev => prev.map(d => d.id !== discussionId ? d : {
+      ...d,
+      comments: d.comments.map(c => c.id !== commentId ? c : { ...c, likedByMe: !c.likedByMe, likeCount: c.likeCount + (c.likedByMe ? -1 : 1) }),
+    });
+    setDiscussions(toggle);
+    try {
+      await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/comments/${commentId}/like`, { method: 'POST', token: authToken });
+    } catch (err) {
+      setDiscussions(toggle);
+      dispatch(showToast({ message: err.message || 'Failed to like comment.', type: 'error' }));
+    }
+  }
+
+  function openDiscReply(discussionId, commentId) {
+    setDiscReplyTarget(prev => (prev?.discussionId === discussionId && prev?.commentId === commentId)
+      ? null
+      : { discussionId, commentId });
+    setDiscReplyText('');
+  }
+
+  async function handleSendDiscReply() {
+    if (!selectedEvent?.id || !discReplyTarget || discReplyBusy) return;
+    const text = discReplyText.trim();
+    if (!text) return;
+    const { discussionId, commentId } = discReplyTarget;
+    setDiscReplyBusy(true);
+    try {
+      const data = await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/comments/${commentId}/replies`, {
+        method: 'POST', token: authToken, body: { text },
+      });
+      const r = normalizeDiscReply(data.reply ?? data);
+      setDiscussions(prev => prev.map(d => d.id !== discussionId ? d : {
+        ...d,
+        comments: d.comments.map(c => c.id !== commentId ? c : { ...c, replies: [...c.replies, r] }),
+      }));
+      setDiscReplyTarget(null);
+      setDiscReplyText('');
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to reply.', type: 'error' }));
+    } finally {
+      setDiscReplyBusy(false);
+    }
+  }
+
+  async function handleLikeDiscReply(discussionId, commentId, replyId) {
+    if (!selectedEvent?.id) return;
+    const toggle = prev => prev.map(d => d.id !== discussionId ? d : {
+      ...d,
+      comments: d.comments.map(c => c.id !== commentId ? c : {
+        ...c,
+        replies: c.replies.map(r => r.id !== replyId ? r : { ...r, likedByMe: !r.likedByMe, likeCount: r.likeCount + (r.likedByMe ? -1 : 1) }),
+      }),
+    });
+    setDiscussions(toggle);
+    try {
+      await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/comments/${commentId}/replies/${replyId}/like`, { method: 'POST', token: authToken });
+    } catch (err) {
+      setDiscussions(toggle);
+      dispatch(showToast({ message: err.message || 'Failed to like reply.', type: 'error' }));
+    }
+  }
 
   const handleLeaveEvent = async () => {
     if (!selectedEvent?.id || joiningId === selectedEvent.id) return;
@@ -627,18 +1004,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   };
 
-  const handleJoinEventCard = async (eventId) => {
-    if (!eventId || joiningId === eventId) return;
-    setJoiningId(eventId);
-    try {
-      await apiRequest(`/api/events/${eventId}/join`, { method: 'POST', token: authToken });
-      setJoinedIds(prev => new Set([...prev, eventId]));
-      dispatch(showToast({ message: 'Joined event!', type: 'success' }));
-    } catch (err) {
-      dispatch(showToast({ message: err.message || 'Failed to join event.', type: 'error' }));
-    } finally {
-      setJoiningId(null);
-    }
+  const handleJoinEventCard = (eventId, eventType) => {
+    openJoinFlow(eventId, eventType);
   };
 
   const handleInviteFriend = async (friendId) => {
@@ -689,10 +1056,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   };
 
-  // Fetch comments when discussion tab opens
+  // Load the discussion feed (page 1) when the tab opens.
   useEffect(() => {
     if (evDetailTab === 'discussion' && selectedEvent?.id) {
-      dispatch(fetchComments({ eventId: selectedEvent.id }));
+      setDiscExpandedId(null);
+      loadDiscussions(selectedEvent.id, 1);
     }
   }, [evDetailTab, selectedEvent?.id]); // eslint-disable-line
 
@@ -705,12 +1073,25 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   }, [canViewDiscussion]); // eslint-disable-line
 
-  // Sync local comments from Redux
+  // Real-time: new discussion posts from other attendees appear live while
+  // the tab is open, instead of only showing up on the next fetch. Likes/
+  // comments/replies aren't reconciled live here — their socket payload
+  // shapes weren't pinned down, and guessing wrong risks double-counting.
   useEffect(() => {
-    if (selectedEvent?.id) {
-      setComments(evtComments[selectedEvent.id] ?? []);
-    }
-  }, [evtComments, selectedEvent?.id]); // eslint-disable-line
+    if (evDetailTab !== 'discussion' || !selectedEvent?.id) return;
+    const socket = window.socket;
+    if (!socket) return;
+    const handleCreated = (data) => {
+      const eventId = data?.eventId;
+      const raw = data?.discussion ?? data;
+      if (eventId !== selectedEvent.id || !raw) return;
+      const post = normalizeDiscussion(raw);
+      if (!post.id) return;
+      setDiscussions(prev => prev.some(d => d.id === post.id) ? prev : [post, ...prev]);
+    };
+    socket.on('discussion:created', handleCreated);
+    return () => socket.off('discussion:created', handleCreated);
+  }, [evDetailTab, selectedEvent?.id]);
 
   function handleCoverChange(e) {
     const files = Array.from(e.target.files ?? []);
@@ -762,6 +1143,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     const publishErrors = [];
     if (!form.title.trim())    publishErrors.push('Event title is required.');
     if (!form.category)        publishErrors.push('Event category is required.');
+    if (form.category === 'Other' && !form.categoryOther.trim()) publishErrors.push('Please enter a custom category.');
     if (!form.eventType)       publishErrors.push('Event type (online / offline / both) is required.');
     if (!form.startDate)       publishErrors.push('Start date is required.');
     // 'both' events need a venue AND a meeting link — the location tab is just
@@ -797,7 +1179,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       fd.append('description', descCapitalized);
       fd.append('about', descCapitalized);
     }
+    // Backend keeps category === 'Other' literal and stores the typed value
+    // separately as customCategory (auto-cleared server-side when category
+    // isn't 'Other'), so send both rather than substituting one for the other.
     fd.append('category', form.category);
+    if (form.category === 'Other') fd.append('customCategory', form.categoryOther.trim());
     fd.append('eventType', form.eventType);
     fd.append('visibility', form.visibility);
     fd.append('pricingType', pricingType);
@@ -1022,11 +1408,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // a successful create/draft save so re-opening "Create Event" starts fresh
   // instead of showing the previous event's leftover title, tickets, venue, etc.
   function resetCreateForm() {
-    setForm({
-      title: '', tagline: '', description: '',
-      startDate: '', endDate: '', startTime: '', endTime: '',
-      isAllDay: false, category: '', eventType: 'offline', visibility: 'anyone',
-    });
+    setForm(EMPTY_EVENT_FORM);
     coverImages.forEach(img => URL.revokeObjectURL(img.url));
     setCoverImages([]);
     setCoverCropQueue([]);
@@ -1070,6 +1452,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       endTime: ev.endTime || '',
       isAllDay: !!ev.isAllDay,
       category: ev.category || '',
+      categoryOther: ev.category === 'Other' ? (ev.customCategory || '') : '',
       eventType: ev.eventType || 'offline',
       visibility: ev.visibility || 'anyone',
     });
@@ -1278,6 +1661,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (s === 1) {
       if (!form.title.trim())  errs.title     = 'Event title is required.';
       if (!form.category)      errs.category  = 'Please select a category.';
+      else if (form.category === 'Other' && !form.categoryOther.trim()) errs.category = 'Please enter a custom category.';
       if (!form.startDate)     errs.startDate = 'Start date is required.';
       if (dateErrors.startDate) errs.startDate = dateErrors.startDate;
       if (dateErrors.endDate)   errs.endDate   = dateErrors.endDate;
@@ -1560,7 +1944,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <div className="ev-detail-info-rows">
                       <div className="ev-detail-info-row"><CalendarIcon /><span>{selectedEvent.fullDate}</span></div>
                       <div className="ev-detail-info-row"><MapPinIcon /><span>{selectedEvent.venue || selectedEvent.location || 'N/A'}</span></div>
-                      <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{selectedEvent.category}</span></div>
+                      <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{displayCategory(selectedEvent)}</span></div>
                     </div>
                   </div>
 
@@ -1589,79 +1973,207 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 {/* Left: comment feed */}
                 <div className="ev-detail-main">
 
-                  {/* Compose */}
-                  <div className="ev-disc-compose">
+                  {/* Trigger — opens the proper modal composer below, matching the
+                      main Feed's "Create Post" trigger card */}
+                  <div className="ev-disc-composer-trigger" onClick={openDiscComposer}>
                     {authUser?.avatar
                       ? <img src={authUser.avatar} alt="you" className="ev-disc-compose-av" />
-                      : <div className="ev-disc-compose-av" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 12 }}>{(authUser?.fullName ?? 'U')[0]}</div>
+                      : <div className="ev-disc-compose-av ev-disc-av-fallback">{(authUser?.fullName ?? 'U')[0]}</div>
                     }
-                    <input
-                      className="ev-disc-compose-input"
-                      placeholder="Write a comment…"
-                      value={comment}
-                      onChange={e => setComment(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && comment.trim()) {
-                          const text = comment.trim();
-                          const temp = { id: `temp_${Date.now()}`, name: authUser?.fullName ?? 'You', avatar: authUser?.avatar ?? null, time: 'Just now', text, likes: 0 };
-                          setComments(c => [temp, ...c]);
-                          setComment('');
-                          dispatch(postComment({ eventId: selectedEvent.id, text })).then(action => {
-                            if (postComment.fulfilled.match(action)) {
-                              setComments(c => [action.payload.comment, ...c.filter(x => x.id !== temp.id)]);
-                            } else {
-                              setComments(c => c.filter(x => x.id !== temp.id));
-                            }
-                          });
-                        }
-                      }}
-                    />
-                    <button className="ev-disc-send-btn" onClick={() => {
-                      if (!comment.trim()) return;
-                      const text = comment.trim();
-                      const temp = { id: `temp_${Date.now()}`, name: authUser?.fullName ?? 'You', avatar: authUser?.avatar ?? null, time: 'Just now', text, likes: 0 };
-                      setComments(c => [temp, ...c]);
-                      setComment('');
-                      dispatch(postComment({ eventId: selectedEvent.id, text })).then(action => {
-                        if (postComment.fulfilled.match(action)) {
-                          setComments(c => [action.payload.comment, ...c.filter(x => x.id !== temp.id)]);
-                        } else {
-                          setComments(c => c.filter(x => x.id !== temp.id));
-                        }
-                      });
-                    }}><SendIcon /></button>
+                    <span className="ev-disc-composer-trigger-text">Share something with attendees…</span>
+                    <span className="ev-disc-composer-trigger-icon"><ImageIcon /></span>
                   </div>
 
-                  {/* Comments list */}
-                  <div className="ev-disc-comments">
-                    {comments.map(c => (
-                      <div key={c.id} className="ev-disc-comment">
-                        <img
-                          src={c.avatar}
-                          alt={c.name}
-                          className="ev-disc-comment-av"
-                          style={{ cursor: c._id ? 'pointer' : 'default' }}
-                          onClick={() => onUserClick?.(c._id)}
-                        />
-                        <div className="ev-disc-comment-body">
-                          <div className="ev-disc-comment-bubble">
-                            <span
-                              className="ev-disc-comment-name"
-                              style={{ cursor: c._id ? 'pointer' : 'default' }}
-                              onClick={() => onUserClick?.(c._id)}
-                            >
-                              {c.name}
-                            </span>
-                            <p className="ev-disc-comment-text">{c.text}</p>
+                  {discComposerOpen && (
+                    <div className="cp-overlay" onClick={e => e.target === e.currentTarget && closeDiscComposer()}>
+                      <div className="cp-modal" role="dialog" aria-modal="true" aria-labelledby="ev-disc-composer-title">
+                        <div className="cp-header">
+                          <div>
+                            <h2 className="cp-title" id="ev-disc-composer-title">New Discussion Post</h2>
+                            <p className="cp-subtitle">Share an update, photo, or video with attendees.</p>
                           </div>
-                          <div className="ev-disc-comment-meta">
-                            <span>{c.time}</span>
-                            <button className="ev-disc-like-btn" onClick={() => dispatch(likeComment({ eventId: selectedEvent.id, commentId: c.id }))}><ThumbUpIcon /> {c.likes > 0 ? c.likes : 'Like'}</button>
-                            <button className="ev-disc-reply-btn">Reply</button>
-                          </div>
+                          <button className="cp-close-btn" onClick={closeDiscComposer} aria-label="Close">✕</button>
+                        </div>
+
+                        <div className="cp-body">
+                          <textarea
+                            className="cp-textarea"
+                            placeholder="Share something with attendees…"
+                            value={discPostCaption}
+                            onChange={e => setDiscPostCaption(e.target.value)}
+                            rows={4}
+                            autoFocus
+                          />
+
+                          {discPostMedia.length > 0 ? (
+                            <div className="cp-photo-grid">
+                              {discPostMedia.map((m, i) => (
+                                <div key={m.url} className="cp-photo-thumb">
+                                  {m.type === 'video'
+                                    ? <video src={m.url} className="cp-photo-thumb-img" muted />
+                                    : <img src={m.url} alt="" className="cp-photo-thumb-img" />
+                                  }
+                                  <button className="cp-remove-media" onClick={() => removeDiscMedia(i)} aria-label="Remove media">✕</button>
+                                </div>
+                              ))}
+                              <button type="button" className="cp-photo-add-more" onClick={() => discMediaInputRef.current?.click()}>
+                                <PlusIcon />
+                                <span>Add more</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="cp-upload-zone" onClick={() => discMediaInputRef.current?.click()}>
+                              <div className="cp-upload-icon"><ImageIcon /></div>
+                              <p className="cp-upload-title">Add photos or a video</p>
+                              <p className="cp-upload-sub">JPG, PNG, GIF or MP4 — pick multiple at once</p>
+                            </div>
+                          )}
+                          <input ref={discMediaInputRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleDiscMediaPick} />
+                        </div>
+
+                        <div className="cp-footer">
+                          <div />
+                          <button
+                            className="cp-post-btn"
+                            disabled={discPosting || (!discPostCaption.trim() && discPostMedia.length === 0)}
+                            onClick={handlePostDiscussion}
+                          >
+                            {discPosting ? 'Posting…' : <><span>Post</span><SendIcon /></>}
+                          </button>
                         </div>
                       </div>
+
+                      {discCropQueue.length > 0 && (
+                        <ImageCropper
+                          key={discCropIndex}
+                          file={discCropQueue[discCropIndex]}
+                          index={discCropIndex}
+                          total={discCropQueue.length}
+                          onCancel={handleDiscCropCancelAll}
+                          onSkip={handleDiscCropSkip}
+                          onSave={handleDiscCropSave}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Discussion feed */}
+                  <div className="ev-disc-posts">
+                    {discussionsLoading && discussions.length === 0 && <p className="ev-join-loading">Loading discussion…</p>}
+                    {!discussionsLoading && discussions.length === 0 && <p className="ev-join-loading">No posts yet — be the first to share something.</p>}
+                    {discussions.map(post => (
+                      <div key={post.id} className="ev-disc-post">
+                        <div className="ev-disc-post-header">
+                          {post.author.avatar
+                            ? <img src={post.author.avatar} alt={post.author.name} className="ev-disc-comment-av" style={{ cursor: post.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(post.author.id)} />
+                            : <span className="ev-disc-comment-av ev-disc-av-fallback" style={{ cursor: post.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(post.author.id)}>{post.author.name[0]}</span>
+                          }
+                          <div>
+                            <span className="ev-disc-comment-name" style={{ cursor: post.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(post.author.id)}>{post.author.name}</span>
+                            <span className="ev-disc-post-time">{post.time}</span>
+                          </div>
+                        </div>
+
+                        {post.caption && <p className="ev-disc-post-caption">{post.caption}</p>}
+
+                        {post.media.length > 0 && (
+                          <div className={`ev-disc-post-media ev-disc-post-media--${Math.min(post.media.length, 4)}`}>
+                            {post.media.map((m, i) => m.type === 'video'
+                              ? <video key={i} src={m.url} controls />
+                              : <img key={i} src={m.url} alt="" />
+                            )}
+                          </div>
+                        )}
+
+                        <div className="ev-disc-post-actions">
+                          <button className={`ev-disc-like-btn${post.likedByMe ? ' ev-disc-like-btn--active' : ''}`} onClick={() => handleLikeDiscussion(post.id)}>
+                            <ThumbUpIcon /> {post.likeCount > 0 ? post.likeCount : 'Like'}
+                          </button>
+                          <button className="ev-disc-reply-btn" onClick={() => toggleDiscExpanded(post.id)}>
+                            {post.commentCount > 0 ? `${post.commentCount} Comment${post.commentCount === 1 ? '' : 's'}` : 'Comment'}
+                          </button>
+                        </div>
+
+                        {discExpandedId === post.id && (
+                          <div className="ev-disc-comments">
+                            <div className="ev-disc-compose ev-disc-compose--reply">
+                              <input
+                                className="ev-disc-compose-input"
+                                placeholder="Write a comment…"
+                                value={discCommentText[post.id] || ''}
+                                onChange={e => setDiscCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') handlePostDiscComment(post.id); }}
+                              />
+                              <button className="ev-disc-send-btn" disabled={discCommentBusy || !(discCommentText[post.id] || '').trim()} onClick={() => handlePostDiscComment(post.id)}><SendIcon /></button>
+                            </div>
+
+                            {post.comments.map(c => (
+                              <div key={c.id}>
+                                <div className="ev-disc-comment">
+                                  {c.author.avatar
+                                    ? <img src={c.author.avatar} alt={c.author.name} className="ev-disc-comment-av" style={{ cursor: c.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(c.author.id)} />
+                                    : <span className="ev-disc-comment-av ev-disc-av-fallback" style={{ cursor: c.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(c.author.id)}>{c.author.name[0]}</span>
+                                  }
+                                  <div className="ev-disc-comment-body">
+                                    <div className="ev-disc-comment-bubble">
+                                      <span className="ev-disc-comment-name" style={{ cursor: c.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(c.author.id)}>{c.author.name}</span>
+                                      <p className="ev-disc-comment-text">{c.text}</p>
+                                    </div>
+                                    <div className="ev-disc-comment-meta">
+                                      <span>{c.time}</span>
+                                      <button className={`ev-disc-like-btn${c.likedByMe ? ' ev-disc-like-btn--active' : ''}`} onClick={() => handleLikeDiscComment(post.id, c.id)}><ThumbUpIcon /> {c.likeCount > 0 ? c.likeCount : 'Like'}</button>
+                                      <button className="ev-disc-reply-btn" onClick={() => openDiscReply(post.id, c.id)}>Reply</button>
+                                    </div>
+
+                                    {discReplyTarget?.discussionId === post.id && discReplyTarget?.commentId === c.id && (
+                                      <div className="ev-disc-compose ev-disc-compose--reply">
+                                        <input
+                                          className="ev-disc-compose-input"
+                                          placeholder={`Reply to ${c.author.name}…`}
+                                          value={discReplyText}
+                                          onChange={e => setDiscReplyText(e.target.value)}
+                                          onKeyDown={e => { if (e.key === 'Enter') handleSendDiscReply(); }}
+                                          autoFocus
+                                        />
+                                        <button className="ev-disc-send-btn" disabled={discReplyBusy || !discReplyText.trim()} onClick={handleSendDiscReply}><SendIcon /></button>
+                                      </div>
+                                    )}
+
+                                    {c.replies.length > 0 && (
+                                      <div className="ev-disc-replies">
+                                        {c.replies.map(r => (
+                                          <div key={r.id} className="ev-disc-comment ev-disc-comment--nested">
+                                            {r.author.avatar
+                                              ? <img src={r.author.avatar} alt={r.author.name} className="ev-disc-comment-av" style={{ cursor: r.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(r.author.id)} />
+                                              : <span className="ev-disc-comment-av ev-disc-av-fallback" style={{ cursor: r.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(r.author.id)}>{r.author.name[0]}</span>
+                                            }
+                                            <div className="ev-disc-comment-body">
+                                              <div className="ev-disc-comment-bubble">
+                                                <span className="ev-disc-comment-name" style={{ cursor: r.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(r.author.id)}>{r.author.name}</span>
+                                                <p className="ev-disc-comment-text">{r.text}</p>
+                                              </div>
+                                              <div className="ev-disc-comment-meta">
+                                                <span>{r.time}</span>
+                                                <button className={`ev-disc-like-btn${r.likedByMe ? ' ev-disc-like-btn--active' : ''}`} onClick={() => handleLikeDiscReply(post.id, c.id, r.id)}><ThumbUpIcon /> {r.likeCount > 0 ? r.likeCount : 'Like'}</button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
+                    {discussionsHasMore && (
+                      <button className="ev-disc-loadmore-btn" disabled={discussionsLoading} onClick={loadMoreDiscussions}>
+                        {discussionsLoading ? 'Loading…' : 'Load more'}
+                      </button>
+                    )}
                   </div>
 
                 </div>
@@ -1696,7 +2208,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     {selectedEvent.category && (
                       <div style={{ marginTop: 14 }}>
                         <span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>
-                          {selectedEvent.category}
+                          {displayCategory(selectedEvent)}
                         </span>
                       </div>
                     )}
@@ -1807,7 +2319,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-disc-card-img-wrap" style={{ position: 'relative' }}>
                   <SkeletonImg src={ev.img} alt={ev.title} className="ev-disc-card-img" fallback={<EventImgPlaceholder size={30} />} />
                   <div style={{ position: 'absolute', bottom: '8px', left: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{ev.category}</span>
+                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{displayCategory(ev)}</span>
                   </div>
                   <div className="ev-disc-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
@@ -1854,7 +2366,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     ) : discTab === 'booked' ? (
                       <button className="ev-disc-book-btn ev-disc-book-btn--booked" onClick={e => e.stopPropagation()}>Booked</button>
                     ) : (
-                      <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
+                      <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id, ev.eventType); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
                     )}
                   </div>
                 </div>
@@ -1864,7 +2376,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-img-wrap" style={{ position: 'relative' }}>
                   <SkeletonImg src={ev.img} alt={ev.title} className="ev-list-img" fallback={<EventImgPlaceholder size={30} />} />
                   <div style={{ position: 'absolute', bottom: '8px', left: '8px' }}>
-                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{ev.category}</span>
+                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{displayCategory(ev)}</span>
                   </div>
                   <div className="ev-disc-date-badge ev-list-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
@@ -1911,7 +2423,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       ) : discTab === 'booked' ? (
                         <button className="ev-disc-book-btn ev-disc-book-btn--booked" onClick={e => e.stopPropagation()}>Booked</button>
                       ) : (
-                        <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
+                        <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id, ev.eventType); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
                       )}
                     </div>
                   </div>
@@ -2172,7 +2684,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         aria-haspopup="listbox"
                         aria-expanded={catDropdownOpen}
                       >
-                        <span className={form.category ? '' : 'ev-cat-placeholder'}>{form.category || 'Select a category'}</span>
+                        <span className={form.category ? '' : 'ev-cat-placeholder'}>
+                          {form.category === 'Other' && form.categoryOther.trim() ? form.categoryOther : (form.category || 'Select a category')}
+                        </span>
                         <span className={`ev-vis-chevron${catDropdownOpen ? ' ev-vis-chevron--up' : ''}`}><ChevronDownIcon /></span>
                       </button>
 
@@ -2197,6 +2711,18 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         </ul>
                       )}
                     </div>
+                    {form.category === 'Other' && (
+                      <input
+                        type="text"
+                        className="ev-input ev-cat-other-input"
+                        placeholder="Enter any value"
+                        value={form.categoryOther}
+                        onChange={e => {
+                          setForm(prev => ({ ...prev, categoryOther: e.target.value }));
+                          if (stepErrors.category) setStepErrors(p => ({ ...p, category: '' }));
+                        }}
+                      />
+                    )}
                     {stepErrors.category && <span className="ev-field-error">{stepErrors.category}</span>}
                   </div>
                   <div className="ev-field">
@@ -2669,7 +3195,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </p>
                     <div className="ev-review-tags">
                       {form.category
-                        ? <span className="ev-review-tag">{form.category}</span>
+                        ? <span className="ev-review-tag">{form.category === 'Other' && form.categoryOther.trim() ? form.categoryOther : form.category}</span>
                         : <><span className="ev-review-tag">Design</span><span className="ev-review-tag">Networking</span><span className="ev-review-tag">Social</span></>
                       }
                     </div>
@@ -2767,6 +3293,136 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           </div>
         </div>
       </div>
+      )}
+
+      {/* ── "+ Join" ticket → attendee details flow ── */}
+      {joinFlow && (
+        <div className="ev-join-overlay" onClick={closeJoinFlow}>
+          <div className="ev-join-modal" onClick={e => e.stopPropagation()}>
+            <div className="ev-join-modal-header">
+              <h3 className="ev-join-modal-title">
+                {joinFlow.step === 'ticket' ? 'Select a Ticket' : joinFlow.step === 'members' ? 'Attendee Details' : 'Confirm & Join'}
+              </h3>
+              <button className="ev-join-modal-close" onClick={closeJoinFlow}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div className="ev-join-modal-body">
+              {joinFlow.step === 'ticket' ? (
+                <>
+                {joinFlow.eventType && (
+                  <div className="ev-join-type-row">
+                    {joinFlow.eventType === 'online' ? <OnlineIcon /> : joinFlow.eventType === 'offline' ? <OfflineIcon /> : <><OnlineIcon /><OfflineIcon /></>}
+                    <span>{joinFlow.eventType === 'online' ? 'Online' : joinFlow.eventType === 'offline' ? 'Offline' : 'Online & Offline'}</span>
+                  </div>
+                )}
+                {joinFlow.ticketsLoading ? (
+                  <p className="ev-join-loading">Loading tickets…</p>
+                ) : (
+                  <div className="ev-ticket-list">
+                    {joinFlow.tickets.map(tk => (
+                      <div
+                        key={tk.id}
+                        className={`ev-ticket-item${joinFlow.ticketId === tk.id ? ' ev-ticket-item--active' : ''}`}
+                        onClick={() => selectJoinTicket(tk)}
+                      >
+                        <div className="ev-ticket-icon">{TICKET_ICONS[tk.iconType] ?? TICKET_ICONS.ticket}</div>
+                        <p className="ev-ticket-name">{tk.name}</p>
+                        <p className={`ev-ticket-price${joinFlow.ticketId === tk.id ? ' ev-ticket-price--active' : ''}`}>
+                          {Number(tk.price) > 0 ? `$${tk.price}` : 'Free'}
+                        </p>
+                        {tk.seatsAvailable != null && <p className="ev-join-seats-left">{tk.seatsAvailable} left</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                </>
+              ) : joinFlow.step === 'members' ? (
+                <>
+                  <div className="ev-join-qty-row">
+                    <span className="ev-join-qty-label">Quantity</span>
+                    <div className="ev-join-qty-stepper">
+                      <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity - 1)} disabled={joinFlow.quantity <= 1}>−</button>
+                      <span>{joinFlow.quantity}</span>
+                      <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity + 1)}>+</button>
+                    </div>
+                  </div>
+
+                  {joinFlow.members.map((m, i) => (
+                    <div className="ev-join-member-row" key={i}>
+                      <span className="ev-join-member-num">Attendee {i + 1}</span>
+                      <div className="ev-join-member-fields">
+                        <input type="text" placeholder="Name" value={m.name} onChange={e => updateJoinMember(i, 'name', e.target.value)} />
+                        <input type="number" min="0" placeholder="Age" value={m.age} onChange={e => updateJoinMember(i, 'age', e.target.value)} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (() => {
+                const selectedTicket = joinFlow.tickets.find(t => t.id === joinFlow.ticketId);
+                const unitPrice = Number(selectedTicket?.price) || 0;
+                const total = unitPrice * joinFlow.quantity;
+                return (
+                  <>
+                    <div className="ev-join-summary">
+                      <div className="ev-join-summary-row">
+                        <span>Ticket</span>
+                        <span>{selectedTicket?.name ?? 'Free Entry'}</span>
+                      </div>
+                      <div className="ev-join-summary-row">
+                        <span>Price per ticket</span>
+                        <span>{unitPrice > 0 ? `$${unitPrice.toFixed(2)}` : 'Free'}</span>
+                      </div>
+                      <div className="ev-join-summary-row">
+                        <span>Quantity</span>
+                        <span>{joinFlow.quantity}</span>
+                      </div>
+                      <div className="ev-join-summary-row ev-join-summary-row--total">
+                        <span>Total</span>
+                        <span>{total > 0 ? `$${total.toFixed(2)}` : 'Free'}</span>
+                      </div>
+                    </div>
+
+                    <div className="ev-join-summary-attendees">
+                      {joinFlow.members.map((m, i) => (
+                        <div className="ev-join-summary-row" key={i}>
+                          <span>Attendee {i + 1}</span>
+                          <span>{m.name} · Age {m.age}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="ev-join-refund-note">You will not receive a refund if you cancel after joining.</p>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="ev-join-modal-footer">
+              {joinFlow.step === 'members' && joinFlow.tickets.length > 0 && (
+                <button className="ev-join-back-btn" onClick={() => setJoinFlow(prev => prev ? { ...prev, step: 'ticket' } : prev)}>Back</button>
+              )}
+              {joinFlow.step === 'members' && (
+                <button
+                  className="ev-join-done-btn"
+                  disabled={joinFlow.members.some(m => !m.name.trim() || m.age === '')}
+                  onClick={() => setJoinFlow(prev => prev ? { ...prev, step: 'confirm' } : prev)}
+                >
+                  Continue
+                </button>
+              )}
+              {joinFlow.step === 'confirm' && (
+                <button className="ev-join-back-btn" onClick={() => setJoinFlow(prev => prev ? { ...prev, step: 'members' } : prev)}>Back</button>
+              )}
+              {joinFlow.step === 'confirm' && (
+                <button className="ev-join-done-btn" disabled={joinFlow.submitting} onClick={submitJoinFlow}>
+                  {joinFlow.submitting ? 'Joining…' : 'Confirm & Join'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

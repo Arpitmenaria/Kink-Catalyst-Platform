@@ -32,6 +32,9 @@ function normalizeEvent(e) {
     img:         e.coverImages?.[0] ?? e.coverImage ?? '',
     coverImages: e.coverImages ?? (e.coverImage ? [e.coverImage] : []),
     category:    e.category ?? '',
+    // Only meaningful when category === 'Other' — the freeform text the
+    // organizer typed in place of picking a fixed category.
+    customCategory: e.customCategory ?? '',
     catColor:    e.categoryColor ?? '#3b82f6',
     location:    locLabel,
     locationObj: typeof loc === 'object' && loc !== null ? loc : null,
@@ -54,6 +57,10 @@ function normalizeEvent(e) {
     visibility:  e.visibility ?? 'anyone',
     isSaved:     e.isSaved ?? false,
     isBooked:    e.isBooked ?? false,
+    // "already joined" flag — was previously missing entirely, so the "+
+    // Join" button had no way to know an event was already joined until the
+    // user joined it again in the current session.
+    isAttending: e.isAttending ?? false,
     tickets:     e.tickets ?? [],
     registration: e.registration ?? null,
     organizer:   e.organizer ?? null,
