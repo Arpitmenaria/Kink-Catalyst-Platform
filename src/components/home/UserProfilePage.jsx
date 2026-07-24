@@ -87,6 +87,16 @@ function CheckIcon() {
   );
 }
 
+function MutualIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  );
+}
+
 function initials(name = "") {
   return name
     .trim()
@@ -289,7 +299,16 @@ export default function UserProfilePage({
       .then((res) => {
         const list = Array.isArray(res) ? res
           : (res?.connections ?? res?.data ?? res?.results ?? []);
-        setViewedConnections(Array.isArray(list) ? list : []);
+        const normalized = Array.isArray(list) ? list.map(c => ({
+          id: c.userId,
+          name: c.fullName,
+          avatar: c.avatar,
+          location: c.city,
+          isMutual: c.isMutual,
+          friendStatus: c.friendStatus,
+          isFollowing: c.isFollowing
+        })) : [];
+        setViewedConnections(normalized);
       })
       .catch((err) => {
         console.warn("Could not load connections for this user:", err.message);
@@ -407,12 +426,13 @@ export default function UserProfilePage({
               )}
               <span className="prof-meta-item"><PinIcon /> {viewedUser?.location ?? "Unknown"}</span>
               <span className="prof-meta-sep">·</span>
-              <span className="prof-meta-item">
-                <CalIcon />{" "}
-                {viewedUser?.joinedAt
-                  ? `Joined on ${new Date(viewedUser.joinedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                  : ""}
-              </span>
+              {viewedUser?.dateOfBirth && (
+                <>
+                  <span className="prof-meta-item">
+                    <CalIcon /> DOB: {new Date(viewedUser.dateOfBirth).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </>
+              )}
             </div>
             <div className="prof-counts-row">
               <button className="prof-count-item">
@@ -727,12 +747,16 @@ export default function UserProfilePage({
                               {name}
                             </span>
                           </div>
-                          {conn.role && <span className="prof-conn-role">{conn.role}</span>}
-                          {conn.location && (
+                          {conn.isMutual ? (
+                            <div className="prof-conn-shared">
+                              <span className="prof-conn-shared-text"><MutualIcon /> Mutual friend</span>
+                            </div>
+                          ) : conn.location ? (
                             <div className="prof-conn-shared">
                               <span className="prof-conn-shared-text"><PinIcon /> {conn.location}</span>
                             </div>
-                          )}
+                          ) : null}
+                          {conn.role && <span className="prof-conn-role">{conn.role}</span>}
                         </div>
                         {!isSelfConn && (
                           <div className="prof-conn-actions">

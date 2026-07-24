@@ -222,7 +222,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                     <div className="friend-info">
                       <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
                       <p className="friend-sub">
-                        {f.mutualFriends ? (
+                        {f.mutualFriends > 0 ? (
                           <><MutualIcon />{f.mutualFriends} mutual</>
                         ) : (f.location || f.city) ? (
                           <><LocationIcon />{f.location ?? f.city}</>
@@ -337,23 +337,11 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
 
 export function AllSuggestionsModal({ suggestions, loading, friendStatusMap, followingIds, onClose, onAddFriend, onFollowToggle, onDismiss, onUserClick }) {
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('mutual'); // 'mutual' | 'city'
 
-  // Dismissing a suggestion only hides it from the compact sidebar preview — the
-  // full list here always shows everyone, so "Invite More Friends" (shown when the
-  // preview is empty because everything visible was dismissed) has something to open.
   const visible = suggestions
     .filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
     .slice()
-    .sort((a, b) => {
-      if (sortBy === 'mutual') return (b.mutualFriends ?? 0) - (a.mutualFriends ?? 0);
-      const cityA = (a.location ?? a.city ?? '').toLowerCase();
-      const cityB = (b.location ?? b.city ?? '').toLowerCase();
-      if (!cityA && !cityB) return 0;
-      if (!cityA) return 1;
-      if (!cityB) return -1;
-      return cityA.localeCompare(cityB);
-    });
+    .sort((a, b) => (b.mutualFriends ?? 0) - (a.mutualFriends ?? 0));
 
   return (
     <div className="all-sugg-overlay" onClick={onClose}>
@@ -361,17 +349,6 @@ export function AllSuggestionsModal({ suggestions, loading, friendStatusMap, fol
         <div className="all-sugg-header">
           <h2 className="all-sugg-title">Friend Suggestions</h2>
           <button className="all-sugg-close-btn" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <div className="all-sugg-sort-wrap">
-          <span className="all-sugg-sort-label">Sort by</span>
-          <button
-            className={`all-sugg-sort-btn${sortBy === 'mutual' ? ' all-sugg-sort-btn--active' : ''}`}
-            onClick={() => setSortBy('mutual')}
-          >Mutual Friends</button>
-          <button
-            className={`all-sugg-sort-btn${sortBy === 'city' ? ' all-sugg-sort-btn--active' : ''}`}
-            onClick={() => setSortBy('city')}
-          >City</button>
         </div>
         <div className="all-sugg-search-wrap">
           <input

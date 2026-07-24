@@ -841,7 +841,7 @@ video.post-image {
 }
 
 .pc-time {
-  font-size: 11px;
+  font-size: 9.5px;
   color: #4a5a80;
   margin-left: auto;
   white-space: nowrap;
@@ -1367,14 +1367,15 @@ video.post-image {
   line-height: 1.25;
 }
 .post-author-loc {
-  font-size: 12.5px;
+  font-size: 10.5px;
   font-weight: 500;
   color: #5c6a8c;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
   margin: 0;
   line-height: 1.25;
+  margin-top: 3px; /* centre on the name line box instead of the top edge */
 }
 
 

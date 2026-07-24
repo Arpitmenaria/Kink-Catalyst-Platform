@@ -1370,8 +1370,10 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
                   <span className="prof-meta-sep">·</span>
                 </>
               )}
-              {profile?.joinedAt && (
-                <span className="prof-meta-item"><CalIcon /> Joined on {new Date(profile.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              {profile?.dateOfBirth && (
+                <>
+                  <span className="prof-meta-item"><CalIcon /> DOB: {new Date(profile.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </>
               )}
             </div>
             <div className="prof-counts-row">

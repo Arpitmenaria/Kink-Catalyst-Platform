@@ -54,8 +54,9 @@ function CalendarIcon({ size = 14 })    { return <svg width={size} height={size}
 // cover whenever an event has no image, or its image URL fails to load.
 function EventImgPlaceholder({ size = 32 }) {
   return (
-    <div className="ev-img-placeholder">
+    <div className="ev-img-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px', color: 'rgba(255, 255, 255, 0.3)' }}>
       <CalendarIcon size={size} />
+      <span style={{ fontSize: '12px', fontWeight: '500' }}>Social Platform</span>
     </div>
   );
 }
@@ -72,8 +73,25 @@ function FacebookIcon()    { return <svg width="15" height="15" viewBox="0 0 24 
 function TwitterXIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>; }
 function WhatsAppIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>; }
 
+/* ── Category icons ── */
+function AllIcon()         { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>; }
+function MusicIcon()       { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13M9 9h12"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>; }
+function TechIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; }
+function BusinessIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>; }
+function ArtIcon()         { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="1"/><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6h.01"/><path d="M19 6h.01"/><path d="M5 14h.01"/><path d="M19 14h.01"/></svg>; }
+function WorkshopIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h12M6 4l2 16h8l2-16M10 9v6M14 9v6M9 20h6"/></svg>; }
+function SocialIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
+
 /* ── Discovery mock data ── */
-const DISC_CATEGORIES = ['All', 'Music', 'Tech', 'Business', 'Art', 'Workshop', 'Social'];
+const DISC_CATEGORIES = [
+  { label: 'All', icon: <AllIcon /> },
+  { label: 'Music', icon: <MusicIcon /> },
+  { label: 'Tech', icon: <TechIcon /> },
+  { label: 'Business', icon: <BusinessIcon /> },
+  { label: 'Art', icon: <ArtIcon /> },
+  { label: 'Workshop', icon: <WorkshopIcon /> },
+  { label: 'Social', icon: <SocialIcon /> },
+];
 
 export const BOOKED_EVENTS = [
   {
@@ -422,6 +440,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     onInitEventConsumed?.();
   }, [initialEventId]);
   const [goingIds,      setGoingIds]      = useState(new Set());
+  const [joinedIds,     setJoinedIds]     = useState(new Set());
+  const [attendeeCount, setAttendeeCount] = useState({});
+  const [joiningId,     setJoiningId]     = useState(null);
   const [comment,       setComment]       = useState('');
   const [comments,      setComments]      = useState(DISCUSSION_COMMENTS);
   const [moreOpen,      setMoreOpen]      = useState(false);
@@ -513,8 +534,84 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (!selectedEvent?.id) return;
     dispatch(fetchEventDetail(selectedEvent.id));
     joinEventRoom(selectedEvent.id);
+
+    // Fetch attendee list to check if current user has joined
+    fetch(`/api/events/${selectedEvent.id}/attendees`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data.attendees)) {
+          // Check if current user is in the attendee list (would need userId from auth state)
+          // For now, just store count
+          setAttendeeCount(prev => ({ ...prev, [selectedEvent.id]: data.totalAttending || data.attendees.length }));
+        }
+      })
+      .catch(() => {}); // Silent fail, optional data
+
+    const socket = window.socket;
+    if (socket) {
+      const handleUserJoined = (data) => {
+        if (data.eventId === selectedEvent.id) {
+          setAttendeeCount(prev => ({ ...prev, [selectedEvent.id]: data.totalAttending }));
+        }
+      };
+      const handleUserLeft = (data) => {
+        if (data.eventId === selectedEvent.id) {
+          setAttendeeCount(prev => ({ ...prev, [selectedEvent.id]: data.totalAttending }));
+        }
+      };
+
+      socket.on('event:user-joined', handleUserJoined);
+      socket.on('event:user-left', handleUserLeft);
+
+      return () => {
+        socket.off('event:user-joined', handleUserJoined);
+        socket.off('event:user-left', handleUserLeft);
+        leaveEventRoom(selectedEvent.id);
+      };
+    }
+
     return () => { leaveEventRoom(selectedEvent.id); };
   }, [selectedEvent?.id]); // eslint-disable-line
+
+  const handleJoinEvent = async () => {
+    if (!selectedEvent?.id || joiningId === selectedEvent.id) return;
+    setJoiningId(selectedEvent.id);
+    try {
+      const response = await fetch(`/api/events/${selectedEvent.id}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setJoinedIds(prev => new Set([...prev, selectedEvent.id]));
+      dispatch(showToast({ message: 'Joined event!', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to join event.', type: 'error' }));
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
+  const handleLeaveEvent = async () => {
+    if (!selectedEvent?.id || joiningId === selectedEvent.id) return;
+    setJoiningId(selectedEvent.id);
+    try {
+      const response = await fetch(`/api/events/${selectedEvent.id}/leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setJoinedIds(prev => {
+        const n = new Set(prev);
+        n.delete(selectedEvent.id);
+        return n;
+      });
+      dispatch(showToast({ message: 'Left event.', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to leave event.', type: 'error' }));
+    } finally {
+      setJoiningId(null);
+    }
+  };
 
   // Fetch comments when discussion tab opens
   useEffect(() => {
@@ -1194,6 +1291,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               <p className="ev-detail-datetime">{selectedEvent.fullDate}</p>
               <h1 className="ev-detail-title">{selectedEvent.title}</h1>
               <p className="ev-detail-location"><MapPinIcon /> {selectedEvent.location || 'N/A'}</p>
+              {attendeeCount[selectedEvent.id] !== undefined && (
+                <p className="ev-detail-attendees">👥 {attendeeCount[selectedEvent.id]} attending</p>
+              )}
             </div>
           </div>
 
@@ -1245,6 +1345,22 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   {goingIds.has(selectedEvent.id) && <CheckIcon />}
                   {goingIds.has(selectedEvent.id) ? 'Going' : 'Going?'}
                   <ChevronDownIcon />
+                </button>
+              )}
+              {selectedEvent._sourceTab !== 'created' && (
+                <button
+                  className={`ev-detail-join-btn${joinedIds.has(selectedEvent.id) ? ' ev-detail-join-btn--joined' : ''}`}
+                  disabled={joiningId === selectedEvent.id}
+                  onClick={() => joinedIds.has(selectedEvent.id) ? handleLeaveEvent() : handleJoinEvent()}
+                  title={joinedIds.has(selectedEvent.id) ? 'Leave event' : 'Join event'}
+                >
+                  {joiningId === selectedEvent.id ? (
+                    <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+                  ) : joinedIds.has(selectedEvent.id) ? (
+                    <>✓ Joined</>
+                  ) : (
+                    <>+ Join</>
+                  )}
                 </button>
               )}
               <div className="ev-more-wrap">
@@ -1530,10 +1646,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           <div className="ev-disc-cats">
             {DISC_CATEGORIES.map(cat => (
               <button
-                key={cat}
-                className={`ev-disc-cat${discCat === cat ? ' ev-disc-cat--active' : ''}`}
-                onClick={() => setDiscCat(cat)}
-              >{cat}</button>
+                key={cat.label}
+                className={`ev-disc-cat${discCat === cat.label ? ' ev-disc-cat--active' : ''}`}
+                onClick={() => setDiscCat(cat.label)}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >{cat.icon} {cat.label}</button>
             ))}
           </div>
 
@@ -1563,11 +1680,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           <div className={viewMode === 'grid' ? 'ev-disc-grid' : 'ev-disc-list'}>
             {filteredEvents.map(ev => viewMode === 'grid' ? (
               <div key={ev.id} className="ev-disc-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
-                <div className="ev-disc-card-img-wrap">
+                <div className="ev-disc-card-img-wrap" style={{ position: 'relative' }}>
                   <SkeletonImg src={ev.img} alt={ev.title} className="ev-disc-card-img" fallback={<EventImgPlaceholder size={30} />} />
+                  <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{ev.category}</span>
+                  </div>
                   <div className="ev-disc-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
-                    <span className="ev-disc-date-month">{ev.month}</span>
+                    <span className="ev-disc-date-month">{ev.month} {ev.fullDate?.split(' ').pop()}</span>
                   </div>
                   <div className="ev-heart-burst-wrap">
                     <button
@@ -1582,14 +1702,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                 </div>
                 <div className="ev-disc-card-body">
-                  <div className="ev-disc-pill-row">
-                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
-                    <span className={`ev-disc-type-pill${ev.eventType === 'online' ? ' ev-disc-type-pill--online' : ''}`}>
-                      {ev.eventType === 'online' ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'}</p>
+                  <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44`, padding: '4px 8px', fontSize: '11px', borderRadius: '4px', display: 'inline-block', marginBottom: '6px' }}>{ev.category}</span>
                   <p className="ev-disc-card-title">{ev.title}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   <div className="ev-disc-card-footer">
                     <div className="ev-disc-card-meta">
@@ -1602,7 +1717,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         {ev.seats}
                       </span>}
                     </div>
-                    {discTab === 'created' && ev.status === 'draft' && (
+                    {discTab === 'created' && ev.status === 'draft' ? (
                       <button
                         type="button"
                         className="ev-disc-book-btn ev-disc-book-btn--publish"
@@ -1611,32 +1726,32 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       >
                         {publishingId === ev.id ? 'Publishing…' : 'Publish'}
                       </button>
+                    ) : ev.soldOut ? (
+                      <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
+                    ) : (
+                      <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
                     )}
-                    {ev.soldOut
-                      ? <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
-                      : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
-                    }
                   </div>
                 </div>
               </div>
             ) : (
               <div key={ev.id} className="ev-list-card ev-disc-card--clickable" onClick={() => { setSelectedEvent({ ...ev, _sourceTab: discTab }); setEvDetailTab('about'); }}>
-                <div className="ev-list-img-wrap">
+                <div className="ev-list-img-wrap" style={{ position: 'relative' }}>
                   <SkeletonImg src={ev.img} alt={ev.title} className="ev-list-img" fallback={<EventImgPlaceholder size={30} />} />
+                  <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '44', color: ev.catColor, border: `1px solid ${ev.catColor}66`, padding: '4px 10px', fontSize: '11px', borderRadius: '4px', backdropFilter: 'blur(8px)', fontWeight: '500' }}>{ev.category}</span>
+                  </div>
                   <div className="ev-disc-date-badge ev-list-date-badge">
                     <span className="ev-disc-date-day">{ev.day}</span>
-                    <span className="ev-disc-date-month">{ev.month}</span>
+                    <span className="ev-disc-date-month">{ev.month} {ev.fullDate?.split(' ').pop()}</span>
                   </div>
                 </div>
                 <div className="ev-list-body">
-                  <div className="ev-list-top">
-                    <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44` }}>{ev.category}</span>
-                    <span className={`ev-disc-type-pill${ev.eventType === 'online' ? ' ev-disc-type-pill--online' : ''}`}>
-                      {ev.eventType === 'online' ? 'Online' : 'Offline'}
-                    </span>
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'}</p>
-                  </div>
+                  <span className="ev-disc-cat-pill" style={{ background: ev.catColor + '22', color: ev.catColor, border: `1px solid ${ev.catColor}44`, padding: '4px 8px', fontSize: '11px', borderRadius: '4px', display: 'inline-block', marginBottom: '6px' }}>{ev.category}</span>
                   <p className="ev-disc-card-title">{ev.title}</p>
+                  <div className="ev-list-top">
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                  </div>
                   <p className="ev-list-desc">{ev.desc}</p>
                   <div className="ev-disc-card-footer">
                     <div className="ev-disc-card-meta">
@@ -1658,7 +1773,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
                         ))}
                       </div>
-                      {discTab === 'created' && ev.status === 'draft' && (
+                      {discTab === 'created' && ev.status === 'draft' ? (
                         <button
                           type="button"
                           className="ev-disc-book-btn ev-disc-book-btn--publish"
@@ -1667,11 +1782,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         >
                           {publishingId === ev.id ? 'Publishing…' : 'Publish'}
                         </button>
+                      ) : ev.soldOut ? (
+                        <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
+                      ) : (
+                        <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
                       )}
-                      {ev.soldOut
-                        ? <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
-                        : <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
-                      }
                     </div>
                   </div>
                 </div>
