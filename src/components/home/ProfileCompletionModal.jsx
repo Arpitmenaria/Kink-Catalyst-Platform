@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { apiRequest } from '../../services/api';
-import { fetchMe } from '../../store/slices/authSlice';
+import { fetchMe, markProfileCompleted } from '../../store/slices/authSlice';
 import './ProfileCompletionModal.css';
 
 const PROFESSIONS = [
@@ -71,10 +71,11 @@ export default function ProfileCompletionModal({ token }) {
       ]);
 
       if (response?.success) {
+        dispatch(markProfileCompleted());
         dispatch(fetchMe());
         setTimeout(() => {
           window.location.href = '/';
-        }, 800);
+        }, 500);
       } else {
         throw new Error(response?.message || 'Backend error');
       }

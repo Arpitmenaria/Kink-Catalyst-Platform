@@ -234,6 +234,11 @@ const authSlice = createSlice({
       if (followingCount !== undefined) state.user.followingCount = followingCount;
       saveSession(state.token, state.user);
     },
+    markProfileCompleted(state) {
+      if (!state.user) return;
+      state.user.profileCompleted = true;
+      saveSession(state.token, state.user);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -363,5 +368,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthState, resetToSignup, logout, updateFollowCounts } = authSlice.actions;
+export const { clearAuthState, resetToSignup, logout, updateFollowCounts, markProfileCompleted } = authSlice.actions;
 export default authSlice.reducer;
