@@ -630,8 +630,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (!friendId || invitingFriendIds.has(friendId)) return;
     setInvitingFriendIds(prev => new Set([...prev, friendId]));
     try {
-      // Send invitation via API (or you can implement a notification system)
-      await apiRequest(`/api/events/${editingEventId || form.id}/invite`, {
+      await apiRequest(`/api/events/${editingEventId || form.id}/invites`, {
         method: 'POST',
         token: authToken,
         body: { friendId },
