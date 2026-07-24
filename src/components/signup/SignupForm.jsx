@@ -91,9 +91,10 @@ export default function SignupForm() {
   const dispatch = useDispatch();
   const { error } = useSelector((state) => state.auth);
 
-  const [form, setForm] = useState({ fullName: '', email: '', password: '' });
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', dob: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [btnState, setBtnState] = useState('idle'); // 'idle'|'loading'|'success'|'error'
+  const [ageError, setAgeError] = useState('');
 
   const resetTimer = useRef(null);
 
@@ -104,23 +105,52 @@ export default function SignupForm() {
     };
   }, [dispatch]);
 
+  function calculateAge(dob) {
+    if (!dob) return null;
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
   function handleChange(e) {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
     if (error) dispatch(clearAuthState());
+
+    if (name === 'dob' && value) {
+      const age = calculateAge(value);
+      if (age < 18) {
+        setAgeError('You must be at least 18 years old to sign up');
+      } else {
+        setAgeError('');
+      }
+    }
   }
 
   const hasLength   = form.password.length >= 8;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim());
+  const hasDob = form.dob !== '';
+  const isAgeValid = hasDob && calculateAge(form.dob) >= 18;
 
   const isFormValid =
     form.fullName.trim() !== '' &&
     isEmailValid &&
-    hasLength;
+    hasLength &&
+    isAgeValid;
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (resetTimer.current) clearTimeout(resetTimer.current);
+
+    if (!isAgeValid) {
+      setAgeError('You must be at least 18 years old to sign up');
+      return;
+    }
 
     setBtnState('loading');
     const titleCase = str => str.trim().replace(/\b\w/g, c => c.toUpperCase());
@@ -129,6 +159,7 @@ export default function SignupForm() {
         fullName: titleCase(form.fullName),
         email: form.email,
         password: form.password,
+        dob: form.dob,
         fcmToken: 'web_fcm_token',
       })
     );
@@ -220,6 +251,19 @@ export default function SignupForm() {
               </div>
             </div>
 
+            <div className="form-group">
+              <label htmlFor="signup-dob">Date of Birth</label>
+              <input
+                id="signup-dob"
+                name="dob"
+                type="date"
+                value={form.dob}
+                onChange={handleChange}
+                disabled={!isIdle}
+                required
+              />
+            </div>
+
             <ul className="req-list" style={{ marginBottom: '1rem' }}>
               <li className="req-item">
                 <RequirementDot met={isEmailValid} />
@@ -233,7 +277,19 @@ export default function SignupForm() {
                   At least 8 characters
                 </span>
               </li>
+              <li className="req-item">
+                <RequirementDot met={isAgeValid} />
+                <span className={isAgeValid ? 'req-text req-text--met' : 'req-text'}>
+                  Must be 18 years or older
+                </span>
+              </li>
             </ul>
+
+            {ageError && (
+              <p className="form-message form-message--error" role="alert">
+                {ageError}
+              </p>
+            )}
 
             {error && (
               <p className="form-message form-message--error" role="alert">
