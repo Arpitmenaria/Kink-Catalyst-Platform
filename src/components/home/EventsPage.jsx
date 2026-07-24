@@ -462,6 +462,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // before an edit submit — see handlePublish's PUT branch for why.
   const [preparingImages, setPreparingImages] = useState(false);
   const [inviteSearch, setInviteSearch] = useState('');
+  const [invitingFriendIds, setInvitingFriendIds] = useState(new Set());
+  const [invitedFriendIds, setInvitedFriendIds] = useState(new Set());
 
   // Redux
   const dispatch = useDispatch();
@@ -621,6 +623,53 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       dispatch(showToast({ message: err.message || 'Failed to join event.', type: 'error' }));
     } finally {
       setJoiningId(null);
+    }
+  };
+
+  const handleInviteFriend = async (friendId) => {
+    if (!friendId || invitingFriendIds.has(friendId)) return;
+    setInvitingFriendIds(prev => new Set([...prev, friendId]));
+    try {
+      // Send invitation via API (or you can implement a notification system)
+      await apiRequest(`/api/events/${editingEventId || form.id}/invite`, {
+        method: 'POST',
+        token: authToken,
+        body: { friendId },
+      });
+      setInvitedFriendIds(prev => new Set([...prev, friendId]));
+      dispatch(showToast({ message: 'Invitation sent!', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to send invitation.', type: 'error' }));
+    } finally {
+      setInvitingFriendIds(prev => {
+        const n = new Set(prev);
+        n.delete(friendId);
+        return n;
+      });
+    }
+  };
+
+  const handleShareEvent = (platform) => {
+    const eventTitle = form.title || 'Check out this event';
+    const eventUrl = `${window.location.origin}/events/${editingEventId || 'new'}`;
+    const shareText = `${eventTitle} on Social Platform`;
+
+    switch (platform) {
+      case 'link':
+        navigator.clipboard.writeText(eventUrl);
+        dispatch(showToast({ message: 'Event link copied!', type: 'success' }));
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(eventUrl)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${eventUrl}`)}`, '_blank');
+        break;
+      default:
+        break;
     }
   };
 
@@ -2662,7 +2711,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                               ? <img className="ev-invite-avatar ev-invite-avatar--img" src={f.avatar} alt={f.name} />
                               : <div className="ev-invite-avatar" style={{ background: INVITE_AVATAR_COLORS[i % INVITE_AVATAR_COLORS.length] }}>{reviewInitials(f.name)}</div>}
                             <span className="ev-invite-name">{f.name}</span>
-                            <button type="button" className="ev-invite-btn">Invite</button>
+                            <button
+                              type="button"
+                              className="ev-invite-btn"
+                              disabled={invitingFriendIds.has(fid) || invitedFriendIds.has(fid)}
+                              onClick={() => handleInviteFriend(fid)}
+                            >
+                              {invitingFriendIds.has(fid) ? 'Sending...' : invitedFriendIds.has(fid) ? '✓ Invited' : 'Invite'}
+                            </button>
                           </div>
                         );
                       })}
@@ -2676,10 +2732,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-s4-panel">
                   <p className="ev-s4-panel-title">SHARE EVENT</p>
                   <div className="ev-share-btns">
-                    <button type="button" className="ev-share-btn"><LinkIcon /><span>LINK</span></button>
-                    <button type="button" className="ev-share-btn"><FacebookIcon /><span>FACEBOOK</span></button>
-                    <button type="button" className="ev-share-btn"><TwitterXIcon /><span>X/TWITTER</span></button>
-                    <button type="button" className="ev-share-btn"><WhatsAppIcon /><span>WHATSAPP</span></button>
+                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('link')}><LinkIcon /><span>LINK</span></button>
+                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('facebook')}><FacebookIcon /><span>FACEBOOK</span></button>
+                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('twitter')}><TwitterXIcon /><span>X/TWITTER</span></button>
+                    <button type="button" className="ev-share-btn" onClick={() => handleShareEvent('whatsapp')}><WhatsAppIcon /><span>WHATSAPP</span></button>
                   </div>
                 </div>
 
