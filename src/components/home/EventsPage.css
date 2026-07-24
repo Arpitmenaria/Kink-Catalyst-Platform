@@ -2433,10 +2433,11 @@
 
 @media (max-width: 700px) {
   /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
-     reserved left margin and leave room at the bottom instead. */
+     reserved left margin and leave room at the bottom instead.
+     .ev-detail-page's own margin-left/padding-bottom override lives at
+     the end of the file, after its base rule — see the note there. */
   .ev-disc-main,
-  .ev-main,
-  .ev-detail-page {
+  .ev-main {
     margin-left: 0;
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
@@ -2453,22 +2454,6 @@
   }
   .ev-disc-tabs::-webkit-scrollbar { display: none; }
   .ev-disc-tab { padding: 8px 14px; font-size: 12.5px; }
-
-  /* Event detail page was a fixed two-column grid (content + 320px map
-     sidebar) with 32px side padding — collapses the main column to
-     near-nothing on a phone. Stack it and shrink the padding/cover. */
-  .ev-detail-cover { height: 220px; }
-  .ev-detail-hero  { padding: 16px 16px 14px; gap: 14px; }
-  .ev-detail-title { font-size: 18px; }
-  .ev-detail-tab-row { padding: 0 16px; gap: 8px; }
-  .ev-detail-tab   { padding: 12px 12px; font-size: 12.5px; }
-  .ev-detail-going-btn { padding: 7px 12px; font-size: 12.5px; }
-  .ev-detail-body {
-    grid-template-columns: 1fr;
-    padding: 16px 16px 48px;
-    gap: 16px;
-  }
-  .ev-detail-sidebar { position: static; }
 }
 
 @media (max-width: 600px) {
@@ -2853,3 +2838,27 @@
   padding: 0; transition: color 0.15s;
 }
 .ev-disc-like-btn:hover, .ev-disc-reply-btn:hover { color: #60a5fa; }
+
+/* ── Event Detail Page — responsive ──
+   Placed after every .ev-detail-* base rule above: with equal specificity,
+   CSS resolves ties by source order regardless of the media query, so this
+   block must come last or the desktop rules (fixed 320px sidebar, 380px
+   cover, sticky map) silently win back even under max-width:700px. */
+@media (max-width: 700px) {
+  .ev-detail-page {
+    margin-left: 0;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .ev-detail-cover { height: 220px; }
+  .ev-detail-hero  { padding: 16px 16px 14px; gap: 14px; }
+  .ev-detail-title { font-size: 18px; }
+  .ev-detail-tab-row { padding: 0 16px; gap: 8px; }
+  .ev-detail-tab   { padding: 12px 12px; font-size: 12.5px; }
+  .ev-detail-going-btn { padding: 7px 12px; font-size: 12.5px; }
+  .ev-detail-body {
+    grid-template-columns: 1fr;
+    padding: 16px 16px 48px;
+    gap: 16px;
+  }
+  .ev-detail-sidebar { position: static; }
+}
