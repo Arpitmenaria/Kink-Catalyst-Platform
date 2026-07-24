@@ -418,7 +418,7 @@ const EMPTY_VENUE     = { name: '', street: '', city: '', state: '', country: ''
 const EMPTY_ORGANIZER = { fullName: '', email: '', phone: '' };
 const DEFAULT_VIRTUAL = { link: 'https://', instructions: '' };
 
-export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate, initialEventId, onInitEventConsumed, onUserClick }) {
+export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate, initialEventId, initialDetailTab, onInitEventConsumed, onUserClick, onViewStateChange }) {
   const [showCreate,    setShowCreate]    = useState(startCreate || false);
   const [discTab,       setDiscTab]       = useState('upcoming');
   // Sub-tab within "My Created Events" — filters createdEvents by status.
@@ -493,12 +493,23 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     dispatch(fetchEventDetail(initialEventId)).then(action => {
       if (fetchEventDetail.fulfilled.match(action)) {
         setSelectedEvent({ ...action.payload, _sourceTab: 'upcoming' });
-        setEvDetailTab('about');
+        setEvDetailTab(initialDetailTab === 'discussion' ? 'discussion' : 'about');
         setEventFromHome(true);
       }
       onInitEventConsumed?.();
     });
   }, [initialEventId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Report the currently-open event/tab/create-flow up to HomePage so it can
+  // keep the URL in sync (?section=events&id=&tab=&create=) — this is what
+  // lets a refresh land back on this exact event, not just the Events list.
+  useEffect(() => {
+    onViewStateChange?.({
+      eventId: selectedEvent?.id ?? null,
+      tab: selectedEvent ? evDetailTab : null,
+      createOpen: showCreate,
+    });
+  }, [selectedEvent?.id, evDetailTab, showCreate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Step 4's Invite Friends panel needs the real connections list, not
   // fetched until the review step is actually reached.

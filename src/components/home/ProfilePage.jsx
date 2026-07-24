@@ -1250,6 +1250,7 @@ export default function ProfilePage({
   initialTab, onInitTabConsumed, onUserClick, onEventClick, onMessageUser,
   autoEditPersonal, onAutoEditConsumed,
   initFollowPanel, onInitFollowPanelConsumed,
+  onViewStateChange,
 }) {
   const dispatch = useDispatch();
   const { user: authUser }  = useSelector(s => s.auth);
@@ -1277,6 +1278,12 @@ export default function ProfilePage({
   useEffect(() => {
     if (initialTab) { setActiveTab(initialTab); onInitTabConsumed?.(); }
   }, [initialTab]);
+
+  // Report the active tab up to HomePage so it can keep the URL in sync
+  // (?section=profile&tab=) for refresh restore.
+  useEffect(() => {
+    onViewStateChange?.({ tab: activeTab });
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [followPanel,     setFollowPanel]     = useState(null); // 'followers' | 'following' | null
   const [followSearch,    setFollowSearch]    = useState('');
   const [followingIds,    setFollowingIds]    = useState(new Set());

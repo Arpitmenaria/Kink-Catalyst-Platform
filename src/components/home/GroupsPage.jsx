@@ -1973,7 +1973,7 @@ function CreateGroupModal({ onClose }) {
 /* ══════════════════════════
    Main Component
 ══════════════════════════ */
-export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialGroupId, onInitGroupConsumed, startCreate }) {
+export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialGroupId, onInitGroupConsumed, startCreate, onViewStateChange }) {
   const dispatch = useDispatch();
   const { groups, groupsLoading, groupsTab } = useSelector(s => s.groups);
   const { user: authUser } = useSelector(s => s.auth);
@@ -2005,6 +2005,15 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     }
     onInitGroupConsumed?.();
   }, [initialGroupId, groups]);
+
+  // Report the currently-open group/create-flow up to HomePage so it can
+  // keep the URL in sync (?section=groups&id=&create=) for refresh restore.
+  useEffect(() => {
+    onViewStateChange?.({
+      groupId: showDetail ? (detailGroup?._id ?? detailGroup?.id ?? null) : null,
+      createOpen: showCreate,
+    });
+  }, [showDetail, detailGroup, showCreate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (showCreate) {
     return (

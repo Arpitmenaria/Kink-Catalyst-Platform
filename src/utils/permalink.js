@@ -28,3 +28,17 @@ export function clearSharedPostId() {
   url.searchParams.delete('post');
   window.history.replaceState({}, '', url.pathname + url.search + url.hash);
 }
+
+/**
+ * Keeps ?post= mirrored to whichever post detail modal is currently open —
+ * set when opened (from a notification click, not just a shared link),
+ * cleared when closed — so refreshing while the modal is open reopens the
+ * same post instead of losing it.
+ */
+export function syncSharedPostId(postId) {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  if (postId) url.searchParams.set('post', postId);
+  else url.searchParams.delete('post');
+  window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+}
