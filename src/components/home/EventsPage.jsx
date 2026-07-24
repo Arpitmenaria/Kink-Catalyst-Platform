@@ -13,6 +13,7 @@ import {
   fetchComments, postComment, likeComment,
 } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiRequest } from '../../services/api';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { joinEventRoom, leaveEventRoom } from '../../services/socket';
 
@@ -464,7 +465,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   // Redux
   const dispatch = useDispatch();
-  const { user: authUser } = useSelector(s => s.auth);
+  const { user: authUser, token: authToken } = useSelector(s => s.auth);
   const { connections } = useSelector(s => s.profile);
   const {
     events: rdxEvents, eventsLoading,
@@ -543,13 +544,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     joinEventRoom(selectedEvent.id);
 
     // Fetch attendee list to check if current user has joined
-    fetch(`/api/events/${selectedEvent.id}/attendees`)
-      .then(r => r.json())
+    apiRequest(`/api/events/${selectedEvent.id}/attendees`, { token: authToken })
       .then(data => {
-        if (Array.isArray(data.attendees)) {
-          // Check if current user is in the attendee list (would need userId from auth state)
-          // For now, just store count
-          setAttendeeCount(prev => ({ ...prev, [selectedEvent.id]: data.totalAttending || data.attendees.length }));
+        if (data && (Array.isArray(data.attendees) || data.totalAttending)) {
+          setAttendeeCount(prev => ({ ...prev, [selectedEvent.id]: data.totalAttending || data.attendees?.length || 0 }));
         }
       })
       .catch(() => {}); // Silent fail, optional data
@@ -584,11 +582,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (!selectedEvent?.id || joiningId === selectedEvent.id) return;
     setJoiningId(selectedEvent.id);
     try {
-      const response = await fetch(`/api/events/${selectedEvent.id}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) throw new Error(await response.text());
+      await apiRequest(`/api/events/${selectedEvent.id}/join`, { method: 'POST', token: authToken });
       setJoinedIds(prev => new Set([...prev, selectedEvent.id]));
       dispatch(showToast({ message: 'Joined event!', type: 'success' }));
     } catch (err) {
@@ -602,11 +596,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (!selectedEvent?.id || joiningId === selectedEvent.id) return;
     setJoiningId(selectedEvent.id);
     try {
-      const response = await fetch(`/api/events/${selectedEvent.id}/leave`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) throw new Error(await response.text());
+      await apiRequest(`/api/events/${selectedEvent.id}/leave`, { method: 'POST', token: authToken });
       setJoinedIds(prev => {
         const n = new Set(prev);
         n.delete(selectedEvent.id);
@@ -624,11 +614,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (!eventId || joiningId === eventId) return;
     setJoiningId(eventId);
     try {
-      const response = await fetch(`/api/events/${eventId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) throw new Error(await response.text());
+      await apiRequest(`/api/events/${eventId}/join`, { method: 'POST', token: authToken });
       setJoinedIds(prev => new Set([...prev, eventId]));
       dispatch(showToast({ message: 'Joined event!', type: 'success' }));
     } catch (err) {
