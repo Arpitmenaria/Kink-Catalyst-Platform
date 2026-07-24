@@ -250,6 +250,7 @@ export default function UserProfilePage({
   const [reportOpen, setReportOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [photoLbIdx, setPhotoLbIdx] = useState(null); // Photos tab lightbox
+  const [blockedMessage, setBlockedMessage] = useState(null); // Block error message
 
   useEffect(() => {
     if (!userId) return;
@@ -265,21 +266,31 @@ export default function UserProfilePage({
     // visit could otherwise show "Block" for someone you already blocked.
     dispatch(fetchBlockStatus(userId));
     Promise.all([
-      apiRequest(`/api/users/${userId}`, { token }),
-      apiRequest(`/api/users/${userId}/posts`, { token }),
+      apiRequest(`/api/users/${userId}`, { token }).catch(e => ({ error: e })),
+      apiRequest(`/api/users/${userId}/posts`, { token }).catch(e => ({ error: e })),
     ])
       .then(([userRes, postsRes]) => {
         if (cancelled) return;
+
+        // Check for blocking errors
+        const userError = userRes?.error;
+        const postsError = postsRes?.error;
+
+        if (userError?.status === 403 || postsError?.status === 403) {
+          setBlockedMessage("You don't have access to this profile");
+          setViewedUser(null);
+          dispatch(setViewedPostsAction([]));
+          return;
+        }
+
+        setBlockedMessage(null);
         setViewedUser(userRes?.user ?? userRes);
         dispatch(setViewedPostsAction((postsRes?.posts ?? postsRes ?? []).map(normalizePost)));
       })
       .catch((err) => {
-        // Fallback to static mock data so the UI/navigation can be verified
-        // before the real /users/:id endpoints exist.
-        console.warn("Falling back to mock profile data:", err.message);
         if (cancelled) return;
-        setViewedUser(MOCK_USER);
-        dispatch(setViewedPostsAction(MOCK_POSTS));
+        console.warn("Error loading profile:", err.message);
+        setBlockedMessage("Unable to load this profile");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -633,12 +644,18 @@ export default function UserProfilePage({
         >
           {activeTab === "Feed" && (
             <div className="prof-feed" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-              {viewedPosts.length === 0 && (
+              {blockedMessage && (
+                <div style={{ textAlign: "center", padding: "48px 32px", color: "#ef4444", fontSize: 14 }}>
+                  <BlockIcon />
+                  <p style={{ marginTop: "12px", fontWeight: "500" }}>{blockedMessage}</p>
+                </div>
+              )}
+              {!blockedMessage && viewedPosts.length === 0 && (
                 <div style={{ textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
                   No posts yet.
                 </div>
               )}
-              {viewedPosts.map((post) => (
+              {!blockedMessage && viewedPosts.map((post) => (
                 <div key={post._id} style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
                   <PostCard post={post} onUserClick={onUserClick} />
                 </div>
