@@ -2713,8 +2713,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
               {/* Right sidebar */}
               <div className="ev-s4-sidebar">
-                {/* Publish actions */}
-                <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages || draftLoading} onClick={() => handlePublish(false)}>
+                <div style={{ marginTop: '320px' }}>
+                  {/* Publish actions */}
+                  <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages || draftLoading} onClick={() => handlePublish(false)}>
                   {editingEventId
                     ? (preparingImages ? 'Preparing images…' : updateLoading ? 'Saving…' : 'Save Changes')
                     : (createLoading ? 'Publishing…' : 'Publish Event')}
@@ -2724,7 +2725,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     {draftLoading ? 'Saving…' : 'Save as Draft'}
                   </button>
                 )}
-                <p className="ev-publish-notice">By publishing, you agree to our <span>Terms of Service</span> and <span>Event Guidelines.</span></p>
+                  <p className="ev-publish-notice">By publishing, you agree to our <span>Terms of Service</span> and <span>Event Guidelines.</span></p>
+                </div>
               </div>
             </div>
           )}
