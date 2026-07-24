@@ -14,7 +14,6 @@ import ProfilePage from './ProfilePage';
 import UserProfilePage from './UserProfilePage';
 import MiniSitesPage from './MiniSitesPage';
 import PostDetailModal from './PostDetailModal';
-import ProfileCompletionModal from './ProfileCompletionModal';
 import { initSocket } from '../../services/socket';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
@@ -162,22 +161,17 @@ export default function HomePage() {
     setSection('messages');
   }
 
-  // Block navigation if profile not completed
-  const profileIncomplete = user?.profileCompleted === false;
-  const canNavigate = !profileIncomplete;
-
   return (
     <div className={`home-page${section === 'messages' ? ' home-page--chat' : ''}`}>
-      {profileIncomplete && <ProfileCompletionModal token={token} />}
       <Navbar
-        onMessagesClick={() => canNavigate && setSection('messages')}
-        onProfileClick={() => canNavigate && setSection('profile')}
-        onConnectionsClick={() => canNavigate && goToProfileTab('Connections')}
-        onPostsClick={() => canNavigate && goToProfileTab('Feed')}
+        onMessagesClick={() => setSection('messages')}
+        onProfileClick={() => setSection('profile')}
+        onConnectionsClick={() => goToProfileTab('Connections')}
+        onPostsClick={() => goToProfileTab('Feed')}
         onPostClick={goToPost}
       />
       <div className="home-body">
-        {section === 'minisites' && canNavigate ? (
+        {section === 'minisites' ? (
           <MiniSitesPage
             onBack={() => setSection('feed')}
             onCoursesClick={() => setSection('courses')}
@@ -188,26 +182,26 @@ export default function HomePage() {
             onCalendarClick={() => setSection('calendar')}
             onMinisitesClick={() => setSection('minisites')}
           />
-        ) : section === 'profile' || profileIncomplete ? (
+        ) : section === 'profile' ? (
           <ProfilePage
-            onBack={() => canNavigate && setSection('feed')}
-            onCoursesClick={() => canNavigate && setSection('courses')}
-            onLibraryClick={() => canNavigate && setSection('library')}
-            onEventsClick={() => canNavigate && setSection('events')}
-            onEventsCreateClick={() => canNavigate && goToEventsCreate()}
-            onGroupsClick={() => canNavigate && setSection('groups')}
-            onMessagesClick={() => canNavigate && setSection('messages')}
-            onCalendarClick={() => canNavigate && setSection('calendar')}
-            onMinisitesClick={() => canNavigate && setSection('minisites')}
+            onBack={() => setSection('feed')}
+            onCoursesClick={() => setSection('courses')}
+            onLibraryClick={() => setSection('library')}
+            onEventsClick={() => setSection('events')}
+            onEventsCreateClick={goToEventsCreate}
+            onGroupsClick={() => setSection('groups')}
+            onMessagesClick={() => setSection('messages')}
+            onCalendarClick={() => setSection('calendar')}
+            onMinisitesClick={() => setSection('minisites')}
             initialTab={profileInitTab}
             onInitTabConsumed={() => setProfileInitTab(null)}
             autoEditPersonal={profileAutoEdit}
             onAutoEditConsumed={() => setProfileAutoEdit(false)}
             initFollowPanel={profileInitFollowPanel}
             onInitFollowPanelConsumed={() => setProfileInitFollowPanel(null)}
-            onUserClick={canNavigate ? goToUserProfile : undefined}
-            onEventClick={canNavigate ? goToEvent : undefined}
-            onMessageUser={canNavigate ? goToMessagesWithUser : undefined}
+            onUserClick={goToUserProfile}
+            onEventClick={goToEvent}
+            onMessageUser={goToMessagesWithUser}
             onViewStateChange={onProfileViewChange}
           />
         ) : section === 'userProfile' ? (
@@ -306,7 +300,7 @@ export default function HomePage() {
             initialDate={calInitialDate}
             onViewStateChange={onCalendarViewChange}
           />
-        ) : canNavigate ? (
+        ) : (
           <>
             <LeftSidebar
               onCoursesClick={() => setSection('courses')}
@@ -333,7 +327,7 @@ export default function HomePage() {
             />
             <RightSidebar onAddEducationClick={() => setSection('courses')} onGalleryClick={() => goToProfileTab('Photos')} />
           </>
-        ) : null}
+        )}
       </div>
 
       {detailPostId && (
