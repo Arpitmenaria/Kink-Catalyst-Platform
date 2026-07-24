@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearAuthState } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
+import { CustomDatePicker } from '../home/DateTimePicker';
 
 function GoogleIcon() {
   return (
@@ -252,15 +253,15 @@ export default function SignupForm() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="signup-dob">Date of Birth</label>
-              <input
-                id="signup-dob"
+              <label htmlFor="signup-dob">Date of Birth *</label>
+              <CustomDatePicker
                 name="dob"
-                type="date"
                 value={form.dob}
                 onChange={handleChange}
                 disabled={!isIdle}
-                required
+                placeholder="Select your date of birth"
+                max={new Date().toISOString().split('T')[0]}
+                hasError={ageError !== ''}
               />
             </div>
 
