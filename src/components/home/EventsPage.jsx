@@ -466,9 +466,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // True while re-downloading existing cover images into real File objects
   // before an edit submit — see handlePublish's PUT branch for why.
   const [preparingImages, setPreparingImages] = useState(false);
-  const [inviteSearch, setInviteSearch] = useState('');
-  const [invitingFriendIds, setInvitingFriendIds] = useState(new Set());
-  const [invitedFriendIds, setInvitedFriendIds] = useState(new Set());
   const [draftLoading, setDraftLoading] = useState(false);
 
   // Redux
@@ -2706,51 +2703,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
               {/* Right sidebar */}
               <div className="ev-s4-sidebar">
-                {/* Invite Friends */}
-                <div className="ev-s4-panel">
-                  <p className="ev-s4-panel-title">INVITE FRIENDS</p>
-                  <div className="ev-invite-search-wrap">
-                    <SearchIcon />
-                    <input
-                      className="ev-invite-search"
-                      type="text"
-                      placeholder="Search friends..."
-                      value={inviteSearch}
-                      onChange={(e) => setInviteSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className="ev-invite-list">
-                    {connections
-                      .filter(c => {
-                        const connId = c.id ?? c._id;
-                        const isBlocked = blockedUserIds instanceof Set ? blockedUserIds.has(connId) : Array.isArray(blockedUserIds) ? blockedUserIds.includes(connId) : false;
-                        return c.name?.toLowerCase().includes(inviteSearch.toLowerCase()) && !isBlocked;
-                      })
-                      .map((f, i) => {
-                        const fid = f.id ?? f._id;
-                        return (
-                          <div key={fid} className="ev-invite-friend">
-                            {f.avatar
-                              ? <img className="ev-invite-avatar ev-invite-avatar--img" src={f.avatar} alt={f.name} />
-                              : <div className="ev-invite-avatar" style={{ background: INVITE_AVATAR_COLORS[i % INVITE_AVATAR_COLORS.length] }}>{reviewInitials(f.name)}</div>}
-                            <span className="ev-invite-name">{f.name}</span>
-                            <button
-                              type="button"
-                              className="ev-invite-btn"
-                              disabled={invitingFriendIds.has(fid) || invitedFriendIds.has(fid)}
-                              onClick={() => handleInviteFriend(fid)}
-                            >
-                              {invitingFriendIds.has(fid) ? 'Sending...' : invitedFriendIds.has(fid) ? '✓ Invited' : 'Invite'}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    {connections.length === 0 && (
-                      <p style={{ color: '#5c6a8c', fontSize: 13, padding: '8px 0' }}>No connections yet.</p>
-                    )}
-                  </div>
-                </div>
-
                 {/* Share Event */}
                 <div className="ev-s4-panel">
                   <p className="ev-s4-panel-title">SHARE EVENT</p>
