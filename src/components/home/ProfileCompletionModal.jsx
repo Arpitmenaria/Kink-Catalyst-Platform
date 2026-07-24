@@ -50,30 +50,36 @@ export default function ProfileCompletionModal({ token }) {
     setError(null);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64Avatar = reader.result;
-          const response = await apiRequest('/api/user/profile', {
-            method: 'PUT',
-            body: {
-              avatar: base64Avatar,
-              profession,
-            },
-            token,
-          });
+      const base64Avatar = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(avatar);
+      });
 
-          if (response.profileCompleted || response.success) {
-            dispatch(fetchMe());
-          }
-        } catch (err) {
-          setError(err.message || 'Failed to complete profile');
-          setLoading(false);
-        }
-      };
-      reader.readAsDataURL(avatar);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
+      );
+
+      const response = await Promise.race([
+        apiRequest('/api/user/profile', {
+          method: 'PUT',
+          body: { avatar: base64Avatar, profession },
+          token,
+        }),
+        timeoutPromise,
+      ]);
+
+      if (response?.success) {
+        dispatch(fetchMe());
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 800);
+      } else {
+        throw new Error(response?.message || 'Backend error');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to complete profile');
+      setError(err.message || 'Failed to save profile. Please try again.');
       setLoading(false);
     }
   };
