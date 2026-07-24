@@ -501,7 +501,7 @@ export default function UserProfilePage({
 
           {/* ── Action buttons (replaces the edit/avatar controls on own profile) ── */}
           {!isSelf && (
-            <div className="prof-actions">
+            {!blockedMessage && (<div className="prof-actions">
               {/* Primary relationship button */}
               {friendStatus === 'incoming' ? (
                 <>
@@ -603,7 +603,7 @@ export default function UserProfilePage({
                 <BlockIcon /> {blockingId === userId ? (isBlocked ? 'Unblocking...' : 'Blocking...') : (isBlocked ? 'Blocked' : 'Block')}
               </button>
             </div>
-          )}
+            )}
         </div>
 
         {blockConfirmOpen && (
