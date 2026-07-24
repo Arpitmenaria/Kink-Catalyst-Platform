@@ -472,6 +472,13 @@
   flex-direction: column;
 }
 
+.prof-conn-empty {
+  padding: 24px 20px;
+  color: var(--text-secondary, #8a8f98);
+  font-size: 14px;
+  text-align: center;
+}
+
 .prof-conn-item {
   display: flex;
   align-items: center;

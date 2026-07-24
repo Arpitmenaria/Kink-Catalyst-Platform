@@ -428,6 +428,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [eventFromHome, setEventFromHome] = useState(false);
   const [goingIds,      setGoingIds]      = useState(new Set());
   const [joinedIds,     setJoinedIds]     = useState(new Set());
+  // The event's own creator can always see the discussion — everyone else
+  // has to actually join first, same as the "+ Join" button gates. Declared
+  // up here (not near the JSX that uses it) so effects earlier in the
+  // component can also depend on it without a temporal-dead-zone error.
+  const canViewDiscussion = !!selectedEvent && (selectedEvent._sourceTab === 'created' || joinedIds.has(selectedEvent.id));
   const [attendeeCount, setAttendeeCount] = useState({});
   const [joiningId,     setJoiningId]     = useState(null);
   const [comment,       setComment]       = useState('');
@@ -680,6 +685,15 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       dispatch(fetchComments({ eventId: selectedEvent.id }));
     }
   }, [evDetailTab, selectedEvent?.id]); // eslint-disable-line
+
+  // If the user leaves the event while looking at the discussion (the "+
+  // Join"/"Leave event" toggle), don't strand them on a tab they can no
+  // longer access — drop back to About.
+  useEffect(() => {
+    if (evDetailTab === 'discussion' && selectedEvent && !canViewDiscussion) {
+      setEvDetailTab('about');
+    }
+  }, [canViewDiscussion]); // eslint-disable-line
 
   // Sync local comments from Redux
   useEffect(() => {
@@ -1393,9 +1407,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 onClick={() => setEvDetailTab('about')}
               >About</button>
               <button
-                className={`ev-detail-tab${evDetailTab === 'discussion' ? ' ev-detail-tab--active' : ''}`}
-                onClick={() => setEvDetailTab('discussion')}
-              >Discussion</button>
+                className={`ev-detail-tab${evDetailTab === 'discussion' ? ' ev-detail-tab--active' : ''}${canViewDiscussion ? '' : ' ev-detail-tab--locked'}`}
+                onClick={() => canViewDiscussion && setEvDetailTab('discussion')}
+                disabled={!canViewDiscussion}
+                title={canViewDiscussion ? undefined : 'Join this event to see the discussion'}
+              >
+                Discussion{!canViewDiscussion && <LockIcon />}
+              </button>
             </div>
             <div className="ev-detail-actions">
               {selectedEvent._sourceTab === 'created' ? (
