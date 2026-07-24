@@ -214,6 +214,32 @@ export const fetchBlockStatus = createAsyncThunk(
   }
 );
 
+// The full list of everyone the current user has blocked (vs
+// fetchBlockStatus above, which checks one specific userId) — powers the
+// "Blocked" tab in Connections.
+export const fetchBlockedUsers = createAsyncThunk(
+  'users/fetchBlockedUsers',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/user/blocked', { token });
+      const list = Array.isArray(data) ? data : (data.blockedUsers ?? data.users ?? data.data ?? []);
+      return list.map(u => {
+        const uid = u.id ?? u._id ?? u.userId ?? '';
+        return {
+          id: uid,
+          name: u.name ?? u.fullName ?? '',
+          avatar: u.avatar?.startsWith?.('http') ? u.avatar : '',
+          role: u.role ?? '',
+          location: u.location ?? u.city ?? '',
+        };
+      }).filter(u => u.id);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: 'users',
   initialState: {
@@ -233,6 +259,8 @@ const usersSlice = createSlice({
     groupsLoading: false,
     blockedUserIds: [],
     blockingId: null, // userId currently mid-block/unblock request
+    blockedUsersList: [],        // full profiles, for the "Blocked" tab in Connections
+    blockedUsersListLoading: false,
     error: null,
   },
   reducers: {
@@ -392,6 +420,7 @@ const usersSlice = createSlice({
       .addCase(unblockUser.fulfilled, (state, action) => {
         state.blockingId = null;
         state.blockedUserIds = state.blockedUserIds.filter(id => id !== action.payload.userId);
+        state.blockedUsersList = state.blockedUsersList.filter(u => u.id !== action.payload.userId);
       })
       .addCase(unblockUser.rejected, (state) => { state.blockingId = null; })
 
@@ -400,6 +429,17 @@ const usersSlice = createSlice({
         const already = state.blockedUserIds.includes(userId);
         if (isBlocked && !already) state.blockedUserIds.push(userId);
         if (!isBlocked && already) state.blockedUserIds = state.blockedUserIds.filter(id => id !== userId);
+      })
+
+      .addCase(fetchBlockedUsers.pending, (state) => { state.blockedUsersListLoading = true; })
+      .addCase(fetchBlockedUsers.fulfilled, (state, action) => {
+        state.blockedUsersListLoading = false;
+        state.blockedUsersList = action.payload;
+        state.blockedUserIds = action.payload.map(u => u.id);
+      })
+      .addCase(fetchBlockedUsers.rejected, (state, action) => {
+        state.blockedUsersListLoading = false;
+        state.error = action.payload;
       });
   },
 });

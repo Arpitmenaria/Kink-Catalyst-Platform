@@ -2647,6 +2647,18 @@
 .ev-detail-tab--active { color: #60a5fa; border-bottom-color: #2563eb; }
 .ev-detail-tab:hover   { color: #94a3b8; }
 
+/* Discussion tab before joining the event — visibly disabled rather than
+   just silently doing nothing on click. */
+.ev-detail-tab--locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3a4260;
+  cursor: not-allowed;
+}
+.ev-detail-tab--locked:hover { color: #3a4260; }
+.ev-detail-tab--locked svg { flex-shrink: 0; }
+
 /* Action buttons */
 .ev-detail-actions { display: flex; align-items: center; gap: 8px; }
 

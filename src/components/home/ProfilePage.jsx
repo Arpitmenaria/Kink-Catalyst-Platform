@@ -4,7 +4,7 @@ import AnimatedNav from './AnimatedNav';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
 import { AllSuggestionsModal } from './LeftSidebar';
-import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, fetchFriendRequests, fetchAllUsers } from '../../store/slices/usersSlice';
+import { fetchSuggestions, followUser, unfollowUser, dismissSuggestion, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, fetchFriendRequests, fetchAllUsers, fetchBlockedUsers, unblockUser } from '../../store/slices/usersSlice';
 import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
   fetchConnections, removeConnection, fetchPhotos, uploadPhoto,
@@ -13,6 +13,7 @@ import {
 } from '../../store/slices/profileSlice';
 import { fetchMyPosts } from '../../store/slices/postsSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
+import { showToast } from '../../store/slices/toastSlice';
 import { PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
@@ -189,19 +190,34 @@ function FriendSuggestionsPanel({ onUserClick }) {
 export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const dispatch = useDispatch();
   const { connections, connectionsTotal } = useSelector(s => s.profile);
-  const { friendRequests } = useSelector(s => s.users);
+  const { friendRequests, blockedUsersList, blockedUsersListLoading, blockingId } = useSelector(s => s.users);
 
   const [viewMode,  setViewMode]  = useState('list');
   const [search,    setSearch]    = useState('');
   const [filterLoc, setFilterLoc] = useState('');
   const [filterInd, setFilterInd] = useState('');
   const [openDrop,  setOpenDrop]  = useState(null); // 'loc' | 'ind' | null
+  const [showBlocked, setShowBlocked] = useState(false);
   const filterBarRef = useRef(null);
 
   useEffect(() => {
     dispatch(fetchConnections());
     dispatch(fetchFriendRequests());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (showBlocked) dispatch(fetchBlockedUsers());
+  }, [showBlocked, dispatch]);
+
+  function handleUnblock(userId) {
+    dispatch(unblockUser(userId)).then(action => {
+      if (unblockUser.fulfilled.match(action)) {
+        dispatch(showToast({ message: 'User unblocked', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: action.payload || 'Failed to unblock user', type: 'error' }));
+      }
+    });
+  }
 
   useEffect(() => {
     if (!openDrop) return;
@@ -357,6 +373,14 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           )}
         </div>
 
+        <button
+          className={`prof-conn-fbar-pill${showBlocked ? ' prof-conn-fbar-pill--active' : ''}`}
+          onClick={() => setShowBlocked(!showBlocked)}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          Blocked
+        </button>
+
         {hasFilter && (
           <button
             className="prof-conn-fbar-clear"
@@ -368,8 +392,50 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         )}
       </div>
 
+      {/* ── Blocked users view ── */}
+      {showBlocked && (
+        <div className="prof-conn-list">
+          {blockedUsersListLoading && blockedUsersList.length === 0 && (
+            <p className="prof-conn-empty">Loading blocked users...</p>
+          )}
+          {!blockedUsersListLoading && blockedUsersList.length === 0 && (
+            <p className="prof-conn-empty">You haven't blocked anyone.</p>
+          )}
+          {blockedUsersList.map(u => (
+            <div key={u.id} className="prof-conn-item">
+              <div className="prof-conn-avatar-wrap">
+                {u.avatar
+                  ? <img src={u.avatar} alt={u.name} className="prof-conn-avatar" />
+                  : <span className="prof-conn-avatar prof-conn-avatar--fallback">{initials(u.name)}</span>
+                }
+              </div>
+              <div className="prof-conn-info">
+                <div className="prof-conn-name-row">
+                  <span className="prof-conn-name">{u.name}</span>
+                </div>
+                <span className="prof-conn-role">{u.role}</span>
+                {u.location && (
+                  <div className="prof-conn-shared">
+                    <span className="prof-conn-shared-text"><SuggLocationIcon />{u.location}</span>
+                  </div>
+                )}
+              </div>
+              <div className="prof-conn-actions">
+                <button
+                  className="prof-conn-btn prof-conn-btn--remove"
+                  disabled={blockingId === u.id}
+                  onClick={() => handleUnblock(u.id)}
+                >
+                  {blockingId === u.id ? 'Unblocking...' : 'Unblock'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── List view ── */}
-      {viewMode === 'list' && (
+      {!showBlocked && viewMode === 'list' && (
         <div className="prof-conn-list">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
@@ -401,7 +467,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
       )}
 
       {/* ── Grid view ── */}
-      {viewMode === 'grid' && (
+      {!showBlocked && viewMode === 'grid' && (
         <div className="prof-conn-grid">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">
@@ -431,7 +497,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      {connectionsTotal > 5 && (
+      {!showBlocked && connectionsTotal > 5 && (
         <button className="prof-conn-load-more">View all connections</button>
       )}
     </div>

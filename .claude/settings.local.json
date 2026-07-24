@@ -43,7 +43,9 @@
       "Bash(sort -t: -k2 -n)",
       "Bash(curl -s \"http://localhost:5173/src/components/home/EventsPage.jsx\")",
       "Bash(awk '/Event Detail Page/,0' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/EventsPage.css)",
-      "Bash(sort -t: -k1 -n -u)"
+      "Bash(sort -t: -k1 -n -u)",
+      "Bash(awk 'NR>=1100 && NR<=1170 && /^  return \\\\\\(/{print NR\": \"$0}' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/EventsPage.jsx)",
+      "Bash(awk -F: '$1 > 1000 && $1 < 1200')"
     ]
   },
   "enableAllProjectMcpServers": true,
