@@ -17,7 +17,8 @@ export const fetchMe = createAsyncThunk(
     try {
       const { token } = getState().auth;
       if (!token) return rejectWithValue('no token');
-      return await apiRequest('/api/auth/me', { token });
+      const data = await apiRequest('/api/user/profile', { token });
+      return data.user ?? data;
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -246,6 +247,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.token = action.payload.token;
         state.user = action.payload.user;
+        state.setupToken = null;
         saveSession(action.payload.token, action.payload.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -342,6 +344,7 @@ const authSlice = createSlice({
         if (d.postsCount     !== undefined) state.user.postsCount      = d.postsCount;
         if (d.followerCount  !== undefined) state.user.followerCount   = d.followerCount;
         if (d.followingCount !== undefined) state.user.followingCount  = d.followingCount;
+        if (d.profileCompleted !== undefined) state.user.profileCompleted = d.profileCompleted;
         saveSession(state.token, state.user);
       })
 
