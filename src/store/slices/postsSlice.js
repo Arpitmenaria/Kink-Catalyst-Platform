@@ -252,12 +252,16 @@ export const likeComment = createAsyncThunk(
 
 export const replyToComment = createAsyncThunk(
   'posts/replyToComment',
-  async ({ postId, commentId, text, mentions }, { getState, rejectWithValue }) => {
+  // replyingTo: id of the specific reply this is answering (vs. the parent
+  // comment in general) — lets the UI thread it right after that reply
+  // instead of always at the end of the flat chronological list. No-ops
+  // until the backend actually stores/returns this field on replies.
+  async ({ postId, commentId, text, mentions, replyingTo }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts/${postId}/comments/${commentId}/replies`, {
         method: 'POST',
-        body: { text, mentions: mentions ?? [] },
+        body: { text, mentions: mentions ?? [], replyingTo: replyingTo ?? null },
         token,
       });
       return { postId, commentId, reply: data.reply };

@@ -5,9 +5,10 @@ import PostCard from "./PostCard";
 import SkeletonImg from "../SkeletonImg";
 import ReportModal from "./ReportModal";
 import { EventsTab } from "./ProfilePage";
-import { followUser, unfollowUser, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from "../../store/slices/usersSlice";
+import { followUser, unfollowUser, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, blockUser, unblockUser, fetchBlockStatus } from "../../store/slices/usersSlice";
 import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
 import { fetchConnections } from "../../store/slices/profileSlice";
+import { showToast } from "../../store/slices/toastSlice";
 import { apiRequest } from "../../services/api";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
@@ -52,6 +53,14 @@ function ReportIcon() {
       <circle cx="12" cy="12" r="10" />
       <line x1="12" y1="8" x2="12" y2="12" />
       <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+function BlockIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
     </svg>
   );
 }
@@ -223,7 +232,7 @@ export default function UserProfilePage({
 }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector((s) => s.auth);
-  const { followingIds, friendStatusMap } = useSelector((s) => s.users);
+  const { followingIds, friendStatusMap, blockedUserIds, blockingId } = useSelector((s) => s.users);
   // Posts live in Redux (not local state) so PostCard's like/comment/reply/share
   // dispatches — which update state.posts.viewedPosts — are reflected here.
   const viewedPosts = useSelector((s) => s.posts.viewedPosts);
@@ -239,6 +248,7 @@ export default function UserProfilePage({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followHover, setFollowHover] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [photoLbIdx, setPhotoLbIdx] = useState(null); // Photos tab lightbox
 
   useEffect(() => {
@@ -250,6 +260,10 @@ export default function UserProfilePage({
     // page never populated it otherwise, so mentions silently degraded to
     // whatever (if anything) an earlier Feed visit happened to leave behind.
     dispatch(fetchConnections());
+    // Seeds blockedUserIds for this profile — Feed only populates it for
+    // authors of posts you've actually scrolled past, so a direct profile
+    // visit could otherwise show "Block" for someone you already blocked.
+    dispatch(fetchBlockStatus(userId));
     Promise.all([
       apiRequest(`/api/users/${userId}`, { token }),
       apiRequest(`/api/users/${userId}/posts`, { token }),
@@ -330,6 +344,7 @@ export default function UserProfilePage({
   // Relationship: optimistic override wins, else the flag from the profile fetch.
   const friendStatus = friendStatusMap[userId] ?? viewedUser?.friendStatus ?? 'none';
   const isConnected  = friendStatus === 'connected';
+  const isBlocked    = blockedUserIds.includes(userId);
 
   function handleFollowToggle() {
     setIsFollowing((prev) => !prev);
@@ -339,6 +354,27 @@ export default function UserProfilePage({
   function handleConnect()  { dispatch(sendFriendRequest(userId)); }
   function handleAccept()   { dispatch(acceptFriendRequest(userId)); }
   function handleReject()   { dispatch(rejectFriendRequest(userId)); }
+
+  function openBlockConfirm() { setBlockConfirmOpen(true); }
+
+  async function handleBlockConfirm() {
+    const result = await dispatch(blockUser(userId));
+    if (blockUser.fulfilled.match(result)) {
+      setBlockConfirmOpen(false);
+      dispatch(showToast({ message: `${displayName} has been blocked`, type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to block user', type: 'error' }));
+    }
+  }
+
+  async function handleUnblock() {
+    const result = await dispatch(unblockUser(userId));
+    if (unblockUser.fulfilled.match(result)) {
+      dispatch(showToast({ message: `${displayName} has been unblocked`, type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload ?? 'Failed to unblock user', type: 'error' }));
+    }
+  }
 
   function handleChatClick() {
     if (!isConnected) return;
@@ -542,9 +578,37 @@ export default function UserProfilePage({
               >
                 <ReportIcon /> Report
               </button>
+
+              <button
+                className="prof-edit-btn"
+                style={
+                  isBlocked
+                    ? { background: "rgba(239,68,68,0.15)", border: "1px solid #ef4444", color: "#ef4444" }
+                    : { background: "#1a2338", border: "1px solid #1e2a42", color: "#ef4444" }
+                }
+                onClick={isBlocked ? handleUnblock : openBlockConfirm}
+                disabled={blockingId === userId}
+              >
+                <BlockIcon /> {blockingId === userId ? (isBlocked ? 'Unblocking...' : 'Blocking...') : (isBlocked ? 'Blocked' : 'Block')}
+              </button>
             </div>
           )}
         </div>
+
+        {blockConfirmOpen && (
+          <div className="dpm-overlay" onClick={() => setBlockConfirmOpen(false)}>
+            <div className="dpm-box" onClick={(e) => e.stopPropagation()}>
+              <h2 className="dpm-title">Block {displayName}?</h2>
+              <p className="dpm-desc">They won't be able to see your profile or posts, and you won't see theirs either. You can unblock them anytime from here.</p>
+              <div className="dpm-actions">
+                <button className="dpm-cancel-btn" onClick={() => setBlockConfirmOpen(false)} type="button">Cancel</button>
+                <button className="dpm-confirm-btn" onClick={handleBlockConfirm} disabled={blockingId === userId} type="button">
+                  {blockingId === userId ? 'Blocking...' : 'Block User'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Tabs ── */}
         <div className="prof-tabs">

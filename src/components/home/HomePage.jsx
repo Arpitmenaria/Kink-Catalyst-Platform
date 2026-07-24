@@ -223,6 +223,8 @@ export default function HomePage() {
             onCoursesClick={() => setSection('courses')}
             onLibraryClick={() => setSection('library')}
             onEventsClick={() => setSection('events')}
+            onEventsCreateClick={goToEventsCreate}
+            onEventClick={goToEvent}
             onGroupsClick={() => setSection('groups')}
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}

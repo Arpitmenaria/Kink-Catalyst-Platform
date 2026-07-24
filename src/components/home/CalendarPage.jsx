@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './CalendarPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import { fetchEvents } from '../../store/slices/eventsSlice';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>; }
@@ -16,8 +18,6 @@ function ChevronRightIcon() { return <svg width="14" height="14" viewBox="0 0 24
 function ClockIcon()        { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function PlusIcon()         { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function CalHeaderIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
-function MapPinIcon()       { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
-function XIcon()            { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
 
 /* ── Constants ── */
 const HOUR_HEIGHT  = 80;
@@ -27,30 +27,94 @@ const MONTH_NAMES  = ['January','February','March','April','May','June','July','
 const WEEK_DAY_NAMES = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 const MONTH_COL_NAMES = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 
-/* Week view events */
-const WEEK_EVENTS = [
-  { id: 1, dayIdx: 0, title: 'Standup',          sH: 9,  sM: 0,  eH: 9,  eM: 30, color: 'blue'  },
-  { id: 2, dayIdx: 1, title: 'Product Workshop', sH: 10, sM: 30, eH: 12, eM: 30, color: 'blue'  },
-  { id: 3, dayIdx: 2, title: 'Lunch Break',      sH: 12, sM: 0,  eH: 13, eM: 0,  color: 'slate' },
-  { id: 4, dayIdx: 4, title: 'Weekly Recap',     sH: 10, sM: 0,  eH: 12, eM: 15, color: 'slate' },
-  { id: 5, dayIdx: 0, title: 'Design Review',    sH: 14, sM: 0,  eH: 15, eM: 30, color: 'slate' },
-  { id: 6, dayIdx: 1, title: 'Deep Work',        sH: 14, sM: 0,  eH: 15, eM: 15, color: 'blue'  },
-];
+// Real events only carry a start/end date+time, not a pre-picked color —
+// cycle a small palette by category so the grid isn't monochrome.
+const EVENT_COLORS = ['blue', 'slate', 'teal', 'red'];
+function colorFor(str = '') {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return EVENT_COLORS[Math.abs(h) % EVENT_COLORS.length];
+}
 
-/* Month view events — day-of-month relative so they populate any month */
-const MONTH_EVENTS = [
-  { id: 'm1', startDay: 2,  endDay: 2,  title: 'Team Sync',      color: 'blue'  },
-  { id: 'm2', startDay: 4,  endDay: 6,  title: 'Ad Campaign',    color: 'teal'  },
-  { id: 'm3', startDay: 11, endDay: 13, title: 'Project Review', color: 'blue'  },
-  { id: 'm4', startDay: 11, endDay: 15, title: 'Video Edit',     color: 'slate' },
-  { id: 'm5', startDay: 19, endDay: 21, title: 'Launch Day',     color: 'red'   },
-];
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
-const TODAY_EVENTS = [
-  { id: 1, tag: 'INTERNAL', tagType: 'gray', title: 'Team Sync',           time: '10:00 AM' },
-  { id: 2, tag: 'MEETING',  tagType: 'blue', title: 'Client Presentation', time: '01:30 PM' },
-  { id: 3, tag: 'INTERNAL', tagType: 'gray', title: 'Project Review',      time: '04:00 PM' },
-];
+function parseHM(timeStr) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  if (Number.isNaN(h)) return null;
+  return { h, m: Number.isNaN(m) ? 0 : m };
+}
+
+function formatTimeLabel(timeStr) {
+  const p = parseHM(timeStr);
+  if (!p) return 'All day';
+  const period = p.h >= 12 ? 'PM' : 'AM';
+  const h12 = p.h % 12 === 0 ? 12 : p.h % 12;
+  return `${String(h12).padStart(2, '0')}:${String(p.m).padStart(2, '0')} ${period}`;
+}
+
+// Places each event on whichever weekDay column its startDate matches,
+// clamped into the visible 9am–6pm grid (events entirely outside it just
+// won't show — the grid doesn't scroll).
+function buildWeekEvents(events, weekDays) {
+  const gridEnd = GRID_START + HOURS.length;
+  const out = [];
+  for (const ev of events) {
+    const dayIdx = weekDays.findIndex(d => d.iso === ev.startDate);
+    if (dayIdx === -1) continue;
+    const start = parseHM(ev.startTime) ?? { h: GRID_START, m: 0 };
+    const endRaw = ev.isAllDay ? null : parseHM(ev.endTime);
+    const end = endRaw ?? { h: Math.min(start.h + 1, gridEnd), m: start.m };
+    if (start.h >= gridEnd || (end.h < GRID_START)) continue; // fully outside the visible window
+    out.push({
+      id: ev.id,
+      dayIdx,
+      title: ev.title || 'Untitled event',
+      sH: Math.max(start.h, GRID_START),
+      sM: start.h < GRID_START ? 0 : start.m,
+      eH: Math.min(end.h, gridEnd),
+      eM: end.h > gridEnd ? 0 : end.m,
+      color: colorFor(ev.category || ev.title),
+    });
+  }
+  return out;
+}
+
+// Only places events that start within the displayed month — matches the
+// original grid's scope (it only tracks day-of-month, not cross-month spans).
+function buildMonthEvents(events, year, month) {
+  const out = [];
+  for (const ev of events) {
+    if (!ev.startDate) continue;
+    const s = new Date(ev.startDate + 'T00:00');
+    if (isNaN(s) || s.getFullYear() !== year || s.getMonth() !== month) continue;
+    const e = ev.endDate ? new Date(ev.endDate + 'T00:00') : s;
+    const endsInMonth = !isNaN(e) && e.getFullYear() === year && e.getMonth() === month;
+    out.push({
+      id: ev.id,
+      title: ev.title || 'Untitled event',
+      startDay: s.getDate(),
+      endDay: endsInMonth ? Math.max(e.getDate(), s.getDate()) : s.getDate(),
+      color: colorFor(ev.category || ev.title),
+    });
+  }
+  return out;
+}
+
+function buildTodayEvents(events) {
+  const todayIso = toISODate(new Date());
+  return events
+    .filter(ev => ev.startDate === todayIso)
+    .map(ev => ({
+      id: ev.id,
+      tag: (ev.category || 'Event').toUpperCase(),
+      tagType: 'blue',
+      title: ev.title || 'Untitled event',
+      time: formatTimeLabel(ev.startTime),
+    }));
+}
 
 /* ── Helpers ── */
 function getMondayOf(date) {
@@ -71,7 +135,7 @@ function getWeekDays(monday) {
       d.getDate() === today.getDate() &&
       d.getMonth() === today.getMonth() &&
       d.getFullYear() === today.getFullYear();
-    return { label, date: d.getDate(), isToday };
+    return { label, date: d.getDate(), isToday, iso: toISODate(d) };
   });
 }
 
@@ -143,72 +207,32 @@ function getEventsInWeek(week, events) {
   return result;
 }
 
-/* ── Create Event Modal ── */
-function todayValue() {
-  const d = new Date();
-  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`;
-}
-
-function CreateEventModal({ onClose }) {
-  const [form, setForm] = useState({ title:'', date:todayValue(), time:'10:00 AM', location:'', description:'' });
-  const set = (f, v) => setForm(p => ({ ...p, [f]: v }));
-
-  return (
-    <div className="cev-overlay" onClick={onClose}>
-      <div className="cev-modal" onClick={e => e.stopPropagation()}>
-        <div className="cev-header">
-          <h2 className="cev-title">Create New Event</h2>
-          <button className="cev-close" onClick={onClose}><XIcon /></button>
-        </div>
-        <div className="cev-body">
-          <div className="cev-field">
-            <label className="cev-label">Event Title</label>
-            <input className="cev-input" placeholder="e.g., Weekly Marketing Sync" value={form.title} onChange={e => set('title', e.target.value)} />
-          </div>
-          <div className="cev-row">
-            <div className="cev-field">
-              <label className="cev-label">Date</label>
-              <input className="cev-input" value={form.date} onChange={e => set('date', e.target.value)} placeholder="MM/DD/YYYY" />
-            </div>
-            <div className="cev-field">
-              <label className="cev-label">Time</label>
-              <input className="cev-input" value={form.time} onChange={e => set('time', e.target.value)} placeholder="10:00 AM" />
-            </div>
-          </div>
-          <div className="cev-field">
-            <label className="cev-label">Location</label>
-            <div className="cev-input-icon-wrap">
-              <span className="cev-input-icon"><MapPinIcon /></span>
-              <input className="cev-input cev-input--icon" placeholder="Meeting Room B or Virtual Link" value={form.location} onChange={e => set('location', e.target.value)} />
-            </div>
-          </div>
-          <div className="cev-field">
-            <label className="cev-label">Description</label>
-            <textarea className="cev-textarea" placeholder="Briefly describe the purpose of this event..." value={form.description} onChange={e => set('description', e.target.value)} rows={4} />
-          </div>
-        </div>
-        <div className="cev-footer">
-          <button className="cev-cancel-btn" onClick={onClose}>Cancel</button>
-          <button className="cev-submit-btn" onClick={onClose}>Create Event</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ══════════════════════════════
    Main Component
 ══════════════════════════════ */
-export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreateClick, onEventClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+  const dispatch = useDispatch();
+  // "upcoming" is the only general-listing tab the events API exposes today
+  // (see EventsPage), so a week/month you navigate into the past will show
+  // no events — a real gap if past events need to show here too; would need
+  // either a date-range query param or a tab that includes past events.
+  const { events: allEvents } = useSelector(s => s.events);
   const [monday,    setMonday]   = useState(getMondayOf(new Date()));
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(new Date());
   const [view,      setView]      = useState('week');
 
+  useEffect(() => {
+    dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
+  }, [dispatch]);
+
   /* Derived */
   const weekDays   = getWeekDays(monday);
   const monthGrid  = getMonthGrid(monthDate.getFullYear(), monthDate.getMonth());
   const monthWeeks = Array.from({ length: 6 }, (_, i) => monthGrid.slice(i * 7, i * 7 + 7));
+  const weekEvents  = buildWeekEvents(allEvents, weekDays);
+  const monthEvents = buildMonthEvents(allEvents, monthDate.getFullYear(), monthDate.getMonth());
+  const todayEvents = buildTodayEvents(allEvents);
 
   /* Current-time indicator */
   const now         = new Date();
@@ -292,9 +316,10 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick
               <div className="cal-days-area">
                 {weekDays.map((d, dayIdx) => (
                   <div key={dayIdx} className={`cal-day-col${d.isToday ? ' cal-day-col--today' : ''}`}>
-                    {WEEK_EVENTS.filter(ev => ev.dayIdx === dayIdx).map(ev => (
+                    {weekEvents.filter(ev => ev.dayIdx === dayIdx).map(ev => (
                       <div key={ev.id} className={`cal-event cal-event--${ev.color}`}
-                        style={{ top: evTop(ev.sH, ev.sM), height: evH(ev.sH, ev.sM, ev.eH, ev.eM) }}>
+                        style={{ top: evTop(ev.sH, ev.sM), height: evH(ev.sH, ev.sM, ev.eH, ev.eM), cursor: onEventClick ? 'pointer' : undefined }}
+                        onClick={() => onEventClick?.(ev.id)}>
                         <p className="cal-ev-title">{ev.title}</p>
                         <p className="cal-ev-time">{fmtT(ev.sH, ev.sM)} –<br />{fmtT(ev.eH, ev.eM)} {fmtPeriod(ev.eH)}</p>
                       </div>
@@ -322,7 +347,7 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick
             {/* Week rows */}
             <div className="cal-month-body">
               {monthWeeks.map((week, wi) => {
-                const weekEvs = getEventsInWeek(week, MONTH_EVENTS);
+                const weekEvs = getEventsInWeek(week, monthEvents);
                 return (
                   <div key={wi} className="cal-month-week">
                     {/* Day cells */}
@@ -342,7 +367,9 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick
                           left:   `calc(${ev.colStart} * (100% / 7) + 3px)`,
                           width:  `calc(${ev.colEnd - ev.colStart + 1} * (100% / 7) - 6px)`,
                           top:    `${30 + ev.slot * 22}px`,
+                          cursor: onEventClick ? 'pointer' : undefined,
                         }}
+                        onClick={() => onEventClick?.(ev.id)}
                       >
                         {ev.showTitle && <span className="cal-month-ev-title">{ev.title}</span>}
                       </div>
@@ -363,15 +390,23 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onGroupsClick
           <button className="cal-right-icon-btn"><CalHeaderIcon /></button>
         </div>
         <div className="cal-today-list">
-          {TODAY_EVENTS.map(ev => (
-            <div key={ev.id} className="cal-today-card">
+          {todayEvents.length === 0 && (
+            <p className="cal-today-empty">No events today.</p>
+          )}
+          {todayEvents.map(ev => (
+            <div
+              key={ev.id}
+              className="cal-today-card"
+              style={{ cursor: onEventClick ? 'pointer' : undefined }}
+              onClick={() => onEventClick?.(ev.id)}
+            >
               <span className={`cal-tag cal-tag--${ev.tagType}`}>{ev.tag}</span>
               <p className="cal-today-title">{ev.title}</p>
               <p className="cal-today-time"><ClockIcon /> {ev.time}</p>
             </div>
           ))}
         </div>
-        <button className="cal-create-btn" onClick={() => onEventsClick?.()}>
+        <button className="cal-create-btn" onClick={() => (onEventsCreateClick ?? onEventsClick)?.()}>
           <PlusIcon /> Create Event
         </button>
       </aside>

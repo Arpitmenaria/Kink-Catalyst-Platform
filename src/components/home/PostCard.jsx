@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
 import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost, reportPost } from '../../store/slices/postsSlice';
@@ -95,6 +95,38 @@ function nameColor(name = '') {
 function nameInitials(name = '') {
   return name.split(' ').map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 2);
 }
+
+// Reorders a flat replies list so each reply appears directly after the
+// specific reply it's threaded under (via r.replyingTo, a reply id — not
+// the @mention text, which can't tell two replies from the same person
+// apart), instead of always landing at the chronological end. Until the
+// backend actually populates replyingTo, every reply's value is null, so
+// this is a no-op that preserves today's plain chronological order.
+// Each reply also gets a `depth` (0 = directly answers the top-level
+// comment, 1 = answers a reply, 2 = answers a reply-to-a-reply, ...) so the
+// UI can indent it — visual proof of the tree, not just posting order.
+function threadReplies(replies) {
+  const byParent = new Map(); // parent reply id (or 'root') -> replies, in original order
+  for (const r of replies) {
+    const key = r.replyingTo ?? 'root';
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(r);
+  }
+  const out = [];
+  function walk(key, depth) {
+    for (const r of byParent.get(key) ?? []) {
+      out.push({ ...r, depth });
+      walk(r.id, depth + 1);
+    }
+  }
+  walk('root', 0);
+  // Guard against a reply pointing at an id that isn't in this list (e.g.
+  // bad data) — don't silently drop it, just tack it on the end.
+  const placed = new Set(out.map(r => r.id));
+  for (const r of replies) if (!placed.has(r.id)) out.push({ ...r, depth: 0 });
+  return out;
+}
+
 function normalizeComment(c) {
   if (!c) return null;
   const cid = c._id ?? c.id;
@@ -114,7 +146,7 @@ function normalizeComment(c) {
     text: c.text ?? '',
     mentions: c.mentions ?? [],
     likes: typeof c.likes === 'number' ? c.likes : (Array.isArray(c.likes) ? c.likes.length : 0),
-    replies: (c.replies ?? []).filter(Boolean).map(r => {
+    replies: threadReplies((c.replies ?? []).filter(Boolean).map(r => {
       const rName = r.author?.fullName ?? 'Unknown';
       return {
         id: r._id ?? r.id,
@@ -124,11 +156,16 @@ function normalizeComment(c) {
         color: nameColor(rName),
         name: rName,
         mentions: r.mentions ?? [],
+        // Which specific reply this answers, per the backend — not yet
+        // populated until that field ships server-side (see replyToComment
+        // in postsSlice.js), so this reads null for now and threadReplies
+        // below just falls back to plain chronological order.
+        replyingTo: r.replyingTo ?? r.replyingToId ?? r.parentReplyId ?? null,
         time: timeAgo(r.createdAt),
         text: r.text ?? '',
         likes: typeof r.likes === 'number' ? r.likes : 0,
       };
-    }),
+    })),
   };
 }
 
@@ -157,6 +194,7 @@ export default function PostCard({ post, onUserClick }) {
   const [particles,       setParticles]       = useState([]);
   const [pickerOpen,      setPickerOpen]      = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
+  const [menuOpensUp,     setMenuOpensUp]     = useState(false);
   const pickerTimer = useRef(null);
   const [shareOpen,       setShareOpen]       = useState(false);
   const shareCounted = useRef(false);
@@ -175,6 +213,7 @@ export default function PostCard({ post, onUserClick }) {
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reactionsModalOpen, setReactionsModalOpen] = useState(false);
   const menuRef = useRef(null);
+  const menuDropdownRef = useRef(null);
 
   function mentionCandidates(query) {
     const q = query.toLowerCase();
@@ -200,11 +239,39 @@ export default function PostCard({ post, onUserClick }) {
     dispatch(likeComment({ postId: post._id, commentId }));
   }
 
-  function openReplyBox(commentId) {
-    setReplyingTo(prev => (prev === commentId ? null : commentId));
-    setReplyText('');
-    setReplyMentions([]);
+  // target is undefined when "Reply" is clicked on the top-level comment
+  // itself, or { replyId, userId, name } when clicked on one of its replies.
+  // replyingTo tracks { commentId, replyId } so the box can be rendered
+  // directly under whichever row (the comment or that specific reply) was
+  // actually clicked, instead of always in one fixed spot — replies still
+  // all attach to the same top-level commentId either way (flat, like
+  // Instagram), this only changes *where the box renders* and, when
+  // replying to a specific reply, pre-tags it with "@ThatPerson " so the
+  // new reply is unambiguous about who it's answering.
+  function openReplyBox(commentId, target) {
+    const replyId = target?.replyId ?? null;
+    const isSame = replyingTo?.commentId === commentId && replyingTo?.replyId === replyId;
+    if (isSame) {
+      setReplyingTo(null);
+      setReplyText('');
+      setReplyMentions([]);
+      setReplyDropdown(null);
+      return;
+    }
+    setReplyingTo({ commentId, replyId });
     setReplyDropdown(null);
+    if (target) {
+      const { text, mention, cursor } = insertMention('', 0, 0, { id: target.userId, name: target.name });
+      setReplyText(text);
+      setReplyMentions([mention]);
+      requestAnimationFrame(() => {
+        replyInputRef.current?.focus();
+        replyInputRef.current?.setSelectionRange(cursor, cursor);
+      });
+    } else {
+      setReplyText('');
+      setReplyMentions([]);
+    }
   }
 
   function handleReplyTextChange(e) {
@@ -231,7 +298,10 @@ export default function PostCard({ post, onUserClick }) {
   function handleSendReply(commentId) {
     if (!replyText.trim()) return;
     const { text, mentions } = trimWithMentions(replyText, replyMentions);
-    dispatch(replyToComment({ postId: post._id, commentId, text, mentions }));
+    // Threads this reply right after the specific reply it was opened from
+    // (once the backend stores/returns replyingTo — see threadReplies above
+    // and the note on the replyToComment thunk).
+    dispatch(replyToComment({ postId: post._id, commentId, text, mentions, replyingTo: replyingTo?.replyId ?? null }));
     setExpandedReplies(prev => new Set(prev).add(commentId));
     setReplyText('');
     setReplyMentions([]);
@@ -299,6 +369,27 @@ export default function PostCard({ post, onUserClick }) {
     function onOut(e) { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); }
     document.addEventListener('mousedown', onOut);
     return () => document.removeEventListener('mousedown', onOut);
+  }, [menuOpen]);
+
+  // The "..." dropdown opens downward by default, which cuts it off for posts
+  // near the bottom of the viewport (nothing clips it — it just renders past
+  // the visible fold). Flip it upward when there isn't room below, as long as
+  // there's actually more room above — and as a hard backstop for whichever
+  // direction it ends up in, cap its height to whatever space is actually
+  // available and let it scroll, so it can never render past the fold no
+  // matter how tall the menu or how little room either direction has.
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const wrap = menuRef.current;
+    const dropdown = menuDropdownRef.current;
+    if (!wrap || !dropdown) return;
+    const MARGIN = 12;
+    const wrapRect = wrap.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - wrapRect.bottom - MARGIN;
+    const spaceAbove = wrapRect.top - MARGIN;
+    const opensUp = dropdown.scrollHeight > spaceBelow && spaceAbove > spaceBelow;
+    setMenuOpensUp(opensUp);
+    dropdown.style.maxHeight = `${Math.max(opensUp ? spaceAbove : spaceBelow, 120)}px`;
   }, [menuOpen]);
 
   useEffect(() => () => clearTimeout(pickerTimer.current), []);
@@ -514,7 +605,7 @@ export default function PostCard({ post, onUserClick }) {
           <div className="post-menu-wrap" ref={menuRef}>
             <button className="post-more-btn" onClick={() => setMenuOpen(v => !v)}><MoreIcon /></button>
             {menuOpen && (
-              <div className="post-menu-dropdown">
+              <div className={`post-menu-dropdown${menuOpensUp ? ' post-menu-dropdown--up' : ''}`} ref={menuDropdownRef}>
                 {isOwner ? (
                   <>
                     <button className="post-menu-item" onClick={openEdit}>
@@ -539,10 +630,10 @@ export default function PostCard({ post, onUserClick }) {
                       <span className="post-menu-text"><span className="post-menu-item-title">Flag as inappropriate</span><span className="post-menu-item-sub">Mark as offensive content</span></span>
                     </button>
                     <div className="post-menu-divider" />
-                    <button className="post-menu-item" onClick={openBlockConfirm}>
+                    {/* <button className="post-menu-item" onClick={openBlockConfirm}>
                       <span className="post-menu-icon post-menu-icon--red"><BlockIcon /></span>
                       <span className="post-menu-text"><span className="post-menu-item-title">Block {authorName}</span><span className="post-menu-item-sub">You won't see their posts anymore</span></span>
-                    </button>
+                    </button> */}
                   </>
                 )}
               </div>
@@ -756,7 +847,7 @@ export default function PostCard({ post, onUserClick }) {
                       )}
                     </div>
 
-                    {replyingTo === c.id && (
+                    {replyingTo?.commentId === c.id && replyingTo?.replyId === null && (
                       <div className="pc-reply-input-wrap">
                         <input
                           ref={replyInputRef}
@@ -779,7 +870,11 @@ export default function PostCard({ post, onUserClick }) {
                     {expandedReplies.has(c.id) && c.replies.length > 0 && (
                       <div className="pc-replies">
                         {c.replies.map(r => (
-                          <div key={r.id} className="pc-comment pc-comment--reply">
+                          <div
+                            key={r.id}
+                            className={`pc-comment pc-comment--reply${r.depth > 0 ? ' pc-comment--nested' : ''}`}
+                            style={r.depth > 0 ? { marginLeft: r.depth * 22 } : undefined}
+                          >
                             <div className="pc-avatar pc-avatar--sm" style={{ background: r.avatar ? 'transparent' : r.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>
                               {r.avatar ? <img src={r.avatar} alt={r.name} className="pc-avatar-img" /> : r.initials}
                             </div>
@@ -794,8 +889,27 @@ export default function PostCard({ post, onUserClick }) {
                                   Like ({r.likes})
                                 </button>
                                 <span className="pc-dot">·</span>
-                                <button className="pc-act" onClick={() => openReplyBox(c.id)}>Reply</button>
+                                <button className="pc-act" onClick={() => openReplyBox(c.id, { replyId: r.id, userId: r.authorId, name: r.name })}>Reply</button>
                               </div>
+
+                              {replyingTo?.commentId === c.id && replyingTo?.replyId === r.id && (
+                                <div className="pc-reply-input-wrap">
+                                  <input
+                                    ref={replyInputRef}
+                                    type="text"
+                                    className="pc-reply-input"
+                                    placeholder={`Reply to ${r.name}...`}
+                                    value={replyText}
+                                    onChange={handleReplyTextChange}
+                                    onKeyDown={e => e.key === 'Enter' && handleSendReply(c.id)}
+                                    autoFocus
+                                  />
+                                  {replyDropdown && <MentionDropdown candidates={replyDropdown.candidates} onPick={pickReplyMention} />}
+                                  <button className="pc-reply-send" onClick={() => handleSendReply(c.id)} disabled={!replyText.trim()}>
+                                    <SendIcon />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
