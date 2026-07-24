@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import ImageCropper from './ImageCropper';
 import { CustomDatePicker, CustomTimePicker } from './DateTimePicker';
 import SkeletonImg from '../SkeletonImg';
 import {
@@ -424,21 +425,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [evDetailTab,   setEvDetailTab]   = useState('about');
   const [eventFromHome, setEventFromHome] = useState(false);
-
-  useEffect(() => {
-    if (!initialEventId) return;
-    const found =
-      BOOKED_EVENTS.find(e => e.id === initialEventId) ??
-      CREATED_EVENTS.find(e => e.id === initialEventId) ??
-      DISC_EVENTS.find(e => e.id === initialEventId);
-    if (found) {
-      const sourceTab = BOOKED_EVENTS.includes(found) ? 'booked' : CREATED_EVENTS.includes(found) ? 'created' : 'upcoming';
-      setSelectedEvent({ ...found, _sourceTab: sourceTab });
-      setEvDetailTab('about');
-      setEventFromHome(true);
-    }
-    onInitEventConsumed?.();
-  }, [initialEventId]);
   const [goingIds,      setGoingIds]      = useState(new Set());
   const [joinedIds,     setJoinedIds]     = useState(new Set());
   const [attendeeCount, setAttendeeCount] = useState({});
@@ -460,6 +446,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // Cover images — array of { id, file, url } so multiple can be uploaded and
   // individually removed, instead of a single file that gets replaced.
   const [coverImages, setCoverImages] = useState([]);
+  // One-at-a-time crop flow for freshly-picked cover files, same pattern as
+  // the post composer's photo uploads.
+  const [coverCropQueue, setCoverCropQueue] = useState([]);
+  const [coverCropIndex, setCoverCropIndex] = useState(0);
   // When editing an existing event, its already-uploaded images (plain URL
   // strings, no File to re-upload) — kept separate from the new-file uploads
   // above so each set can be removed/added to independently.
@@ -485,6 +475,23 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     comments: evtComments, commentsLoading,
     bookingLoading, createLoading, updateLoading, publishingId,
   } = useSelector(s => s.events);
+
+  // Opened from elsewhere (e.g. the Calendar page) with a specific event id
+  // to jump straight to — fetch it directly by id rather than searching
+  // whatever event lists happen to already be loaded client-side, which
+  // would silently fail if that list hasn't been fetched yet (or, before
+  // this fix, was permanently pointed at the old hardcoded mock arrays).
+  useEffect(() => {
+    if (!initialEventId) return;
+    dispatch(fetchEventDetail(initialEventId)).then(action => {
+      if (fetchEventDetail.fulfilled.match(action)) {
+        setSelectedEvent({ ...action.payload, _sourceTab: 'upcoming' });
+        setEvDetailTab('about');
+        setEventFromHome(true);
+      }
+      onInitEventConsumed?.();
+    });
+  }, [initialEventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Step 4's Invite Friends panel needs the real connections list, not
   // fetched until the review step is actually reached.
@@ -630,11 +637,34 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   function handleCoverChange(e) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    setCoverImages(prev => [
-      ...prev,
-      ...files.map(file => ({ id: `${Date.now()}-${file.name}-${Math.random()}`, file, url: URL.createObjectURL(file) })),
-    ]);
+    setCoverCropQueue(files);
+    setCoverCropIndex(0);
     e.target.value = '';
+  }
+
+  function advanceCoverCropQueue() {
+    if (coverCropIndex + 1 >= coverCropQueue.length) {
+      setCoverCropQueue([]);
+      setCoverCropIndex(0);
+    } else {
+      setCoverCropIndex(i => i + 1);
+    }
+  }
+
+  function handleCoverCropSave(croppedFile) {
+    setCoverImages(prev => [...prev, { id: `${Date.now()}-${prev.length}`, file: croppedFile, url: URL.createObjectURL(croppedFile) }]);
+    advanceCoverCropQueue();
+  }
+
+  function handleCoverCropSkip() {
+    const original = coverCropQueue[coverCropIndex];
+    setCoverImages(prev => [...prev, { id: `${Date.now()}-${prev.length}`, file: original, url: URL.createObjectURL(original) }]);
+    advanceCoverCropQueue();
+  }
+
+  function handleCoverCropCancelAll() {
+    setCoverCropQueue([]);
+    setCoverCropIndex(0);
   }
 
   function removeCoverImage(id) {
@@ -868,6 +898,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   function resetWizard() {
     setForm(EMPTY_EVENT_FORM);
     setCoverImages([]);
+    setCoverCropQueue([]);
+    setCoverCropIndex(0);
     setPricingType('paid');
     setTickets(DEFAULT_TICKETS.map(t => ({ ...t })));
     setSelectedTicketId('1');
@@ -919,6 +951,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     });
     coverImages.forEach(img => URL.revokeObjectURL(img.url));
     setCoverImages([]);
+    setCoverCropQueue([]);
+    setCoverCropIndex(0);
     setExistingCoverImages([]);
     setEditingEventId(null);
     setPricingType('paid');
@@ -2172,6 +2206,19 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </div>
                     <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleCoverChange} />
                   </label>
+
+                  {coverCropQueue.length > 0 && (
+                    <ImageCropper
+                      key={coverCropIndex}
+                      file={coverCropQueue[coverCropIndex]}
+                      index={coverCropIndex}
+                      total={coverCropQueue.length}
+                      defaultAspect="landscape"
+                      onCancel={handleCoverCropCancelAll}
+                      onSkip={handleCoverCropSkip}
+                      onSave={handleCoverCropSave}
+                    />
+                  )}
                 </div>
               </div>
             </>

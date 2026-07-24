@@ -84,13 +84,29 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  z-index: 50;
+  /* Comfortably above a hovered sibling post-card, which gets its own
+     stacking context from .post-card:hover's transform. */
+  z-index: 100;
   background: #161b2e;
   border: 1px solid #252d4a;
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
   min-width: 256px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2a3150 transparent;
+  /* max-height is set inline (PostCard.jsx) to whatever room is actually
+     available above/below the button, so this menu scrolls instead of
+     silently rendering past the viewport edge. */
+}
+
+/* Flipped upward (PostCard.jsx measures available space on open) for posts
+   near the bottom of the feed, where opening downward would run the
+   dropdown past the visible viewport instead of showing its full content. */
+.post-menu-dropdown--up {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 
 .post-menu-item {
@@ -777,6 +793,14 @@ video.post-image {
 
 .pc-comment--reply {
   padding: 4px 0;
+}
+
+/* A reply that's itself answering another reply (not the top-level comment)
+   — indented further per level (see PostCard.jsx's threadReplies) with a
+   small connector so the branch is visible, not just inferable from order. */
+.pc-comment--nested {
+  padding-left: 10px;
+  border-left: 2px solid #1a1f35;
 }
 
 /* Avatar circle */

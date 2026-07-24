@@ -181,7 +181,7 @@ export const blockUser = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/users/${userId}/block`, { method: 'POST', token });
-      return { userId, isBlocked: data.isBlocked ?? true };
+      return { userId, isBlocked: data.isBlocked ?? data.blocked ?? true };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -193,8 +193,8 @@ export const unblockUser = createAsyncThunk(
   async (userId, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest(`/api/users/${userId}/block`, { method: 'DELETE', token });
-      return { userId, isBlocked: data.isBlocked ?? false };
+      const data = await apiRequest(`/api/user/${userId}/unblock`, { method: 'POST', token });
+      return { userId, isBlocked: data.isBlocked ?? data.blocked ?? false };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -206,8 +206,8 @@ export const fetchBlockStatus = createAsyncThunk(
   async (userId, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest(`/api/users/${userId}/block-status`, { token });
-      return { userId, isBlocked: !!data.isBlocked };
+      const data = await apiRequest(`/api/user/${userId}/blocked`, { token });
+      return { userId, isBlocked: !!(data.isBlocked ?? data.blocked) };
     } catch (err) {
       return rejectWithValue(err.message);
     }

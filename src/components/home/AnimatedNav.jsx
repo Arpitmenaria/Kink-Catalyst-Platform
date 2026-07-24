@@ -4,6 +4,7 @@ import {
   IconUsers,
   IconMessageCircle,
   IconWorld,
+  IconCalendarWeek,
 } from '@tabler/icons-react';
 import './AnimatedNav.css';
 
@@ -23,6 +24,7 @@ const MAIN_ITEMS = [
   { id: 'messages',  Icon: IconMessageCircle,   label: 'Messages' },
   { id: 'courses',   Icon: IconGradCap,         label: 'Education' },
   { id: 'minisites', Icon: IconWorld,           label: 'Mini Sites'},
+  { id: 'calendar',  Icon: IconCalendarWeek,    label: 'Calendar'  },
 ];
 
 export default function AnimatedNav({ activeId = 'home', avatarUrl, onNavigate, unreadMessages = 0 }) {

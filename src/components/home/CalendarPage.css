@@ -417,6 +417,13 @@
 }
 .cal-today-card:hover { border-color: #252d4a; }
 
+.cal-today-empty {
+  font-size: 13px;
+  color: #4b5a7a;
+  text-align: center;
+  padding: 24px 0;
+}
+
 .cal-tag {
   display: inline-flex;
   align-items: center;

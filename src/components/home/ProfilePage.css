@@ -2543,4 +2543,33 @@
     margin-left: 0;
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
+
+  /* The identity row (avatar + name/stats + action buttons) was a single
+     unwrapped flex row pushed apart with margin-left:auto — on a phone the
+     action buttons (Message/Following/Report/Block, up to 5) just ran off
+     the right edge instead of wrapping. Stack it instead. */
+  .prof-cover { height: 180px; }
+  .prof-identity {
+    flex-direction: column;
+    padding: 0 16px 20px;
+    gap: 12px;
+  }
+  .prof-avatar-wrap { width: 88px; height: 88px; margin-top: -46px; }
+  .prof-actions {
+    margin-left: 0;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    width: 100%;
+  }
+  .prof-edit-btn { padding: 8px 14px; font-size: 12.5px; }
+  .prof-tabs { padding: 0 12px; }
+  .prof-tab { padding: 12px 14px; font-size: 13px; }
+  .prof-content { width: 100%; padding: 20px 16px 48px; }
+
+  /* Fixed multi-column grids (Photos and About tabs) crammed on a phone. */
+  .media-grid,
+  .media-album-grid,
+  .about-interests-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
