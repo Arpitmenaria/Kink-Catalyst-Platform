@@ -275,6 +275,18 @@
   flex-shrink: 0;
 }
 
+/* Shown in place of a missing/broken event image (card thumbnails, the
+   list row, and the detail cover). */
+.ev-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  background: radial-gradient(circle at 50% 40%, #16224a 0%, #0d1526 75%);
+}
+
 .ev-disc-card-img {
   width: 100%;
   height: 100%;
@@ -2413,11 +2425,56 @@
 @media (max-width: 860px) {
   .ev-main { padding: 0 16px 40px; }
   .ev-date-grid { grid-template-columns: 1fr 1fr; }
+  /* Rigid 3-column event card grid was never given a mobile fallback —
+     with only 1-2 events it looked fine (empty tracks), but crams cards
+     unreadably narrow once a real list of events shows up. */
+  .ev-disc-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .ev-disc-main,
+  .ev-main,
+  .ev-detail-page {
+    margin-left: 0;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* "Upcoming Events / My Booked Events / Favorites" tab pills don't
+     shrink (nowrap labels + generous padding) — they were overflowing
+     off the right edge of the screen. Shrink them and let the strip
+     scroll horizontally as a fallback instead of clipping. */
+  .ev-disc-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+  }
+  .ev-disc-tabs::-webkit-scrollbar { display: none; }
+  .ev-disc-tab { padding: 8px 14px; font-size: 12.5px; }
+
+  /* Event detail page was a fixed two-column grid (content + 320px map
+     sidebar) with 32px side padding — collapses the main column to
+     near-nothing on a phone. Stack it and shrink the padding/cover. */
+  .ev-detail-cover { height: 220px; }
+  .ev-detail-hero  { padding: 16px 16px 14px; gap: 14px; }
+  .ev-detail-title { font-size: 18px; }
+  .ev-detail-tab-row { padding: 0 16px; gap: 8px; }
+  .ev-detail-tab   { padding: 12px 12px; font-size: 12.5px; }
+  .ev-detail-going-btn { padding: 7px 12px; font-size: 12.5px; }
+  .ev-detail-body {
+    grid-template-columns: 1fr;
+    padding: 16px 16px 48px;
+    gap: 16px;
+  }
+  .ev-detail-sidebar { position: static; }
 }
 
 @media (max-width: 600px) {
   .ev-field-row { grid-template-columns: 1fr; }
   .ev-sidebar { display: none; }
+  .ev-disc-grid { grid-template-columns: 1fr; }
 }
 
 /* ══════════════════════════
@@ -2796,8 +2853,3 @@
   padding: 0; transition: color 0.15s;
 }
 .ev-disc-like-btn:hover, .ev-disc-reply-btn:hover { color: #60a5fa; }
-
-/* Fallback block when an event has no cover image (avoids a broken <img>) */
-.ev-img-placeholder {
-  background: linear-gradient(135deg, #1a2036 0%, #131828 100%);
-}

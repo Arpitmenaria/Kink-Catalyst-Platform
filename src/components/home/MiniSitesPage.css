@@ -417,3 +417,17 @@
   color: #94a3b8;
   margin: 0;
 }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .ms-main {
+    margin-left: 0;
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Fixed 4-column stat row overflowed the viewport — wrap to 2 columns. */
+  .ms-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .ms-header { flex-wrap: wrap; gap: 12px; }
+}

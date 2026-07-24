@@ -40,7 +40,9 @@
       "Bash(gh pr *)",
       "Bash(awk 'NR==1150,NR==1165' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/MessagesPage.jsx)",
       "Bash(git -C /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend log --oneline -10 -- src/components/home/UserProfilePage.jsx src/components/home/ProfilePage.jsx src/components/home/PostCard.jsx src/components/home/GroupsPage.jsx)",
-      "Bash(sort -t: -k2 -n)"
+      "Bash(sort -t: -k2 -n)",
+      "Bash(curl -s \"http://localhost:5173/src/components/home/EventsPage.jsx\")",
+      "Bash(awk '/Event Detail Page/,0' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/EventsPage.css)"
     ]
   },
   "enableAllProjectMcpServers": true,

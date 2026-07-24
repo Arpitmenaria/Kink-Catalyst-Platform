@@ -3465,3 +3465,33 @@
 }
 .gd-act-btn--chat:hover { background: #1e2d50; color: #60a5fa; border-color: #2563eb44; }
 .gd-act-btn--add:hover  { background: #0d2e1e; color: #34d399; border-color: #059669; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .grp-main,
+  .cg-content,
+  .adm-content,
+  .mod-content,
+  .grp-hub-main,
+  .gd-page {
+    margin-left: 0;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Fixed-sidebar two-column layouts (content + a 260-320px side column)
+     squeezed the main content to near-nothing on a phone — stack them. */
+  .mod-two-col,
+  .adm-posts-layout,
+  .adm-about-layout,
+  .gd-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Fixed 4-column stat/card rows overflowed — drop to 2. */
+  .adm-stats-row,
+  .grp-hub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

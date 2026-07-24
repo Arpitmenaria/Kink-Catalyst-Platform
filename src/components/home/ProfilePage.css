@@ -2534,3 +2534,13 @@
   transition: background 0.15s, color 0.15s;
 }
 .media-album-back:hover { background: #1a2338; color: #cbd5e1; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .prof-main {
+    margin-left: 0;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

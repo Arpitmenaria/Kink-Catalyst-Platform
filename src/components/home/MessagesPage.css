@@ -3209,3 +3209,29 @@
 @keyframes msgConfirmSpin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .msg-main,
+  .msg-chat-area,
+  .sa-wrap {
+    margin-left: 0;
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+
+  /* List view: the "Quick Online / Chat Support" column doesn't fit next
+     to the conversation list — drop it, same as the right sidebar elsewhere. */
+  .msg-right { display: none; }
+
+  /* Chat view: this used to render 3 fixed-width columns side by side
+     (mini conversation list + chat + contact-info sidebar) — on a phone
+     those two side columns alone were wider than the screen, squeezing
+     the actual chat to nothing. Show only the chat; the bottom tab bar's
+     "Messages" icon already backs out to the conversation list. */
+  .msg-conv-panel,
+  .msg-contact-panel {
+    display: none;
+  }
+}

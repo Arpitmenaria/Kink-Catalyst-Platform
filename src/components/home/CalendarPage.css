@@ -771,3 +771,13 @@
   transition: background 0.15s;
 }
 .cev-submit-btn:hover { background: #1d4ed8; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .cal-main {
+    margin-left: 0;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

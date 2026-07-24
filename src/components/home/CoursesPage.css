@@ -718,3 +718,21 @@
   gap: 9px;
   filter: brightness(1.15);
 }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .courses-main {
+    margin-left: 0;
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Fixed multi-column grids overflowed/crammed on a phone — drop to 2. */
+  .cs-stats-row,
+  .cs-ongoing-grid,
+  .cs-explore-grid,
+  .cs-rec-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

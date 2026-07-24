@@ -2102,12 +2102,23 @@
 }
 
 @media (max-width: 700px) {
-  .anim-nav { display: none; }
-  .left-sidebar-content { margin-left: 0; }
-  .home-left-panel { width: 220px; }
+  /* The icon rail becomes a fixed bottom tab bar (see AnimatedNav.css), so
+     the left column no longer reserves space for it, and the supplementary
+     profile/suggestions/groups panel is dropped to keep the feed full-width. */
+  .home-left-panel { width: 0; }
+  .left-sidebar-content { display: none; }
+  .home-feed { padding: 12px 12px calc(76px + env(safe-area-inset-bottom)); }
+
+  .home-navbar { padding: 0 12px; gap: 10px; }
+  .navbar-logo { margin-left: 12px; }
+  .navbar-stat-lbl { display: none; }
+  .navbar-divider { display: none; }
+  .navbar-stat-pill { padding: 6px 10px; }
+  .navbar-user-info { display: none; }
+  .navbar-chevron { display: none; }
 }
 
-@media (max-width: 560px) {
-  .home-left-panel { display: none; }
-  .home-feed { padding: 12px; }
+@media (max-width: 480px) {
+  .navbar-center { display: none; }
+  .navbar-logo { font-size: 16px; }
 }

@@ -566,3 +566,19 @@
   background: #1e293b; color: #64748b;
   text-transform: uppercase;
 }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left margin and leave room at the bottom instead. */
+  .library-main {
+    margin-left: 0;
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Fixed 3-column grids overflowed/crammed on a phone — drop to 2. */
+  .lib-stats-row,
+  .lib-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
