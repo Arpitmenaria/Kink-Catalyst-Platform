@@ -620,6 +620,24 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   };
 
+  const handleJoinEventCard = async (eventId) => {
+    if (!eventId || joiningId === eventId) return;
+    setJoiningId(eventId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setJoinedIds(prev => new Set([...prev, eventId]));
+      dispatch(showToast({ message: 'Joined event!', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to join event.', type: 'error' }));
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
   // Fetch comments when discussion tab opens
   useEffect(() => {
     if (evDetailTab === 'discussion' && selectedEvent?.id) {
@@ -1759,10 +1777,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       >
                         {publishingId === ev.id ? 'Publishing…' : 'Publish'}
                       </button>
-                    ) : ev.soldOut ? (
-                      <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
+                    ) : discTab === 'created' ? (
+                      <button className="ev-disc-book-btn ev-disc-book-btn--manage" onClick={e => e.stopPropagation()}>Manage Event</button>
+                    ) : discTab === 'booked' ? (
+                      <button className="ev-disc-book-btn ev-disc-book-btn--booked" onClick={e => e.stopPropagation()}>Booked</button>
                     ) : (
-                      <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
+                      <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
                     )}
                   </div>
                 </div>
@@ -1814,10 +1834,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         >
                           {publishingId === ev.id ? 'Publishing…' : 'Publish'}
                         </button>
-                      ) : ev.soldOut ? (
-                        <button className="ev-disc-book-btn ev-disc-book-btn--sold" onClick={e => e.stopPropagation()}>Sold Out</button>
+                      ) : discTab === 'created' ? (
+                        <button className="ev-disc-book-btn ev-disc-book-btn--manage" onClick={e => e.stopPropagation()}>Manage Event</button>
+                      ) : discTab === 'booked' ? (
+                        <button className="ev-disc-book-btn ev-disc-book-btn--booked" onClick={e => e.stopPropagation()}>Booked</button>
                       ) : (
-                        <button className={`ev-disc-book-btn${discTab === 'booked' ? ' ev-disc-book-btn--booked' : ''}${discTab === 'created' ? ' ev-disc-book-btn--manage' : ''}`} onClick={discTab === 'created' ? undefined : e => e.stopPropagation()}>{discTab === 'created' ? 'Manage Event' : discTab === 'booked' ? 'Booked' : 'Book Now'}</button>
+                        <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
                       )}
                     </div>
                   </div>
