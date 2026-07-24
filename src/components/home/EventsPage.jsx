@@ -2721,10 +2721,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                   <div className="ev-invite-list">
                     {connections
-                      .filter(c =>
-                        c.name?.toLowerCase().includes(inviteSearch.toLowerCase()) &&
-                        !blockedUserIds?.has(c.id ?? c._id)
-                      )
+                      .filter(c => {
+                        const connId = c.id ?? c._id;
+                        const isBlocked = blockedUserIds instanceof Set ? blockedUserIds.has(connId) : Array.isArray(blockedUserIds) ? blockedUserIds.includes(connId) : false;
+                        return c.name?.toLowerCase().includes(inviteSearch.toLowerCase()) && !isBlocked;
+                      })
                       .map((f, i) => {
                         const fid = f.id ?? f._id;
                         return (
