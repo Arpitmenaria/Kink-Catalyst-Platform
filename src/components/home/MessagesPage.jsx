@@ -617,7 +617,7 @@ const CONVERSATION_REPORT_REASONS = [
   'Other',
 ];
 
-export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick, onUserClick, initialUserId, onInitUserConsumed }) {
+export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onCoursesClick, onMinisitesClick, onUserClick, initialUserId, onInitUserConsumed, initialConvId, onInitConvConsumed, onViewStateChange }) {
   const dispatch = useDispatch();
   const {
     conversations, conversationsLoading,
@@ -713,6 +713,27 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       onInitUserConsumed?.();
     })();
   }, [initialUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Restore a specific conversation (DM or group) after a page refresh —
+     ?section=messages&id=<conversationId>. Distinct from initialUserId above,
+     which starts/opens a DM by *user* id (the "Chat" button on a profile);
+     this restores by conversation id directly, so it also covers groups. */
+  const restoredConvForRef = useRef(null);
+  useEffect(() => {
+    if (!initialConvId || restoredConvForRef.current === initialConvId || conversations.length === 0) return;
+    const found = conversations.find(c => c.id === initialConvId);
+    if (found) {
+      restoredConvForRef.current = initialConvId;
+      openConversation(found);
+      onInitConvConsumed?.();
+    }
+  }, [initialConvId, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Report the active conversation up to HomePage so it can keep the URL in
+  // sync (?section=messages&id=) for refresh restore.
+  useEffect(() => {
+    onViewStateChange?.({ convId: activeConv?.id ?? null });
+  }, [activeConv?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Debounce search */
   useEffect(() => {

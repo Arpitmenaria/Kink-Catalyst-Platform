@@ -237,17 +237,17 @@ function getEventsInWeek(week, events) {
 /* ══════════════════════════════
    Main Component
 ══════════════════════════════ */
-export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreateClick, onEventClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreateClick, onEventClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialView, initialDate, onViewStateChange }) {
   const dispatch = useDispatch();
   // "upcoming" is the only general-listing tab the events API exposes today
   // (see EventsPage), so a week/month you navigate into the past will show
   // no events — a real gap if past events need to show here too; would need
   // either a date-range query param or a tab that includes past events.
   const { events: allEvents } = useSelector(s => s.events);
-  const [monday,    setMonday]   = useState(getMondayOf(new Date()));
+  const [monday,    setMonday]   = useState(getMondayOf(initialDate ? new Date(initialDate) : new Date()));
   const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [monthDate, setMonthDate] = useState(new Date());
-  const [view,      setView]      = useState('week');
+  const [monthDate, setMonthDate] = useState(initialDate ? new Date(initialDate) : new Date());
+  const [view,      setView]      = useState(initialView === 'month' ? 'month' : 'week');
   // Independent of the desktop week grid's `monday` anchor — the mobile
   // day-agenda (see the "Mobile calendar" section below) navigates one day
   // at a time rather than one week at a time, so it tracks its own date.
@@ -256,6 +256,15 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   useEffect(() => {
     dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
   }, [dispatch]);
+
+  // Report the desktop week/month view up to HomePage so it can keep the URL
+  // in sync (?section=calendar&tab=&date=) for refresh restore. The mobile
+  // day-agenda intentionally always opens on "today" rather than persisting
+  // mobileDay, since there's no reliable non-JS way to tell which of the two
+  // views is on screen from here.
+  useEffect(() => {
+    onViewStateChange?.({ view, date: toISODate(view === 'month' ? monthDate : monday) });
+  }, [view, monday, monthDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Derived */
   const weekDays   = getWeekDays(monday);

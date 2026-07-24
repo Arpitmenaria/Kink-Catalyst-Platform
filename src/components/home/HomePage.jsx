@@ -18,7 +18,8 @@ import { initSocket } from '../../services/socket';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
 import { consumeJustSelectedPlan } from '../../store/slices/plansSlice';
-import { readSharedPostId, clearSharedPostId } from '../../utils/permalink';
+import { readSharedPostId, syncSharedPostId } from '../../utils/permalink';
+import { readInitialSection, readInitialViewId, readInitialTab, readInitialDate, readInitialCreate, syncPageUrl } from '../../utils/pageUrl';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -34,22 +35,76 @@ export default function HomePage() {
     }
   }, [token]);
 
-  const [section,         setSection]         = useState('feed');
+  // Seeded from /?section=&id=&tab=&date=&create= so a refresh lands back
+  // where you were, instead of always resetting to the feed.
+  const [section,         setSection]         = useState(readInitialSection);
   // Seeded from /?post=<id> so a shared permalink opens straight into the post.
   const [detailPostId,    setDetailPostId]    = useState(readSharedPostId); // post-detail modal
-  const [eventsCreate,    setEventsCreate]    = useState(false);
-  const [groupsCreate,    setGroupsCreate]    = useState(false);
-  const [profileInitTab,  setProfileInitTab]  = useState(null);
+  const [eventsCreate,    setEventsCreate]    = useState(() => readInitialSection() === 'events' && readInitialCreate());
+  const [groupsCreate,    setGroupsCreate]    = useState(() => readInitialSection() === 'groups' && readInitialCreate());
+  const [profileInitTab,  setProfileInitTab]  = useState(() => readInitialSection() === 'profile' ? readInitialTab() : null);
   const [profileAutoEdit, setProfileAutoEdit] = useState(false);
   const [profileInitFollowPanel, setProfileInitFollowPanel] = useState(null); // 'following' | 'followers' | null
-  const [viewedUserId,    setViewedUserId]    = useState(null);
-  const [viewedGroupId,   setViewedGroupId]   = useState(null);
-  const [viewedEventId,   setViewedEventId]   = useState(null);
+  const [viewedUserId,    setViewedUserId]    = useState(() => readInitialSection() === 'userProfile' ? readInitialViewId() : null);
+  const [viewedGroupId,   setViewedGroupId]   = useState(() => readInitialSection() === 'groups' ? readInitialViewId() : null);
+  const [viewedEventId,   setViewedEventId]   = useState(() => readInitialSection() === 'events' ? readInitialViewId() : null);
+  // One-shot: which tab the deep-linked event should open on (about/discussion).
+  const [initialEventTab] = useState(() => readInitialSection() === 'events' ? readInitialTab() : null);
+  // One-shot: which conversation (by id, covers DMs and groups) to reopen —
+  // distinct from viewedUserId, which starts/opens a DM by *user* id (the
+  // "Chat" button elsewhere in the app).
+  const [restoredConvId,  setRestoredConvId]  = useState(() => readInitialSection() === 'messages' ? readInitialViewId() : null);
+  const [calInitialView]  = useState(() => readInitialSection() === 'calendar' ? readInitialTab() : null);
+  const [calInitialDate]  = useState(() => readInitialSection() === 'calendar' ? readInitialDate() : null);
   const [profileReturnSection, setProfileReturnSection] = useState('feed');
 
-  // The id above came from the URL; strip the param now that it's in state, so
-  // a refresh (or sharing the address bar) doesn't keep reopening the post.
-  useEffect(() => { clearSharedPostId(); }, []);
+  // The id above came from the URL; strip the param once it's in state, so a
+  // refresh (or sharing the address bar) doesn't reopen a post that was
+  // already closed. Kept live afterwards by the sync effect below.
+  useEffect(() => { syncSharedPostId(detailPostId); }, [detailPostId]);
+
+  // Each page reports its own current sub-view (which specific event/group/
+  // conversation is open, which tab, which date, whether its "create" flow
+  // is open) up here via onViewStateChange, independently of the one-shot
+  // deep-link ids above — this is what lets the URL (and a refresh) track
+  // the exact spot you're on indefinitely, not just for one refresh.
+  const [liveEventView, setLiveEventView] = useState({ id: null, tab: null, create: false });
+  const [liveGroupView, setLiveGroupView] = useState({ id: null, create: false });
+  const [liveConvId,     setLiveConvId]    = useState(null);
+  const [liveProfileTab, setLiveProfileTab] = useState(null);
+  const [liveCalView,    setLiveCalView]   = useState({ view: null, date: null });
+
+  function onEventsViewChange({ eventId, tab, createOpen }) {
+    setLiveEventView({ id: eventId, tab, create: createOpen });
+    if (!createOpen) setEventsCreate(false);
+  }
+  function onGroupsViewChange({ groupId, createOpen }) {
+    setLiveGroupView({ id: groupId, create: createOpen });
+    if (!createOpen) setGroupsCreate(false);
+  }
+  function onMessagesViewChange({ convId }) { setLiveConvId(convId); }
+  function onProfileViewChange({ tab }) { setLiveProfileTab(tab); }
+  function onCalendarViewChange({ view, date }) { setLiveCalView({ view, date }); }
+
+  // Masked by `section` rather than reset on section change — each page's
+  // live state above just keeps existing quietly in the background once you
+  // navigate away, and gets masked out here rather than cleared, which
+  // avoids a race with the newly-mounted page's own first report.
+  const currentView =
+    section === 'events'      ? { id: liveEventView.id, tab: liveEventView.tab, create: liveEventView.create } :
+    section === 'groups'      ? { id: liveGroupView.id, create: liveGroupView.create } :
+    section === 'messages'    ? { id: liveConvId } :
+    section === 'profile'     ? { tab: liveProfileTab } :
+    section === 'calendar'    ? { tab: liveCalView.view, date: liveCalView.date } :
+    section === 'userProfile' ? { id: viewedUserId } :
+    {};
+
+  // Mirror section + whatever the active page reports back into the URL, so
+  // the next refresh restores this same view.
+  useEffect(() => {
+    syncPageUrl(section, currentView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, currentView.id, currentView.tab, currentView.date, currentView.create]);
 
   // Just came from signup → plan selection: land on Profile → About with
   // Personal Information edit mode already open so the user can fill it in.
@@ -141,6 +196,7 @@ export default function HomePage() {
             onUserClick={goToUserProfile}
             onEventClick={goToEvent}
             onMessageUser={goToMessagesWithUser}
+            onViewStateChange={onProfileViewChange}
           />
         ) : section === 'userProfile' ? (
           <UserProfilePage
@@ -188,8 +244,10 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
             startCreate={eventsCreate}
             initialEventId={viewedEventId}
+            initialDetailTab={initialEventTab}
             onInitEventConsumed={() => setViewedEventId(null)}
             onUserClick={goToUserProfile}
+            onViewStateChange={onEventsViewChange}
           />
         ) : section === 'messages' ? (
           <MessagesPage
@@ -203,6 +261,9 @@ export default function HomePage() {
             onUserClick={goToUserProfile}
             initialUserId={viewedUserId}
             onInitUserConsumed={() => setViewedUserId(null)}
+            initialConvId={restoredConvId}
+            onInitConvConsumed={() => setRestoredConvId(null)}
+            onViewStateChange={onMessagesViewChange}
           />
         ) : section === 'groups' ? (
           <GroupsPage
@@ -216,6 +277,7 @@ export default function HomePage() {
             initialGroupId={viewedGroupId}
             onInitGroupConsumed={() => setViewedGroupId(null)}
             startCreate={groupsCreate}
+            onViewStateChange={onGroupsViewChange}
           />
         ) : section === 'calendar' ? (
           <CalendarPage
@@ -228,6 +290,9 @@ export default function HomePage() {
             onGroupsClick={() => setSection('groups')}
             onMessagesClick={() => setSection('messages')}
             onMinisitesClick={() => setSection('minisites')}
+            initialView={calInitialView}
+            initialDate={calInitialDate}
+            onViewStateChange={onCalendarViewChange}
           />
         ) : (
           <>
