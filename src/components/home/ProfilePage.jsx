@@ -218,7 +218,12 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const hasFilter = filterLoc || filterInd;
 
   function openConnProfile(conn) {
-    onUserClick?.(conn.id ?? conn._id);
+    const userId = conn.id ?? conn._id ?? conn.userId;
+    if (!userId) {
+      console.warn('Connection object missing ID:', conn);
+      return;
+    }
+    onUserClick?.(userId);
   }
 
   const visible = connections.filter(c =>
