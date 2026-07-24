@@ -50,22 +50,30 @@ export default function ProfileCompletionModal({ token }) {
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('avatar', avatar);
-      formData.append('profession', profession);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64Avatar = reader.result;
+          const response = await apiRequest('/api/user/profile', {
+            method: 'PUT',
+            body: {
+              avatar: base64Avatar,
+              profession,
+            },
+            token,
+          });
 
-      const response = await apiRequest('/api/user/profile', {
-        method: 'PUT',
-        body: formData,
-        token,
-      });
-
-      if (response.profileCompleted) {
-        dispatch(fetchMe());
-      }
+          if (response.profileCompleted || response.success) {
+            dispatch(fetchMe());
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to complete profile');
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(avatar);
     } catch (err) {
       setError(err.message || 'Failed to complete profile');
-    } finally {
       setLoading(false);
     }
   };
