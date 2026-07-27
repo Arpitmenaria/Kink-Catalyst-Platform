@@ -113,7 +113,10 @@ export const fetchFeedPosts = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts?page=${page}&limit=${limit}`, { token });
-      return (data.posts ?? []).map(normalizePost);
+      const posts = (data.posts ?? []).map(normalizePost);
+      const total = data.total ?? 0;
+      const hasMore = posts.length >= limit && (page * limit) < total;
+      return { posts, total, page, hasMore };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -409,6 +412,9 @@ const postsSlice = createSlice({
     posts: [],
     loading: false,
     error: null,
+    feedTotal: 0,
+    feedPage: 1,
+    feedHasMore: true,
     myPosts: [],
     myPostsTotal: 0,
     myPostsLoading: false,
@@ -583,8 +589,12 @@ const postsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchFeedPosts.fulfilled, (state, action) => {
+        const { posts, total, page, hasMore } = action.payload;
         state.loading = false;
-        state.posts = action.payload ?? [];
+        state.posts = page === 1 ? posts : [...state.posts, ...posts];
+        state.feedTotal = total;
+        state.feedPage = page;
+        state.feedHasMore = hasMore;
       })
       .addCase(fetchFeedPosts.rejected, (state, action) => {
         state.loading = false;

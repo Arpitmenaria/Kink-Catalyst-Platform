@@ -63,7 +63,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick }) {
+export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick, onUserClick, onNavigateToConnections }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
@@ -153,11 +153,10 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     setSearchQuery('');
     setSearchOpen(false);
     setSearchResults([]);
-    // Navigate to user profile
-    const user = allUsers.find(u => u._id === userId);
-    if (user) {
-      // onUserClick might not be available, so check
-      window.location.href = `/profile/${userId}`;
+    // Navigate to user profile using the callback from HomePage
+    if (userId && onUserClick) {
+      console.log('🔍 [search] Navigating to user profile:', userId);
+      onUserClick(userId);
     }
   }
 
@@ -168,7 +167,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
         <div className="navbar-search-wrap" ref={searchRef} style={{ position: 'relative', marginLeft: '24px' }}>
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Search users"
             value={searchQuery}
             onChange={handleSearchChange}
             onFocus={() => setSearchOpen(true)}
@@ -186,67 +185,26 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
             }}
           />
           {searchOpen && searchResults.length > 0 && (
-            <div
-              className="navbar-search-dropdown"
-              style={{
-                position: 'absolute',
-                top: '40px',
-                left: 0,
-                backgroundColor: '#1a202c',
-                border: '1px solid #3b4556',
-                borderRadius: '8px',
-                width: '240px',
-                maxHeight: '400px',
-                overflowY: 'auto',
-                zIndex: 1000,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              }}
-            >
+            <div className="navbar-search-dropdown">
               {searchResults.map((user) => (
                 <div
                   key={user._id}
+                  className="navbar-search-item"
                   onClick={() => handleUserClick(user._id)}
-                  style={{
-                    padding: '12px',
-                    borderBottom: '1px solid #3b4556',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: '#3b4556',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div className="navbar-search-avatar">
                     {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={user.avatar} alt={user.name} />
                     ) : (
-                      <span style={{ fontWeight: 700, fontSize: '14px', color: '#93a0bd' }}>
+                      <span style={{ fontWeight: 700, fontSize: '18px', color: '#5b8cff' }}>
                         {user.name?.[0]?.toUpperCase() || '?'}
                       </span>
                     )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: '13px', fontWeight: 500, color: '#d0d6ec', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {user.name}
-                    </p>
+                  <div className="navbar-search-info">
+                    <p className="navbar-search-name">{user.name}</p>
                     {user.location && (
-                      <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#5c6a8c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {user.location}
-                      </p>
+                      <p className="navbar-search-location">📍 {user.location}</p>
                     )}
                   </div>
                 </div>
@@ -307,12 +265,19 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                   <div
                     key={nid ?? i}
                     className="navbar-notif-item"
-                    style={{ '--ni': i, cursor: (n.unread || n.relatedPost) ? 'pointer' : 'default' }}
+                    style={{ '--ni': i, cursor: 'pointer' }}
                     onClick={() => {
                       if (n.unread && nid) dispatch(markNotificationRead(nid));
-                      // mention/comment/like notifications carry the post they
-                      // refer to — jump to it in the feed.
-                      if (n.relatedPost) { setNotifOpen(false); onPostClick?.(n.relatedPost); }
+                      setNotifOpen(false);
+
+                      // Handle different notification types
+                      if (n.type === 'friend_request' || n.type === 'friend_request_accepted') {
+                        // Navigate to Connections tab with Sent Requests view
+                        onNavigateToConnections?.('sent-requests');
+                      } else if (n.relatedPost) {
+                        // mention/comment/like notifications carry the post they refer to
+                        onPostClick?.(n.relatedPost);
+                      }
                     }}
                   >
                     <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>

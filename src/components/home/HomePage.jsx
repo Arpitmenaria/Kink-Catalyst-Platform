@@ -183,6 +183,12 @@ export default function HomePage() {
         onConnectionsClick={() => goToProfileTab('Connections')}
         onPostsClick={() => goToProfileTab('Feed')}
         onPostClick={goToPost}
+        onUserClick={goToUserProfile}
+        onNavigateToConnections={(tab) => {
+          setSection('profile');
+          setProfileInitTab('Connections');
+          // TODO: Pass the tab type (sent-requests) if needed in future
+        }}
       />
       <div className="home-body">
         {section === 'minisites' ? (

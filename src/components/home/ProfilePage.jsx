@@ -18,6 +18,8 @@ import { PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
 import { CustomDatePicker } from './DateTimePicker';
 import ImageCropper from './ImageCropper';
+import { apiRequest } from '../../services/api';
+import { getSocket } from '../../services/socket';
 import './ProfilePage.css';
 
 const TABS = PROFILE_TABS;
@@ -79,7 +81,7 @@ function MutualIcon() {
   return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 }
 function SuggLocationIcon() {
-  return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+  return <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 2 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 }
 
 function FriendSuggestionsPanel({ onUserClick }) {
@@ -198,6 +200,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const [filterInd, setFilterInd] = useState('');
   const [openDrop,  setOpenDrop]  = useState(null); // 'loc' | 'ind' | null
   const [showBlocked, setShowBlocked] = useState(false);
+  const [showSentRequests, setShowSentRequests] = useState(false);
+  const [sentRequests, setSentRequests] = useState([]);
   const filterBarRef = useRef(null);
 
   useEffect(() => {
@@ -208,6 +212,63 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   useEffect(() => {
     if (showBlocked) dispatch(fetchBlockedUsers());
   }, [showBlocked, dispatch]);
+
+  const { user: authUser, token } = useSelector(s => s.auth);
+
+  useEffect(() => {
+    if (showSentRequests && token) {
+      // Fetch sent friend requests from API
+      const fetchSentRequests = async () => {
+        try {
+          const data = await apiRequest('/api/users/me/friend-requests/sent', { token });
+          setSentRequests((data.requests ?? []).map(r => ({
+            requestId: r._id,
+            userId: r.toUser?._id ?? r.toUser?.id ?? '',
+            name: r.toUser?.name ?? r.toUser?.fullName ?? '',
+            avatar: r.toUser?.avatar?.startsWith?.('http') ? r.toUser.avatar : '',
+            createdAt: r.createdAt,
+          })));
+        } catch (err) {
+          console.error('Failed to fetch sent requests:', err);
+          setSentRequests([]);
+        }
+      };
+      fetchSentRequests();
+
+      // Listen for real-time updates
+      const handleRequestCancelled = (data) => {
+        const { fromUserId, toUserId } = data ?? {};
+        const currentUserId = authUser?._id;
+        // If current user's request was cancelled, remove from list
+        if (fromUserId === currentUserId) {
+          setSentRequests(prev => prev.filter(r => r.userId !== toUserId));
+        }
+      };
+
+      const handleRequestRejected = (data) => {
+        const { fromUserId, toUserId } = data ?? {};
+        const currentUserId = authUser?._id;
+        // If someone rejected our sent request, remove from list
+        if (fromUserId === currentUserId) {
+          setSentRequests(prev => prev.filter(r => r.userId !== toUserId));
+        }
+      };
+
+      const socketInstance = getSocket();
+      if (socketInstance) {
+        socketInstance.on('friend_request_cancelled', handleRequestCancelled);
+        socketInstance.on('friend_request_rejected', handleRequestRejected);
+      }
+
+      return () => {
+        const socketInstance = getSocket();
+        if (socketInstance) {
+          socketInstance.off('friend_request_cancelled', handleRequestCancelled);
+          socketInstance.off('friend_request_rejected', handleRequestRejected);
+        }
+      };
+    }
+  }, [showSentRequests, token, authUser]);
 
   function handleUnblock(userId) {
     dispatch(unblockUser(userId)).then(action => {
@@ -374,8 +435,22 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
 
         <button
+          className={`prof-conn-fbar-pill${showSentRequests ? ' prof-conn-fbar-pill--active' : ''}`}
+          onClick={() => {
+            setShowSentRequests(!showSentRequests);
+            setShowBlocked(false);
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="16" y1="11" x2="22" y2="11"/><line x1="19" y1="8" x2="19" y2="14"/></svg>
+          Sent Requests
+        </button>
+
+        <button
           className={`prof-conn-fbar-pill${showBlocked ? ' prof-conn-fbar-pill--active' : ''}`}
-          onClick={() => setShowBlocked(!showBlocked)}
+          onClick={() => {
+            setShowBlocked(!showBlocked);
+            setShowSentRequests(false);
+          }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           Blocked
@@ -391,6 +466,44 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           </button>
         )}
       </div>
+
+      {/* ── Sent requests view ── */}
+      {showSentRequests && (
+        <div className="prof-conn-list">
+          {sentRequests.length === 0 && (
+            <p className="prof-conn-empty">You haven't sent any friend requests.</p>
+          )}
+          {sentRequests.map(req => (
+            <div key={req.requestId ?? req.userId} className="prof-conn-item">
+              <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>
+                {req.avatar
+                  ? <img src={req.avatar} alt={req.name} className="prof-conn-avatar" />
+                  : <span className="prof-conn-avatar prof-conn-avatar--fallback">{initials(req.name)}</span>
+                }
+              </div>
+              <div className="prof-conn-info">
+                <div className="prof-conn-name-row">
+                  <span className="prof-conn-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>{req.name}</span>
+                </div>
+              </div>
+              <div className="prof-conn-actions">
+                <button
+                  className="prof-conn-btn prof-conn-btn--remove"
+                  onClick={() => {
+                    // Cancel friend request
+                    dispatch(rejectFriendRequest(req.userId)).then(() => {
+                      setSentRequests(sentRequests.filter(r => r.userId !== req.userId));
+                      dispatch(showToast({ message: 'Request cancelled', type: 'success' }));
+                    });
+                  }}
+                >
+                  Cancel Request
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Blocked users view ── */}
       {showBlocked && (
@@ -415,7 +528,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 </div>
                 <span className="prof-conn-role">{u.role}</span>
                 {u.location && (
-                  <div className="prof-conn-shared" style={{ margin: '-7px 0 0 0' }}>
+                  <div className="prof-conn-shared">
                     <span className="prof-conn-shared-text"><SuggLocationIcon />{u.location}</span>
                   </div>
                 )}
@@ -452,7 +565,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 </div>
                 <span className="prof-conn-role">{conn.role}</span>
                 {conn.location && (
-                  <div className="prof-conn-shared" style={{ margin: '-7px 0 0 0' }}>
+                  <div className="prof-conn-shared">
                     <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
                   </div>
                 )}
@@ -481,7 +594,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</p>
               <p className="prof-conn-card-role">{conn.role}</p>
               {conn.location && (
-                <div className="prof-conn-card-mutual" style={{ margin: '-7px 0 0 0' }}>
+                <div className="prof-conn-card-mutual">
                   <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
                 </div>
               )}

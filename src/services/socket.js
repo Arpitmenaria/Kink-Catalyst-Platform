@@ -215,6 +215,45 @@ export function initSocket(token, store) {
     storeRef.dispatch(showToast({ message: `${name} accepted your connection request`, type: 'success' }));
   });
 
+  socket.on('friend_request_sent', (data) => {
+    console.log('🔔 [socket] friend_request_sent:', data);
+    // This event fires when current user sends a request to someone
+    // Used to update sent requests list in real-time
+  });
+
+  socket.on('friend_request_cancelled', (data) => {
+    console.log('🔔 [socket] friend_request_cancelled:', data);
+    const { fromUserId, toUserId } = data ?? {};
+    const currentUserId = storeRef.getState().auth.user?._id;
+    // If current user cancelled their own request, this will be handled by component
+    // If someone else cancelled to us, we don't need to do anything here
+  });
+
+  socket.on('friend_request_rejected', (data) => {
+    console.log('🔔 [socket] friend_request_rejected:', data);
+    const { fromUserId, toUserId } = data ?? {};
+    const currentUserId = storeRef.getState().auth.user?._id;
+    // If current user rejected someone's request, component handles removal from friendRequests
+    // If someone rejected our sent request, component should remove from sent requests
+  });
+
+  socket.on('connection_auto_followed', (data) => {
+    console.log('🔥 [socket] connection_auto_followed - AUTO-FOLLOW EVENT:', data);
+    const { user1Id, user2Id, bothFollowingEachOther } = data ?? {};
+    const currentUserId = storeRef.getState().auth.user?._id;
+
+    if (!bothFollowingEachOther) return;
+
+    // Update follow status for both users
+    if (user1Id === currentUserId) {
+      console.log('✅ [socket] Auto-followed user:', user2Id);
+      storeRef.dispatch(showToast({ message: 'You are now following each other!', type: 'success' }));
+    } else if (user2Id === currentUserId) {
+      console.log('✅ [socket] Auto-followed user:', user1Id);
+      storeRef.dispatch(showToast({ message: 'You are now following each other!', type: 'success' }));
+    }
+  });
+
   socket.on('event:seats_updated', data => {
     storeRef.dispatch(seatsUpdated(data));
   });
@@ -404,4 +443,8 @@ export function joinPostRoom(postId) {
 
 export function leavePostRoom(postId) {
   socket?.emit('leave:post', { postId });
+}
+
+export function getSocket() {
+  return socket;
 }

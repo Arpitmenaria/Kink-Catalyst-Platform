@@ -12,19 +12,41 @@ function EventIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" f
 
 export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onUserClick }) {
   const dispatch = useDispatch();
-  const { posts, loading } = useSelector(s => s.posts);
+  const { posts, loading, feedPage, feedHasMore } = useSelector(s => s.posts);
   const { user } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
 
   const [createOpen,     setCreateOpen]     = useState(false);
   const [createTab,      setCreateTab]      = useState('photo');
   const [creatorClicked, setCreatorClicked] = useState(false);
+  const [isLoadingMore,  setIsLoadingMore]  = useState(false);
   const clickTimer = useRef(null);
+  const feedRef = useRef(null);
 
   useEffect(() => {
     dispatch(fetchFeedPosts());
     dispatch(fetchConnections()); // candidates for @mention autocomplete in post/comment composers
   }, [dispatch]);
+
+  // Infinite scroll: load more posts when user scrolls near bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!feedRef.current || loading || isLoadingMore || !feedHasMore) return;
+
+      const scrollPos = window.innerHeight + window.scrollY;
+      const docHeight = document.body.offsetHeight;
+
+      // Load more when user is within 800px of bottom
+      if (scrollPos > docHeight - 800) {
+        setIsLoadingMore(true);
+        dispatch(fetchFeedPosts({ page: feedPage + 1, limit: 10 }))
+          .finally(() => setIsLoadingMore(false));
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [feedPage, loading, isLoadingMore, feedHasMore, dispatch]);
 
   function openCreate(tab = 'photo') { setCreateTab(tab); setCreateOpen(true); }
 
@@ -67,7 +89,7 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
 
       {createOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreateOpen(false)} onNavigateToEvents={onEventsClick} onCreateEvent={onCreateEvent} />}
 
-      <div className="feed-posts">
+      <div className="feed-posts" ref={feedRef}>
         {loading && posts.length === 0 && (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>Loading posts…</div>
         )}
@@ -77,6 +99,12 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
         {posts.map(post => (
           <PostCard key={post._id} post={post} onUserClick={onUserClick} />
         ))}
+        {isLoadingMore && (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>Loading more posts…</div>
+        )}
+        {!feedHasMore && posts.length > 0 && (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>No more posts</div>
+        )}
       </div>
     </main>
   );
