@@ -7,6 +7,7 @@ import { setConnectionOnline, setConnectionOffline } from '../store/slices/profi
 import { notificationReceived } from '../store/slices/notificationsSlice';
 import { showToast } from '../store/slices/toastSlice';
 import { showLogin } from '../store/slices/uiSlice';
+import { addPostRealtime, removePostRealtime, updatePostLikeCount, addCommentRealtime, updateCommentLikeCount } from '../store/slices/postsSlice';
 
 // Build a bell-ready notification object from a raw socket payload.
 function buildNotif(data) {
@@ -184,6 +185,27 @@ export function initSocket(token, store) {
 
   socket.on('event:comment_liked', data => {
     storeRef.dispatch(commentLikeUpdated(data));
+  });
+
+  // Real-time feed updates
+  socket.on('post:created', (postData) => {
+    storeRef.dispatch(addPostRealtime(postData));
+  });
+
+  socket.on('post:deleted', ({ postId }) => {
+    storeRef.dispatch(removePostRealtime(postId));
+  });
+
+  socket.on('post:liked', ({ postId, likeCount }) => {
+    storeRef.dispatch(updatePostLikeCount({ postId, likeCount }));
+  });
+
+  socket.on('comment:created', ({ postId, comment }) => {
+    storeRef.dispatch(addCommentRealtime({ postId, comment }));
+  });
+
+  socket.on('comment:liked', ({ postId, commentId, likeCount }) => {
+    storeRef.dispatch(updateCommentLikeCount({ postId, commentId, likeCount }));
   });
 
   socket.on('reconnect', () => {

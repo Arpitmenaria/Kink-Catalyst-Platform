@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
-import { fetchFeedPosts, addPostRealtime, removePostRealtime, updatePostLikeCount, addCommentRealtime, updateCommentLikeCount } from '../../store/slices/postsSlice';
+import { fetchFeedPosts } from '../../store/slices/postsSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
-import { io } from 'socket.io-client';
 
 function PhotosIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function VideoIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
@@ -26,50 +25,6 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
     dispatch(fetchFeedPosts());
     dispatch(fetchConnections()); // candidates for @mention autocomplete in post/comment composers
   }, [dispatch]);
-
-  // Real-time feed updates via socket
-  useEffect(() => {
-    const socket = io('https://kick-analyst-backend-production.jay886631.workers.dev', {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    });
-
-    socket.on('connect', () => {
-      socket.emit('feed:subscribe', { userId: user?._id });
-    });
-
-    // New post created
-    socket.on('post:created', (postData) => {
-      dispatch(addPostRealtime(postData));
-    });
-
-    // Post deleted
-    socket.on('post:deleted', ({ postId }) => {
-      dispatch(removePostRealtime(postId));
-    });
-
-    // Post liked/unliked
-    socket.on('post:liked', ({ postId, likeCount }) => {
-      dispatch(updatePostLikeCount({ postId, likeCount }));
-    });
-
-    // New comment on post
-    socket.on('comment:created', ({ postId, comment }) => {
-      dispatch(addCommentRealtime({ postId, comment }));
-    });
-
-    // Comment liked/unliked
-    socket.on('comment:liked', ({ postId, commentId, likeCount }) => {
-      dispatch(updateCommentLikeCount({ postId, commentId, likeCount }));
-    });
-
-    return () => {
-      socket.emit('feed:unsubscribe', { userId: user?._id });
-      socket.disconnect();
-    };
-  }, [dispatch, user?._id]);
 
   function openCreate(tab = 'photo') { setCreateTab(tab); setCreateOpen(true); }
 
