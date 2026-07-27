@@ -61,7 +61,13 @@ export function initSocket(token, store) {
 
   socket = io(BASE_URL, {
     auth: { token },
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 5,
+    upgrade: true,
+    forceNew: false,
   });
 
   socket.on('connect', () => {
