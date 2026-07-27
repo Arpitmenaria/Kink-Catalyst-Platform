@@ -1874,7 +1874,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       <div className="ev-more-link-row">
                         <div className="ev-more-icon"><LinkIcon /></div>
                         <div>
-                          <p className="ev-more-link-url">https://kick.me/e/{selectedEvent.id}</p>
+                          <p className="ev-more-link-url">https://kink.me/e/{selectedEvent.id}</p>
                           <p className="ev-more-link-sub">Share this link to invite others</p>
                         </div>
                       </div>

@@ -18,6 +18,19 @@ import {
   emitTypingStart, emitTypingStop, onUserTyping, onUserStoppedTyping,
 } from '../../services/socket';
 
+const URL_PATTERN = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+
+// Turns any http(s)/www URL in a chat message into a clickable link that
+// opens in a new tab, leaving the rest of the text untouched.
+function linkifyText(text) {
+  if (!text) return text;
+  return text.split(URL_PATTERN).map((part, i) => {
+    if (!/^(https?:\/\/|www\.)/i.test(part)) return part;
+    const href = part.startsWith('http') ? part : `https://${part}`;
+    return <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="msg-bubble-link">{part}</a>;
+  });
+}
+
 /* ── App nav icons ── */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
 function EventNavIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
@@ -1317,12 +1330,12 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                             ))}
                           </div>
                         ) : (
-                          <p className="msg-bubble-text">{msg.text || 'Attachment'}</p>
+                          <p className="msg-bubble-text">{msg.text ? linkifyText(msg.text) : 'Attachment'}</p>
                         )}
                       </div>
                     ) : (
                       <div className={`msg-bubble${msg.from === 'me' ? ' msg-bubble--sent' : ' msg-bubble--received'}`}>
-                        <p className="msg-bubble-text">{msg.text}</p>
+                        <p className="msg-bubble-text">{linkifyText(msg.text)}</p>
                       </div>
                     )}
                     {!isMediaMsg && (

@@ -56,6 +56,17 @@ function VideoIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24
 function EventIcon()     { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function PlusCircle()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
 function LockIcon()      { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
+function GlobeIcon()     { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
+function FriendsIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
+
+// Same values as CreatePostModal's VISIBILITY_OPTIONS — kept as a separate
+// local copy (built from this file's own icons) rather than importing across
+// files, matching how small icon sets are duplicated per-file elsewhere here.
+const ALBUM_VISIBILITY_OPTIONS = [
+  { id: 'anyone',  label: 'Anyone',       icon: <GlobeIcon />   },
+  { id: 'friends', label: 'Friends only', icon: <FriendsIcon /> },
+  { id: 'only_me', label: 'Only me',      icon: <LockIcon />    },
+];
 
 
 function CameraIcon() { return <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>; }
@@ -815,7 +826,10 @@ function CreateAlbumModal({ onClose }) {
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [error, setError] = useState('');
+  const [visibility, setVisibility] = useState('anyone');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -824,6 +838,12 @@ function CreateAlbumModal({ onClose }) {
   }, [onClose]);
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
+
+  useEffect(() => {
+    function onOutsideClick(e) { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false); }
+    if (dropdownOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [dropdownOpen]);
 
   const ALBUM_MAX = 30;
   function handlePick(e) {
@@ -846,7 +866,7 @@ function CreateAlbumModal({ onClose }) {
   async function handleCreate() {
     if (!name.trim()) { setError('Give your album a name.'); return; }
     if (files.length === 0) { setError('Add at least one photo.'); return; }
-    const res = await dispatch(createAlbum({ name: name.trim(), files }));
+    const res = await dispatch(createAlbum({ name: name.trim(), files, visibility }));
     if (createAlbum.fulfilled.match(res)) onClose();
     else setError(res.payload || 'Could not create album. Please try again.');
   }
@@ -862,6 +882,38 @@ function CreateAlbumModal({ onClose }) {
           <button className="cp-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className="cp-body">
+          <div className="cp-audience-row">
+            <div className="cp-audience-wrap" ref={dropdownRef}>
+              <button
+                className={`cp-audience-chip${dropdownOpen ? ' cp-audience-chip--open' : ''}`}
+                type="button"
+                onClick={() => setDropdownOpen(v => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={dropdownOpen}
+              >
+                {ALBUM_VISIBILITY_OPTIONS.find(o => o.id === visibility)?.icon}
+                {ALBUM_VISIBILITY_OPTIONS.find(o => o.id === visibility)?.label}
+                <span className={`cp-chevron${dropdownOpen ? ' cp-chevron--up' : ''}`}><ChevronDown /></span>
+              </button>
+
+              {dropdownOpen && (
+                <ul className="cp-visibility-dropdown" role="listbox">
+                  {ALBUM_VISIBILITY_OPTIONS.map(opt => (
+                    <li key={opt.id} role="option" aria-selected={visibility === opt.id}>
+                      <button
+                        className={`cp-vis-option${visibility === opt.id ? ' cp-vis-option--active' : ''}`}
+                        onClick={() => { setVisibility(opt.id); setDropdownOpen(false); }}
+                      >
+                        <span className="cp-vis-icon">{opt.icon}</span>
+                        <span className="cp-vis-label">{opt.label}</span>
+                        {visibility === opt.id && <span className="cp-vis-check"><CheckIcon /></span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
           <input
             className="album-name-input"
             placeholder="Album name"

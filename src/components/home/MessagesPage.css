@@ -901,6 +901,14 @@
 
 .msg-bubble--sent .msg-bubble-text { color: #fff; }
 
+.msg-bubble-link {
+  color: inherit;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.msg-bubble--received .msg-bubble-link { color: #60a5fa; }
+.msg-bubble-link:hover { opacity: 0.85; }
+
 .msg-file-chip {
   display: flex;
   align-items: center;
@@ -2606,14 +2614,16 @@
 
 .msg-conv {
   transition:
-    background    0.18s ease,
-    border-color  0.18s ease,
-    transform     0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    background     0.18s ease,
+    border-color   0.18s ease,
+    margin         0.18s ease,
+    border-radius  0.18s ease;
 }
 
 .msg-conv:hover {
   background: rgba(99,102,241,0.055);
-  transform: translateX(4px);
+  margin: 0 24px;
+  border-radius: 10px;
 }
 
 /* Avatar spring + ring on row hover */

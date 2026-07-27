@@ -211,6 +211,7 @@ function normalizeAlbum(a = {}) {
     photos,
     count: a.count ?? a.photoCount ?? photos.length,
     createdAt: a.createdAt,
+    visibility: a.visibility ?? 'anyone',
   };
 }
 
@@ -231,11 +232,12 @@ export const fetchAlbums = createAsyncThunk(
 // POST /api/users/me/albums — multipart: name + photos[] files
 export const createAlbum = createAsyncThunk(
   'profile/createAlbum',
-  async ({ name, files }, { getState, rejectWithValue }) => {
+  async ({ name, files, visibility = 'anyone' }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const form = new FormData();
       form.append('name', name);
+      form.append('visibility', visibility);
       const fileList = Array.isArray(files) ? files : [files];
       for (const f of fileList) form.append('photos', f);
       const data = await apiRequest('/api/users/me/albums', { method: 'POST', token, body: form, isFormData: true });
