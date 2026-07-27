@@ -615,7 +615,13 @@ const postsSlice = createSlice({
         }
       }
 
-      // Normalize and add once
+      // Normalize and add once. Must carry the same fields normalizePost()
+      // guarantees for a REST-fetched post — PostCard reads likesCount (not
+      // likeCount), comments as a real array, etc. A live post missing these
+      // silently broke the "People react" row (gated on likesCount > 0) and
+      // the comments panel for any post that arrived via this event instead
+      // of the initial feed fetch, until the next full refresh re-fetched it
+      // properly.
       const normalizedPost = {
         _id: incomingId,
         author: {
@@ -628,9 +634,19 @@ const postsSlice = createSlice({
         media: postData.media ?? postData.images ?? [],
         createdAt: postData.createdAt ?? new Date().toISOString(),
         likeCount: postData.likeCount ?? 0,
+        likesCount: postData.likeCount ?? postData.likesCount ?? 0,
+        likes: [],
+        myReaction: null,
+        recentReactors: [],
         commentCount: postData.commentCount ?? 0,
+        commentsCount: postData.commentCount ?? postData.commentsCount ?? 0,
+        comments: [],
+        commentsLoaded: true,
         shareCount: postData.shareCount ?? 0,
+        shares: [],
         liked: false,
+        isReported: false,
+        visibility: postData.visibility ?? 'anyone',
       };
       state.posts.unshift(normalizedPost);
     },
@@ -846,6 +862,7 @@ const postsSlice = createSlice({
         const { postId, comment } = action.payload;
         state.commentingId = null;
         if (comment) {
+          const commentId = comment._id ?? comment.id;
           forEachMatchingPost(state, postId, (post) => {
             if (!Array.isArray(post.comments)) post.comments = [];
             // Drop our own optimistic placeholder (addCommentRealtime, marked
@@ -853,8 +870,14 @@ const postsSlice = createSlice({
             // here — otherwise both would render as two separate comments.
             const hadPending = post.comments.some(c => c?.pending);
             post.comments = post.comments.filter(c => !c?.pending);
-            post.comments.push(comment);
-            if (!hadPending) post.commentsCount = (post.commentsCount ?? 0) + 1;
+            // The live comment:created socket echo of this same comment can
+            // land before this REST response does — if it already pushed it
+            // (via addCommentRealtime), don't push a second copy here.
+            const alreadyPresent = commentId && post.comments.some(c => c && (c._id ?? c.id) === commentId);
+            if (!alreadyPresent) {
+              post.comments.push(comment);
+              if (!hadPending) post.commentsCount = (post.commentsCount ?? 0) + 1;
+            }
           });
         }
       })

@@ -229,6 +229,22 @@ export const fetchAlbums = createAsyncThunk(
   }
 );
 
+// GET /api/users/:userId/albums — viewing someone else's profile. Backend
+// filters by visibility server-side (anyone/friends/only_me vs. the viewer's
+// relationship to that user), so whatever comes back is already safe to show.
+export const fetchUserAlbums = createAsyncThunk(
+  'profile/fetchUserAlbums',
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/users/${userId}/albums`, { token });
+      return (data.albums ?? []).map(normalizeAlbum);
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // POST /api/users/me/albums — multipart: name + photos[] files
 export const createAlbum = createAsyncThunk(
   'profile/createAlbum',
@@ -346,6 +362,8 @@ const profileSlice = createSlice({
     albums: [],
     albumsLoading: false,
     creatingAlbum: false,
+    viewedAlbums: [],
+    viewedAlbumsLoading: false,
 
     followers: [],
     followersTotal: 0,
@@ -458,6 +476,12 @@ const profileSlice = createSlice({
         state.albums = action.payload;
       })
       .addCase(fetchAlbums.rejected, (state) => { state.albumsLoading = false; })
+      .addCase(fetchUserAlbums.pending, (state) => { state.viewedAlbumsLoading = true; })
+      .addCase(fetchUserAlbums.fulfilled, (state, action) => {
+        state.viewedAlbumsLoading = false;
+        state.viewedAlbums = action.payload;
+      })
+      .addCase(fetchUserAlbums.rejected, (state) => { state.viewedAlbumsLoading = false; })
       .addCase(createAlbum.pending, (state) => { state.creatingAlbum = true; })
       .addCase(createAlbum.fulfilled, (state, action) => {
         state.creatingAlbum = false;

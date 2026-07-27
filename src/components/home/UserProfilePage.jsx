@@ -4,7 +4,7 @@ import AnimatedNav from "./AnimatedNav";
 import PostCard from "./PostCard";
 import SkeletonImg from "../SkeletonImg";
 import ReportModal from "./ReportModal";
-import { EventsTab } from "./ProfilePage";
+import { EventsTab, MediaTab } from "./ProfilePage";
 import { followUser, unfollowUser, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, blockUser, unblockUser, fetchBlockStatus } from "../../store/slices/usersSlice";
 import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../store/slices/postsSlice";
 import { fetchConnections } from "../../store/slices/profileSlice";
@@ -670,10 +670,10 @@ export default function UserProfilePage({
             const nextLb = () => setPhotoLbIdx(i => (i + 1) % photoUrls.length);
             return (
             <div className="prof-conn-layout">
-              <div className="media-tab" style={{ flex: 1 }}>
-                <div className="media-header">
-                  <h2 className="media-title">Photos</h2>
-                </div>
+              <div style={{ flex: 1 }}>
+                <MediaTab readOnly userId={userId} />
+              <div className="media-tab">
+                <h3 className="media-subhead">All photos</h3>
                 <div className="media-grid">
                   {viewedPhotos.length === 0 && (
                     <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
@@ -688,6 +688,7 @@ export default function UserProfilePage({
                     </div>
                   ))}
                 </div>
+              </div>
               </div>
 
               {photoLbIdx !== null && photoUrls[photoLbIdx] && (

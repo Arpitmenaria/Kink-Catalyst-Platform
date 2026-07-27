@@ -9,7 +9,7 @@ import {
   fetchUserProfile, updateAvatar, updateCover, updateProfile, updateEducation,
   fetchConnections, removeConnection, fetchPhotos, uploadPhoto,
   fetchFollowers, fetchFollowing, fetchGallery,
-  fetchAlbums, createAlbum,
+  fetchAlbums, createAlbum, fetchUserAlbums,
 } from '../../store/slices/profileSlice';
 import { fetchMyPosts } from '../../store/slices/postsSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
@@ -699,19 +699,29 @@ function GalleryPanel() {
   );
 }
 
-export function MediaTab({ readOnly }) {
+// userId: viewing someone else's profile — fetches their (visibility-filtered)
+// albums via GET /api/users/:userId/albums instead of your own via
+// /api/users/me/albums, and hides the raw "All photos"/upload/create-album
+// UI entirely, since there's no equivalent per-user endpoint for that yet —
+// only albums are backed by a viewer-aware endpoint right now.
+export function MediaTab({ readOnly, userId }) {
   const dispatch = useDispatch();
-  const { photos, albums } = useSelector(s => s.profile);
+  const { photos, albums, viewedAlbums } = useSelector(s => s.profile);
+  const albumList = userId ? viewedAlbums : albums;
   const photoInputRef = useRef(null);
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
   const [openAlbum, setOpenAlbum] = useState(null);
   const [lbIdx, setLbIdx] = useState(null); // album image lightbox index
 
   useEffect(() => {
+    if (userId) {
+      dispatch(fetchUserAlbums(userId));
+      return;
+    }
     dispatch(fetchPhotos());
     dispatch(fetchGallery());
     dispatch(fetchAlbums());
-  }, [dispatch]);
+  }, [dispatch, userId]);
 
   function handleFilesChosen(e) {
     const files = [...(e.target.files ?? [])];
@@ -722,7 +732,7 @@ export function MediaTab({ readOnly }) {
 
   // Album folder view — clicking an album opens its photos like a real folder.
   if (openAlbum) {
-    const current = albums.find(a => a.id === openAlbum.id) ?? openAlbum;
+    const current = albumList.find(a => a.id === openAlbum.id) ?? openAlbum;
     const albumPhotos = current.photos ?? [];
     const closeLb = () => setLbIdx(null);
     const prevLb = () => setLbIdx(i => (i - 1 + albumPhotos.length) % albumPhotos.length);
@@ -780,13 +790,13 @@ export function MediaTab({ readOnly }) {
         <h2 className="media-title">Photos</h2>
         {!readOnly && <button className="media-create-btn" onClick={() => setAlbumModalOpen(true)}><PlusIcon /> Create album</button>}
       </div>
-      <input ref={photoInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFilesChosen} />
+      {!userId && <input ref={photoInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFilesChosen} />}
 
-      {albums.length > 0 && (
+      {albumList.length > 0 && (
         <>
-          <h3 className="media-subhead">Albums (These are private directories)</h3>
+          <h3 className="media-subhead">{userId ? 'Albums' : 'Albums (These are private directories)'}</h3>
           <div className="media-album-grid">
-            {albums.map(album => (
+            {albumList.map(album => (
               <div key={album.id} className="media-album-card" style={{ cursor: 'pointer' }} onClick={() => setOpenAlbum(album)}>
                 <div className="media-album-cover">
                   {album.cover
@@ -799,10 +809,15 @@ export function MediaTab({ readOnly }) {
               </div>
             ))}
           </div>
-          <h3 className="media-subhead">All photos</h3>
+          {!userId && <h3 className="media-subhead">All photos</h3>}
         </>
       )}
 
+      {userId ? (
+        albumList.length === 0 && (
+          <p style={{ color: '#5c6a8c', fontSize: 13 }}>No albums yet.</p>
+        )
+      ) : (
       <div className="media-grid">
         {!readOnly && (
           <button className="media-add-slot" onClick={() => photoInputRef.current?.click()}>
@@ -814,6 +829,7 @@ export function MediaTab({ readOnly }) {
           <MediaCard key={photo.id} photo={photo} />
         ))}
       </div>
+      )}
       {albumModalOpen && <CreateAlbumModal onClose={() => setAlbumModalOpen(false)} />}
     </div>
   );

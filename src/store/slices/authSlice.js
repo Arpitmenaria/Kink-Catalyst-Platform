@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { selectPlan } from './plansSlice';
+import { selectPlan, clearOnboardingPending } from './plansSlice';
 import { apiRequest } from '../../services/api';
 import { showToast } from './toastSlice';
 
@@ -219,6 +219,7 @@ const authSlice = createSlice({
     },
     logout(state) {
       clearSession();
+      clearOnboardingPending();
       state.user = null;
       state.token = null;
       state.setupToken = null;

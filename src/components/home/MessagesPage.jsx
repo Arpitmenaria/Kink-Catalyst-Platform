@@ -217,7 +217,7 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
                   <span className="sa-link-shared">Shared by <strong>{link.sharedBy ?? ''}</strong></span>
                   <div className="sa-link-time-row">
                     <span className="sa-link-time">{link.time ?? ''}</span>
-                    <div className="sa-link-avatar" style={{ background: conv.color }}>{initials(conv.name)}</div>
+                    {/* <div className="sa-link-avatar" style={{ background: conv.color }}>{initials(conv.name)}</div> */}
                   </div>
                 </div>
               </a>
@@ -267,6 +267,7 @@ function ArrowRightSmIcon(){ return <svg width="14" height="14" viewBox="0 0 24 
 function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup, onViewProfile }) {
   const dispatch = useDispatch();
   const { connections, connectionsLoading } = useSelector(s => s.profile);
+  const { blockedUsers } = useSelector(s => s.messages);
 
   const [view,        setView]        = useState('dm');
   const [search,      setSearch]      = useState('');
@@ -283,6 +284,10 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
 
   // "New Message" is scoped to people you're already connected with — chat directly via
   // the conversationId the connections endpoint already resolves, or create one on first message.
+  // Exclude anyone currently blocked — blockedUsers holds normalized
+  // conversation objects (see fetchBlockedConversations), so match on
+  // participantId (the blocked person's user id), not the conversation id.
+  const blockedUserIds = new Set(blockedUsers.map(b => b.participantId).filter(Boolean));
   const connectionContacts = connections.map(c => ({
     id: c.id,
     name: c.name,
@@ -291,7 +296,7 @@ function NewMessageModal({ onClose, onStartDM, onOpenConversation, onCreateGroup
     avatarUrl: c.avatar,
     online: c.online,
     conversationId: c.conversationId,
-  })).filter(c => c.id);
+  })).filter(c => c.id && !blockedUserIds.has(c.id));
 
   const filteredConnections = connectionContacts.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -779,7 +784,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
     setAttachOpen(false);
     if (!fileInputRef.current) return;
     fileInputRef.current.accept = kind === 'photos'
-      ? 'image/*,video/*'
+      ? 'image/*'
       : '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip';
     fileInputRef.current.click();
   }
@@ -927,6 +932,12 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       const result = await dispatch(toggleBlock(activeConv.id));
       if (toggleBlock.fulfilled.match(result)) {
         dispatch(showToast({ message: result.payload.blocked ? 'Conversation blocked' : 'Conversation unblocked', type: 'success' }));
+        // blockedConvIds (used for this chat's own Block/Unblock button) updates
+        // immediately, but blockedUsers — what the Blocked tab AND the "New
+        // Message" connections list filter against — only gets refreshed via
+        // this fetch. Without it, someone just blocked this session keeps
+        // showing up in "New Message" until the next full page load.
+        dispatch(fetchBlockedConversations());
       } else {
         dispatch(showToast({ message: result.payload ?? 'Failed to update block status', type: 'error' }));
       }

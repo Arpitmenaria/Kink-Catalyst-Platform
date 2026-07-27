@@ -1,6 +1,26 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
 
+// `justSelectedPlan` gates App.jsx showing OnboardingForm instead of HomePage
+// — without persisting it, a hard refresh while still on the onboarding form
+// resets this to false (fresh Redux store) and silently drops the user into
+// the feed instead of keeping them on "Complete your profile". Mirrors it to
+// localStorage the same way authSlice persists token/user, so a reload
+// restores it exactly like any other session state.
+const ONBOARDING_PENDING_KEY = 'onboarding_pending';
+
+function saveOnboardingPending(value) {
+  try { localStorage.setItem(ONBOARDING_PENDING_KEY, value ? '1' : ''); } catch (_) {}
+}
+
+export function clearOnboardingPending() {
+  try { localStorage.removeItem(ONBOARDING_PENDING_KEY); } catch (_) {}
+}
+
+function loadOnboardingPending() {
+  try { return localStorage.getItem(ONBOARDING_PENDING_KEY) === '1'; } catch (_) { return false; }
+}
+
 export const fetchPlans = createAsyncThunk(
   'plans/fetchPlans',
   async (_, { rejectWithValue }) => {
@@ -42,7 +62,7 @@ const plansSlice = createSlice({
     // forever once set, so it can't be consumed. This one exists purely to
     // tell HomePage "you just landed here from plan selection" and is safe
     // to clear right after HomePage acts on it.
-    justSelectedPlan: false,
+    justSelectedPlan: loadOnboardingPending(),
     loading: false,
     selecting: null,
     error: null,
@@ -53,6 +73,7 @@ const plansSlice = createSlice({
     },
     consumeJustSelectedPlan(state) {
       state.justSelectedPlan = false;
+      clearOnboardingPending();
     },
   },
   extraReducers: (builder) => {
@@ -81,6 +102,7 @@ const plansSlice = createSlice({
         state.selectedPlanId = action.payload.planId;
         state.planSelectionComplete = true;
         state.justSelectedPlan = true;
+        saveOnboardingPending(true);
       })
       .addCase(selectPlan.rejected, (state, action) => {
         state.selecting = null;
