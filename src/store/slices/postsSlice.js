@@ -429,6 +429,50 @@ const postsSlice = createSlice({
       state.postDetailLoading = false;
       state.postDetailError = null;
     },
+    addPostRealtime(state, action) {
+      state.posts.unshift(action.payload);
+    },
+    removePostRealtime(state, action) {
+      const postId = action.payload;
+      state.posts = state.posts.filter(p => (p._id ?? p.id) !== postId);
+      if (state.postDetail?._id === postId || state.postDetail?.id === postId) {
+        state.postDetail = null;
+      }
+    },
+    updatePostLikeCount(state, action) {
+      const { postId, likeCount } = action.payload;
+      const post = state.posts.find(p => (p._id ?? p.id) === postId);
+      if (post) post.likeCount = likeCount;
+      if ((state.postDetail?._id ?? state.postDetail?.id) === postId) {
+        state.postDetail.likeCount = likeCount;
+      }
+    },
+    addCommentRealtime(state, action) {
+      const { postId, comment } = action.payload;
+      const post = state.posts.find(p => (p._id ?? p.id) === postId);
+      if (post) {
+        if (!post.comments) post.comments = [];
+        post.comments.push(comment);
+        post.commentCount = (post.commentCount ?? 0) + 1;
+      }
+      if ((state.postDetail?._id ?? state.postDetail?.id) === postId) {
+        if (!state.postDetail.comments) state.postDetail.comments = [];
+        state.postDetail.comments.push(comment);
+        state.postDetail.commentCount = (state.postDetail.commentCount ?? 0) + 1;
+      }
+    },
+    updateCommentLikeCount(state, action) {
+      const { postId, commentId, likeCount } = action.payload;
+      const post = state.posts.find(p => (p._id ?? p.id) === postId);
+      if (post?.comments) {
+        const comment = post.comments.find(c => (c._id ?? c.id) === commentId);
+        if (comment) comment.likeCount = likeCount;
+      }
+      if ((state.postDetail?._id ?? state.postDetail?.id) === postId) {
+        const comment = state.postDetail.comments?.find(c => (c._id ?? c.id) === commentId);
+        if (comment) comment.likeCount = likeCount;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -713,5 +757,13 @@ const postsSlice = createSlice({
   },
 });
 
-export const { setViewedPosts, clearPostDetail } = postsSlice.actions;
+export const {
+  setViewedPosts,
+  clearPostDetail,
+  addPostRealtime,
+  removePostRealtime,
+  updatePostLikeCount,
+  addCommentRealtime,
+  updateCommentLikeCount,
+} = postsSlice.actions;
 export default postsSlice.reducer;
