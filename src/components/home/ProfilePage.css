@@ -513,6 +513,7 @@
   align-items: baseline;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
 .prof-conn-name {
