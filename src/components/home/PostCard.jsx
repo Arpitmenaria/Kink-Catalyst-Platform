@@ -989,7 +989,7 @@ export default function PostCard({ post, onUserClick }) {
               <div key={c.id} className="pc-thread">
                 {/* Top-level comment */}
                 <div className="pc-comment">
-                  <div className="pc-avatar" style={{ background: c.avatar ? 'transparent' : c.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>
+                  <div className="pc-avatar" style={{ background: c.avatar ? 'transparent' : '#3b82f6', cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>
                     {c.avatar ? <img src={c.avatar} alt={c.name} className="pc-avatar-img" /> : c.initials}
                   </div>
                   <div className="pc-body">
@@ -1088,7 +1088,7 @@ export default function PostCard({ post, onUserClick }) {
                             className={`pc-comment pc-comment--reply${r.depth > 0 ? ' pc-comment--nested' : ''}`}
                             style={r.depth > 0 ? { marginLeft: r.depth * 22 } : undefined}
                           >
-                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.avatar ? 'transparent' : r.color, cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>
+                            <div className="pc-avatar pc-avatar--sm" style={{ background: r.avatar ? 'transparent' : '#3b82f6', cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>
                               {r.avatar ? <img src={r.avatar} alt={r.name} className="pc-avatar-img" /> : r.initials}
                             </div>
                             <div className="pc-body">
@@ -1185,7 +1185,7 @@ export default function PostCard({ post, onUserClick }) {
         <div className="post-comment-bar">
           <div
             className="comment-avatar"
-            style={{ cursor: userId ? 'pointer' : 'default', background: myAvatar ? 'transparent' : undefined }}
+            style={{ cursor: userId ? 'pointer' : 'default', background: myAvatar ? 'transparent' : '#3b82f6' }}
             onClick={() => handleCommentAuthorClick(userId)}
           >
             {myAvatar
