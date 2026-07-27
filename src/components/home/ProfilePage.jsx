@@ -415,7 +415,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 </div>
                 <span className="prof-conn-role">{u.role}</span>
                 {u.location && (
-                  <div className="prof-conn-shared">
+                  <div className="prof-conn-shared" style={{ margin: '-7px 0 0 0' }}>
                     <span className="prof-conn-shared-text"><SuggLocationIcon />{u.location}</span>
                   </div>
                 )}
@@ -452,7 +452,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 </div>
                 <span className="prof-conn-role">{conn.role}</span>
                 {conn.location && (
-                  <div className="prof-conn-shared">
+                  <div className="prof-conn-shared" style={{ margin: '-7px 0 0 0' }}>
                     <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
                   </div>
                 )}
@@ -481,7 +481,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>{conn.name}</p>
               <p className="prof-conn-card-role">{conn.role}</p>
               {conn.location && (
-                <div className="prof-conn-card-mutual">
+                <div className="prof-conn-card-mutual" style={{ margin: '-7px 0 0 0' }}>
                   <span className="prof-conn-shared-text"><SuggLocationIcon />{conn.location}</span>
                 </div>
               )}
