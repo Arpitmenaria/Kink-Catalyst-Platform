@@ -205,9 +205,16 @@ export function initSocket(token, store) {
     storeRef.dispatch(removePostRealtime(postId));
   });
 
-  socket.on('post:liked', ({ postId, likeCount }) => {
-    console.log('[socket] post:liked', postId, likeCount);
-    storeRef.dispatch(updatePostLikeCount({ postId, likeCount }));
+  socket.on('post:liked', (data) => {
+    console.log('🔥 [socket] post:liked EVENT RECEIVED:', JSON.stringify(data));
+    const { postId, likeCount } = data ?? {};
+    console.log('🔥 [socket] post:liked EXTRACTED:', { postId, likeCount, dataType: typeof data });
+    if (postId && likeCount !== undefined) {
+      console.log('✅ [socket] post:liked DISPATCHING to Redux');
+      storeRef.dispatch(updatePostLikeCount({ postId, likeCount }));
+    } else {
+      console.warn('❌ [socket] post:liked FAILED - Missing fields:', { postId, likeCount, fullData: data });
+    }
   });
 
   socket.on('comment:created', ({ postId, comment }) => {
@@ -233,6 +240,15 @@ export function initSocket(token, store) {
   socket.on('error', ({ event, message }) => {
     console.warn('[socket] error:', event, message);
   });
+
+  // DEBUG: Log when post room is joined
+  const originalEmit = socket.emit.bind(socket);
+  socket.emit = function(eventName, data) {
+    if (eventName.includes('post') || eventName.includes('room')) {
+      console.log(`[socket.emit] ${eventName}:`, data);
+    }
+    return originalEmit(eventName, data);
+  };
 
   // Backend killed this session (e.g. account suspended) — log out immediately
   // rather than leaving a dead connection the user thinks is still live.
@@ -343,4 +359,12 @@ export function joinEventRoom(eventId) {
 
 export function leaveEventRoom(eventId) {
   socket?.emit('leave:event', { eventId });
+}
+
+export function joinPostRoom(postId) {
+  socket?.emit('join:post', { postId });
+}
+
+export function leavePostRoom(postId) {
+  socket?.emit('leave:post', { postId });
 }

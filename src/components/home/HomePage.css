@@ -900,7 +900,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #d0d6ec;
-  margin: 0 0 2px;
+  margin: 0 0 0px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -909,7 +909,7 @@
 .friend-sub {
   font-size: 11px;
   color: #4a5270;
-  margin: 0;
+  margin: -7px 0 0 0 !important;
 }
 
 .friend-add-btn {
@@ -987,7 +987,6 @@
 }
 
 .friend-item:hover {
-  transform: translateX(4px);
   background: rgba(99,102,241,0.06);
 }
 

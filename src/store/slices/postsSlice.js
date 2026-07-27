@@ -9,12 +9,18 @@ import { blockUser } from './usersSlice';
 // page never showing there once the feed already holds its own copy).
 function forEachMatchingPost(state, postId, fn) {
   for (const list of [state.posts, state.myPosts, state.viewedPosts]) {
-    const post = list.find(p => p._id === postId);
+    const post = list.find(p => {
+      const pId = p._id ?? p.id ?? p.postId;
+      return pId === postId;
+    });
     if (post) fn(post);
   }
   // The single-post modal holds its own copy — keep it in sync too, so
   // reacting/commenting from the modal updates what's on screen.
-  if (state.postDetail?._id === postId) fn(state.postDetail);
+  if (state.postDetail) {
+    const detailId = state.postDetail._id ?? state.postDetail.id ?? state.postDetail.postId;
+    if (detailId === postId) fn(state.postDetail);
+  }
 }
 
 function findComment(comments, commentId) {
@@ -165,17 +171,19 @@ export const fetchMyPostsCount = createAsyncThunk(
 
 export const likePost = createAsyncThunk(
   'posts/like',
-  // reaction: 'like' | 'celebrate' | 'support' | 'love' | 'insightful' | 'funny'.
-  // remove: true when toggling the current reaction off. Backend sets/replaces/
-  // removes the caller's reaction and returns the new count + their reaction.
   async ({ postId, userId, reaction = 'like', remove = false }, { getState, rejectWithValue }) => {
+    console.log('🚀🚀🚀 [likePost] ASYNC FUNCTION STARTED 🚀🚀🚀');
+    console.log('🚀 [likePost] Thunk executing:', { postId, userId, reaction, remove });
     try {
       const { token } = getState().auth;
-      const data = await apiRequest(`/api/posts/${postId}/like`, {
+      const url = `/api/posts/${postId}/like`;
+      console.log('📡 [likePost] Calling API:', url, { reaction, remove });
+      const data = await apiRequest(url, {
         method: 'POST',
         token,
         body: { reaction, remove },
       });
+      console.log('✅ [likePost] API Success:', data);
       return {
         postId,
         liked: data.liked,
@@ -185,6 +193,7 @@ export const likePost = createAsyncThunk(
         userId,
       };
     } catch (err) {
+      console.error('❌ [likePost] API Error:', err.message);
       return rejectWithValue({ postId, userId, message: err.message });
     }
   }
@@ -431,14 +440,34 @@ const postsSlice = createSlice({
     },
     addPostRealtime(state, action) {
       const postData = action.payload;
-      // Normalize socket data to match PostCard structure
+      const incomingId = postData.postId ?? postData._id;
+
+      // AGGRESSIVE DEDUP: Remove the post from ALL lists if it exists anywhere
+      for (const list of [state.posts, state.myPosts, state.viewedPosts]) {
+        const index = list.findIndex(p => {
+          const pId = p._id ?? p.id ?? p.postId;
+          return pId === incomingId;
+        });
+        if (index !== -1) {
+          list.splice(index, 1);
+        }
+      }
+      // Also check post detail
+      if (state.postDetail) {
+        const detailId = state.postDetail._id ?? state.postDetail.id ?? state.postDetail.postId;
+        if (detailId === incomingId) {
+          // Don't remove, just note it
+        }
+      }
+
+      // Normalize and add once
       const normalizedPost = {
-        _id: postData.postId ?? postData._id,
+        _id: incomingId,
         author: {
           _id: postData.userId ?? postData.author?._id,
           fullName: postData.fullName ?? postData.author?.fullName,
           avatar: postData.avatar ?? postData.author?.avatar,
-          location: postData.location ?? postData.author?.location,
+          location: postData.location ?? postData.author?.location ?? '',
         },
         caption: postData.caption ?? postData.content,
         media: postData.media ?? postData.images ?? [],
@@ -459,24 +488,63 @@ const postsSlice = createSlice({
     },
     updatePostLikeCount(state, action) {
       const { postId, likeCount } = action.payload;
-      const post = state.posts.find(p => (p._id ?? p.id) === postId);
-      if (post) post.likeCount = likeCount;
-      if ((state.postDetail?._id ?? state.postDetail?.id) === postId) {
-        state.postDetail.likeCount = likeCount;
+      console.log('[Redux] updatePostLikeCount', { postId, likeCount });
+      // Search all post lists
+      for (const list of [state.posts, state.myPosts, state.viewedPosts]) {
+        const post = list.find(p => {
+          const pId = p._id ?? p.id ?? p.postId;
+          return pId === postId || pId === (postId?.postId);
+        });
+        if (post) {
+          post.likeCount = likeCount;
+          post.likesCount = likeCount;
+        }
+      }
+      // Also update post detail modal
+      if (state.postDetail) {
+        const pId = state.postDetail._id ?? state.postDetail.id ?? state.postDetail.postId;
+        if (pId === postId || pId === (postId?.postId)) {
+          state.postDetail.likeCount = likeCount;
+          state.postDetail.likesCount = likeCount;
+        }
       }
     },
     addCommentRealtime(state, action) {
       const { postId, comment } = action.payload;
-      const post = state.posts.find(p => (p._id ?? p.id) === postId);
-      if (post) {
-        if (!post.comments) post.comments = [];
-        post.comments.push(comment);
-        post.commentCount = (post.commentCount ?? 0) + 1;
+      if (!comment) return;
+      const normalizedComment = {
+        _id: comment._id ?? comment.id,
+        text: comment.text ?? comment.content ?? '',
+        author: comment.author ?? { _id: comment.userId, fullName: comment.fullName },
+        createdAt: comment.createdAt ?? new Date().toISOString(),
+        likes: comment.likes ?? comment.likeCount ?? 0,
+        likeCount: comment.likeCount ?? comment.likes ?? 0,
+        replies: comment.replies ?? [],
+      };
+      // Search all post lists for matching postId (handles both _id and postId formats)
+      for (const list of [state.posts, state.myPosts, state.viewedPosts]) {
+        const post = list.find(p => {
+          const pId = p._id ?? p.id ?? p.postId;
+          return pId === postId || pId === (postId?.postId);
+        });
+        if (post) {
+          // Convert comment count to empty array if needed (for real-time posts)
+          if (typeof post.comments === 'number') post.comments = [];
+          else if (!Array.isArray(post.comments)) post.comments = [];
+          post.comments.push(normalizedComment);
+          post.commentCount = (post.commentCount ?? 0) + 1;
+        }
       }
-      if ((state.postDetail?._id ?? state.postDetail?.id) === postId) {
-        if (!state.postDetail.comments) state.postDetail.comments = [];
-        state.postDetail.comments.push(comment);
-        state.postDetail.commentCount = (state.postDetail.commentCount ?? 0) + 1;
+      // Also update post detail modal
+      const postDetail = state.postDetail;
+      if (postDetail) {
+        const pId = postDetail._id ?? postDetail.id ?? postDetail.postId;
+        if (pId === postId || pId === (postId?.postId)) {
+          if (typeof postDetail.comments === 'number') postDetail.comments = [];
+          else if (!Array.isArray(postDetail.comments)) postDetail.comments = [];
+          postDetail.comments.push(normalizedComment);
+          postDetail.commentCount = (postDetail.commentCount ?? 0) + 1;
+        }
       }
     },
     updateCommentLikeCount(state, action) {
@@ -713,7 +781,8 @@ const postsSlice = createSlice({
       .addCase(createPost.fulfilled, (state, action) => {
         state.creating = false;
         if (action.payload) {
-          state.posts.unshift(action.payload);
+          // Only add to myPosts (user's own posts list)
+          // state.posts (feed) will be updated via socket event (post:created)
           state.myPosts.unshift(action.payload);
           state.myPostsTotal += 1;
         }

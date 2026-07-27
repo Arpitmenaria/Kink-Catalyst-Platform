@@ -50,7 +50,7 @@ function MutualIcon() {
 
 function LocationIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3 }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 4, display: 'inline-block', position: 'relative', top: '-1px' }}>
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
       <circle cx="12" cy="10" r="3"/>
     </svg>
@@ -221,7 +221,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                     </div>
                     <div className="friend-info">
                       <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
-                      <p className="friend-sub">
+                      <p className="friend-sub" style={{ margin: '-7px 0 0 0' }}>
                         {f.mutualFriends > 0 ? (
                           <><MutualIcon />{f.mutualFriends} mutual</>
                         ) : (f.location || f.city) ? (
@@ -390,7 +390,7 @@ export function AllSuggestionsModal({ suggestions, loading, friendStatusMap, fol
                   </div>
                   <div className="friend-info">
                     <p className="friend-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
-                    <p className="friend-sub">
+                    <p className="friend-sub" style={{ margin: '-7px 0 0 0' }}>
                       {f.mutualFriends ? (
                         <><MutualIcon />{f.mutualFriends} mutual</>
                       ) : (f.location || f.city) ? (

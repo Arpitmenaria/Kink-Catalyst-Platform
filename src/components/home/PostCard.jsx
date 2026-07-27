@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
-import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost, reportPost } from '../../store/slices/postsSlice';
+import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost, reportPost, addCommentRealtime } from '../../store/slices/postsSlice';
 import { blockUser } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
@@ -11,6 +11,7 @@ import ShareSheet from './ShareSheet';
 import './ShareSheet.css';
 import { postPermalink } from '../../utils/permalink';
 import { getMentionQuery, shiftMentionsOnEdit, insertMention, trimWithMentions, renderTaggedText, MentionDropdown } from './mentionUtils.jsx';
+import { joinPostRoom, leavePostRoom } from '../../services/socket';
 import './PostCard.css';
 
 const CAPTION_TRUNCATE_LENGTH = 200;
@@ -404,6 +405,15 @@ export default function PostCard({ post, onUserClick }) {
     dispatch(fetchPostComments(post._id));
   }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, commentCount]);
 
+  // Subscribe to real-time updates (comments, reactions) for this post
+  useEffect(() => {
+    const postId = post._id ?? post.id;
+    if (!postId || isStatic) return;
+    // Join post room immediately to get real-time reactions, likes, comments
+    joinPostRoom(postId);
+    return () => leavePostRoom(postId);
+  }, [post._id, post.id, isStatic]);
+
   useEffect(() => {
     if (!lightboxOpen) return;
     function onKey(e) {
@@ -424,16 +434,25 @@ export default function PostCard({ post, onUserClick }) {
 
   // Pick a specific reaction from the hover picker. Same reaction again = toggle off.
   function pickReaction(reactionId) {
+    console.log('🔔 [pickReaction] clicked:', { reactionId, isStatic, userId, postId: post._id });
     setPickerOpen(false);
     const remove = myReaction === reactionId;
     if (isStatic) {
+      console.log('📍 [pickReaction] isStatic=true, local only');
       setLocalReaction(remove ? null : reactionId);
       if (!remove) triggerBurst();
       return;
     }
-    if (!userId) return;
+    if (!userId) {
+      console.warn('❌ [pickReaction] NO userId!');
+      return;
+    }
     if (!remove) triggerBurst();
-    dispatch(likePost({ postId: post._id, userId, reaction: reactionId, remove }));
+    console.log('✅ [pickReaction] Dispatching likePost:', { postId: post._id, userId, reaction: reactionId, remove });
+    const result = dispatch(likePost({ postId: post._id, userId, reaction: reactionId, remove }));
+    if (result?.catch) {
+      result.catch(err => console.error('❌ [likePost] Rejected:', err));
+    }
   }
 
   // Plain click on the button: toggle current reaction, defaulting to Like.
@@ -515,6 +534,19 @@ export default function PostCard({ post, onUserClick }) {
     if (isStatic) { setComment(''); return; }
     if (!isCommenting) {
       const { text, mentions } = trimWithMentions(comment, commentMentions);
+      // Optimistic comment: show locally before API response
+      const optimisticComment = {
+        _id: `temp_${Date.now()}`,
+        text,
+        author: { _id: userId, fullName: user?.fullName ?? 'You', avatar: myAvatar },
+        createdAt: new Date().toISOString(),
+        likes: [],
+        likesCount: 0,
+        replies: [],
+        mentions,
+        pending: true, // Mark as pending so we can style differently if needed
+      };
+      dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
       dispatch(commentPost({ postId: post._id, text, mentions }));
       setComment('');
       setCommentMentions([]);

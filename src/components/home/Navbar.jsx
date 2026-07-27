@@ -117,7 +117,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
-        <span className="navbar-logo">Social Platform</span>
+        <span className="navbar-logo">Kink Analyst</span>
       </div>
 
       <div className="navbar-center">
