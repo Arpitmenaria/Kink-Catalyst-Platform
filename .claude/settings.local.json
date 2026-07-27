@@ -47,7 +47,10 @@
       "Bash(awk 'NR>=1100 && NR<=1170 && /^  return \\\\\\(/{print NR\": \"$0}' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/EventsPage.jsx)",
       "Bash(awk -F: '$1 > 1000 && $1 < 1200')",
       "Bash(awk 'NR==1941,NR==2100 && /^      \\\\\\)\\\\}/{print NR\": \"$0}' /Users/jaymandaliya/Documents/CodeTown/kick-analyst-frontend/src/components/home/EventsPage.jsx)",
-      "Bash(grep -A3 \"^--$\\\\|setJoinedIds\\\\|joinedIds\")"
+      "Bash(grep -A3 \"^--$\\\\|setJoinedIds\\\\|joinedIds\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(command -v chromium-cli)"
     ]
   },
   "enableAllProjectMcpServers": true,

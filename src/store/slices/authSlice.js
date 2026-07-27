@@ -129,6 +129,7 @@ export const registerUser = createAsyncThunk(
           fullName: credentials.fullName,
           email: credentials.email,
           password: credentials.password,
+          dateOfBirth: credentials.dob,
           fcmToken: credentials.fcmToken ?? 'web_fcm_token',
         },
       });
@@ -150,6 +151,7 @@ export const verifyOtp = createAsyncThunk(
           fullName: registrationData?.fullName,
           email: registrationData?.email,
           password: registrationData?.password,
+          dateOfBirth: registrationData?.dob,
           otp,
           fcmToken: registrationData?.fcmToken ?? 'web_fcm_token',
         },
@@ -177,6 +179,7 @@ export const resendOtp = createAsyncThunk(
           fullName: registrationData?.fullName,
           email: registrationData?.email,
           password: registrationData?.password,
+          dateOfBirth: registrationData?.dob,
           fcmToken: registrationData?.fcmToken ?? 'web_fcm_token',
         },
       });

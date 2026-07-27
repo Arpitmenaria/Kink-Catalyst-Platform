@@ -118,6 +118,14 @@ export default function SignupForm() {
     return age;
   }
 
+  // Latest birth date that still makes someone 18 today — disables the
+  // last 18 years in the calendar instead of just erroring after the fact.
+  const maxDob = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split('T')[0];
+  })();
+
   function handleChange(e) {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
@@ -260,7 +268,7 @@ export default function SignupForm() {
                 onChange={handleChange}
                 disabled={!isIdle}
                 placeholder="Select your date of birth"
-                max={new Date().toISOString().split('T')[0]}
+                max={maxDob}
                 hasError={ageError !== ''}
               />
             </div>

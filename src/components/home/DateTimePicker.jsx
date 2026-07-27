@@ -27,6 +27,7 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => {
     if (value) return new Date(value + 'T00:00:00');
+    if (max) return new Date(max + 'T00:00:00');
     if (min) return new Date(min + 'T00:00:00');
     return new Date();
   });
@@ -98,7 +99,7 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
       {open && (
         <div className="dtp-dropdown dtp-dropdown--cal">
           <div className="dtp-cal-nav">
-            <button className="dtp-nav-btn" onClick={() => setView(new Date(year, month - 1, 1))}><ChevLeft /></button>
+            <button type="button" className="dtp-nav-btn" onClick={() => setView(new Date(year, month - 1, 1))}><ChevLeft /></button>
             <div className="dtp-cal-nav-selects">
               <select
                 className="dtp-nav-select"
@@ -117,7 +118,7 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
                 {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <button className="dtp-nav-btn" onClick={() => setView(new Date(year, month + 1, 1))}><ChevRight /></button>
+            <button type="button" className="dtp-nav-btn" onClick={() => setView(new Date(year, month + 1, 1))}><ChevRight /></button>
           </div>
           <div className="dtp-day-names">
             {DAYS.map(d => <span key={d} className="dtp-day-name">{d}</span>)}
