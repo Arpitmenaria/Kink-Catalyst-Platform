@@ -6,6 +6,7 @@ import { showLogin } from '../../store/slices/uiSlice';
 import { fetchNotifications, markNotificationsRead, markNotificationRead } from '../../store/slices/notificationsSlice';
 import { fetchMyPostsCount } from '../../store/slices/postsSlice';
 import { disconnectSocket } from '../../services/socket';
+import { fetchAllUsers } from '../../store/slices/usersSlice';
 
 function BellIcon() {
   return (
@@ -69,6 +70,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const { notifications, unreadCount } = useSelector((state) => state.notifications);
   const { myPostsTotal }       = useSelector((state) => state.posts);
   const { conversations }      = useSelector((state) => state.messages);
+  const { allUsers }           = useSelector((state) => state.users);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   // authUser/profile postsCount reflect the logged-in user; myPostsTotal (from
@@ -84,12 +86,17 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
 
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [userOpen,   setUserOpen]   = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
   const notifRef                    = useRef(null);
   const userRef                     = useRef(null);
+  const searchRef                   = useRef(null);
 
   useEffect(() => {
     dispatch(fetchNotifications());
     dispatch(fetchMyPostsCount());
+    dispatch(fetchAllUsers());
   }, [dispatch]);
 
   useEffect(() => {
@@ -110,14 +117,143 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     return () => document.removeEventListener('mousedown', onOut);
   }, [userOpen]);
 
+  useEffect(() => {
+    if (!searchOpen) return;
+    function onOut(e) {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+    }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [searchOpen]);
+
+  // Handle search filtering
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const query = searchQuery.toLowerCase();
+    const results = allUsers.filter(user =>
+      (user.name && user.name.toLowerCase().includes(query)) ||
+      (user._id && user._id.includes(query))
+    ).slice(0, 8); // Limit to 8 results
+    setSearchResults(results);
+  }, [searchQuery, allUsers]);
+
   function handleBell() {
     setNotifOpen(v => !v);
+  }
+
+  function handleSearchChange(e) {
+    setSearchQuery(e.target.value);
+    setSearchOpen(true);
+  }
+
+  function handleUserClick(userId) {
+    setSearchQuery('');
+    setSearchOpen(false);
+    setSearchResults([]);
+    // Navigate to user profile
+    const user = allUsers.find(u => u._id === userId);
+    if (user) {
+      // onUserClick might not be available, so check
+      window.location.href = `/profile/${userId}`;
+    }
   }
 
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
         <span className="navbar-logo">Kink Analyst</span>
+        <div className="navbar-search-wrap" ref={searchRef} style={{ position: 'relative', marginLeft: '24px' }}>
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onFocus={() => setSearchOpen(true)}
+            className="navbar-search-input"
+            style={{
+              padding: '8px 12px',
+              borderRadius: '20px',
+              border: '1px solid #3b4556',
+              backgroundColor: '#1a202c',
+              color: '#d0d6ec',
+              width: '200px',
+              fontSize: '13px',
+              outline: 'none',
+              transition: 'all 0.2s',
+            }}
+          />
+          {searchOpen && searchResults.length > 0 && (
+            <div
+              className="navbar-search-dropdown"
+              style={{
+                position: 'absolute',
+                top: '40px',
+                left: 0,
+                backgroundColor: '#1a202c',
+                border: '1px solid #3b4556',
+                borderRadius: '8px',
+                width: '240px',
+                maxHeight: '400px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              }}
+            >
+              {searchResults.map((user) => (
+                <div
+                  key={user._id}
+                  onClick={() => handleUserClick(user._id)}
+                  style={{
+                    padding: '12px',
+                    borderBottom: '1px solid #3b4556',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#3b4556',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontWeight: 700, fontSize: '14px', color: '#93a0bd' }}>
+                        {user.name?.[0]?.toUpperCase() || '?'}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '13px', fontWeight: 500, color: '#d0d6ec', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {user.name}
+                    </p>
+                    {user.location && (
+                      <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#5c6a8c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {user.location}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="navbar-center">
