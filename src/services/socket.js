@@ -7,7 +7,10 @@ import { setConnectionOnline, setConnectionOffline } from '../store/slices/profi
 import { notificationReceived } from '../store/slices/notificationsSlice';
 import { showToast } from '../store/slices/toastSlice';
 import { showLogin } from '../store/slices/uiSlice';
-import { addPostRealtime, removePostRealtime, updatePostLikeCount, addCommentRealtime, updateCommentLikeCount } from '../store/slices/postsSlice';
+import {
+  addPostRealtime, removePostRealtime, updatePostLikeCount, addCommentRealtime, updateCommentLikeCount,
+  updateCommentRealtime, deleteCommentRealtime, updateReplyRealtime, deleteReplyRealtime,
+} from '../store/slices/postsSlice';
 
 // Build a bell-ready notification object from a raw socket payload.
 function buildNotif(data) {
@@ -272,35 +275,55 @@ export function initSocket(token, store) {
 
   // Real-time feed updates
   socket.on('post:created', (postData) => {
-    console.log('[socket] post:created', postData);
     storeRef.dispatch(addPostRealtime(postData));
   });
 
   socket.on('post:deleted', ({ postId }) => {
-    console.log('[socket] post:deleted', postId);
     storeRef.dispatch(removePostRealtime(postId));
   });
 
   socket.on('post:liked', (data) => {
-    console.log('🔥 [socket] post:liked EVENT RECEIVED:', JSON.stringify(data));
     const { postId, likeCount } = data ?? {};
-    console.log('🔥 [socket] post:liked EXTRACTED:', { postId, likeCount, dataType: typeof data });
     if (postId && likeCount !== undefined) {
-      console.log('✅ [socket] post:liked DISPATCHING to Redux');
       storeRef.dispatch(updatePostLikeCount({ postId, likeCount }));
-    } else {
-      console.warn('❌ [socket] post:liked FAILED - Missing fields:', { postId, likeCount, fullData: data });
     }
   });
 
-  socket.on('comment:created', ({ postId, comment }) => {
-    console.log('[socket] comment:created', postId, comment);
+  socket.on('comment:created', (data) => {
+    // Backend sends a flat payload (no nested `comment` object) — the comment's
+    // own fields sit directly alongside postId: { postId, commentId, userId,
+    // fullName, avatar, text, createdAt, likeCount }.
+    const { postId, commentId, userId, fullName, avatar, text, createdAt, likeCount } = data ?? {};
+    if (!postId || !commentId) return;
+    const comment = {
+      _id: commentId,
+      text: text ?? '',
+      author: { _id: userId, fullName: fullName ?? '', avatar: avatar ?? '' },
+      createdAt: createdAt ?? new Date().toISOString(),
+      likes: likeCount ?? 0,
+      likeCount: likeCount ?? 0,
+    };
     storeRef.dispatch(addCommentRealtime({ postId, comment }));
   });
 
   socket.on('comment:liked', ({ postId, commentId, likeCount }) => {
-    console.log('[socket] comment:liked', postId, commentId, likeCount);
     storeRef.dispatch(updateCommentLikeCount({ postId, commentId, likeCount }));
+  });
+
+  socket.on('comment:updated', ({ postId, commentId, text, mentions, editedAt }) => {
+    storeRef.dispatch(updateCommentRealtime({ postId, commentId, text, mentions, editedAt }));
+  });
+
+  socket.on('comment:deleted', ({ postId, commentId }) => {
+    storeRef.dispatch(deleteCommentRealtime({ postId, commentId }));
+  });
+
+  socket.on('reply:updated', ({ postId, replyId, text, mentions, editedAt }) => {
+    storeRef.dispatch(updateReplyRealtime({ postId, replyId, text, mentions, editedAt }));
+  });
+
+  socket.on('reply:deleted', ({ postId, replyId }) => {
+    storeRef.dispatch(deleteReplyRealtime({ postId, replyId }));
   });
 
   socket.on('reconnect', () => {
@@ -316,15 +339,6 @@ export function initSocket(token, store) {
   socket.on('error', ({ event, message }) => {
     console.warn('[socket] error:', event, message);
   });
-
-  // DEBUG: Log when post room is joined
-  const originalEmit = socket.emit.bind(socket);
-  socket.emit = function(eventName, data) {
-    if (eventName.includes('post') || eventName.includes('room')) {
-      console.log(`[socket.emit] ${eventName}:`, data);
-    }
-    return originalEmit(eventName, data);
-  };
 
   // Backend killed this session (e.g. account suspended) — log out immediately
   // rather than leaving a dead connection the user thinks is still live.

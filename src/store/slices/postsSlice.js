@@ -23,6 +23,20 @@ function forEachMatchingPost(state, postId, fn) {
   }
 }
 
+// A comment fetch/resync can land while our own just-posted comment is still
+// mid-flight (commentPost hasn't resolved yet) — if the server's response
+// doesn't include it yet, replacing wholesale would make it flash away and
+// briefly show "No comments yet" again. Keep any not-yet-confirmed optimistic
+// entry the fresh list doesn't already have.
+function mergeFreshComments(post, comments) {
+  const pending = Array.isArray(post.comments)
+    ? post.comments.filter(c => c?.pending && !comments.some(sc => (sc._id ?? sc.id) === (c._id ?? c.id)))
+    : [];
+  post.comments = [...comments, ...pending];
+  post.commentsCount = post.comments.length;
+  post.commentsLoaded = true;
+}
+
 function findComment(comments, commentId) {
   for (const c of comments) {
     if ((c._id ?? c.id) === commentId) return c;
@@ -208,7 +222,31 @@ export const fetchPostComments = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/posts/${postId}/comments`, { token });
-      return { postId, comments: data.comments ?? [] };
+      // Backend can include null/malformed entries in this array (e.g. a
+      // deleted comment left as a placeholder) — strip them here, at the
+      // point they enter Redux, instead of every consumer needing its own guard.
+      return { postId, comments: (data.comments ?? []).filter(Boolean) };
+    } catch (err) {
+      return rejectWithValue({ postId, message: err.message });
+    }
+  }
+);
+
+// Silent background resync for an open comments panel — same call as
+// fetchPostComments, but deliberately doesn't touch commentsLoadingIds (no
+// spinner flicker every poll). Backstops the live comment:created socket
+// event in case it's dropped or never actually reaches this client; mirrors
+// the identical syncMessages pattern already used for the chat window.
+export const syncPostComments = createAsyncThunk(
+  'posts/syncComments',
+  async (postId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments`, { token });
+      // Backend can include null/malformed entries in this array (e.g. a
+      // deleted comment left as a placeholder) — strip them here, at the
+      // point they enter Redux, instead of every consumer needing its own guard.
+      return { postId, comments: (data.comments ?? []).filter(Boolean) };
     } catch (err) {
       return rejectWithValue({ postId, message: err.message });
     }
@@ -277,6 +315,116 @@ export const replyToComment = createAsyncThunk(
         token,
       });
       return { postId, commentId, reply: data.reply };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// ── Comment/reply edit, delete, report — author-only for edit/delete, any
+// user but the author for report (backend 400s a self-report). Delete is a
+// soft-delete: the comment/reply stays in place (so replies threaded under it
+// don't orphan) but flips `deleted: true`, rendered as "[deleted]".
+export const editComment = createAsyncThunk(
+  'posts/editComment',
+  async ({ postId, commentId, text, mentions }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments/${commentId}`, {
+        method: 'PATCH',
+        body: { text, mentions: mentions ?? [] },
+        token,
+      });
+      return {
+        postId,
+        commentId,
+        text: data.comment?.text ?? text,
+        mentions: data.comment?.mentions ?? mentions ?? [],
+        editedAt: data.comment?.editedAt ?? new Date().toISOString(),
+      };
+    } catch (err) {
+      return rejectWithValue({ postId, commentId, message: err.message });
+    }
+  }
+);
+
+export const deleteComment = createAsyncThunk(
+  'posts/deleteComment',
+  async ({ postId, commentId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE', token });
+      return { postId, commentId };
+    } catch (err) {
+      return rejectWithValue({ postId, commentId, message: err.message });
+    }
+  }
+);
+
+export const reportComment = createAsyncThunk(
+  'posts/reportComment',
+  async ({ postId, commentId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/posts/${postId}/comments/${commentId}/report`, {
+        method: 'POST',
+        body: { reason },
+        token,
+      });
+      return { postId, commentId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const editReply = createAsyncThunk(
+  'posts/editReply',
+  async ({ postId, commentId, replyId, text, mentions }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/posts/${postId}/comments/${commentId}/replies/${replyId}`, {
+        method: 'PATCH',
+        body: { text, mentions: mentions ?? [] },
+        token,
+      });
+      return {
+        postId,
+        replyId,
+        text: data.reply?.text ?? text,
+        mentions: data.reply?.mentions ?? mentions ?? [],
+        editedAt: data.reply?.editedAt ?? new Date().toISOString(),
+      };
+    } catch (err) {
+      return rejectWithValue({ postId, commentId, replyId, message: err.message });
+    }
+  }
+);
+
+export const deleteReply = createAsyncThunk(
+  'posts/deleteReply',
+  async ({ postId, commentId, replyId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/posts/${postId}/comments/${commentId}/replies/${replyId}`, { method: 'DELETE', token });
+      return { postId, replyId };
+    } catch (err) {
+      return rejectWithValue({ postId, commentId, replyId, message: err.message });
+    }
+  }
+);
+
+export const reportReply = createAsyncThunk(
+  'posts/reportReply',
+  async ({ postId, commentId, replyId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/posts/${postId}/comments/${commentId}/replies/${replyId}/report`, {
+        method: 'POST',
+        body: { reason },
+        token,
+      });
+      return { postId, replyId };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -431,6 +579,7 @@ const postsSlice = createSlice({
     creating: false,
     editingId: null,
     deletingId: null,
+    deletingCommentId: null, // id of the comment/reply currently being deleted (confirm-modal spinner)
     reportReasons: [],
     reasonsLoading: false,
     reportSubmitting: false,
@@ -494,7 +643,6 @@ const postsSlice = createSlice({
     },
     updatePostLikeCount(state, action) {
       const { postId, likeCount } = action.payload;
-      console.log('[Redux] updatePostLikeCount', { postId, likeCount });
       // Search all post lists
       for (const list of [state.posts, state.myPosts, state.viewedPosts]) {
         const post = list.find(p => {
@@ -537,8 +685,15 @@ const postsSlice = createSlice({
           // Convert comment count to empty array if needed (for real-time posts)
           if (typeof post.comments === 'number') post.comments = [];
           else if (!Array.isArray(post.comments)) post.comments = [];
-          post.comments.push(normalizedComment);
-          post.commentCount = (post.commentCount ?? 0) + 1;
+          // Dedup — the commenting user's own optimistic push (commentPost.fulfilled)
+          // can land alongside this live echo for the same comment.
+          if (!post.comments.some(c => c && (c._id ?? c.id) === normalizedComment._id)) {
+            post.comments.push(normalizedComment);
+            post.commentCount = (post.commentCount ?? 0) + 1;
+            // PostCard reads `commentsCount` (plural) — this was never updated,
+            // so the visible count silently stayed stale until a full refetch.
+            post.commentsCount = (post.commentsCount ?? 0) + 1;
+          }
         }
       }
       // Also update post detail modal
@@ -548,8 +703,11 @@ const postsSlice = createSlice({
         if (pId === postId || pId === (postId?.postId)) {
           if (typeof postDetail.comments === 'number') postDetail.comments = [];
           else if (!Array.isArray(postDetail.comments)) postDetail.comments = [];
-          postDetail.comments.push(normalizedComment);
-          postDetail.commentCount = (postDetail.commentCount ?? 0) + 1;
+          if (!postDetail.comments.some(c => c && (c._id ?? c.id) === normalizedComment._id)) {
+            postDetail.comments.push(normalizedComment);
+            postDetail.commentCount = (postDetail.commentCount ?? 0) + 1;
+            postDetail.commentsCount = (postDetail.commentsCount ?? 0) + 1;
+          }
         }
       }
     },
@@ -564,6 +722,38 @@ const postsSlice = createSlice({
         const comment = state.postDetail.comments?.find(c => (c._id ?? c.id) === commentId);
         if (comment) comment.likeCount = likeCount;
       }
+    },
+    // Socket: someone (possibly us, echoed back) edited/deleted a comment or reply.
+    // findComment searches both top-level comments and nested replies by id,
+    // so the same handler works regardless of which one this is.
+    updateCommentRealtime(state, action) {
+      const { postId, commentId, text, mentions, editedAt } = action.payload;
+      forEachMatchingPost(state, postId, (post) => {
+        const c = findComment(post.comments, commentId);
+        if (c) { c.text = text ?? c.text; c.mentions = mentions ?? c.mentions; c.editedAt = editedAt ?? c.editedAt; }
+      });
+    },
+    deleteCommentRealtime(state, action) {
+      const { postId, commentId } = action.payload;
+      forEachMatchingPost(state, postId, (post) => {
+        const c = findComment(post.comments, commentId);
+        if (c) { c.deleted = true; c.text = ''; }
+        post.commentsCount = Math.max(0, (post.commentsCount ?? 0) - 1);
+      });
+    },
+    updateReplyRealtime(state, action) {
+      const { postId, replyId, text, mentions, editedAt } = action.payload;
+      forEachMatchingPost(state, postId, (post) => {
+        const r = findComment(post.comments, replyId);
+        if (r) { r.text = text ?? r.text; r.mentions = mentions ?? r.mentions; r.editedAt = editedAt ?? r.editedAt; }
+      });
+    },
+    deleteReplyRealtime(state, action) {
+      const { postId, replyId } = action.payload;
+      forEachMatchingPost(state, postId, (post) => {
+        const r = findComment(post.comments, replyId);
+        if (r) { r.deleted = true; r.text = ''; }
+      });
     },
   },
   extraReducers: (builder) => {
@@ -657,8 +847,14 @@ const postsSlice = createSlice({
         state.commentingId = null;
         if (comment) {
           forEachMatchingPost(state, postId, (post) => {
+            if (!Array.isArray(post.comments)) post.comments = [];
+            // Drop our own optimistic placeholder (addCommentRealtime, marked
+            // `pending: true`) now that the real, server-confirmed comment is
+            // here — otherwise both would render as two separate comments.
+            const hadPending = post.comments.some(c => c?.pending);
+            post.comments = post.comments.filter(c => !c?.pending);
             post.comments.push(comment);
-            post.commentsCount = (post.commentsCount ?? 0) + 1;
+            if (!hadPending) post.commentsCount = (post.commentsCount ?? 0) + 1;
           });
         }
       })
@@ -673,15 +869,17 @@ const postsSlice = createSlice({
       .addCase(fetchPostComments.fulfilled, (state, action) => {
         const { postId, comments } = action.payload;
         state.commentsLoadingIds = state.commentsLoadingIds.filter(id => id !== postId);
-        forEachMatchingPost(state, postId, (post) => {
-          post.comments = comments;
-          post.commentsCount = comments.length;
-          post.commentsLoaded = true;
-        });
+        forEachMatchingPost(state, postId, (post) => mergeFreshComments(post, comments));
       })
       .addCase(fetchPostComments.rejected, (state, action) => {
         const postId = action.payload?.postId ?? action.meta.arg;
         state.commentsLoadingIds = state.commentsLoadingIds.filter(id => id !== postId);
+      })
+
+      // ── Silent background comment resync (see syncPostComments above) ──
+      .addCase(syncPostComments.fulfilled, (state, action) => {
+        const { postId, comments } = action.payload;
+        forEachMatchingPost(state, postId, (post) => mergeFreshComments(post, comments));
       })
 
       // ── Reactions modal — full likes list (paginated) ──
@@ -724,6 +922,81 @@ const postsSlice = createSlice({
           if (!Array.isArray(comment.replies)) comment.replies = [];
           comment.replies.push(reply);
         });
+      })
+
+      // ── Edit/delete/report a comment ────────
+      .addCase(editComment.fulfilled, (state, action) => {
+        const { postId, commentId, text, mentions, editedAt } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          const c = findComment(post.comments, commentId);
+          if (c) { c.text = text; c.mentions = mentions; c.editedAt = editedAt; }
+        });
+      })
+      .addCase(deleteComment.pending, (state, action) => {
+        state.deletingCommentId = action.meta.arg.commentId;
+      })
+      .addCase(deleteComment.fulfilled, (state, action) => {
+        state.deletingCommentId = null;
+        const { postId, commentId } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          const c = findComment(post.comments, commentId);
+          if (c) { c.deleted = true; c.text = ''; }
+          post.commentsCount = Math.max(0, (post.commentsCount ?? 0) - 1);
+        });
+      })
+      .addCase(deleteComment.rejected, (state) => {
+        state.deletingCommentId = null;
+      })
+      .addCase(reportComment.pending, (state) => {
+        state.reportSubmitting = true;
+      })
+      .addCase(reportComment.fulfilled, (state, action) => {
+        state.reportSubmitting = false;
+        const { postId, commentId } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          const c = findComment(post.comments, commentId);
+          if (c) c.isReported = true;
+        });
+      })
+      .addCase(reportComment.rejected, (state) => {
+        state.reportSubmitting = false;
+      })
+
+      // ── Edit/delete/report a reply ──────────
+      .addCase(editReply.fulfilled, (state, action) => {
+        const { postId, replyId, text, mentions, editedAt } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          const r = findComment(post.comments, replyId);
+          if (r) { r.text = text; r.mentions = mentions; r.editedAt = editedAt; }
+        });
+      })
+      .addCase(deleteReply.pending, (state, action) => {
+        state.deletingCommentId = action.meta.arg.replyId;
+      })
+      .addCase(deleteReply.fulfilled, (state, action) => {
+        state.deletingCommentId = null;
+        const { postId, replyId } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          const r = findComment(post.comments, replyId);
+          if (r) { r.deleted = true; r.text = ''; }
+        });
+      })
+      .addCase(deleteReply.rejected, (state) => {
+        state.deletingCommentId = null;
+      })
+      .addCase(reportReply.pending, (state) => {
+        state.reportSubmitting = true;
+      })
+      .addCase(reportReply.fulfilled, (state, action) => {
+        state.reportSubmitting = false;
+        const { postId, replyId } = action.payload;
+        forEachMatchingPost(state, postId, (post) => {
+          const r = findComment(post.comments, replyId);
+          if (r) r.isReported = true;
+        });
+      })
+      .addCase(reportReply.rejected, (state) => {
+        state.reportSubmitting = false;
       })
 
       // ── Share ──────────────────────────────
@@ -862,5 +1135,9 @@ export const {
   updatePostLikeCount,
   addCommentRealtime,
   updateCommentLikeCount,
+  updateCommentRealtime,
+  deleteCommentRealtime,
+  updateReplyRealtime,
+  deleteReplyRealtime,
 } = postsSlice.actions;
 export default postsSlice.reducer;

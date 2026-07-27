@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
-import { likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, deletePost, reportPost, addCommentRealtime } from '../../store/slices/postsSlice';
+import {
+  likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, syncPostComments,
+  deletePost, reportPost, addCommentRealtime,
+  editComment, deleteComment, editReply, deleteReply,
+} from '../../store/slices/postsSlice';
 import { blockUser } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
@@ -128,6 +132,15 @@ function threadReplies(replies) {
   return out;
 }
 
+// Backend soft-delete detection — don't rely on one exact flag name. Some
+// responses replace `text` with the literal placeholder string instead of
+// (or in addition to) setting a boolean, so treat that as deleted too.
+function isDeletedComment(c) {
+  if (c.deleted || c.isDeleted || c.is_deleted) return true;
+  const t = (c.text ?? '').trim().toLowerCase();
+  return t === '[deleted]' || t === 'this comment has been deleted.' || t === 'this reply has been deleted.';
+}
+
 function normalizeComment(c) {
   if (!c) return null;
   const cid = c._id ?? c.id;
@@ -147,6 +160,9 @@ function normalizeComment(c) {
     text: c.text ?? '',
     mentions: c.mentions ?? [],
     likes: typeof c.likes === 'number' ? c.likes : (Array.isArray(c.likes) ? c.likes.length : 0),
+    deleted: isDeletedComment(c),
+    isReported: !!c.isReported,
+    editedAt: c.editedAt ?? null,
     replies: threadReplies((c.replies ?? []).filter(Boolean).map(r => {
       const rName = r.author?.fullName ?? 'Unknown';
       return {
@@ -165,15 +181,18 @@ function normalizeComment(c) {
         time: timeAgo(r.createdAt),
         text: r.text ?? '',
         likes: typeof r.likes === 'number' ? r.likes : 0,
+        deleted: isDeletedComment(r),
+        isReported: !!r.isReported,
+        editedAt: r.editedAt ?? null,
       };
-    })),
+    }).filter(r => !r.deleted)),
   };
 }
 
 export default function PostCard({ post, onUserClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
-  const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId } = useSelector(s => s.posts);
+  const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
   const { connections, profile } = useSelector(s => s.profile);
   // Logged-in user's avatar for the comment composer (profile is the freshest
   // source; auth.user is the fallback right after login).
@@ -207,7 +226,9 @@ export default function PostCard({ post, onUserClick }) {
   const [replyText,       setReplyText]       = useState('');
   const [replyMentions,   setReplyMentions]   = useState([]);
   const [replyDropdown,   setReplyDropdown]   = useState(null); // { start, end, candidates } | null
+  const [replyEmojiOpen,  setReplyEmojiOpen]  = useState(false);
   const replyInputRef = useRef(null);
+  const replyEmojiRef = useRef(null);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [editOpen,        setEditOpen]        = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -215,6 +236,15 @@ export default function PostCard({ post, onUserClick }) {
   const [reactionsModalOpen, setReactionsModalOpen] = useState(false);
   const menuRef = useRef(null);
   const menuDropdownRef = useRef(null);
+
+  // Per-comment/reply "..." menu (Edit/Delete for your own, Report for others').
+  const [commentMenuOpenId, setCommentMenuOpenId]     = useState(null);
+  const [editingCommentId,  setEditingCommentId]      = useState(null);
+  const [editDraft,         setEditDraft]             = useState('');
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState(null); // { commentId, replyId } | null
+  const [commentReportTarget, setCommentReportTarget] = useState(null); // { commentId, replyId } | null
+  const commentMenuRef = useRef(null);
+  const editInputRef = useRef(null);
 
   function mentionCandidates(query) {
     const q = query.toLowerCase();
@@ -240,6 +270,69 @@ export default function PostCard({ post, onUserClick }) {
     dispatch(likeComment({ postId: post._id, commentId }));
   }
 
+  function toggleCommentMenu(id) {
+    setCommentMenuOpenId(prev => (prev === id ? null : id));
+  }
+
+  // parentId is null for a top-level comment's own menu, or the top-level
+  // comment's id when this is a reply's menu (replies always need their
+  // parent id too, since the edit/delete/report endpoints are nested one
+  // level under /comments/:commentId/replies/:replyId).
+  function startEditComment(item) {
+    setCommentMenuOpenId(null);
+    setEditingCommentId(item.id);
+    setEditDraft(item.text);
+    requestAnimationFrame(() => editInputRef.current?.focus());
+  }
+
+  function cancelEditComment() {
+    setEditingCommentId(null);
+    setEditDraft('');
+  }
+
+  async function saveEditComment(commentId, parentId) {
+    const text = editDraft.trim();
+    if (!text) return;
+    const action = parentId
+      ? editReply({ postId: post._id, commentId: parentId, replyId: commentId, text, mentions: [] })
+      : editComment({ postId: post._id, commentId, text, mentions: [] });
+    const result = await dispatch(action);
+    const ok = parentId ? editReply.fulfilled.match(result) : editComment.fulfilled.match(result);
+    if (ok) {
+      cancelEditComment();
+    } else {
+      dispatch(showToast({ message: result.payload?.message ?? 'Failed to save changes', type: 'error' }));
+    }
+  }
+
+  function openDeleteCommentConfirm(commentId, parentId) {
+    setCommentMenuOpenId(null);
+    setCommentDeleteTarget({ commentId, parentId });
+  }
+
+  function closeDeleteCommentConfirm() { setCommentDeleteTarget(null); }
+
+  async function handleDeleteCommentConfirm() {
+    if (!commentDeleteTarget) return;
+    const { commentId, parentId } = commentDeleteTarget;
+    const action = parentId
+      ? deleteReply({ postId: post._id, commentId: parentId, replyId: commentId })
+      : deleteComment({ postId: post._id, commentId });
+    const result = await dispatch(action);
+    const ok = parentId ? deleteReply.fulfilled.match(result) : deleteComment.fulfilled.match(result);
+    if (ok) {
+      dispatch(showToast({ message: parentId ? 'Reply deleted' : 'Comment deleted', type: 'success' }));
+    } else {
+      dispatch(showToast({ message: result.payload?.message ?? 'Failed to delete', type: 'error' }));
+    }
+    setCommentDeleteTarget(null);
+  }
+
+  function openReportComment(commentId, parentId) {
+    setCommentMenuOpenId(null);
+    setCommentReportTarget({ commentId, parentId });
+  }
+
   // target is undefined when "Reply" is clicked on the top-level comment
   // itself, or { replyId, userId, name } when clicked on one of its replies.
   // replyingTo tracks { commentId, replyId } so the box can be rendered
@@ -257,10 +350,12 @@ export default function PostCard({ post, onUserClick }) {
       setReplyText('');
       setReplyMentions([]);
       setReplyDropdown(null);
+      setReplyEmojiOpen(false);
       return;
     }
     setReplyingTo({ commentId, replyId });
     setReplyDropdown(null);
+    setReplyEmojiOpen(false);
     if (target) {
       const { text, mention, cursor } = insertMention('', 0, 0, { id: target.userId, name: target.name });
       setReplyText(text);
@@ -363,7 +458,8 @@ export default function PostCard({ post, onUserClick }) {
 
   const realComments = (post.comments ?? [])
     .map(normalizeComment)
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(c => !c.deleted);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -371,6 +467,13 @@ export default function PostCard({ post, onUserClick }) {
     document.addEventListener('mousedown', onOut);
     return () => document.removeEventListener('mousedown', onOut);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!commentMenuOpenId) return;
+    function onOut(e) { if (commentMenuRef.current && !commentMenuRef.current.contains(e.target)) setCommentMenuOpenId(null); }
+    document.addEventListener('mousedown', onOut);
+    return () => document.removeEventListener('mousedown', onOut);
+  }, [commentMenuOpenId]);
 
   // The "..." dropdown opens downward by default, which cuts it off for posts
   // near the bottom of the viewport (nothing clips it — it just renders past
@@ -413,6 +516,16 @@ export default function PostCard({ post, onUserClick }) {
     joinPostRoom(postId);
     return () => leavePostRoom(postId);
   }, [post._id, post.id, isStatic]);
+
+  // Backstop for the live comment:created socket event, in case it's dropped
+  // or never reaches this client — silently resyncs the open comments panel
+  // every few seconds so new comments from other users still show up without
+  // a manual refresh, same reasoning as the chat window's syncMessages poll.
+  useEffect(() => {
+    if (isStatic || !showComments || !post.commentsLoaded) return;
+    const id = setInterval(() => dispatch(syncPostComments(post._id)), 6000);
+    return () => clearInterval(id);
+  }, [isStatic, showComments, post.commentsLoaded, post._id, dispatch]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -520,6 +633,28 @@ export default function PostCard({ post, onUserClick }) {
       commentInputRef.current?.setSelectionRange(cursor, cursor);
     });
   }
+
+  function insertReplyEmoji(emoji) {
+    const input = replyInputRef.current;
+    const start = input?.selectionStart ?? replyText.length;
+    const end = input?.selectionEnd ?? replyText.length;
+    const next = replyText.slice(0, start) + emoji + replyText.slice(end);
+    setReplyMentions(prev => shiftMentionsOnEdit(replyText, next, prev));
+    setReplyText(next);
+    const cursor = start + emoji.length;
+    requestAnimationFrame(() => {
+      replyInputRef.current?.focus();
+      replyInputRef.current?.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  useEffect(() => {
+    function onOutsideClick(e) {
+      if (replyEmojiRef.current && !replyEmojiRef.current.contains(e.target)) setReplyEmojiOpen(false);
+    }
+    if (replyEmojiOpen) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [replyEmojiOpen]);
 
   useEffect(() => {
     function onOutsideClick(e) {
@@ -858,17 +993,36 @@ export default function PostCard({ post, onUserClick }) {
                     {c.avatar ? <img src={c.avatar} alt={c.name} className="pc-avatar-img" /> : c.initials}
                   </div>
                   <div className="pc-body">
-                    <div className="pc-bubble">
-                      <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.name}</span>
-                      <span className="pc-time">{c.time}</span>
-                      <p className="pc-text">{renderTaggedText(c.text, c.mentions, onUserClick)}</p>
-                    </div>
+                    {editingCommentId === c.id ? (
+                      <div className="pc-edit-wrap">
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          className="pc-edit-input"
+                          value={editDraft}
+                          onChange={e => setEditDraft(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && saveEditComment(c.id, null)}
+                        />
+                        <button type="button" className="pc-edit-save" onClick={() => saveEditComment(c.id, null)} disabled={!editDraft.trim()}>Save</button>
+                        <button type="button" className="pc-edit-cancel" onClick={cancelEditComment}>Cancel</button>
+                      </div>
+                    ) : (
+                      <div className="pc-bubble">
+                        <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.name}</span>
+                        <span className="pc-time">{c.time}{c.editedAt ? ' · edited' : ''}</span>
+                        <p className="pc-text">{renderTaggedText(c.text, c.mentions, onUserClick)}</p>
+                      </div>
+                    )}
                     <div className="pc-actions">
-                      <button className={`pc-act${likedComments.has(c.id) ? ' pc-act--liked' : ''}`} onClick={() => handleCommentLike(c.id)}>
-                        Like ({c.likes})
-                      </button>
-                      <span className="pc-dot">·</span>
-                      <button className="pc-act" onClick={() => openReplyBox(c.id)}>Reply</button>
+                      {editingCommentId !== c.id && (
+                        <>
+                          <button className={`pc-act${likedComments.has(c.id) ? ' pc-act--liked' : ''}`} onClick={() => handleCommentLike(c.id)}>
+                            Like ({c.likes})
+                          </button>
+                          <span className="pc-dot">·</span>
+                          <button className="pc-act" onClick={() => openReplyBox(c.id)}>Reply</button>
+                        </>
+                      )}
                       {c.replies.length > 0 && (
                         <>
                           <span className="pc-dot">·</span>
@@ -876,6 +1030,23 @@ export default function PostCard({ post, onUserClick }) {
                             {expandedReplies.has(c.id) ? `Hide replies` : `View ${c.replies.length} replies`}
                           </button>
                         </>
+                      )}
+                      {editingCommentId !== c.id && (
+                        <div className="pc-comment-menu-wrap" ref={commentMenuOpenId === c.id ? commentMenuRef : null}>
+                          <button type="button" className="pc-comment-more-btn" onClick={() => toggleCommentMenu(c.id)}><MoreIcon /></button>
+                          {commentMenuOpenId === c.id && (
+                            <div className="pc-comment-menu-dropdown">
+                              {c.authorId === userId ? (
+                                <>
+                                  <button type="button" className="pc-comment-menu-item" onClick={() => startEditComment(c)}><EditIcon /> Edit</button>
+                                  <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openDeleteCommentConfirm(c.id, null)}><TrashIcon /> Delete</button>
+                                </>
+                              ) : !c.isReported && (
+                                <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openReportComment(c.id, null)}><ReportIcon /> Report</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -892,6 +1063,16 @@ export default function PostCard({ post, onUserClick }) {
                           autoFocus
                         />
                         {replyDropdown && <MentionDropdown candidates={replyDropdown.candidates} onPick={pickReplyMention} />}
+                        <div className="comment-emoji-wrap" ref={replyEmojiRef}>
+                          <button type="button" className="comment-icon-btn" onClick={() => setReplyEmojiOpen(v => !v)}><EmojiIcon /></button>
+                          {replyEmojiOpen && (
+                            <div className="comment-emoji-popover">
+                              {EMOJI_LIST.map(em => (
+                                <button key={em} type="button" className="comment-emoji-btn" onClick={() => insertReplyEmoji(em)}>{em}</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <button className="pc-reply-send" onClick={() => handleSendReply(c.id)} disabled={!replyText.trim()}>
                           <SendIcon />
                         </button>
@@ -911,18 +1092,50 @@ export default function PostCard({ post, onUserClick }) {
                               {r.avatar ? <img src={r.avatar} alt={r.name} className="pc-avatar-img" /> : r.initials}
                             </div>
                             <div className="pc-body">
-                              <div className="pc-bubble pc-bubble--reply">
-                                <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.name}</span>
-                                <span className="pc-time">{r.time}</span>
-                                <p className="pc-text">{renderTaggedText(r.text, r.mentions, onUserClick)}</p>
-                              </div>
-                              <div className="pc-actions">
-                                <button className={`pc-act${likedComments.has(r.id) ? ' pc-act--liked' : ''}`} onClick={() => handleCommentLike(r.id)}>
-                                  Like ({r.likes})
-                                </button>
-                                <span className="pc-dot">·</span>
-                                <button className="pc-act" onClick={() => openReplyBox(c.id, { replyId: r.id, userId: r.authorId, name: r.name })}>Reply</button>
-                              </div>
+                              {editingCommentId === r.id ? (
+                                <div className="pc-edit-wrap">
+                                  <input
+                                    ref={editInputRef}
+                                    type="text"
+                                    className="pc-edit-input"
+                                    value={editDraft}
+                                    onChange={e => setEditDraft(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && saveEditComment(r.id, c.id)}
+                                  />
+                                  <button type="button" className="pc-edit-save" onClick={() => saveEditComment(r.id, c.id)} disabled={!editDraft.trim()}>Save</button>
+                                  <button type="button" className="pc-edit-cancel" onClick={cancelEditComment}>Cancel</button>
+                                </div>
+                              ) : (
+                                <div className="pc-bubble pc-bubble--reply">
+                                  <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.name}</span>
+                                  <span className="pc-time">{r.time}{r.editedAt ? ' · edited' : ''}</span>
+                                  <p className="pc-text">{renderTaggedText(r.text, r.mentions, onUserClick)}</p>
+                                </div>
+                              )}
+                              {editingCommentId !== r.id && (
+                                <div className="pc-actions">
+                                  <button className={`pc-act${likedComments.has(r.id) ? ' pc-act--liked' : ''}`} onClick={() => handleCommentLike(r.id)}>
+                                    Like ({r.likes})
+                                  </button>
+                                  <span className="pc-dot">·</span>
+                                  <button className="pc-act" onClick={() => openReplyBox(c.id, { replyId: r.id, userId: r.authorId, name: r.name })}>Reply</button>
+                                  <div className="pc-comment-menu-wrap" ref={commentMenuOpenId === r.id ? commentMenuRef : null}>
+                                    <button type="button" className="pc-comment-more-btn" onClick={() => toggleCommentMenu(r.id)}><MoreIcon /></button>
+                                    {commentMenuOpenId === r.id && (
+                                      <div className="pc-comment-menu-dropdown">
+                                        {r.authorId === userId ? (
+                                          <>
+                                            <button type="button" className="pc-comment-menu-item" onClick={() => startEditComment(r)}><EditIcon /> Edit</button>
+                                            <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openDeleteCommentConfirm(r.id, c.id)}><TrashIcon /> Delete</button>
+                                          </>
+                                        ) : !r.isReported && (
+                                          <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openReportComment(r.id, c.id)}><ReportIcon /> Report</button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                               {replyingTo?.commentId === c.id && replyingTo?.replyId === r.id && (
                                 <div className="pc-reply-input-wrap">
@@ -937,6 +1150,16 @@ export default function PostCard({ post, onUserClick }) {
                                     autoFocus
                                   />
                                   {replyDropdown && <MentionDropdown candidates={replyDropdown.candidates} onPick={pickReplyMention} />}
+                                  <div className="comment-emoji-wrap" ref={replyEmojiRef}>
+                                    <button type="button" className="comment-icon-btn" onClick={() => setReplyEmojiOpen(v => !v)}><EmojiIcon /></button>
+                                    {replyEmojiOpen && (
+                                      <div className="comment-emoji-popover">
+                                        {EMOJI_LIST.map(em => (
+                                          <button key={em} type="button" className="comment-emoji-btn" onClick={() => insertReplyEmoji(em)}>{em}</button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
                                   <button className="pc-reply-send" onClick={() => handleSendReply(c.id)} disabled={!replyText.trim()}>
                                     <SendIcon />
                                   </button>
@@ -1009,11 +1232,42 @@ export default function PostCard({ post, onUserClick }) {
 
       {reportOpen && <ReportModal postId={post._id} onClose={() => setReportOpen(false)} />}
 
+      {commentReportTarget && (
+        <ReportModal
+          postId={post._id}
+          commentId={commentReportTarget.parentId ?? commentReportTarget.commentId}
+          replyId={commentReportTarget.parentId ? commentReportTarget.commentId : undefined}
+          onClose={() => setCommentReportTarget(null)}
+        />
+      )}
+
       {reactionsModalOpen && (
         <ReactionsModal postId={post._id} onClose={() => setReactionsModalOpen(false)} onUserClick={onUserClick} />
       )}
 
       {editOpen && <CreatePostModal editingPost={post} onClose={() => setEditOpen(false)} />}
+
+      {commentDeleteTarget && (
+        <div className="dpm-overlay" onClick={closeDeleteCommentConfirm}>
+          <div className="dpm-box" onClick={e => e.stopPropagation()}>
+            <h2 className="dpm-title">{commentDeleteTarget.parentId ? 'Delete Reply' : 'Delete Comment'}</h2>
+            <p className="dpm-desc">
+              Are you sure you want to delete this {commentDeleteTarget.parentId ? 'reply' : 'comment'}? This action cannot be undone.
+            </p>
+            <div className="dpm-actions">
+              <button className="dpm-cancel-btn" onClick={closeDeleteCommentConfirm} type="button">Cancel</button>
+              <button
+                className="dpm-confirm-btn"
+                onClick={handleDeleteCommentConfirm}
+                disabled={deletingCommentId === commentDeleteTarget.commentId}
+                type="button"
+              >
+                {deletingCommentId === commentDeleteTarget.commentId ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteConfirmOpen && (
         <div className="dpm-overlay" onClick={() => setDeleteConfirmOpen(false)}>

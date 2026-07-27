@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchReportReasons, reportPost, reportUser } from '../../store/slices/postsSlice';
+import { fetchReportReasons, reportPost, reportUser, reportComment, reportReply } from '../../store/slices/postsSlice';
 
-export default function ReportModal({ postId, userId, onClose }) {
+// commentId + replyId both set → reporting a reply (commentId is its parent).
+// commentId set, replyId not → reporting a top-level comment.
+// Neither set → reporting the post itself (falls back to reportPost/reportUser).
+export default function ReportModal({ postId, userId, commentId, replyId, onClose }) {
   const dispatch = useDispatch();
   const { reportReasons, reasonsLoading, reportSubmitting } = useSelector(s => s.posts);
   const [selected, setSelected] = useState('');
@@ -20,7 +23,13 @@ export default function ReportModal({ postId, userId, onClose }) {
 
   async function handleSubmit() {
     if (!selected || reportSubmitting) return;
-    const action = userId ? reportUser({ userId, reason: selected }) : reportPost({ postId, reason: selected });
+    const action = userId
+      ? reportUser({ userId, reason: selected })
+      : replyId
+        ? reportReply({ postId, commentId, replyId, reason: selected })
+        : commentId
+          ? reportComment({ postId, commentId, reason: selected })
+          : reportPost({ postId, reason: selected });
     const result = await dispatch(action);
     if (!result.error) setDone(true);
   }
@@ -33,7 +42,9 @@ export default function ReportModal({ postId, userId, onClose }) {
     <div className="report-overlay" onClick={handleOverlay}>
       <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
         <div className="report-modal-header">
-          <h2 className="report-modal-title" id="report-title">{userId ? 'Report User' : 'Report'}</h2>
+          <h2 className="report-modal-title" id="report-title">
+            {userId ? 'Report User' : replyId ? 'Report Reply' : commentId ? 'Report Comment' : 'Report'}
+          </h2>
           <button className="report-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
