@@ -75,6 +75,13 @@ export function initSocket(token, store) {
     // Fires on initial connect AND every reconnect — resync presence so
     // online/offline events missed while disconnected don't leave stale state.
     storeRef.dispatch(fetchOnlineUsers());
+
+    // Subscribe to feed real-time updates
+    const userId = storeRef.getState().auth.user?._id;
+    if (userId) {
+      socket.emit('feed:subscribe', { userId });
+      console.log('[socket] subscribed to feed:', userId);
+    }
   });
 
   socket.on('new_message', ({ conversationId, message }) => {
@@ -189,22 +196,27 @@ export function initSocket(token, store) {
 
   // Real-time feed updates
   socket.on('post:created', (postData) => {
+    console.log('[socket] post:created', postData);
     storeRef.dispatch(addPostRealtime(postData));
   });
 
   socket.on('post:deleted', ({ postId }) => {
+    console.log('[socket] post:deleted', postId);
     storeRef.dispatch(removePostRealtime(postId));
   });
 
   socket.on('post:liked', ({ postId, likeCount }) => {
+    console.log('[socket] post:liked', postId, likeCount);
     storeRef.dispatch(updatePostLikeCount({ postId, likeCount }));
   });
 
   socket.on('comment:created', ({ postId, comment }) => {
+    console.log('[socket] comment:created', postId, comment);
     storeRef.dispatch(addCommentRealtime({ postId, comment }));
   });
 
   socket.on('comment:liked', ({ postId, commentId, likeCount }) => {
+    console.log('[socket] comment:liked', postId, commentId, likeCount);
     storeRef.dispatch(updateCommentLikeCount({ postId, commentId, likeCount }));
   });
 
