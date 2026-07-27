@@ -430,7 +430,25 @@ const postsSlice = createSlice({
       state.postDetailError = null;
     },
     addPostRealtime(state, action) {
-      state.posts.unshift(action.payload);
+      const postData = action.payload;
+      // Normalize socket data to match PostCard structure
+      const normalizedPost = {
+        _id: postData.postId ?? postData._id,
+        author: {
+          _id: postData.userId ?? postData.author?._id,
+          fullName: postData.fullName ?? postData.author?.fullName,
+          avatar: postData.avatar ?? postData.author?.avatar,
+          location: postData.location ?? postData.author?.location,
+        },
+        caption: postData.caption ?? postData.content,
+        media: postData.media ?? postData.images ?? [],
+        createdAt: postData.createdAt ?? new Date().toISOString(),
+        likeCount: postData.likeCount ?? 0,
+        commentCount: postData.commentCount ?? 0,
+        shareCount: postData.shareCount ?? 0,
+        liked: false,
+      };
+      state.posts.unshift(normalizedPost);
     },
     removePostRealtime(state, action) {
       const postId = action.payload;
