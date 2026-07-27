@@ -5,9 +5,9 @@ import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import {
   fetchConversations, fetchMessages, sendMessage, markRead,
-  startDM, createGroup, fetchAssets, uploadAssets,
+  startDM, createGroup, fetchAssets,
   toggleBlock, reportConversation, deleteConversation, fetchOnlineUsers, clearUnread,
-  fetchBlockedUsers, removeBlockedUser,
+  fetchBlockedConversations, removeBlockedUser,
   fetchConversationDetail, fetchGroupMembers, deleteGroup, leaveGroup,
   addGroupMembers, removeGroupMember, setActiveConvId, updateGroup, syncMessages,
 } from '../../store/slices/messagesSlice';
@@ -27,7 +27,6 @@ function MessagesNavIcon() { return <svg width="16" height="16" viewBox="0 0 24 
 
 /* ── UI icons ── */
 function SearchIcon()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
-function ComposeIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function DoubleCheckIcon() { return <svg width="16" height="13" viewBox="0 0 28 13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 7 5 11 13 3"/><polyline points="9 7 13 11 21 3"/></svg>; }
 function AttachPlusIcon()  { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>; }
@@ -51,7 +50,6 @@ const EMOJI_LIST = [
 ];
 function ReadCheckIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>; }
 function BackArrowIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
-function UploadIcon()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>; }
 function DownloadIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
 function InfoIcon()        { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>; }
 function LinkItemIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>; }
@@ -117,101 +115,11 @@ async function downloadFile(url, filename) {
   }
 }
 
-/* ── Upload Assets Modal ── */
-function UploadAssetsModal({ convId, onClose }) {
-  const dispatch   = useDispatch();
-  const [dragging,  setDragging]  = useState(false);
-  const [files,     setFiles]     = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-
-  function handleFiles(incoming) {
-    setFiles(prev => [...prev, ...Array.from(incoming)]);
-  }
-
-  async function handleDone() {
-    if (files.length > 0 && convId) {
-      setUploading(true);
-      await dispatch(uploadAssets({ convId, files }));
-      setUploading(false);
-    }
-    onClose();
-  }
-
-  const totalBytes = files.reduce((s, f) => s + f.size, 0);
-  const totalLabel = totalBytes >= 1024 * 1024
-    ? `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
-    : `${(totalBytes / 1024).toFixed(0)} KB`;
-
-  return (
-    <div className="ua-overlay" onClick={onClose}>
-      <div className="ua-modal" onClick={e => e.stopPropagation()}>
-
-        <div className="ua-header">
-          <h2 className="ua-title">Upload New Assets</h2>
-          <button className="ua-close" onClick={onClose}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-
-        <div
-          className={`ua-dropzone${dragging ? ' ua-dropzone--active' : ''}`}
-          onDragOver={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
-        >
-          <div className="ua-cloud-icon">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
-              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-            </svg>
-          </div>
-          <p className="ua-drop-title">Drag and drop your assets here</p>
-          <p className="ua-drop-sub">Support for JPG, PNG, and MP4 up to 50MB</p>
-          <button className="ua-browse-btn" type="button" onClick={() => fileInputRef.current?.click()}>Browse Files</button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-            style={{ display: 'none' }}
-            onChange={e => handleFiles(e.target.files)}
-          />
-        </div>
-
-        {files.length > 0 && (
-          <div className="ua-uploaded-section">
-            <div className="ua-uploaded-header">
-              <span className="ua-uploaded-label">SELECTED ({files.length})</span>
-              <span className="ua-uploaded-size">{totalLabel} total</span>
-            </div>
-            <div className="ua-thumbs">
-              {files.slice(0, 5).map((f, i) => (
-                <div key={i} className="ua-thumb" style={{ background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>
-                  {f.name.split('.').pop()?.toUpperCase()}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="ua-footer">
-          <button className="ua-cancel-btn" onClick={onClose}>Cancel</button>
-          <button className="ua-done-btn" onClick={handleDone} disabled={uploading}>
-            {uploading ? 'Uploading…' : 'Done'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
   const dispatch = useDispatch();
   const { assets, assetsLoading } = useSelector(s => s.messages);
 
-  const [tab,        setTab]    = useState('media');
-  const [uploadOpen, setUpload] = useState(false);
+  const [tab, setTab] = useState('media');
 
   const convAssets = assets[conv.id] ?? {};
   const items      = convAssets[tab] ?? [];
@@ -332,38 +240,6 @@ function SharedAssetsView({ conv, onBack, onOpenLightbox, onOpenDoc }) {
         )}
       </div>
 
-      <div className="sa-right">
-        {/* Storage Used — hidden for now */}
-        {/* <div className="sa-panel">
-          <div className="sa-panel-header">
-            <span className="sa-panel-title">Storage Used</span>
-            <button className="sa-upgrade-btn">Upgrade</button>
-          </div>
-          <p className="sa-storage-nums">
-            <span className="sa-storage-used">{usedGB} GB</span>
-            <span className="sa-storage-total"> of {totalGB} GB</span>
-          </p>
-          <div className="sa-progress-track">
-            <div className="sa-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <div className="sa-storage-note">
-            <InfoIcon />
-            <span>{conv.name.split(' ')[0]} has contributed <strong>{storage?.otherUserContribGB ?? 0} GB</strong> to this share.</span>
-          </div>
-        </div> */}
-
-        <div className="sa-panel">
-          <p className="sa-quick-title">QUICK ACTIONS</p>
-          <button className="sa-action-btn sa-action-btn--primary" onClick={() => setUpload(true)}>
-            <UploadIcon /> Upload New
-          </button>
-          <button className="sa-action-btn sa-action-btn--secondary">
-            <DownloadIcon /> Download All
-          </button>
-        </div>
-      </div>
-
-      {uploadOpen && <UploadAssetsModal convId={conv.id} onClose={() => setUpload(false)} />}
     </div>
   );
 }
@@ -689,8 +565,17 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   /* Fetch online users (drives conversation online dots) + blocked users + connections (Quick Online panel) on mount */
   useEffect(() => {
     dispatch(fetchOnlineUsers());
-    dispatch(fetchBlockedUsers());
+    dispatch(fetchBlockedConversations());
     dispatch(fetchConnections({ limit: 100 }));
+  }, [dispatch]);
+
+  // `activeConvId` (used by receiveMessage to suppress the unread badge for
+  // whatever conversation is currently open) otherwise stays stuck at whatever
+  // was last opened here — this page unmounts on navigating to another
+  // section, but nothing else clears the Redux flag, so it would silently
+  // keep suppressing that one conversation's unread count even from Home/Feed.
+  useEffect(() => {
+    return () => { dispatch(setActiveConvId(null)); };
   }, [dispatch]);
 
   /* Navigated here with a specific user (Chat button on a profile) — get-or-create the DM and open it.
@@ -749,7 +634,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
 
   /* Refresh the blocked list whenever the Blocked tab is opened */
   useEffect(() => {
-    if (tab === 'Blocked') dispatch(fetchBlockedUsers());
+    if (tab === 'Blocked') dispatch(fetchBlockedConversations());
   }, [tab, dispatch]);
 
   /* Fallback for when the socket misses something (dropped connection, a
@@ -1104,14 +989,10 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   async function handleBlockedConfirmAction() {
     if (!blockedConfirm) return;
     const { type, user } = blockedConfirm;
+    // `user` here is a normalized conversation (from fetchBlockedConversations),
+    // so `user.id` is already the conversation id — no resolve step needed.
+    const convId = user.id;
     setBlockedConfirmSubmitting(true);
-    const convId = await resolveConvIdForUser(user.id);
-    if (!convId) {
-      dispatch(showToast({ message: "Couldn't open the conversation for this user.", type: 'error' }));
-      setBlockedConfirmSubmitting(false);
-      closeBlockedConfirm();
-      return;
-    }
     if (type === 'unblock') {
       const result = await dispatch(toggleBlock(convId));
       if (toggleBlock.fulfilled.match(result)) {
@@ -1251,7 +1132,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         <div className="msg-conv-panel">
           <div className="msg-conv-panel-header">
             <span className="msg-conv-panel-title">Messages</span>
-            <button className="msg-compose-btn" title="New message" onClick={() => setNewMsgOpen(true)}><ComposeIcon /></button>
+            <button className="msg-compose-label-btn msg-compose-label-btn--sm" onClick={() => setNewMsgOpen(true)}>New Message</button>
           </div>
           <div className="msg-conv-panel-list">
             {conversations.map(conv => (
@@ -1324,7 +1205,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   <input
                     className="msg-chat-search-input"
                     type="text"
-                    placeholder="Search in this conversation..."
+                    placeholder="Search messages..."
                     value={chatSearchQuery}
                     onChange={e => setChatSearchQuery(e.target.value)}
                     autoFocus
@@ -2049,7 +1930,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               <h1 className="msg-title">Messages</h1>
               <p className="msg-subtitle">Manage your private conversations</p>
             </div>
-            <button className="msg-compose-btn msg-compose-btn--lg" title="New message" onClick={() => setNewMsgOpen(true)}><ComposeIcon /></button>
+            <button className="msg-compose-label-btn" onClick={() => setNewMsgOpen(true)}>New Message</button>
           </div>
         </div>
 
@@ -2092,7 +1973,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
               {blockedUsers
                 .filter(u => !debouncedSearch || u.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
                 .map(u => (
-                <div key={u.id} className="msg-conv msg-conv--blocked" onClick={() => handleOpenChatWithUser(u)}>
+                <div key={u.id} className="msg-conv msg-conv--blocked" onClick={() => openConversation(u)}>
                   <div className="msg-avatar-wrap">
                     <div
                       className="msg-avatar"
@@ -2197,7 +2078,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
         <div className="msg-panel">
           <div className="msg-panel-header">
             <span className="msg-panel-title">Quick Online</span>
-            <button className="msg-view-all" onClick={() => setNewMsgOpen(true)}>View All</button>
+            {onlineConnections.length > 0 && (
+              <button className="msg-view-all" onClick={() => setNewMsgOpen(true)}>View All</button>
+            )}
           </div>
           <div className="msg-online-list">
             {onlineConnections.length === 0 && (

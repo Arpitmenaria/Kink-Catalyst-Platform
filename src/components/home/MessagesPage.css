@@ -766,22 +766,24 @@
 .msg-chat-search-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 1;
+  gap: 9px;
+  width: 240px;
+  max-width: 45%;
   margin-left: 16px;
   background: #131626;
   border: 1px solid #252d4a;
   border-radius: 8px;
-  padding: 7px 12px;
+  padding: 7px 10px;
   color: #5c6a8c;
 }
+.msg-chat-search-bar svg { width: 13px; height: 13px; flex-shrink: 0; }
 .msg-chat-search-input {
   flex: 1;
   background: none;
   border: none;
   outline: none;
   color: #e0e6f8;
-  font-size: 13.5px;
+  font-size: 13px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   min-width: 0;
 }
@@ -1372,12 +1374,16 @@
 }
 
 .msg-action-item:hover { background: #131626; }
+.msg-action-item:hover .msg-action-label { color: #f1f5f9; }
+.msg-action-item:hover svg:last-child { color: #94a3b8; }
 
 .msg-action-item--disabled {
   cursor: default;
   opacity: 0.55;
 }
 .msg-action-item--disabled:hover { background: none; }
+.msg-action-item--disabled:hover .msg-action-label { color: #8b9cc8; }
+.msg-action-item--disabled:hover svg:last-child { color: #3e4460; }
 
 .msg-action-icon {
   width: 24px;
@@ -1389,18 +1395,31 @@
   flex-shrink: 0;
 }
 
-.msg-action-icon--red   { background: rgba(239,68,68,0.15); color: #ef4444; }
-.msg-action-icon--orange{ background: rgba(245,158,11,0.15); color: #f59e0b; }
+.msg-action-icon--red {
+  background: #ef4444;
+  color: #fff;
+  border: 1px solid #dc2626;
+}
+.msg-action-icon--orange {
+  background: #f59e0b;
+  color: #1a1206;
+  border: 1px solid #d97706;
+}
+.msg-action-icon svg { stroke-width: 2.4; }
 
 .msg-action-label {
   flex: 1;
-  font-size: 12.5px;
-  color: #8b9cc8;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e2e8f0;
   text-align: left;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: color 0.15s;
 }
+.msg-action-item--disabled .msg-action-label { color: #8b9cc8; font-weight: 400; }
 
-.msg-action-item svg:last-child { color: #3e4460; flex-shrink: 0; }
+.msg-action-item svg:last-child { color: #64748b; flex-shrink: 0; transition: color 0.15s; }
+.msg-action-item--disabled svg:last-child { color: #3e4460; }
 
 /* ══════════════════════════════════════
    Shared Assets View
@@ -1694,9 +1713,28 @@
   gap: 12px;
 }
 
-.msg-compose-btn--lg {
+.msg-compose-label-btn {
   margin-top: 4px;
-  padding: 8px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.msg-compose-label-btn:hover { background: #2563eb; }
+
+/* Compact variant for the narrow conversation-list panel */
+.msg-compose-label-btn--sm {
+  margin-top: 0;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-radius: 6px;
 }
 
 /* ══════════════════════════════════════
@@ -2532,15 +2570,6 @@
 .msg-title    { animation: msgSlideUp 0.32s ease 0.08s both; }
 .msg-subtitle { animation: msgSlideUp 0.32s ease 0.14s both; }
 
-/* Compose button spring */
-.msg-compose-btn--lg {
-  transition: color 0.15s, background 0.15s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
-}
-.msg-compose-btn--lg:hover {
-  transform: scale(1.2) rotate(-8deg);
-  color: #6366f1;
-  background: rgba(99,102,241,0.1);
-}
 
 /* ── Tabs stagger ── */
 .msg-tabs { animation: msgSlideUp 0.3s ease 0.16s both; }

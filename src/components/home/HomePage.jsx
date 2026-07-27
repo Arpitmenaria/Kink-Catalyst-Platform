@@ -18,6 +18,7 @@ import { initSocket } from '../../services/socket';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
 import { consumeJustSelectedPlan } from '../../store/slices/plansSlice';
+import { clearPendingNavigation } from '../../store/slices/uiSlice';
 import { readSharedPostId, syncSharedPostId } from '../../utils/permalink';
 import { readInitialSection, readInitialViewId, readInitialTab, readInitialDate, readInitialCreate, syncPageUrl } from '../../utils/pageUrl';
 import './HomePage.css';
@@ -26,6 +27,7 @@ export default function HomePage() {
   const dispatch = useDispatch();
   const { token, user } = useSelector(s => s.auth);
   const { justSelectedPlan } = useSelector(s => s.plans);
+  const { pendingNavigation } = useSelector(s => s.ui);
 
   /* Init socket + resync counts on app load */
   useEffect(() => {
@@ -105,6 +107,18 @@ export default function HomePage() {
     syncPageUrl(section, currentView);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, currentView.id, currentView.tab, currentView.date, currentView.create]);
+
+  // Cross-app navigation request (e.g. clicking a new-message toast fired
+  // from socket.js, which has no way to reach this component's own state) —
+  // reuses the same one-shot restore plumbing as the ?section=&id= deep link.
+  useEffect(() => {
+    if (!pendingNavigation) return;
+    setSection(pendingNavigation.section);
+    if (pendingNavigation.section === 'messages' && pendingNavigation.convId) {
+      setRestoredConvId(pendingNavigation.convId);
+    }
+    dispatch(clearPendingNavigation());
+  }, [pendingNavigation, dispatch]);
 
   // Just came from signup → plan selection: land on Profile → About with
   // Personal Information edit mode already open so the user can fill it in.

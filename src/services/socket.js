@@ -53,6 +53,30 @@ function resurrectConversationIfMissing(conversationId) {
   }
 }
 
+// Toast for an incoming message, from anywhere in the app — skipped only when
+// the user is already looking at this exact conversation (activeConvId is
+// reliably null whenever MessagesPage isn't mounted, see its unmount cleanup).
+// Only wired to `new_message_notification` (the personal-room broadcast that
+// always fires for a genuine recipient) — `new_message` is room-scoped and
+// only reaches users who've joined that conversation, i.e. have it open, so
+// calling this from both would risk a duplicate toast for no benefit.
+function notifyNewMessage(conversationId, message) {
+  const state = storeRef.getState();
+  if (state.messages.activeConvId === conversationId) return;
+  const conv = state.messages.conversations.find(c => c.id === conversationId);
+  const sender = conv?.name || 'New message';
+  const preview = message.text?.trim()
+    ? message.text.trim()
+    : (Array.isArray(message.media) && message.media.length) || message.mediaUrl
+      ? 'Sent an attachment'
+      : 'Sent you a message';
+  storeRef.dispatch(showToast({
+    message: `${sender}: ${preview}`,
+    type: 'info',
+    meta: { section: 'messages', convId: conversationId },
+  }));
+}
+
 export function initSocket(token, store) {
   // Guard on the instance existing (not just `.connected`) — otherwise React
   // StrictMode's double-mount in dev creates a 2nd socket while the 1st is
@@ -84,6 +108,18 @@ export function initSocket(token, store) {
     }
   });
 
+  // Backend sends this right after connect: the list of users already online
+  // at the moment we joined, so we don't have to wait on the REST resync
+  // above (or a live user_online push) to know who's already present.
+  socket.on('users_online_sync', ({ onlineUsers } = {}) => {
+    (onlineUsers ?? []).forEach(u => {
+      const userId = u.id ?? u.userId ?? u._id;
+      if (!userId) return;
+      storeRef.dispatch(setUserOnline({ userId }));
+      storeRef.dispatch(setConnectionOnline({ userId }));
+    });
+  });
+
   socket.on('new_message', ({ conversationId, message }) => {
     // TEMP DIAGNOSTIC — remove after inspecting the payload shape.
     console.log('[socket] new_message raw payload', JSON.stringify(message));
@@ -107,6 +143,7 @@ export function initSocket(token, store) {
     // Personal room (user:<id>) — always a message from someone else
     storeRef.dispatch(receiveMessage({ convId: conversationId, message: { ...message, from: 'them' } }));
     resurrectConversationIfMissing(conversationId);
+    notifyNewMessage(conversationId, message);
   });
 
   socket.on('messages_read', ({ conversationId }) => {

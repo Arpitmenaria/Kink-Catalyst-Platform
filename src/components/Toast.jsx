@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeToast } from '../store/slices/toastSlice';
+import { navigateTo } from '../store/slices/uiSlice';
 
 function CheckIcon() {
   return (
@@ -42,25 +43,34 @@ function ToastItem({ toast }) {
     return () => clearTimeout(t);
   }, [toast.id, dispatch]);
 
+  function handleClick() {
+    if (!toast.meta) return;
+    dispatch(navigateTo(toast.meta));
+    dispatch(removeToast(toast.id));
+  }
+
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      padding: '12px 16px',
-      borderRadius: 10,
-      background: theme.bg,
-      border: `1px solid ${theme.border}`,
-      color: '#f1f5f9',
-      fontSize: 14,
-      fontWeight: 500,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-      minWidth: 260,
-      maxWidth: 380,
-      animation: 'toast-in 0.25s ease',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div
+      onClick={handleClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '12px 16px',
+        borderRadius: 10,
+        background: theme.bg,
+        border: `1px solid ${theme.border}`,
+        color: '#f1f5f9',
+        fontSize: 14,
+        fontWeight: 500,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+        minWidth: 260,
+        maxWidth: 380,
+        animation: 'toast-in 0.25s ease',
+        position: 'relative',
+        overflow: 'hidden',
+        cursor: toast.meta ? 'pointer' : 'default',
+      }}>
       {/* progress bar */}
       <span style={{
         position: 'absolute',
@@ -90,7 +100,7 @@ function ToastItem({ toast }) {
       <span style={{ flex: 1, lineHeight: 1.4 }}>{toast.message}</span>
 
       <button
-        onClick={() => dispatch(removeToast(toast.id))}
+        onClick={e => { e.stopPropagation(); dispatch(removeToast(toast.id)); }}
         style={{
           background: 'none',
           border: 'none',

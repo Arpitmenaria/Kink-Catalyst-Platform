@@ -390,21 +390,19 @@ export const reportConversation = createAsyncThunk(
   }
 );
 
-// 12. GET /api/users/me/blocked
-export const fetchBlockedUsers = createAsyncThunk(
-  'messages/fetchBlockedUsers',
+// 12. GET /api/conversations/blocked — same shape as fetchConversations, filtered
+// to conversations the current user has blocked. Reusing normalizeConversation
+// means each entry's `id` is the conversation id itself, so the Blocked tab's
+// unblock/delete actions can call toggleBlock/deleteConversation directly
+// with no extra user→conversation lookup.
+export const fetchBlockedConversations = createAsyncThunk(
+  'messages/fetchBlockedConversations',
   async (_, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest('/api/users/me/blocked', { token });
+      const data = await apiRequest('/api/conversations/blocked', { token });
       return {
-        blockedUsers: (data.blockedUsers ?? []).map(u => ({
-          id: u.id ?? u._id ?? '',
-          name: u.name ?? '',
-          avatarUrl: u.avatar?.startsWith?.('http') ? u.avatar : '',
-          role: u.role ?? '',
-          location: u.location ?? '',
-        })),
+        conversations: (data.conversations ?? []).map(normalizeConversation),
         total: data.total ?? 0,
       };
     } catch (err) {
@@ -480,14 +478,21 @@ const messagesSlice = createSlice({
       const { convId, message } = action.payload;
       const normalized = normalizeMessage(message);
       if (!state.messages[convId]) state.messages[convId] = [];
-      // Normalize before dedup so both _id and id fields resolve to the same key
-      if (normalized.id && !state.messages[convId].find(m => m.id === normalized.id)) {
-        state.messages[convId].push(normalized);
-      }
+      // Normalize before dedup so both _id and id fields resolve to the same key.
+      // `new_message` and `new_message_notification` can both fire for the same
+      // incoming message (room-scoped vs personal-room), so `isNew` also gates
+      // the unread bump below — otherwise the second event double-counts it.
+      const isNew = Boolean(normalized.id) && !state.messages[convId].find(m => m.id === normalized.id);
+      if (isNew) state.messages[convId].push(normalized);
       const conv = state.conversations.find(c => c.id === convId);
       if (conv) {
         conv.lastMessage = { text: normalized.text, time: normalized.time, fromMe: normalized.from === 'me' };
-        if (normalized.from !== 'me') conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+        // Don't bump unread for a conversation the user is actively viewing —
+        // `activeConvId` is reliably null whenever MessagesPage isn't mounted
+        // (see its unmount cleanup), so this correctly covers "on Home/Feed" too.
+        if (isNew && normalized.from !== 'me' && convId !== state.activeConvId) {
+          conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+        }
       }
     },
     // Socket: messages read
@@ -799,13 +804,14 @@ const messagesSlice = createSlice({
       })
       .addCase(fetchOnlineUsers.rejected, s => { s.onlineLoading = false; })
 
-      .addCase(fetchBlockedUsers.pending, s => { s.blockedUsersLoading = true; })
-      .addCase(fetchBlockedUsers.fulfilled, (s, a) => {
+      .addCase(fetchBlockedConversations.pending, s => { s.blockedUsersLoading = true; })
+      .addCase(fetchBlockedConversations.fulfilled, (s, a) => {
         s.blockedUsersLoading = false;
-        s.blockedUsers = a.payload.blockedUsers;
+        s.blockedUsers = a.payload.conversations;
         s.blockedUsersTotal = a.payload.total;
+        a.payload.conversations.forEach(c => { s.blockedConvIds[c.id] = true; });
       })
-      .addCase(fetchBlockedUsers.rejected, s => { s.blockedUsersLoading = false; });
+      .addCase(fetchBlockedConversations.rejected, s => { s.blockedUsersLoading = false; });
   },
 });
 

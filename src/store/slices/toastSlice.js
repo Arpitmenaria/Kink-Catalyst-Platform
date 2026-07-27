@@ -28,8 +28,8 @@ const toastSlice = createSlice({
   initialState: { toasts: [] },
   reducers: {
     showToast(state, action) {
-      const { message, type = 'success' } = action.payload;
-      state.toasts.push({ id: makeId(), message, type });
+      const { message, type = 'success', meta = null } = action.payload;
+      state.toasts.push({ id: makeId(), message, type, meta });
     },
     removeToast(state, action) {
       state.toasts = state.toasts.filter(t => t.id !== action.payload);
