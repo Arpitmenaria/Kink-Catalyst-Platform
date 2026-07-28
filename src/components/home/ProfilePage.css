@@ -699,36 +699,30 @@
 
 .prof-conn-tabs {
   display: flex;
-  gap: 8px;
+  gap: 0;
   align-items: center;
 }
 
 .prof-conn-tab {
-  height: 32px;
-  padding: 0 14px;
-  background: transparent;
-  border: 1px solid #1e2a42;
-  border-radius: 20px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
   color: #7a8ba5;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.18s, color 0.18s, background 0.18s;
+  transition: all 0.2s;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
 }
 
 .prof-conn-tab:hover {
-  border-color: #2563eb;
   color: #c8d3ea;
 }
 
 .prof-conn-tab--active {
-  border-color: #2563eb;
-  background: rgba(37,99,235,0.1);
   color: #60a5fa;
-  font-weight: 600;
+  border-bottom-color: #3b82f6;
 }
 
 .prof-conn-fbar-pill {
