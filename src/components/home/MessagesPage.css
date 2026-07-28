@@ -740,7 +740,8 @@
   font-size: 15px;
   font-weight: 700;
   color: #e0e6f8;
-  margin: 0 0 2px;
+  margin: 0;
+  line-height: 1.25;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -748,6 +749,7 @@
   font-size: 12px;
   color: #5c6a8c;
   margin: 0;
+  line-height: 1.25;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -2992,7 +2994,12 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .grp-info-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.grp-info-avatar--editable { position: relative; }
+/* The camera edit badge sits outside the photo's own circle (bottom-right
+   corner) — the base .grp-info-avatar's overflow:hidden (for clipping the
+   photo into a circle) would cut it off, so this variant clips the image
+   itself instead and leaves the badge unclipped. */
+.grp-info-avatar--editable { position: relative; overflow: visible; }
+.grp-info-avatar--editable img { border-radius: 50%; }
 .grp-info-avatar-edit-badge {
   position: absolute;
   bottom: 0;
