@@ -323,6 +323,10 @@ export default function UserProfilePage({
 
   function handlePhotoLike(photoId, e) {
     e.stopPropagation();
+    if (!photoId) {
+      console.warn("Photo ID is missing");
+      return;
+    }
     setPhotoLikes(prev => {
       const current = prev[photoId] || { count: 0, liked: false };
       const newLiked = !current.liked;
