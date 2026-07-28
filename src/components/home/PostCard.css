@@ -1156,6 +1156,22 @@ video.post-image {
   margin-right: 4px;
 }
 
+/* Auto-hidden-from-public notice — author-only, post still fully visible to them */
+.post-hidden-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 12px;
+  padding: 10px 14px;
+  background: #2a1f0d;
+  border: 1px solid #d97706;
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.post-hidden-banner svg { flex-shrink: 0; }
+
 /* ── LinkedIn-style reaction picker ── */
 .react-picker {
   position: absolute;

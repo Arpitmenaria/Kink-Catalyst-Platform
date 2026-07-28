@@ -809,6 +809,13 @@ export default function PostCard({ post, onUserClick }) {
           )}
         </div>
 
+        {isOwner && post.hiddenFromPublic && (
+          <div className="post-hidden-banner">
+            <ReportIcon />
+            <span>Your post is hidden from the public due to multiple reports. Only you can see it.</span>
+          </div>
+        )}
+
         {/* Caption */}
         {post.caption && (
           <p className="post-text">

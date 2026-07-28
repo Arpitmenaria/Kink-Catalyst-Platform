@@ -771,6 +771,14 @@ const postsSlice = createSlice({
         if (r) { r.deleted = true; r.text = ''; }
       });
     },
+    // Auto-hidden (5+ reports) for the post's own author only — unlike
+    // removePostRealtime, this keeps the post in place so they can still see
+    // it, just flagged so PostCard can show a "hidden from public" notice.
+    // Everyone else gets the normal removePostRealtime instead (see socket.js).
+    markPostHiddenRealtime(state, action) {
+      const postId = action.payload;
+      forEachMatchingPost(state, postId, (post) => { post.hiddenFromPublic = true; });
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -1162,5 +1170,6 @@ export const {
   deleteCommentRealtime,
   updateReplyRealtime,
   deleteReplyRealtime,
+  markPostHiddenRealtime,
 } = postsSlice.actions;
 export default postsSlice.reducer;

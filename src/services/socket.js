@@ -9,7 +9,7 @@ import { showToast } from '../store/slices/toastSlice';
 import { showLogin } from '../store/slices/uiSlice';
 import {
   addPostRealtime, removePostRealtime, updatePostLikeCount, addCommentRealtime, updateCommentLikeCount,
-  updateCommentRealtime, deleteCommentRealtime, updateReplyRealtime, deleteReplyRealtime,
+  updateCommentRealtime, deleteCommentRealtime, updateReplyRealtime, deleteReplyRealtime, markPostHiddenRealtime,
 } from '../store/slices/postsSlice';
 
 // Build a bell-ready notification object from a raw socket payload.
@@ -282,6 +282,43 @@ export function initSocket(token, store) {
     storeRef.dispatch(removePostRealtime(postId));
   });
 
+  // Admin/moderator hid a post — same removal as post:deleted (fully drops it
+  // from every list + closes the detail modal if it was open), plus a toast
+  // so whoever was looking at it understands why it vanished.
+  socket.on('post:admin_hidden', ({ postId, reason }) => {
+    storeRef.dispatch(removePostRealtime(postId));
+    storeRef.dispatch(showToast({
+      message: reason ? `Post removed by moderator: ${reason}` : 'Post removed by moderator',
+      type: 'info',
+    }));
+  });
+
+  // System auto-hid a post at the report threshold. Unlike admin_hidden, the
+  // author still needs to see their own post (with a "hidden from public"
+  // notice PostCard renders off hiddenFromPublic) — everyone else loses it
+  // from their feed exactly like a normal deletion.
+  socket.on('post:auto_hidden', ({ postId, reason }) => {
+    const state = storeRef.getState();
+    const myId = state.auth.user?.id ?? state.auth.user?._id;
+    const post = [...state.posts.posts, ...state.posts.myPosts, ...state.posts.viewedPosts]
+      .find(p => (p._id ?? p.id) === postId);
+    const isAuthor = !!(post && myId && (post.author?._id === myId || post.author?.id === myId));
+
+    if (isAuthor) {
+      storeRef.dispatch(markPostHiddenRealtime(postId));
+      storeRef.dispatch(showToast({
+        message: 'Your post is hidden from the public due to multiple reports. Only you can see it.',
+        type: 'warning',
+      }));
+    } else {
+      storeRef.dispatch(removePostRealtime(postId));
+      storeRef.dispatch(showToast({
+        message: reason || 'A post was removed due to multiple reports',
+        type: 'warning',
+      }));
+    }
+  });
+
   socket.on('post:liked', (data) => {
     const { postId, likeCount } = data ?? {};
     if (postId && likeCount !== undefined) {
@@ -316,6 +353,28 @@ export function initSocket(token, store) {
 
   socket.on('comment:deleted', ({ postId, commentId }) => {
     storeRef.dispatch(deleteCommentRealtime({ postId, commentId }));
+  });
+
+  // Admin/moderator hid a comment — same soft-delete as comment:deleted
+  // (PostCard already filters deleted comments out of the rendered thread
+  // entirely, so this fully disappears, not just a "[deleted]" placeholder).
+  socket.on('comment:admin_hidden', ({ postId, commentId, reason }) => {
+    storeRef.dispatch(deleteCommentRealtime({ postId, commentId }));
+    storeRef.dispatch(showToast({
+      message: reason ? `Comment removed by moderator: ${reason}` : 'Comment removed by moderator',
+      type: 'info',
+    }));
+  });
+
+  // System auto-hid a comment at the report threshold — same soft-delete as
+  // comment:admin_hidden (no author exception here; the backend spec only
+  // calls that out for posts), just a "warning" toast instead of "info".
+  socket.on('comment:auto_hidden', ({ postId, commentId, reason }) => {
+    storeRef.dispatch(deleteCommentRealtime({ postId, commentId }));
+    storeRef.dispatch(showToast({
+      message: reason || 'A comment was removed due to multiple reports',
+      type: 'warning',
+    }));
   });
 
   socket.on('reply:updated', ({ postId, replyId, text, mentions, editedAt }) => {

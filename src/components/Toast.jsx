@@ -27,16 +27,26 @@ function XIcon() {
   );
 }
 
+function WarningIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 const TOAST_THEME = {
   success: { bg: '#0f2718', border: '#16a34a', iconBg: '#16a34a22', iconColor: '#4ade80', bar: '#16a34a' },
   info:    { bg: '#0d1b2e', border: '#2563eb', iconBg: '#2563eb22', iconColor: '#60a5fa', bar: '#2563eb' },
   error:   { bg: '#2a0d0d', border: '#dc2626', iconBg: '#dc262622', iconColor: '#f87171', bar: '#dc2626' },
+  warning: { bg: '#2a1f0d', border: '#d97706', iconBg: '#d9770622', iconColor: '#fbbf24', bar: '#d97706' },
 };
 
 function ToastItem({ toast }) {
   const dispatch = useDispatch();
   const theme = TOAST_THEME[toast.type] ?? TOAST_THEME.error;
-  const Icon = toast.type === 'success' ? CheckIcon : toast.type === 'info' ? BellIcon : XIcon;
+  const Icon = toast.type === 'success' ? CheckIcon : toast.type === 'info' ? BellIcon : toast.type === 'warning' ? WarningIcon : XIcon;
 
   useEffect(() => {
     const t = setTimeout(() => dispatch(removeToast(toast.id)), 3500);
