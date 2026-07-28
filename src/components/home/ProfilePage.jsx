@@ -471,7 +471,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>{req.name}</p>
               <div className="prof-conn-card-actions">
                 <button
-                  className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove"
+                  className="prof-conn-btn prof-conn-btn--remove"
+                  style={{ width: '100%' }}
                   onClick={() => {
                     dispatch(rejectFriendRequest(req.userId)).then(() => {
                       setSentRequests(sentRequests.filter(r => r.userId !== req.userId));
@@ -479,8 +480,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                     });
                   }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  <span className="prof-conn-remove-tooltip">Cancel Request</span>
+                  Cancel Request
                 </button>
               </div>
             </div>
@@ -556,12 +556,12 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               )}
               <div className="prof-conn-card-actions">
                 <button
-                  className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove"
+                  className="prof-conn-btn prof-conn-btn--remove"
+                  style={{ width: '100%' }}
                   disabled={blockingId === u.id}
                   onClick={() => handleUnblock(u.id)}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                  <span className="prof-conn-remove-tooltip">{blockingId === u.id ? 'Unblocking...' : 'Unblock'}</span>
+                  {blockingId === u.id ? 'Unblocking...' : 'Unblock'}
                 </button>
               </div>
             </div>
@@ -687,12 +687,9 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                   <span className="prof-conn-shared-text"><SuggLocationIcon />{req.location}</span>
                 </div>
               )}
-              <div className="prof-conn-card-actions">
+              <div className="prof-conn-card-actions" style={{ display: 'flex', gap: '8px', width: '100%' }}>
                 <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }} onClick={() => handleAdd(req)}>Accept</button>
-                <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => dispatch(rejectFriendRequest(req.id))}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  <span className="prof-conn-remove-tooltip">Reject request</span>
-                </button>
+                <button className="prof-conn-btn prof-conn-btn--remove" style={{ flex: 1 }} onClick={() => dispatch(rejectFriendRequest(req.id))}>Reject</button>
               </div>
             </div>
           ))}
