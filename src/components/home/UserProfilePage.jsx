@@ -10,6 +10,7 @@ import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../sto
 import { fetchConnections } from "../../store/slices/profileSlice";
 import { showToast } from "../../store/slices/toastSlice";
 import { apiRequest } from "../../services/api";
+import Loader from "../Loader";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
 
@@ -405,16 +406,7 @@ export default function UserProfilePage({
   }
 
   if (loading && !viewedUser) {
-    return (
-      <div className="prof-page">
-        <AnimatedNav activeId="home" avatarUrl={authUser?.avatar} onNavigate={handleNav} />
-        <div className="prof-main">
-          <div style={{ textAlign: "center", padding: "80px 0", color: "#5c6a8c" }}>
-            Loading profile…
-          </div>
-        </div>
-      </div>
-    );
+    return <Loader />;
   }
 
   const displayName = viewedUser?.fullName ?? "User";
