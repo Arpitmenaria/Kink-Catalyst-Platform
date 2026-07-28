@@ -167,6 +167,7 @@
   box-shadow: 0 16px 48px rgba(0,0,0,0.55);
   padding: 6px;
 }
+.ob-phone-code-list--up { top: auto; bottom: calc(100% + 6px); }
 .ob-phone-code-opt {
   width: 100%;
   display: flex;
@@ -227,6 +228,7 @@
   box-shadow: 0 16px 48px rgba(0,0,0,0.55);
   padding: 6px;
 }
+.ob-custom-select-list--up { top: auto; bottom: calc(100% + 6px); }
 .ob-custom-select-opt {
   width: 100%;
   display: block;
