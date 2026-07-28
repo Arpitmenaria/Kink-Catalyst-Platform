@@ -631,6 +631,7 @@ const postsSlice = createSlice({
           location: postData.location ?? postData.author?.location ?? '',
         },
         caption: postData.caption ?? postData.content,
+        mentions: postData.mentions ?? [],
         media: postData.media ?? postData.images ?? [],
         createdAt: postData.createdAt ?? new Date().toISOString(),
         likeCount: postData.likeCount ?? 0,

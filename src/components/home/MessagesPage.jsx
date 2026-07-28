@@ -89,6 +89,14 @@ function initials(name) {
   return (name ?? '').split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 }
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function formatSystemDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 function formatDocSize(bytes) {
   const n = Number(bytes);
   if (!n || !Number.isFinite(n)) return '';
@@ -759,7 +767,13 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
       emitTypingStop(activeConv.id);
       clearTimeout(typingTimerRef.current);
     }
-    dispatch(sendMessage({ convId: activeConv.id, type: 'text', text }));
+    // Flag link-containing texts distinctly from plain text so the backend
+    // can index them for the Shared Assets "Links" tab (fetchAssets?tab=links) —
+    // the bubble itself still renders on the same plain-text path either way
+    // (linkifyText handles the clickable-anchor part), so this only affects
+    // categorization, not the chat UI.
+    const type = /https?:\/\/[^\s]+|www\.[^\s]+/i.test(text) ? 'link' : 'text';
+    dispatch(sendMessage({ convId: activeConv.id, type, text }));
   }
 
   // The send-message endpoint now takes a `files[]` array (up to 20), so a
@@ -1064,6 +1078,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
   // regardless, so prefer it whenever we can resolve who the conversation is with.
   function getOnlineStatus(conv) {
     if (!conv) return false;
+    // A blocked conversation shouldn't show a live "online" dot/status —
+    // blocking someone should read as fully disconnected, not just muted.
+    if (blockedConvIds[conv.id]) return false;
     const pid = getParticipantId(conv);
     const conn = pid ? connections.find(c => c.id === pid) : null;
     return conn ? conn.online : conv.online;
@@ -1183,7 +1200,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                     <span className="msg-compact-time">{conv.lastMessage?.time ?? ''}</span>
                   </div>
                   <div className="msg-compact-bottom">
-                    <span className="msg-compact-preview">{conv.lastMessage?.text ?? ''}</span>
+                    <span className="msg-compact-preview">{conv.lastMessage ? conv.lastMessage.text : conv.location}</span>
                     {conv.unreadCount > 0 && <span className="msg-badge">{conv.unreadCount}</span>}
                   </div>
                 </div>
@@ -1265,8 +1282,9 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 if (msg.type === 'system') {
                   const actorName = msg.actor?.name || 'Someone';
                   const targetName = msg.target?.name || 'a member';
+                  const createdDate = formatSystemDate(msg.createdAt);
                   const systemText = {
-                    created: `${actorName} created this group`,
+                    created: `${actorName} created this group${createdDate ? ` on ${createdDate}` : ''}`,
                     joined: `${actorName} joined the group`,
                     left: `${actorName} left the group`,
                     // actor = the admin who removed someone; target = who got removed.
@@ -1283,6 +1301,16 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                 const mediaDocs = msg.media.filter(m => m.type !== 'image' && m.type !== 'video');
                 const isMediaMsg = msg.type === 'image' || msg.type === 'video';
                 const isFileMsg = msg.type === 'file';
+                // A DM only ever has one possible "them", so activeConv's own avatar/name
+                // is correct there — but in a group each message can come from a different
+                // member, so look that member up (groupMembers already has their real
+                // avatarUrl, proven correct in the Group Info panel) instead of falling
+                // back to the group's own avatar/initial for every sender.
+                const groupSender = activeConv.type === 'group'
+                  ? groupMembers.find(gm => gm.id === msg.senderId)
+                  : null;
+                const bubbleAvatarUrl = groupSender?.avatarUrl || msg.senderAvatar || activeConv.avatarUrl;
+                const bubbleAvatarName = groupSender?.name || msg.senderName || activeConv.name;
                 return (
                 <div key={msg.id} className={`msg-bubble-row${msg.from === 'me' ? ' msg-bubble-row--me' : ''}`} style={msg.pending ? { opacity: 0.6 } : undefined}>
                   {msg.from !== 'me' && (
@@ -1292,7 +1320,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                       title={activeConv.type !== 'group' ? 'View profile' : undefined}
                       onClick={activeConv.type !== 'group' ? () => handleUserClick(getParticipantId(activeConv)) : undefined}
                     >
-                      {activeConv.avatarUrl ? <img src={activeConv.avatarUrl} alt="" /> : initials(activeConv.name)}
+                      {bubbleAvatarUrl ? <img src={bubbleAvatarUrl} alt="" /> : initials(bubbleAvatarName)}
                     </div>
                   )}
                   <div className="msg-bubble-col">
@@ -1877,7 +1905,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                         disabled={removingMemberId === m.id}
                         onClick={(e) => { e.stopPropagation(); handleRemoveMember(m.id); }}
                       >
-                        {removingMemberId === m.id ? '…' : '✕'}
+                        {removingMemberId === m.id ? '…' : 'Remove'}
                       </button>
                     )}
                   </div>
@@ -2085,10 +2113,12 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
                   </div>
                 </div>
                 <div className="msg-conv-bottom">
-                  <span className="msg-conv-preview">{conv.lastMessage?.text ?? ''}</span>
-                  <span className="msg-checks">
-                    {conv.unreadCount > 0 ? <DoubleCheckIcon /> : <CheckIcon />}
-                  </span>
+                  <span className="msg-conv-preview">{conv.lastMessage ? conv.lastMessage.text : conv.location}</span>
+                  {conv.lastMessage && (
+                    <span className="msg-checks">
+                      {conv.unreadCount > 0 ? <DoubleCheckIcon /> : <CheckIcon />}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

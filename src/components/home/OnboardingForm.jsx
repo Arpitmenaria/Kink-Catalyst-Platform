@@ -376,7 +376,7 @@ export default function OnboardingForm() {
               />
             </div>
 
-            <div className="prof-avatar-wrap" style={{ position: 'relative', overflow: 'hidden', marginTop: -46 }}>
+            <div className="prof-avatar-wrap" style={{ position: 'relative', overflow: 'hidden', marginTop: -70, marginLeft: 'auto', marginRight: 'auto' }}>
               {displayAvatar
                 ? <SkeletonImg src={displayAvatar} alt={form.name || 'Profile'} className="prof-avatar-img" />
                 : (
@@ -557,6 +557,9 @@ export default function OnboardingForm() {
         )}
 
         <div className="ob-footer">
+          {step === 1 && (
+            <button type="button" className="ob-skip-btn" onClick={goNext}>Skip</button>
+          )}
           {step > 1 && (
             <button type="button" className="ob-back-btn" onClick={() => setStep(s => s - 1)}>Back</button>
           )}

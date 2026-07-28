@@ -306,3 +306,17 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .ob-back-btn:hover { background: #1a1f35; border-color: #2d3a5e; }
+
+.ob-skip-btn {
+  margin-right: auto;
+  background: none;
+  border: none;
+  color: #8a94b8;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 11px 8px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.ob-skip-btn:hover { color: #c8cfe0; }

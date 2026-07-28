@@ -6,7 +6,8 @@ import { showLogin } from '../../store/slices/uiSlice';
 import { fetchNotifications, markNotificationsRead, markNotificationRead } from '../../store/slices/notificationsSlice';
 import { fetchMyPostsCount } from '../../store/slices/postsSlice';
 import { disconnectSocket } from '../../services/socket';
-import { fetchAllUsers } from '../../store/slices/usersSlice';
+import { fetchAllUsers, acceptFriendRequest, rejectFriendRequest } from '../../store/slices/usersSlice';
+import { showToast } from '../../store/slices/toastSlice';
 
 function BellIcon() {
   return (
@@ -89,6 +90,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [respondingNotifId, setRespondingNotifId] = useState(null);
+  const [respondedNotifActions, setRespondedNotifActions] = useState(() => new Map());
   const notifRef                    = useRef(null);
   const userRef                     = useRef(null);
   const searchRef                   = useRef(null);
@@ -157,6 +160,40 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     if (userId && onUserClick) {
       console.log('🔍 [search] Navigating to user profile:', userId);
       onUserClick(userId);
+    }
+  }
+
+  async function handleAcceptRequest(n, nid) {
+    const senderId = n.actor?._id ?? n.actor?.id;
+    if (!senderId || respondingNotifId) return;
+    setRespondingNotifId(nid);
+    try {
+      const result = await dispatch(acceptFriendRequest(senderId));
+      if (acceptFriendRequest.fulfilled.match(result)) {
+        setRespondedNotifActions(prev => new Map(prev).set(nid, 'accepted'));
+        dispatch(showToast({ message: 'Connection request accepted', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload?.message || 'Failed to accept request', type: 'error' }));
+      }
+    } finally {
+      setRespondingNotifId(null);
+    }
+  }
+
+  async function handleRejectRequest(n, nid) {
+    const senderId = n.actor?._id ?? n.actor?.id;
+    if (!senderId || respondingNotifId) return;
+    setRespondingNotifId(nid);
+    try {
+      const result = await dispatch(rejectFriendRequest(senderId));
+      if (rejectFriendRequest.fulfilled.match(result)) {
+        setRespondedNotifActions(prev => new Map(prev).set(nid, 'declined'));
+        dispatch(showToast({ message: 'Connection request declined', type: 'info' }));
+      } else {
+        dispatch(showToast({ message: result.payload?.message || 'Failed to decline request', type: 'error' }));
+      }
+    } finally {
+      setRespondingNotifId(null);
     }
   }
 
@@ -261,6 +298,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
               </div>
               {notifications.map((n, i) => {
                 const nid = n.id ?? n._id;
+                const respondedAction = respondedNotifActions.get(nid);
+                const isPendingRequest = n.type === 'friend_request' && !respondedAction;
                 return (
                   <div
                     key={nid ?? i}
@@ -286,6 +325,31 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                     <div className="navbar-notif-body">
                       <p className="navbar-notif-text">{n.text}</p>
                       <p className="navbar-notif-sub">{timeAgo(n.createdAt)}</p>
+                      {isPendingRequest && (
+                        <div className="navbar-notif-actions" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="navbar-notif-action navbar-notif-action--accept"
+                            disabled={respondingNotifId === nid}
+                            onClick={() => handleAcceptRequest(n, nid)}
+                          >
+                            {respondingNotifId === nid ? '...' : 'Accept'}
+                          </button>
+                          <button
+                            type="button"
+                            className="navbar-notif-action navbar-notif-action--reject"
+                            disabled={respondingNotifId === nid}
+                            onClick={() => handleRejectRequest(n, nid)}
+                          >
+                            {respondingNotifId === nid ? '...' : 'Reject'}
+                          </button>
+                        </div>
+                      )}
+                      {respondedAction && (
+                        <p className="navbar-notif-responded">
+                          {respondedAction === 'accepted' ? 'Request accepted' : 'Request declined'}
+                        </p>
+                      )}
                     </div>
                     {n.unread && <span className="navbar-notif-dot" />}
                   </div>
