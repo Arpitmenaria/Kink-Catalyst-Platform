@@ -697,6 +697,13 @@
   flex-wrap: wrap;
 }
 
+.prof-conn-tabs-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #1a2338;
+}
+
 .prof-conn-tabs {
   display: flex;
   gap: 8px;
