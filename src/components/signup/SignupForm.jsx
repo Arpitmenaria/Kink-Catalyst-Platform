@@ -101,7 +101,7 @@ export default function SignupForm() {
   const googleBtnRef = useRef(null);
   const googleWrapRef = useRef(null);
 
-  const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
     || '423673543994-0l046sv4nbb3m7qvb713d44b51npne6f.apps.googleusercontent.com';
 
   useEffect(() => {
@@ -236,10 +236,10 @@ export default function SignupForm() {
 
           <div className="social-buttons">
             <div ref={googleWrapRef} className="social-btn-wrap">
-              <button ref={googleBtnRef} type="button" className="social-btn" disabled={!isIdle}>
-                <GoogleIcon />
-                Google
+              <button type="button" className="social-btn" style={{ width: '100%' }}>
+                <GoogleIcon /> Google
               </button>
+              <div ref={googleBtnRef} className="social-btn-gis" />
             </div>
             <button type="button" className="social-btn" disabled={!isIdle}>
               <AppleIcon />
