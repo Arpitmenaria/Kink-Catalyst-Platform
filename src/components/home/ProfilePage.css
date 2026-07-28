@@ -774,6 +774,81 @@
   font-family: inherit;
 }
 
+/* Filters dropdown panel */
+.prof-conn-filters-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #0d1222;
+  border: 1px solid #1a2540;
+  border-radius: 12px;
+  padding: 0;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: dropIn 0.15s cubic-bezier(0.16,1,0.3,1) both;
+  min-width: 180px;
+}
+
+.prof-conn-filters-group {
+  padding: 10px 0;
+}
+
+.prof-conn-filters-group:first-child {
+  padding-top: 12px;
+}
+
+.prof-conn-filters-group:last-child {
+  padding-bottom: 12px;
+}
+
+.prof-conn-filters-label {
+  padding: 8px 14px;
+  color: #9aa3bc;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.prof-conn-filters-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: #9aa3bc;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.prof-conn-filters-opt:hover {
+  background: #111b2e;
+  color: #c8d3ea;
+}
+
+.prof-conn-filters-opt--active {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.prof-conn-filters-empty {
+  display: block;
+  padding: 8px 14px;
+  color: #5c6a8c;
+  font-size: 12.5px;
+}
+
+.prof-conn-filters-divider {
+  height: 1px;
+  background: #1a2540;
+  margin: 0;
+}
+
 /* Avatar fallback (no photo) — initials on a brand-blue disc */
 .prof-conn-avatar--fallback {
   display: flex;

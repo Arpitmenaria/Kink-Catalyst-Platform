@@ -399,55 +399,43 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </button>
 
         {showFiltersPanel && (
-          <>
-            <div className="prof-conn-fbar-item">
-              <button
-                className={`prof-conn-fbar-pill${filterLoc ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'loc' ? ' prof-conn-fbar-pill--open' : ''}`}
-                onClick={() => setOpenDrop(openDrop === 'loc' ? null : 'loc')}
-              >
-                {filterLoc || 'Location'} <ChevronDown />
-              </button>
-              {openDrop === 'loc' && (
-                <div className="prof-conn-fbar-dropdown">
-                  {CONN_LOCATIONS.length === 0 && <span className="prof-conn-fbar-empty">No locations</span>}
-                  {CONN_LOCATIONS.map(loc => (
-                    <button
-                      key={loc}
-                      className={`prof-conn-fbar-opt${filterLoc === loc ? ' prof-conn-fbar-opt--active' : ''}`}
-                      onClick={() => { setFilterLoc(filterLoc === loc ? '' : loc); setOpenDrop(null); }}
-                    >
-                      {filterLoc === loc && <CheckIcon />}
-                      {loc}
-                    </button>
-                  ))}
-                </div>
+          <div className="prof-conn-filters-dropdown">
+            <div className="prof-conn-filters-group">
+              <div className="prof-conn-filters-label">Location</div>
+              {CONN_LOCATIONS.length === 0 ? (
+                <span className="prof-conn-filters-empty">No locations</span>
+              ) : (
+                CONN_LOCATIONS.map(loc => (
+                  <button
+                    key={loc}
+                    className={`prof-conn-filters-opt${filterLoc === loc ? ' prof-conn-filters-opt--active' : ''}`}
+                    onClick={() => setFilterLoc(filterLoc === loc ? '' : loc)}
+                  >
+                    {filterLoc === loc && <CheckIcon />}
+                    {loc}
+                  </button>
+                ))
               )}
             </div>
-
-            <div className="prof-conn-fbar-item">
-          <button
-            className={`prof-conn-fbar-pill${filterInd ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'ind' ? ' prof-conn-fbar-pill--open' : ''}`}
-            onClick={() => setOpenDrop(openDrop === 'ind' ? null : 'ind')}
-          >
-            {filterInd || 'Industry'} <ChevronDown />
-          </button>
-          {openDrop === 'ind' && (
-            <div className="prof-conn-fbar-dropdown">
-              {CONN_INDUSTRIES.length === 0 && <span className="prof-conn-fbar-empty">No industries</span>}
-              {CONN_INDUSTRIES.map(ind => (
-                <button
-                  key={ind}
-                  className={`prof-conn-fbar-opt${filterInd === ind ? ' prof-conn-fbar-opt--active' : ''}`}
-                  onClick={() => { setFilterInd(filterInd === ind ? '' : ind); setOpenDrop(null); }}
-                >
-                  {filterInd === ind && <CheckIcon />}
-                  {ind}
-                </button>
-              ))}
-            </div>
+            <div className="prof-conn-filters-divider"></div>
+            <div className="prof-conn-filters-group">
+              <div className="prof-conn-filters-label">Industry</div>
+              {CONN_INDUSTRIES.length === 0 ? (
+                <span className="prof-conn-filters-empty">No industries</span>
+              ) : (
+                CONN_INDUSTRIES.map(ind => (
+                  <button
+                    key={ind}
+                    className={`prof-conn-filters-opt${filterInd === ind ? ' prof-conn-filters-opt--active' : ''}`}
+                    onClick={() => setFilterInd(filterInd === ind ? '' : ind)}
+                  >
+                    {filterInd === ind && <CheckIcon />}
+                    {ind}
+                  </button>
+                ))
               )}
             </div>
-          </>
+          </div>
         )}
 
         <button
