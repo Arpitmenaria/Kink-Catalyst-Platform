@@ -388,18 +388,30 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         )}
 
         <div className="prof-conn-tabs">
-          {['all', 'sent', 'incoming', 'blocked'].map(tab => (
-            <button
-              key={tab}
-              className={`prof-conn-tab${connectionTab === tab ? ' prof-conn-tab--active' : ''}`}
-              onClick={() => setConnectionTab(tab)}
-            >
-              {tab === 'all' && 'All'}
-              {tab === 'sent' && 'Sent'}
-              {tab === 'incoming' && 'Invitations'}
-              {tab === 'blocked' && 'Blocked'}
-            </button>
-          ))}
+          <button
+            className={`prof-conn-tab prof-conn-tab-all${connectionTab === 'all' ? ' prof-conn-tab--active' : ''}`}
+            onClick={() => setConnectionTab('all')}
+          >
+            All
+          </button>
+          <button
+            className={`prof-conn-tab prof-conn-tab-sent${connectionTab === 'sent' ? ' prof-conn-tab--active' : ''}`}
+            onClick={() => setConnectionTab('sent')}
+          >
+            Sent
+          </button>
+          <button
+            className={`prof-conn-tab prof-conn-tab-incoming${connectionTab === 'incoming' ? ' prof-conn-tab--active' : ''}`}
+            onClick={() => setConnectionTab('incoming')}
+          >
+            Invitations
+          </button>
+          <button
+            className={`prof-conn-tab prof-conn-tab-blocked${connectionTab === 'blocked' ? ' prof-conn-tab--active' : ''}`}
+            onClick={() => setConnectionTab('blocked')}
+          >
+            Blocked
+          </button>
         </div>
 
         {hasFilter && (

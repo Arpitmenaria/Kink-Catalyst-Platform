@@ -728,6 +728,23 @@
   font-weight: 600;
 }
 
+/* Individual tab button styles */
+.prof-conn-tab-all {
+  padding: 8px 18px;
+}
+
+.prof-conn-tab-sent {
+  padding: 8px 16px;
+}
+
+.prof-conn-tab-incoming {
+  padding: 8px 24px;
+}
+
+.prof-conn-tab-blocked {
+  padding: 8px 18px;
+}
+
 .prof-conn-fbar-pill {
   display: flex;
   align-items: center;
