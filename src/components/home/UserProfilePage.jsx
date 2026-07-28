@@ -726,18 +726,19 @@ export default function UserProfilePage({
             const closeLb = () => setPhotoLbIdx(null);
             const prevLb = () => setPhotoLbIdx(i => (i - 1 + photoUrls.length) % photoUrls.length);
             const nextLb = () => setPhotoLbIdx(i => (i + 1) % photoUrls.length);
+
+            // Check if user has any photos or albums
+            const hasContent = viewedPhotos.length > 0;
+
             return (
             <div className="prof-conn-layout">
               <div style={{ flex: 1 }}>
-                <MediaTab readOnly userId={userId} />
-              <div className="media-tab">
-                <h3 className="media-subhead">All photos</h3>
-                <div className="media-grid">
-                  {viewedPhotos.length === 0 && (
-                    <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "32px", color: "#5c6a8c", fontSize: 14 }}>
-                      No photos yet.
-                    </div>
-                  )}
+                {hasContent ? (
+                  <>
+                    <MediaTab readOnly userId={userId} />
+                    <div className="media-tab">
+                      <h3 className="media-subhead">All photos</h3>
+                      <div className="media-grid">
                   {viewedPhotos.map((photo, i) => {
                     const photoId = photo.id || photo._id;
                     const likeInfo = photoLikes[photoId] || { count: 0, liked: false };
@@ -798,8 +799,14 @@ export default function UserProfilePage({
                       </div>
                     );
                   })}
-                </div>
-              </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '60px 20px', color: '#5c6a8c' }}>
+                    <p style={{ fontSize: 16 }}>No photos yet.</p>
+                  </div>
+                )}
               </div>
 
               {photoLbIdx !== null && photoUrls[photoLbIdx] && (
