@@ -696,7 +696,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      {connectionTab === 'all' && connectionsTotal > 5 && (
+      {connectionTab === 'all' && connectionsTotal > 10 && (
         <button className="prof-conn-load-more">View all connections</button>
       )}
     </div>
