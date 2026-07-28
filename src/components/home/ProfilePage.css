@@ -693,6 +693,7 @@
   align-items: center;
   gap: 8px;
   padding: 14px 0 14px;
+  position: relative;
 }
 
 .prof-conn-fbar-pill {
