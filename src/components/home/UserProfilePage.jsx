@@ -311,7 +311,8 @@ export default function UserProfilePage({
         setViewedPhotos(photos);
         const likes = {};
         photos.forEach(photo => {
-          likes[photo.id] = { count: photo.likesCount || 0, liked: photo.likedByMe || false };
+          const photoId = photo.id || photo._id;
+          likes[photoId] = { count: photo.likesCount || 0, liked: photo.likedByMe || false };
         });
         setPhotoLikes(likes);
       })
@@ -738,15 +739,16 @@ export default function UserProfilePage({
                     </div>
                   )}
                   {viewedPhotos.map((photo, i) => {
-                    const likeInfo = photoLikes[photo.id] || { count: 0, liked: false };
+                    const photoId = photo.id || photo._id;
+                    const likeInfo = photoLikes[photoId] || { count: 0, liked: false };
                     return (
-                      <div key={photo.id} className="media-photo-card" style={{ cursor: "pointer", position: 'relative' }} onClick={() => setPhotoLbIdx(i)}>
+                      <div key={photoId} className="media-photo-card" style={{ cursor: "pointer", position: 'relative' }} onClick={() => setPhotoLbIdx(i)}>
                         <div className="media-photo-wrap">
                           <SkeletonImg src={photo.images?.[0]} alt="" className="media-photo-img" />
                         </div>
                         <button
                           className={`media-photo-like-btn${likeInfo.liked ? ' liked' : ''}`}
-                          onClick={(e) => handlePhotoLike(photo.id, e)}
+                          onClick={(e) => handlePhotoLike(photoId, e)}
                           title={likeInfo.liked ? "Unlike" : "Like"}
                           style={{
                             position: 'absolute',

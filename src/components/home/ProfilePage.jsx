@@ -837,7 +837,8 @@ export function MediaTab({ readOnly, userId }) {
   useEffect(() => {
     const likes = {};
     albumList.forEach(album => {
-      likes[album.id] = { count: album.likesCount || 0, liked: album.likedByMe || false };
+      const albumId = album.id || album._id;
+      likes[albumId] = { count: album.likesCount || 0, liked: album.likedByMe || false };
     });
     setAlbumLikes(likes);
   }, [albumList]);
@@ -967,9 +968,10 @@ export function MediaTab({ readOnly, userId }) {
           <h3 className="media-subhead">{userId ? 'Albums' : 'Albums (These are private directories)'}</h3>
           <div className="media-album-grid">
             {albumList.map(album => {
-              const likeInfo = albumLikes[album.id] || { count: 0, liked: false };
+              const albumId = album.id || album._id;
+              const likeInfo = albumLikes[albumId] || { count: 0, liked: false };
               return (
-                <div key={album.id} className="media-album-card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setOpenAlbum(album)}>
+                <div key={albumId} className="media-album-card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setOpenAlbum(album)}>
                   <div className="media-album-cover">
                     {album.cover
                       ? <SkeletonImg src={album.cover} alt={album.name} className="media-album-cover-img" />
@@ -978,7 +980,7 @@ export function MediaTab({ readOnly, userId }) {
                     <span className="media-album-count">{album.count} photo{album.count === 1 ? '' : 's'}</span>
                     <button
                       className={`media-album-like-btn${likeInfo.liked ? ' liked' : ''}`}
-                      onClick={(e) => handleAlbumLike(album.id, e)}
+                      onClick={(e) => handleAlbumLike(albumId, e)}
                       title={likeInfo.liked ? "Unlike" : "Like"}
                       style={{
                         position: 'absolute',
