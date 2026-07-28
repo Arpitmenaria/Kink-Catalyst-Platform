@@ -387,19 +387,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           </div>
         )}
 
-        {hasFilter && (
-          <button
-            className="prof-conn-fbar-clear"
-            onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            Remove filter
-          </button>
-        )}
-      </div>
-
-      {/* ── Connection tabs ── */}
-      <div className="prof-conn-tabs-bar">
         <div className="prof-conn-tabs">
           {['all', 'sent', 'incoming', 'blocked'].map(tab => (
             <button
@@ -414,6 +401,16 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
             </button>
           ))}
         </div>
+
+        {hasFilter && (
+          <button
+            className="prof-conn-fbar-clear"
+            onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Remove filter
+          </button>
+        )}
       </div>
 
       {/* ── Sent requests view ── */}
