@@ -172,7 +172,7 @@ export default function LoginForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">Kick Analyst</div>
+      <div className="signup-logo">Kink Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card">
@@ -288,4 +288,5 @@ export default function LoginForm() {
     </div>
   );
 }
+
 

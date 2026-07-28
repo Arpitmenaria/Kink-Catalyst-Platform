@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearAuthState, googleLogin } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
@@ -49,7 +49,7 @@ function LoadingContent() {
         <span className="btn-dot" />
         <span className="btn-dot" />
       </span>
-      Creating account…
+      Creating accountâ€¦
     </>
   );
 }
@@ -123,7 +123,7 @@ export default function SignupForm() {
     return age;
   }
 
-  // Latest birth date that still makes someone 18 today — disables the
+  // Latest birth date that still makes someone 18 today â€” disables the
   // last 18 years in the calendar instead of just erroring after the fact.
   const maxDob = (() => {
     const d = new Date();
@@ -223,7 +223,7 @@ export default function SignupForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">Kick Analyst</div>
+      <div className="signup-logo">Kink Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card">
@@ -285,7 +285,7 @@ export default function SignupForm() {
                   id="signup-password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="new-password"
@@ -377,3 +377,4 @@ export default function SignupForm() {
     </div>
   );
 }
+

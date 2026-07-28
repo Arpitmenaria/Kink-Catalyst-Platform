@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
 import { logout } from '../../store/slices/authSlice';
@@ -74,7 +74,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   // authUser/profile postsCount reflect the logged-in user; myPostsTotal (from
-  // /api/users/me/posts) is the accurate fallback — NOT state.posts, which is the
+  // /api/users/me/posts) is the accurate fallback â€” NOT state.posts, which is the
   // whole feed's posts across all users.
   const totalPosts       = authUser?.postsCount ?? profile?.postsCount ?? myPostsTotal;
   // Total Connections = accepted friend connections (NOT followers).
@@ -155,7 +155,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     setSearchResults([]);
     // Navigate to user profile using the callback from HomePage
     if (userId && onUserClick) {
-      console.log('🔍 [search] Navigating to user profile:', userId);
+      console.log('ðŸ” [search] Navigating to user profile:', userId);
       onUserClick(userId);
     }
   }
@@ -163,7 +163,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
-        <span className="navbar-logo">Kick Analyst</span>
+        <span className="navbar-logo">Kink Analyst</span>
         <div className="navbar-search-wrap" ref={searchRef} style={{ position: 'relative', marginLeft: '24px' }}>
           <input
             type="text"
@@ -204,7 +204,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                   <div className="navbar-search-info">
                     <p className="navbar-search-name">{user.name}</p>
                     {user.location && (
-                      <p className="navbar-search-location">📍 {user.location}</p>
+                      <p className="navbar-search-location">ðŸ“ {user.location}</p>
                     )}
                   </div>
                 </div>
@@ -281,7 +281,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                     }}
                   >
                     <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>
-                      {n.emoji ?? '🔔'}
+                      {n.emoji ?? 'ðŸ””'}
                     </div>
                     <div className="navbar-notif-body">
                       <p className="navbar-notif-text">{n.text}</p>
@@ -347,3 +347,4 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     </nav>
   );
 }
+

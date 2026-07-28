@@ -1,11 +1,11 @@
-export default function Loader() {
+﻿export default function Loader() {
   return (
     <div className="loader-container">
       <div className="loader-content">
         <div className="loader-spinner">
           <div className="spinner"></div>
         </div>
-        <h1 className="loader-title">Kick Analyst</h1>
+        <h1 className="loader-title">Kink Analyst</h1>
         <p className="loader-subtitle">Loading...</p>
       </div>
       <style>{`
@@ -73,3 +73,4 @@ export default function Loader() {
     </div>
   );
 }
+

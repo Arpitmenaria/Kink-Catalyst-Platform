@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
@@ -16,19 +16,19 @@ import { apiRequest } from '../../services/api';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { joinEventRoom, leaveEventRoom } from '../../services/socket';
 
-/* ── Sidebar nav icons ── */
+/* â”€â”€ Sidebar nav icons â”€â”€ */
 function FeedNavIcon()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
 function EventNavIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function GroupsNavIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function CalendarNavIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="8" y="14" width="2" height="2" rx="0.5"/></svg>; }
 function MessagesNavIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 
-/* ── Event type icons ── */
+/* â”€â”€ Event type icons â”€â”€ */
 function OnlineIcon()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; }
 function OfflineIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 function BothIcon()    { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><path d="M8 21h13a2 2 0 0 0 2-2V8"/></svg>; }
 
-/* ── Visibility icons (same set/values as post visibility) ── */
+/* â”€â”€ Visibility icons (same set/values as post visibility) â”€â”€ */
 function GlobeIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
 function FriendsIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function LockIcon()    { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
@@ -49,7 +49,7 @@ const VISIBILITY_OPTIONS = [
   { id: 'only_me', label: 'Only me',      icon: <LockIcon />    },
 ];
 
-/* ── Misc icons ── */
+/* â”€â”€ Misc icons â”€â”€ */
 function ChevronDownIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>; }
 function ArrowRightIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 function ArrowLeftIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
@@ -61,13 +61,13 @@ function ClockIcon()       { return <svg width="14" height="14" viewBox="0 0 24 
 function PlusIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function CalendarIcon({ size = 14 })    { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 
-// Shared "no photo" placeholder — used for card thumbnails and the detail
+// Shared "no photo" placeholder â€” used for card thumbnails and the detail
 // cover whenever an event has no image, or its image URL fails to load.
 function EventImgPlaceholder({ size = 32 }) {
   return (
     <div className="ev-img-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px', color: 'rgba(255, 255, 255, 0.3)' }}>
       <CalendarIcon size={size} />
-      <span style={{ fontSize: '12px', fontWeight: '500' }}>Kick Analyst</span>
+      <span style={{ fontSize: '12px', fontWeight: '500' }}>Kink Analyst</span>
     </div>
   );
 }
@@ -84,7 +84,7 @@ function FacebookIcon()    { return <svg width="15" height="15" viewBox="0 0 24 
 function TwitterXIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>; }
 function WhatsAppIcon()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>; }
 
-/* ── Category icons ── */
+/* â”€â”€ Category icons â”€â”€ */
 function AllIcon()         { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>; }
 function MusicIcon()       { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13M9 9h12"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>; }
 function TechIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; }
@@ -93,7 +93,7 @@ function ArtIcon()         { return <svg width="16" height="16" viewBox="0 0 24 
 function WorkshopIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h12M6 4l2 16h8l2-16M10 9v6M14 9v6M9 20h6"/></svg>; }
 function SocialIcon()      { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 
-/* ── Discovery mock data ── */
+/* â”€â”€ Discovery mock data â”€â”€ */
 const DISC_CATEGORIES = [
   { label: 'All', icon: <AllIcon /> },
   { label: 'Music', icon: <MusicIcon /> },
@@ -124,7 +124,7 @@ export const BOOKED_EVENTS = [
     title: 'Founders Forum 2024',
     desc: 'An exclusive gathering of founders, VCs and operators sharing lessons from building companies.',
     attending: '1.8k', seats: '10 seats left', soldOut: false, responded: '1,800',
-    about: 'Founders Forum is the most intimate gathering of builders and investors in the Pacific Northwest. Hear candid stories from founders who\'ve navigated product-market fit, rapid scaling, and pivots. Connect one-on-one with top-tier VCs, angels, and operators in a setting designed for real conversations, not pitches. Applications are reviewed — only verified founders and operators gain entry.',
+    about: 'Founders Forum is the most intimate gathering of builders and investors in the Pacific Northwest. Hear candid stories from founders who\'ve navigated product-market fit, rapid scaling, and pivots. Connect one-on-one with top-tier VCs, angels, and operators in a setting designed for real conversations, not pitches. Applications are reviewed â€” only verified founders and operators gain entry.',
     venue: 'Hyatt Regency Seattle, Grand Ballroom',
   },
   {
@@ -136,7 +136,7 @@ export const BOOKED_EVENTS = [
     desc: 'Intensive 2-day workshop covering React, Node.js and cloud deployment with hands-on projects.',
     attending: '540', seats: '5 seats left', soldOut: false, responded: '540',
     about: 'This hands-on 2-day intensive covers the modern full-stack JavaScript ecosystem from scratch to deployment. Day one focuses on React 19 patterns, state management, and component architecture. Day two dives into Node.js APIs, database integration, and deploying on cloud platforms. You\'ll leave with a fully built project, reviewed code, and a mentor\'s feedback on your architecture decisions.',
-    venue: 'Virtual — Zoom + Discord',
+    venue: 'Virtual â€” Zoom + Discord',
   },
 ];
 
@@ -171,7 +171,7 @@ export const DISC_EVENTS = [
     title: 'Executive Networking Mixer',
     desc: 'An exclusive evening for senior executives and entrepreneurs to connect in a premium setting.',
     attending: '800', seats: '25 seats left', soldOut: false, responded: '800',
-    about: 'A curated evening of high-signal networking for C-suite leaders, serial entrepreneurs, and Fortune 500 decision-makers. Hosted in a private penthouse setting with a 3-course dinner, open bar, and structured introductions — no pitches, no slides, just genuine conversation. Attendees are vetted. Each ticket grants access to our private Slack community for ongoing connections.',
+    about: 'A curated evening of high-signal networking for C-suite leaders, serial entrepreneurs, and Fortune 500 decision-makers. Hosted in a private penthouse setting with a 3-course dinner, open bar, and structured introductions â€” no pitches, no slides, just genuine conversation. Attendees are vetted. Each ticket grants access to our private Slack community for ongoing connections.',
     venue: 'The Pierre Hotel, Grand Ballroom',
   },
   {
@@ -182,7 +182,7 @@ export const DISC_EVENTS = [
     title: 'Creative Design Workshop',
     desc: 'Master the fundamentals of modern UI/UX design in this hands-on intensive workshop.',
     attending: '300', seats: null, soldOut: true, responded: '300',
-    about: 'This sold-out intensive workshop covers the full design thinking process from user research to high-fidelity prototyping. Led by senior designers from top studios, the day is structured around real briefs with peer critique sessions. Participants receive Figma templates, a curated resource pack, and lifetime access to workshop recordings. Entry is no longer available — join the waitlist for future dates.',
+    about: 'This sold-out intensive workshop covers the full design thinking process from user research to high-fidelity prototyping. Led by senior designers from top studios, the day is structured around real briefs with peer critique sessions. Participants receive Figma templates, a curated resource pack, and lifetime access to workshop recordings. Entry is no longer available â€” join the waitlist for future dates.',
     venue: 'The Design Museum, Commonwealth Room, London',
   },
   {
@@ -193,7 +193,7 @@ export const DISC_EVENTS = [
     title: 'Jazz Under the Stars',
     desc: 'A magical evening of live jazz performances under the open sky with top artists from around the world.',
     attending: '950', seats: '60 seats left', soldOut: false, responded: '950',
-    about: 'Jazz Under the Stars is a landmark event in Chicago\'s annual music calendar. Set against the iconic skyline, the evening features four headline acts spanning bebop, fusion, and contemporary jazz. Guests are invited to bring blankets, enjoy curated food vendors, and lose themselves in two hours of uninterrupted live performance. Weather contingency plan in place — event will move to the indoor pavilion if needed.',
+    about: 'Jazz Under the Stars is a landmark event in Chicago\'s annual music calendar. Set against the iconic skyline, the evening features four headline acts spanning bebop, fusion, and contemporary jazz. Guests are invited to bring blankets, enjoy curated food vendors, and lose themselves in two hours of uninterrupted live performance. Weather contingency plan in place â€” event will move to the indoor pavilion if needed.',
     venue: 'Millennium Park, Jay Pritzker Pavilion',
   },
   {
@@ -204,12 +204,12 @@ export const DISC_EVENTS = [
     title: 'Startup Pitch Competition',
     desc: 'Present your startup idea to top-tier investors and win funding, mentorship, and global recognition.',
     attending: '420', seats: '15 seats left', soldOut: false, responded: '420',
-    about: 'Berlin\'s premier startup pitch competition returns for its 8th edition. Teams of up to 3 founders get 5 minutes to pitch and 5 minutes of Q&A in front of a panel of 12 leading European VCs. Top 3 teams win cash prizes (€50k, €20k, €10k), 6 months of co-working space, and fast-track consideration from participating funds. Apply early — only 30 slots available across 8 verticals.',
-    venue: 'Factory Berlin, Görlitzer Park Campus',
+    about: 'Berlin\'s premier startup pitch competition returns for its 8th edition. Teams of up to 3 founders get 5 minutes to pitch and 5 minutes of Q&A in front of a panel of 12 leading European VCs. Top 3 teams win cash prizes (â‚¬50k, â‚¬20k, â‚¬10k), 6 months of co-working space, and fast-track consideration from participating funds. Apply early â€” only 30 slots available across 8 verticals.',
+    venue: 'Factory Berlin, GÃ¶rlitzer Park Campus',
   },
 ];
 
-// Show exactly the images the event actually has — never pad with stock
+// Show exactly the images the event actually has â€” never pad with stock
 // photos, or a 2-image event renders as a 5-image gallery.
 function getEventImages(ev) {
   if (!ev) return [];
@@ -219,13 +219,13 @@ function getEventImages(ev) {
 }
 
 // 'Other' is stored literally as the category, with the actual typed value
-// kept separately in customCategory — this is what should show to users.
+// kept separately in customCategory â€” this is what should show to users.
 function displayCategory(ev) {
   if (!ev) return '';
   return ev.category === 'Other' ? (ev.customCategory || ev.category) : ev.category;
 }
 
-// Defensive field-name fallbacks — the discussions API's exact response
+// Defensive field-name fallbacks â€” the discussions API's exact response
 // shape (id vs _id, likes vs likeCount, isLiked vs likedByMe, ...) wasn't
 // pinned down before implementing, so each normalizer accepts the common
 // naming variants rather than assuming one.
@@ -327,7 +327,7 @@ function reviewInitials(name = '') { return name.split(' ').map(w => w[0]).join(
 // Meeting link is prefilled with "https://" (see the virtual state default), so a plain
 // truthy/non-empty check would pass even when nothing real was typed after the prefix.
 function hasMeaningfulLink(link) { return link.trim().replace(/^https?:\/\//, '').length > 0; }
-// Only the first character is forced — the rest of what's typed is left alone,
+// Only the first character is forced â€” the rest of what's typed is left alone,
 // so this doesn't fight the user mid-sentence the way a full auto-caps would.
 function capitalizeFirst(str) { return str.length > 0 ? str.charAt(0).toUpperCase() + str.slice(1) : str; }
 function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
@@ -349,7 +349,7 @@ export const CREATED_EVENTS = [
     title: 'DevFest India 2026',
     desc: 'Annual developer festival bringing together 5000+ engineers, designers and product leaders.',
     attending: '4.8k', seats: '200 seats left', soldOut: false, responded: '4,820',
-    about: 'DevFest India is the largest annual developer festival in South Asia, bringing together engineers, designers, product managers, and tech leaders from across the country and beyond. This year\'s theme is "Build for Billions" — focusing on AI-first products, scalable infrastructure, and developer experience. Expect 60+ sessions, live demos, hackathons, and networking with the brightest minds in tech.',
+    about: 'DevFest India is the largest annual developer festival in South Asia, bringing together engineers, designers, product managers, and tech leaders from across the country and beyond. This year\'s theme is "Build for Billions" â€” focusing on AI-first products, scalable infrastructure, and developer experience. Expect 60+ sessions, live demos, hackathons, and networking with the brightest minds in tech.',
     venue: 'KTPO Convention Centre, Whitefield',
   },
   {
@@ -423,7 +423,7 @@ function TicketFormPanel({ isEditing, newTicket, onChange, onSave, onCancel }) {
     <div className="ev-new-ticket-form">
       <div className="ev-new-ticket-header">
         <span>{isEditing ? 'Edit Ticket Type' : 'New Ticket Type'}</span>
-        <button type="button" className="ev-cancel-ticket-btn" onClick={onCancel}>✕</button>
+        <button type="button" className="ev-cancel-ticket-btn" onClick={onCancel}>âœ•</button>
       </div>
       <div className="ev-new-ticket-body">
         <div className="ev-field">
@@ -463,7 +463,7 @@ function TicketFormPanel({ isEditing, newTicket, onChange, onSave, onCancel }) {
 }
 
 // Create-wizard defaults. Kept at module level so opening the wizard and
-// resetting it after a save use the exact same starting state — otherwise the
+// resetting it after a save use the exact same starting state â€” otherwise the
 // form keeps the previously created event's data and "Create Event" opens
 // pre-filled with the last event.
 const EMPTY_EVENT_FORM = {
@@ -485,24 +485,24 @@ const DEFAULT_VIRTUAL = { link: 'https://', instructions: '' };
 export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, startCreate, initialEventId, initialDetailTab, onInitEventConsumed, onUserClick, onViewStateChange }) {
   const [showCreate,    setShowCreate]    = useState(startCreate || false);
   const [discTab,       setDiscTab]       = useState('upcoming');
-  // Sub-tab within "My Created Events" — filters createdEvents by status.
+  // Sub-tab within "My Created Events" â€” filters createdEvents by status.
   const [createdTab,    setCreatedTab]    = useState('published');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [evDetailTab,   setEvDetailTab]   = useState('about');
   const [eventFromHome, setEventFromHome] = useState(false);
   const [goingIds,      setGoingIds]      = useState(new Set());
   const [joinedIds,     setJoinedIds]     = useState(new Set());
-  // The event's own creator can always see the discussion — everyone else
+  // The event's own creator can always see the discussion â€” everyone else
   // has to actually join first, same as the "+ Join" button gates. Declared
   // up here (not near the JSX that uses it) so effects earlier in the
   // component can also depend on it without a temporal-dead-zone error.
   const canViewDiscussion = !!selectedEvent && (selectedEvent._sourceTab === 'created' || joinedIds.has(selectedEvent.id));
   const [attendeeCount, setAttendeeCount] = useState({});
   const [joiningId,     setJoiningId]     = useState(null);
-  // "+ Join" ticket → attendee-details flow. null when closed.
+  // "+ Join" ticket â†’ attendee-details flow. null when closed.
   // { eventId, step: 'ticket'|'members', tickets, ticketsLoading, ticketId, quantity, members, submitting }
   const [joinFlow,      setJoinFlow]      = useState(null);
-  // Event discussion feed — posts (with optional photo/video) rather than
+  // Event discussion feed â€” posts (with optional photo/video) rather than
   // flat comments, each with its own nested comments/replies/likes.
   const [discussions,        setDiscussions]        = useState([]);
   const [discussionsLoading, setDiscussionsLoading]  = useState(false);
@@ -512,17 +512,17 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [discPostMedia,      setDiscPostMedia]       = useState([]); // [{ file, url, type }]
   const [discPosting,        setDiscPosting]         = useState(false);
   // Proper modal composer (matches the main Feed's "Create Post") instead of
-  // a single-line inline bar — images go through the same crop flow the
+  // a single-line inline bar â€” images go through the same crop flow the
   // Create Event cover photo upload already uses.
   const [discComposerOpen,   setDiscComposerOpen]    = useState(false);
   const [discCropQueue,      setDiscCropQueue]       = useState([]);
   const [discCropIndex,      setDiscCropIndex]       = useState(0);
-  // Which single post currently has its comment section expanded — like a
+  // Which single post currently has its comment section expanded â€” like a
   // normal feed, only one at a time to keep the per-post input state simple.
   const [discExpandedId,     setDiscExpandedId]      = useState(null);
   const [discCommentText,    setDiscCommentText]     = useState({}); // { [discussionId]: text }
   const [discCommentBusy,    setDiscCommentBusy]     = useState(false);
-  // Which comment a reply box is open under — { discussionId, commentId } | null
+  // Which comment a reply box is open under â€” { discussionId, commentId } | null
   const [discReplyTarget,    setDiscReplyTarget]     = useState(null);
   const [discReplyText,      setDiscReplyText]       = useState('');
   const [discReplyBusy,      setDiscReplyBusy]       = useState(false);
@@ -539,7 +539,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [step, setStep] = useState(1);
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
-  // Cover images — array of { id, file, url } so multiple can be uploaded and
+  // Cover images â€” array of { id, file, url } so multiple can be uploaded and
   // individually removed, instead of a single file that gets replaced.
   const [coverImages, setCoverImages] = useState([]);
   // One-at-a-time crop flow for freshly-picked cover files, same pattern as
@@ -547,14 +547,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [coverCropQueue, setCoverCropQueue] = useState([]);
   const [coverCropIndex, setCoverCropIndex] = useState(0);
   // When editing an existing event, its already-uploaded images (plain URL
-  // strings, no File to re-upload) — kept separate from the new-file uploads
+  // strings, no File to re-upload) â€” kept separate from the new-file uploads
   // above so each set can be removed/added to independently.
   const [existingCoverImages, setExistingCoverImages] = useState([]);
-  // Non-null while the create form is being used to edit an existing event —
+  // Non-null while the create form is being used to edit an existing event â€”
   // switches handlePublish to PUT instead of POST.
   const [editingEventId, setEditingEventId] = useState(null);
   // True while re-downloading existing cover images into real File objects
-  // before an edit submit — see handlePublish's PUT branch for why.
+  // before an edit submit â€” see handlePublish's PUT branch for why.
   const [preparingImages, setPreparingImages] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
 
@@ -573,7 +573,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   } = useSelector(s => s.events);
 
   // Opened from elsewhere (e.g. the Calendar page) with a specific event id
-  // to jump straight to — fetch it directly by id rather than searching
+  // to jump straight to â€” fetch it directly by id rather than searching
   // whatever event lists happen to already be loaded client-side, which
   // would silently fail if that list hasn't been fetched yet (or, before
   // this fix, was permanently pointed at the old hardcoded mock arrays).
@@ -590,7 +590,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }, [initialEventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Report the currently-open event/tab/create-flow up to HomePage so it can
-  // keep the URL in sync (?section=events&id=&tab=&create=) — this is what
+  // keep the URL in sync (?section=events&id=&tab=&create=) â€” this is what
   // lets a refresh land back on this exact event, not just the Events list.
   useEffect(() => {
     onViewStateChange?.({
@@ -643,13 +643,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     setGoingIds(ids);
   }, [rdxEvents, bookedEvents]);
 
-  // Sync joinedIds from Redux's isAttending flag — without this, an event
+  // Sync joinedIds from Redux's isAttending flag â€” without this, an event
   // the user already joined (in a previous session, or just fetched fresh)
   // had no way to show as joined until they clicked "+ Join" again in the
   // current session. Merged rather than replaced (unlike goingIds/savedIds
   // above): join/leave here call the API directly instead of through a
   // redux thunk, so isAttending on rdxEvents/bookedEvents/eventDetail only
-  // refreshes once fetchEvents/fetchEventDetail re-run — merging preserves
+  // refreshes once fetchEvents/fetchEventDetail re-run â€” merging preserves
   // the immediate local join/leave state in between.
   useEffect(() => {
     const attendingIds = [
@@ -703,7 +703,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     return () => { leaveEventRoom(selectedEvent.id); };
   }, [selectedEvent?.id]); // eslint-disable-line
 
-  // "+ Join" no longer joins immediately — it opens the ticket → attendee
+  // "+ Join" no longer joins immediately â€” it opens the ticket â†’ attendee
   // details flow below, and the actual join API call happens once that's
   // filled in (see submitJoinFlow).
   const handleJoinEvent = () => {
@@ -776,7 +776,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   }
 
-  // ── Event discussion feed (posts, not flat comments) ──
+  // â”€â”€ Event discussion feed (posts, not flat comments) â”€â”€
   async function loadDiscussions(eventId, page) {
     setDiscussionsLoading(true);
     try {
@@ -883,7 +883,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   async function handleLikeDiscussion(discussionId) {
     if (!selectedEvent?.id) return;
-    // Optimistic toggle — calling this same updater again on failure flips it right back.
+    // Optimistic toggle â€” calling this same updater again on failure flips it right back.
     const toggle = prev => prev.map(d => d.id === discussionId
       ? { ...d, likedByMe: !d.likedByMe, likeCount: d.likeCount + (d.likedByMe ? -1 : 1) }
       : d);
@@ -1035,7 +1035,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     const eventId = selectedEvent?.id || editingEventId;
     const eventTitle = selectedEvent?.title || form.title || 'Check out this event';
     const eventUrl = `${window.location.origin}/events/${eventId}`;
-    const shareText = `${eventTitle} on Kick Analyst`;
+    const shareText = `${eventTitle} on Kink Analyst`;
 
     switch (platform) {
       case 'link':
@@ -1066,7 +1066,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   // If the user leaves the event while looking at the discussion (the "+
   // Join"/"Leave event" toggle), don't strand them on a tab they can no
-  // longer access — drop back to About.
+  // longer access â€” drop back to About.
   useEffect(() => {
     if (evDetailTab === 'discussion' && selectedEvent && !canViewDiscussion) {
       setEvDetailTab('about');
@@ -1075,7 +1075,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
   // Real-time: new discussion posts from other attendees appear live while
   // the tab is open, instead of only showing up on the next fetch. Likes/
-  // comments/replies aren't reconciled live here — their socket payload
+  // comments/replies aren't reconciled live here â€” their socket payload
   // shapes weren't pinned down, and guessing wrong risks double-counting.
   useEffect(() => {
     if (evDetailTab !== 'discussion' || !selectedEvent?.id) return;
@@ -1146,7 +1146,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (form.category === 'Other' && !form.categoryOther.trim()) publishErrors.push('Please enter a custom category.');
     if (!form.eventType)       publishErrors.push('Event type (online / offline / both) is required.');
     if (!form.startDate)       publishErrors.push('Start date is required.');
-    // 'both' events need a venue AND a meeting link — the location tab is just
+    // 'both' events need a venue AND a meeting link â€” the location tab is just
     // which section is currently in view, not which data actually gets submitted
     // (both venue and virtual state persist regardless of the active tab).
     const needsVenue  = form.eventType === 'offline' || form.eventType === 'both';
@@ -1196,7 +1196,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       if (form.endTime)   fd.append('endTime',   form.endTime);
     }
     // On a plain create, new files are all there is. On an edit, the images
-    // already on the event only exist as remote URLs (no File to resend) — a
+    // already on the event only exist as remote URLs (no File to resend) â€” a
     // PUT that omits them entirely risks the backend treating "no coverImage
     // in this request" as "this event now has zero images" and wiping them.
     // Since there's no confirmed "keep these existing images" field the
@@ -1212,7 +1212,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
           const ext = (blob.type.split('/')[1] || 'jpg').split('+')[0];
           return new File([blob], `cover-${i}.${ext}`, { type: blob.type || 'image/jpeg' });
         } catch {
-          return null; // couldn't re-fetch (CORS/network) — dropped rather than blocking the save
+          return null; // couldn't re-fetch (CORS/network) â€” dropped rather than blocking the save
         }
       }));
       refetched.filter(Boolean).forEach(file => fd.append('coverImage', file));
@@ -1221,7 +1221,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     coverImages.forEach(img => fd.append('coverImage', img.file));
     if (form.eventType === 'offline' || form.eventType === 'both') {
       // Field name is 'venue' (not 'location'), and the venue's own name is
-      // the 'name' key (not 'venue') — matches the backend's confirmed shape.
+      // the 'name' key (not 'venue') â€” matches the backend's confirmed shape.
       fd.append('venue', JSON.stringify({ name: venue.name, street: venue.street, city: venue.city, state: venue.state, country: venue.country, pinCode: venue.pinCode }));
       if (parking) fd.append('parking', parking);
       fd.append('organizer', JSON.stringify(organizer));
@@ -1290,7 +1290,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       dispatch(showToast({ message: 'Event published successfully!', type: 'success' }));
       setCreatedTab('published');
       // Re-pull both lists: the draft was never in the public feed, so the
-      // optimistic status patch can't put it there — only a refetch can.
+      // optimistic status patch can't put it there â€” only a refetch can.
       dispatch(fetchMyCreated());
       dispatch(fetchEvents({
         tab: 'upcoming',
@@ -1320,7 +1320,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     return () => document.removeEventListener('mousedown', onOutsideClick);
   }, [visDropdownOpen]);
 
-  // Event Category dropdown — custom (icon-free) version of the same
+  // Event Category dropdown â€” custom (icon-free) version of the same
   // trigger-button + floating-option-list pattern used for Visibility above.
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const catDropdownRef = useRef(null);
@@ -1343,7 +1343,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [editingTicketId, setEditingTicketId] = useState(null);
   const [newTicket, setNewTicket] = useState(EMPTY_NEW_TICKET);
   // Guards against silently losing an in-progress (unsaved) ticket draft when
-  // switching to add/edit a different one — see requestTicketFormSwitch below.
+  // switching to add/edit a different one â€” see requestTicketFormSwitch below.
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [pendingTicketAction, setPendingTicketAction] = useState(null);
   const [registration, setRegistration] = useState(DEFAULT_REGISTRATION);
@@ -1384,7 +1384,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // (instead of a single-line input with no structure).
   function handleInstructionsFocus() {
     if (virtual.instructions) return;
-    setVirtual(p => ({ ...p, instructions: '• ' }));
+    setVirtual(p => ({ ...p, instructions: 'â€¢ ' }));
     requestAnimationFrame(() => {
       if (instructionsRef.current) instructionsRef.current.setSelectionRange(2, 2);
     });
@@ -1395,7 +1395,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     e.preventDefault();
     const ta = e.target;
     const { selectionStart, selectionEnd, value } = ta;
-    const insertion = '\n• ';
+    const insertion = '\nâ€¢ ';
     const nextValue = value.slice(0, selectionStart) + insertion + value.slice(selectionEnd);
     const nextCursor = selectionStart + insertion.length;
     setVirtual(p => ({ ...p, instructions: nextValue }));
@@ -1404,7 +1404,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     });
   }
 
-  // Wipes every Step 1-3 field back to its blank starting point — called after
+  // Wipes every Step 1-3 field back to its blank starting point â€” called after
   // a successful create/draft save so re-opening "Create Event" starts fresh
   // instead of showing the previous event's leftover title, tickets, venue, etc.
   function resetCreateForm() {
@@ -1438,7 +1438,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // Loads an existing event's data into the same Step 1-3 state the create
   // form uses, then opens that form in "edit" mode (handlePublish switches to
   // PUT once editingEventId is set). This is the flow that was entirely
-  // missing before — "Edit Event" was previously just a decorative button.
+  // missing before â€” "Edit Event" was previously just a decorative button.
   function openEditEvent(ev) {
     resetCreateForm();
     setEditingEventId(ev.id);
@@ -1513,7 +1513,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }
 
   // Step 3's location tab defaults to whichever option matches Step 1's Event
-  // Type — Online → "Online Event" tab, Offline → "Physical Event" tab —
+  // Type â€” Online â†’ "Online Event" tab, Offline â†’ "Physical Event" tab â€”
   // instead of always opening on Physical regardless of that choice.
   useEffect(() => {
     setLocationTab(form.eventType === 'online' ? 'online' : 'physical');
@@ -1763,7 +1763,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       />
       {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
-      {/* ── Event detail view ── */}
+      {/* â”€â”€ Event detail view â”€â”€ */}
       {!showCreate && selectedEvent && (
         <div className="ev-detail-page">
 
@@ -1788,7 +1788,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               <h1 className="ev-detail-title">{selectedEvent.title}</h1>
               <p className="ev-detail-location"><MapPinIcon /> {selectedEvent.location || 'N/A'}</p>
               {attendeeCount[selectedEvent.id] !== undefined && (
-                <p className="ev-detail-attendees">👥 {attendeeCount[selectedEvent.id]} attending</p>
+                <p className="ev-detail-attendees">ðŸ‘¥ {attendeeCount[selectedEvent.id]} attending</p>
               )}
             </div>
           </div>
@@ -1855,9 +1855,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   title={joinedIds.has(selectedEvent.id) ? 'Leave event' : 'Join event'}
                 >
                   {joiningId === selectedEvent.id ? (
-                    <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+                    <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>âŸ³</span>
                   ) : joinedIds.has(selectedEvent.id) ? (
-                    <>✓ Joined</>
+                    <>âœ“ Joined</>
                   ) : (
                     <>+ Join</>
                   )}
@@ -1973,14 +1973,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 {/* Left: comment feed */}
                 <div className="ev-detail-main">
 
-                  {/* Trigger — opens the proper modal composer below, matching the
+                  {/* Trigger â€” opens the proper modal composer below, matching the
                       main Feed's "Create Post" trigger card */}
                   <div className="ev-disc-composer-trigger" onClick={openDiscComposer}>
                     {authUser?.avatar
                       ? <img src={authUser.avatar} alt="you" className="ev-disc-compose-av" />
                       : <div className="ev-disc-compose-av ev-disc-av-fallback">{(authUser?.fullName ?? 'U')[0]}</div>
                     }
-                    <span className="ev-disc-composer-trigger-text">Share something with attendees…</span>
+                    <span className="ev-disc-composer-trigger-text">Share something with attendeesâ€¦</span>
                     <span className="ev-disc-composer-trigger-icon"><ImageIcon /></span>
                   </div>
 
@@ -1992,13 +1992,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             <h2 className="cp-title" id="ev-disc-composer-title">New Discussion Post</h2>
                             <p className="cp-subtitle">Share an update, photo, or video with attendees.</p>
                           </div>
-                          <button className="cp-close-btn" onClick={closeDiscComposer} aria-label="Close">✕</button>
+                          <button className="cp-close-btn" onClick={closeDiscComposer} aria-label="Close">âœ•</button>
                         </div>
 
                         <div className="cp-body">
                           <textarea
                             className="cp-textarea"
-                            placeholder="Share something with attendees…"
+                            placeholder="Share something with attendeesâ€¦"
                             value={discPostCaption}
                             onChange={e => setDiscPostCaption(e.target.value)}
                             rows={4}
@@ -2013,7 +2013,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                                     ? <video src={m.url} className="cp-photo-thumb-img" muted />
                                     : <img src={m.url} alt="" className="cp-photo-thumb-img" />
                                   }
-                                  <button className="cp-remove-media" onClick={() => removeDiscMedia(i)} aria-label="Remove media">✕</button>
+                                  <button className="cp-remove-media" onClick={() => removeDiscMedia(i)} aria-label="Remove media">âœ•</button>
                                 </div>
                               ))}
                               <button type="button" className="cp-photo-add-more" onClick={() => discMediaInputRef.current?.click()}>
@@ -2025,7 +2025,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             <div className="cp-upload-zone" onClick={() => discMediaInputRef.current?.click()}>
                               <div className="cp-upload-icon"><ImageIcon /></div>
                               <p className="cp-upload-title">Add photos or a video</p>
-                              <p className="cp-upload-sub">JPG, PNG, GIF or MP4 — pick multiple at once</p>
+                              <p className="cp-upload-sub">JPG, PNG, GIF or MP4 â€” pick multiple at once</p>
                             </div>
                           )}
                           <input ref={discMediaInputRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleDiscMediaPick} />
@@ -2038,7 +2038,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             disabled={discPosting || (!discPostCaption.trim() && discPostMedia.length === 0)}
                             onClick={handlePostDiscussion}
                           >
-                            {discPosting ? 'Posting…' : <><span>Post</span><SendIcon /></>}
+                            {discPosting ? 'Postingâ€¦' : <><span>Post</span><SendIcon /></>}
                           </button>
                         </div>
                       </div>
@@ -2059,8 +2059,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
                   {/* Discussion feed */}
                   <div className="ev-disc-posts">
-                    {discussionsLoading && discussions.length === 0 && <p className="ev-join-loading">Loading discussion…</p>}
-                    {!discussionsLoading && discussions.length === 0 && <p className="ev-join-loading">No posts yet — be the first to share something.</p>}
+                    {discussionsLoading && discussions.length === 0 && <p className="ev-join-loading">Loading discussionâ€¦</p>}
+                    {!discussionsLoading && discussions.length === 0 && <p className="ev-join-loading">No posts yet â€” be the first to share something.</p>}
                     {discussions.map(post => (
                       <div key={post.id} className="ev-disc-post">
                         <div className="ev-disc-post-header">
@@ -2099,7 +2099,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             <div className="ev-disc-compose ev-disc-compose--reply">
                               <input
                                 className="ev-disc-compose-input"
-                                placeholder="Write a comment…"
+                                placeholder="Write a commentâ€¦"
                                 value={discCommentText[post.id] || ''}
                                 onChange={e => setDiscCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
                                 onKeyDown={e => { if (e.key === 'Enter') handlePostDiscComment(post.id); }}
@@ -2129,7 +2129,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                                       <div className="ev-disc-compose ev-disc-compose--reply">
                                         <input
                                           className="ev-disc-compose-input"
-                                          placeholder={`Reply to ${c.author.name}…`}
+                                          placeholder={`Reply to ${c.author.name}â€¦`}
                                           value={discReplyText}
                                           onChange={e => setDiscReplyText(e.target.value)}
                                           onKeyDown={e => { if (e.key === 'Enter') handleSendDiscReply(); }}
@@ -2171,7 +2171,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     ))}
                     {discussionsHasMore && (
                       <button className="ev-disc-loadmore-btn" disabled={discussionsLoading} onClick={loadMoreDiscussions}>
-                        {discussionsLoading ? 'Loading…' : 'Load more'}
+                        {discussionsLoading ? 'Loadingâ€¦' : 'Load more'}
                       </button>
                     )}
                   </div>
@@ -2199,7 +2199,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-detail-info-row">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                        <span>Public · Anyone can join</span>
+                        <span>Public Â· Anyone can join</span>
                       </div>
                     </div>
 
@@ -2222,7 +2222,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
         </div>
       )}
 
-      {/* ── Discovery view ── */}
+      {/* â”€â”€ Discovery view â”€â”€ */}
       {!showCreate && !selectedEvent && (
         <div className="ev-disc-main">
           {/* Top bar */}
@@ -2258,7 +2258,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             </div>
           </div>
 
-          {/* Published / Drafts sub-tabs — only under My Created Events */}
+          {/* Published / Drafts sub-tabs â€” only under My Created Events */}
           {discTab === 'created' && (
             <div className="ev-created-subtabs">
               <button
@@ -2290,11 +2290,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             ))}
           </div>
 
-          {/* Event cards — grid or list */}
+          {/* Event cards â€” grid or list */}
           {currentTabLoading ? (
             <div className="ev-disc-loading">
               <div className="ev-disc-spinner" />
-              <p>Loading events…</p>
+              <p>Loading eventsâ€¦</p>
             </div>
           ) : (
           <>
@@ -2303,12 +2303,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               {discTab === 'favorites' ? (
                 <>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                  <p>No favourites yet — tap the heart on any event to save it here.</p>
+                  <p>No favourites yet â€” tap the heart on any event to save it here.</p>
                 </>
               ) : (
                 <>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  <p>No events found{activeFilterCount > 0 ? ' — try clearing some filters' : ''}.</p>
+                  <p>No events found{activeFilterCount > 0 ? ' â€” try clearing some filters' : ''}.</p>
                 </>
               )}
             </div>
@@ -2333,13 +2333,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     </button>
                     {(heartParticles[ev.id] || []).map(p => (
-                      <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
+                      <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>â¤ï¸</span>
                     ))}
                   </div>
                 </div>
                 <div className="ev-disc-card-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} â€¢ {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   <div className="ev-disc-card-footer">
                     <div className="ev-disc-card-meta">
@@ -2359,14 +2359,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         disabled={publishingId === ev.id}
                         onClick={e => { e.stopPropagation(); handlePublishDraft(ev.id); }}
                       >
-                        {publishingId === ev.id ? 'Publishing…' : 'Publish'}
+                        {publishingId === ev.id ? 'Publishingâ€¦' : 'Publish'}
                       </button>
                     ) : discTab === 'created' ? (
                       <button className="ev-disc-book-btn ev-disc-book-btn--manage" onClick={e => e.stopPropagation()}>Manage Event</button>
                     ) : discTab === 'booked' ? (
                       <button className="ev-disc-book-btn ev-disc-book-btn--booked" onClick={e => e.stopPropagation()}>Booked</button>
                     ) : (
-                      <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id, ev.eventType); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
+                      <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id, ev.eventType); }}>{joiningId === ev.id ? 'âŸ³' : joinedIds.has(ev.id) ? 'âœ“ Joined' : '+ Join'}</button>
                     )}
                   </div>
                 </div>
@@ -2386,7 +2386,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <div className="ev-list-top">
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} â€¢ {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   </div>
                   <p className="ev-list-desc">{ev.desc}</p>
                   <div className="ev-disc-card-footer">
@@ -2406,7 +2406,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={savedIds.has(ev.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         </button>
                         {(heartParticles[ev.id] || []).map(p => (
-                          <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
+                          <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>â¤ï¸</span>
                         ))}
                       </div>
                       {discTab === 'created' && ev.status === 'draft' ? (
@@ -2416,14 +2416,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           disabled={publishingId === ev.id}
                           onClick={e => { e.stopPropagation(); handlePublishDraft(ev.id); }}
                         >
-                          {publishingId === ev.id ? 'Publishing…' : 'Publish'}
+                          {publishingId === ev.id ? 'Publishingâ€¦' : 'Publish'}
                         </button>
                       ) : discTab === 'created' ? (
                         <button className="ev-disc-book-btn ev-disc-book-btn--manage" onClick={e => e.stopPropagation()}>Manage Event</button>
                       ) : discTab === 'booked' ? (
                         <button className="ev-disc-book-btn ev-disc-book-btn--booked" onClick={e => e.stopPropagation()}>Booked</button>
                       ) : (
-                        <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id, ev.eventType); }}>{joiningId === ev.id ? '⟳' : joinedIds.has(ev.id) ? '✓ Joined' : '+ Join'}</button>
+                        <button className={`ev-disc-book-btn ev-disc-join-btn${joinedIds.has(ev.id) ? ' ev-disc-join-btn--joined' : ''}`} disabled={joiningId === ev.id} onClick={e => { e.stopPropagation(); handleJoinEventCard(ev.id, ev.eventType); }}>{joiningId === ev.id ? 'âŸ³' : joinedIds.has(ev.id) ? 'âœ“ Joined' : '+ Join'}</button>
                       )}
                     </div>
                   </div>
@@ -2449,7 +2449,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
         </div>
       )}
 
-      {/* ── Filter panel overlay (outside scroll container) ── */}
+      {/* â”€â”€ Filter panel overlay (outside scroll container) â”€â”€ */}
       {showFilter && (
         <>
           <div className="ev-filter-backdrop" onClick={() => setShowFilter(false)} />
@@ -2563,7 +2563,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             </>
           )}
 
-      {/* ── Create event form ── */}
+      {/* â”€â”€ Create event form â”€â”€ */}
       {showCreate && (
       <div className="ev-main">
         {/* Stepper */}
@@ -2743,7 +2743,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                 </div>
 
-                {/* Visibility — same chip + dropdown UI as post create's audience picker */}
+                {/* Visibility â€” same chip + dropdown UI as post create's audience picker */}
                 <div className="ev-field">
                   <label className="ev-label">Visibility</label>
                   <div className="ev-vis-wrap" ref={visDropdownRef}>
@@ -2820,7 +2820,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <div style={{ width: 80, height: 50, background: 'rgba(255,255,255,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 22, flexShrink: 0 }}>+</div>
                     <div>
                       <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{(existingCoverImages.length + coverImages.length) > 0 ? 'Add more images' : 'Upload cover image'}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Recommended: 1200 × 628 px · JPG, PNG, WebP</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Recommended: 1200 Ã— 628 px Â· JPG, PNG, WebP</p>
                     </div>
                     <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleCoverChange} />
                   </label>
@@ -2874,7 +2874,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <p className="ev-s2-section-title">Ticket Types</p>
 
                   {pricingType === 'free' ? (
-                    /* Free events don't have priced ticket tiers — show a single
+                    /* Free events don't have priced ticket tiers â€” show a single
                        fixed "Free" entry instead of the paid ticket-type list. */
                     <div className="ev-ticket-list">
                       <div className="ev-ticket-item ev-ticket-item--active ev-ticket-item--readonly">
@@ -2938,7 +2938,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         })}
                       </div>
 
-                      {/* New ticket form — only for adding a brand-new one */}
+                      {/* New ticket form â€” only for adding a brand-new one */}
                       {showNewForm && !editingTicketId && (
                         <TicketFormPanel
                           isEditing={false}
@@ -2949,7 +2949,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         />
                       )}
 
-                      {/* Add another — always visible */}
+                      {/* Add another â€” always visible */}
                       <button
                         type="button"
                         className="ev-add-ticket-btn"
@@ -2986,7 +2986,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </div>
 
               <div className="ev-form-body">
-                {/* Physical / Online tab toggle — locked to whichever Event Type was
+                {/* Physical / Online tab toggle â€” locked to whichever Event Type was
                     chosen in Step 1 (Online disables Physical, Offline disables Online);
                     "Both" leaves both switchable since that event needs both sections. */}
                 <div className="ev-loc-tabs">
@@ -3213,7 +3213,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       <div key={tk.id} className="ev-review-ticket-row">
                         <div>
                           <p className="ev-review-ticket-name">{tk.name}</p>
-                          <p className="ev-review-ticket-cap">Capacity: {tk.seats || '—'} Guests</p>
+                          <p className="ev-review-ticket-cap">Capacity: {tk.seats || 'â€”'} Guests</p>
                         </div>
                         <span className="ev-review-ticket-price">${Number(tk.price).toFixed(2)}</span>
                       </div>
@@ -3231,7 +3231,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <div>
                       <p className="ev-review-field-label">VENUE NAME</p>
                       <p className="ev-review-field-value ev-review-venue-name">
-                        {venue.name || 'The Innovation Hub – Studio B'}
+                        {venue.name || 'The Innovation Hub â€“ Studio B'}
                       </p>
                       <p className="ev-review-field-label" style={{ marginTop: 10 }}>ADDRESS</p>
                       <p className="ev-review-field-value ev-review-address">
@@ -3254,12 +3254,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   {/* Publish actions */}
                   <button type="button" className="ev-publish-btn" disabled={createLoading || updateLoading || preparingImages || draftLoading} onClick={() => handlePublish(false)}>
                   {editingEventId
-                    ? (preparingImages ? 'Preparing images…' : updateLoading ? 'Saving…' : 'Save Changes')
-                    : (createLoading ? 'Publishing…' : 'Publish Event')}
+                    ? (preparingImages ? 'Preparing imagesâ€¦' : updateLoading ? 'Savingâ€¦' : 'Save Changes')
+                    : (createLoading ? 'Publishingâ€¦' : 'Publish Event')}
                 </button>
                 {!editingEventId && (
                   <button type="button" className="ev-draft-btn" disabled={createLoading || draftLoading} onClick={() => { setDraftLoading(true); handlePublish(true); }}>
-                    {draftLoading ? 'Saving…' : 'Save as Draft'}
+                    {draftLoading ? 'Savingâ€¦' : 'Save as Draft'}
                   </button>
                 )}
                   <p className="ev-publish-notice">By publishing, you agree to our <span>Terms of Service</span> and <span>Event Guidelines.</span></p>
@@ -3279,10 +3279,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </button>
             )}
             {/* Step 4 has its own explicit "Publish Event" / "Save as Draft" buttons
-                further up (with a terms notice) — this generic wizard-nav button used
+                further up (with a terms notice) â€” this generic wizard-nav button used
                 to also always call handlePublish(false) here, silently overriding
                 whichever of those two the user actually meant to press and making
-                a "Save as Draft" click surface a "Publishing…" label from this
+                a "Save as Draft" click surface a "Publishingâ€¦" label from this
                 unrelated button (both read the same createLoading flag). Simplest
                 fix: don't duplicate a second, ambiguous "publish" action here. */}
             {step < 4 && (
@@ -3295,7 +3295,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       </div>
       )}
 
-      {/* ── "+ Join" ticket → attendee details flow ── */}
+      {/* â”€â”€ "+ Join" ticket â†’ attendee details flow â”€â”€ */}
       {joinFlow && (
         <div className="ev-join-overlay" onClick={closeJoinFlow}>
           <div className="ev-join-modal" onClick={e => e.stopPropagation()}>
@@ -3318,7 +3318,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                 )}
                 {joinFlow.ticketsLoading ? (
-                  <p className="ev-join-loading">Loading tickets…</p>
+                  <p className="ev-join-loading">Loading ticketsâ€¦</p>
                 ) : (
                   <div className="ev-ticket-list">
                     {joinFlow.tickets.map(tk => (
@@ -3343,7 +3343,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-join-qty-row">
                     <span className="ev-join-qty-label">Quantity</span>
                     <div className="ev-join-qty-stepper">
-                      <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity - 1)} disabled={joinFlow.quantity <= 1}>−</button>
+                      <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity - 1)} disabled={joinFlow.quantity <= 1}>âˆ’</button>
                       <span>{joinFlow.quantity}</span>
                       <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity + 1)}>+</button>
                     </div>
@@ -3388,7 +3388,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       {joinFlow.members.map((m, i) => (
                         <div className="ev-join-summary-row" key={i}>
                           <span>Attendee {i + 1}</span>
-                          <span>{m.name} · Age {m.age}</span>
+                          <span>{m.name} Â· Age {m.age}</span>
                         </div>
                       ))}
                     </div>
@@ -3417,7 +3417,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               )}
               {joinFlow.step === 'confirm' && (
                 <button className="ev-join-done-btn" disabled={joinFlow.submitting} onClick={submitJoinFlow}>
-                  {joinFlow.submitting ? 'Joining…' : 'Confirm & Join'}
+                  {joinFlow.submitting ? 'Joiningâ€¦' : 'Confirm & Join'}
                 </button>
               )}
             </div>
@@ -3427,3 +3427,4 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     </div>
   );
 }
+
