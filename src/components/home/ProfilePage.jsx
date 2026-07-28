@@ -384,7 +384,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
           >
             Invitations
-            {friendRequests.length > 0 && <span className="prof-conn-badge" style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '600' }}>{friendRequests.length}</span>}
+            {friendRequests.length > 0 && <span className="prof-conn-badge" style={{ position: 'absolute', top: '-10px', right: '0', background: '#ef4444', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '600' }}>{friendRequests.length}</span>}
           </button>
           <button
             className={`prof-conn-tab prof-conn-tab-blocked${connectionTab === 'blocked' ? ' prof-conn-tab--active' : ''}`}
