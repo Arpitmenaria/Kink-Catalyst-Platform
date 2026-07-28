@@ -739,7 +739,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   );
 }
 
-function MediaCard({ photo }) {
+function MediaCard({ photo, likeInfo, onLike }) {
   const [idx, setIdx] = useState(0);
   const multi = photo.images.length > 1;
   const total = photo.images.length;
@@ -748,7 +748,7 @@ function MediaCard({ photo }) {
   function next(e) { e.stopPropagation(); setIdx(i => (i + 1) % total); }
 
   return (
-    <div className="media-photo-card">
+    <div className="media-photo-card" style={{ position: 'relative' }}>
       <div className="media-photo-wrap" style={{ position: 'relative', overflow: 'hidden' }}>
         <SkeletonImg src={photo.images[idx]} alt="" className="media-photo-img" />
 
@@ -776,6 +776,61 @@ function MediaCard({ photo }) {
               />
             ))}
           </div>
+        )}
+
+        {/* Like button */}
+        {likeInfo && onLike && (
+          <>
+            <button
+              className={`media-photo-like-btn${likeInfo.liked ? ' liked' : ''}`}
+              onClick={(e) => onLike(photo.id || photo._id, e)}
+              title={likeInfo.liked ? "Unlike" : "Like"}
+              style={{
+                position: 'absolute',
+                bottom: '8px',
+                right: '8px',
+                background: likeInfo.liked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0, 0, 0, 0.5)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                zIndex: 10
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)';
+                e.currentTarget.style.background = likeInfo.liked ? 'rgba(239, 68, 68, 1)' : 'rgba(0, 0, 0, 0.7)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.background = likeInfo.liked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0, 0, 0, 0.5)';
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={likeInfo.liked ? 'currentColor' : 'none'} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '8px',
+                left: '8px',
+                background: 'rgba(0, 0, 0, 0.6)',
+                color: 'white',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: '500',
+                zIndex: 10
+              }}
+            >
+              {likeInfo.count}
+            </span>
+          </>
         )}
       </div>
     </div>
@@ -823,6 +878,7 @@ export function MediaTab({ readOnly, userId }) {
   const [openAlbum, setOpenAlbum] = useState(null);
   const [lbIdx, setLbIdx] = useState(null); // album image lightbox index
   const [albumLikes, setAlbumLikes] = useState({}); // { albumId: { count, liked } }
+  const [photoLikes, setPhotoLikes] = useState({}); // { photoId: { count, liked } }
 
   useEffect(() => {
     if (userId) {
@@ -842,6 +898,15 @@ export function MediaTab({ readOnly, userId }) {
     });
     setAlbumLikes(likes);
   }, [albumList]);
+
+  useEffect(() => {
+    const likes = {};
+    photos.forEach(photo => {
+      const photoId = photo.id || photo._id;
+      likes[photoId] = { count: photo.likesCount || 0, liked: photo.likedByMe || false };
+    });
+    setPhotoLikes(likes);
+  }, [photos]);
 
   function handleFilesChosen(e) {
     const files = [...(e.target.files ?? [])];
@@ -869,7 +934,30 @@ export function MediaTab({ readOnly, userId }) {
     });
   }
 
-  // Socket listeners for real-time album like updates
+  function handlePhotoLike(photoId, e) {
+    e.stopPropagation();
+    if (!photoId) {
+      console.warn("Photo ID is missing");
+      return;
+    }
+    setPhotoLikes(prev => {
+      const current = prev[photoId] || { count: 0, liked: false };
+      const newLiked = !current.liked;
+      const newCount = newLiked ? current.count + 1 : Math.max(0, current.count - 1);
+
+      apiRequest(`/api/photos/${photoId}/like`, {
+        token,
+        method: newLiked ? 'POST' : 'DELETE'
+      }).catch((err) => {
+        console.warn("Failed to update photo like:", err.message);
+        setPhotoLikes(prev => ({ ...prev, [photoId]: current }));
+      });
+
+      return { ...prev, [photoId]: { count: newCount, liked: newLiked } };
+    });
+  }
+
+  // Socket listeners for real-time album and photo like updates
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
@@ -892,12 +980,34 @@ export function MediaTab({ readOnly, userId }) {
       }
     };
 
+    const handlePhotoLiked = (data) => {
+      if (data.photoId) {
+        setPhotoLikes(prev => ({
+          ...prev,
+          [data.photoId]: { count: data.likesCount, liked: false }
+        }));
+      }
+    };
+
+    const handlePhotoUnliked = (data) => {
+      if (data.photoId) {
+        setPhotoLikes(prev => ({
+          ...prev,
+          [data.photoId]: { count: data.likesCount, liked: false }
+        }));
+      }
+    };
+
     socket.on('album:liked', handleAlbumLiked);
     socket.on('album:unliked', handleAlbumUnliked);
+    socket.on('photo:liked', handlePhotoLiked);
+    socket.on('photo:unliked', handlePhotoUnliked);
 
     return () => {
       socket.off('album:liked', handleAlbumLiked);
       socket.off('album:unliked', handleAlbumUnliked);
+      socket.off('photo:liked', handlePhotoLiked);
+      socket.off('photo:unliked', handlePhotoUnliked);
     };
   }, []);
 
@@ -1049,9 +1159,18 @@ export function MediaTab({ readOnly, userId }) {
             <span className="media-add-label">Add photo</span>
           </button>
         )}
-        {photos.map(photo => (
-          <MediaCard key={photo.id} photo={photo} />
-        ))}
+        {photos.map(photo => {
+          const photoId = photo.id || photo._id;
+          const likeInfo = photoLikes[photoId] || { count: 0, liked: false };
+          return (
+            <MediaCard
+              key={photoId}
+              photo={photo}
+              likeInfo={likeInfo}
+              onLike={handlePhotoLike}
+            />
+          );
+        })}
       </div>
       )}
       {albumModalOpen && <CreateAlbumModal onClose={() => setAlbumModalOpen(false)} />}
