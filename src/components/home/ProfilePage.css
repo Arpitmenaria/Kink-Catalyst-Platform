@@ -1011,7 +1011,7 @@
   min-height: 200px;
 }
 .prof-conn-card:hover { border-color: #2563eb44; box-shadow: 0 4px 16px rgba(37,99,235,0.08); }
-.prof-conn-card-avatar-wrap { position: relative; margin-bottom: 4px; }
+.prof-conn-card-avatar-wrap { position: relative; margin-bottom: 0px; }
 .prof-conn-card-avatar {
   width: 64px;
   height: 64px;
@@ -1044,7 +1044,7 @@
   gap: 6px;
   margin-top: -6px;
 }
-.prof-conn-card-actions { display: flex; gap: 6px; width: 100%; margin-top: auto; flex-wrap: wrap; justify-content: center; }
+.prof-conn-card-actions { display: flex; gap: 6px; width: 100%; margin-top: auto; flex-wrap: wrap; justify-content: center; margin-top: -4px; }
 .prof-conn-card-actions .prof-conn-btn { padding: 5px 12px; font-size: 11px; flex: 1; min-width: 80px; }
 
 .prof-conn-btn--icon-remove { position: relative; }
