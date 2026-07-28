@@ -231,61 +231,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
     }
   }, [connectionTab, dispatch, token]);
 
-  useEffect(() => {
-    if (showSentRequests && token) {
-      // Fetch sent friend requests from API
-      const fetchSentRequests = async () => {
-        try {
-          const data = await apiRequest('/api/users/me/friend-requests/sent', { token });
-          setSentRequests((data.requests ?? []).map(r => ({
-            requestId: r._id,
-            userId: r.toUser?._id ?? r.toUser?.id ?? '',
-            name: r.toUser?.name ?? r.toUser?.fullName ?? '',
-            avatar: r.toUser?.avatar?.startsWith?.('http') ? r.toUser.avatar : '',
-            createdAt: r.createdAt,
-          })));
-        } catch (err) {
-          console.error('Failed to fetch sent requests:', err);
-          setSentRequests([]);
-        }
-      };
-      fetchSentRequests();
-
-      // Listen for real-time updates
-      const handleRequestCancelled = (data) => {
-        const { fromUserId, toUserId } = data ?? {};
-        const currentUserId = authUser?._id;
-        // If current user's request was cancelled, remove from list
-        if (fromUserId === currentUserId) {
-          setSentRequests(prev => prev.filter(r => r.userId !== toUserId));
-        }
-      };
-
-      const handleRequestRejected = (data) => {
-        const { fromUserId, toUserId } = data ?? {};
-        const currentUserId = authUser?._id;
-        // If someone rejected our sent request, remove from list
-        if (fromUserId === currentUserId) {
-          setSentRequests(prev => prev.filter(r => r.userId !== toUserId));
-        }
-      };
-
-      const socketInstance = getSocket();
-      if (socketInstance) {
-        socketInstance.on('friend_request_cancelled', handleRequestCancelled);
-        socketInstance.on('friend_request_rejected', handleRequestRejected);
-      }
-
-      return () => {
-        const socketInstance = getSocket();
-        if (socketInstance) {
-          socketInstance.off('friend_request_cancelled', handleRequestCancelled);
-          socketInstance.off('friend_request_rejected', handleRequestRejected);
-        }
-      };
-    }
-  }, [showSentRequests, token, authUser]);
-
   function handleUnblock(userId) {
     dispatch(unblockUser(userId)).then(action => {
       if (unblockUser.fulfilled.match(action)) {
@@ -469,7 +414,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
       </div>
 
       {/* ── Sent requests view ── */}
-      {showSentRequests && (
+      {connectionTab === 'sent' && (
         <div className="prof-conn-list">
           {sentRequests.length === 0 && (
             <p className="prof-conn-empty">You haven't sent any friend requests.</p>
@@ -507,7 +452,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
       )}
 
       {/* ── Blocked users view ── */}
-      {showBlocked && (
+      {connectionTab === 'blocked' && (
         <div className="prof-conn-list">
           {blockedUsersListLoading && blockedUsersList.length === 0 && (
             <p className="prof-conn-empty">Loading blocked users...</p>
@@ -548,8 +493,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      {/* ── List view ── */}
-      {!showBlocked && viewMode === 'list' && (
+      {/* ── All connections list view ── */}
+      {connectionTab === 'all' && viewMode === 'list' && (
         <div className="prof-conn-list">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
@@ -580,8 +525,42 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      {/* ── Grid view ── */}
-      {!showBlocked && viewMode === 'grid' && (
+      {/* ── Incoming requests list view ── */}
+      {connectionTab === 'incoming' && viewMode === 'list' && (
+        <div className="prof-conn-list">
+          {friendRequests.length === 0 && (
+            <p className="prof-conn-empty">No incoming connection requests.</p>
+          )}
+          {friendRequests.map(req => (
+            <div key={req.id} className="prof-conn-item">
+              <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.id)}>
+                {req.avatar
+                  ? <img src={req.avatar} alt={req.name} className="prof-conn-avatar" />
+                  : <span className="prof-conn-avatar prof-conn-avatar--fallback">{initials(req.name)}</span>
+                }
+              </div>
+              <div className="prof-conn-info">
+                <div className="prof-conn-name-row">
+                  <span className="prof-conn-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.id)}>{req.name}</span>
+                </div>
+                <span className="prof-conn-role">{req.role}</span>
+                {req.location && (
+                  <div className="prof-conn-shared">
+                    <span className="prof-conn-shared-text"><SuggLocationIcon />{req.location}</span>
+                  </div>
+                )}
+              </div>
+              <div className="prof-conn-actions">
+                <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => handleAdd(req)}>Accept</button>
+                <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => dispatch(rejectFriendRequest(req.id))}>Reject</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── All connections grid view ── */}
+      {connectionTab === 'all' && viewMode === 'grid' && (
         <div className="prof-conn-grid">
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">
@@ -611,7 +590,40 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      {!showBlocked && connectionsTotal > 5 && (
+      {/* ── Incoming requests grid view ── */}
+      {connectionTab === 'incoming' && viewMode === 'grid' && (
+        <div className="prof-conn-grid">
+          {friendRequests.length === 0 && (
+            <p className="prof-conn-empty">No incoming connection requests.</p>
+          )}
+          {friendRequests.map(req => (
+            <div key={req.id} className="prof-conn-card">
+              <div className="prof-conn-card-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.id)}>
+                {req.avatar
+                  ? <img src={req.avatar} alt={req.name} className="prof-conn-card-avatar" />
+                  : <span className="prof-conn-card-avatar prof-conn-avatar--fallback">{initials(req.name)}</span>
+                }
+              </div>
+              <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.id)}>{req.name}</p>
+              <p className="prof-conn-card-role">{req.role}</p>
+              {req.location && (
+                <div className="prof-conn-card-mutual">
+                  <span className="prof-conn-shared-text"><SuggLocationIcon />{req.location}</span>
+                </div>
+              )}
+              <div className="prof-conn-card-actions">
+                <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }} onClick={() => handleAdd(req)}>Accept</button>
+                <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => dispatch(rejectFriendRequest(req.id))}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span className="prof-conn-remove-tooltip">Reject request</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {connectionTab === 'all' && connectionsTotal > 5 && (
         <button className="prof-conn-load-more">View all connections</button>
       )}
     </div>
