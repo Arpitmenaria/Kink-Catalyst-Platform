@@ -403,12 +403,14 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           <button
             className={`prof-conn-tab prof-conn-tab-incoming${connectionTab === 'incoming' ? ' prof-conn-tab--active' : ''}`}
             onClick={() => setConnectionTab('incoming')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             Invitations
           </button>
           <button
             className={`prof-conn-tab prof-conn-tab-blocked${connectionTab === 'blocked' ? ' prof-conn-tab--active' : ''}`}
             onClick={() => setConnectionTab('blocked')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             Blocked
           </button>
