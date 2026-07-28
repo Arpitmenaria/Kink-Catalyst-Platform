@@ -1001,14 +1001,14 @@
   background: #0d1526;
   border: 1px solid #1a2540;
   border-radius: 14px;
-  padding: 12px 12px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 0px;
   text-align: center;
   transition: border-color 0.15s, box-shadow 0.15s;
-  min-height: 220px;
+  min-height: 200px;
 }
 .prof-conn-card:hover { border-color: #2563eb44; box-shadow: 0 4px 16px rgba(37,99,235,0.08); }
 .prof-conn-card-avatar-wrap { position: relative; margin-bottom: 4px; }
