@@ -354,7 +354,7 @@ export default function UserProfilePage({
       if (data.photoId) {
         setPhotoLikes(prev => ({
           ...prev,
-          [data.photoId]: { count: data.likesCount, liked: false }
+          [data.photoId]: { count: data.likesCount, liked: data.userId === authUser?.id }
         }));
       }
     };
@@ -363,7 +363,7 @@ export default function UserProfilePage({
       if (data.photoId) {
         setPhotoLikes(prev => ({
           ...prev,
-          [data.photoId]: { count: data.likesCount, liked: false }
+          [data.photoId]: { count: data.likesCount, liked: data.userId === authUser?.id }
         }));
       }
     };
@@ -375,7 +375,7 @@ export default function UserProfilePage({
       socket.off('photo:liked', handlePhotoLiked);
       socket.off('photo:unliked', handlePhotoUnliked);
     };
-  }, []);
+  }, [authUser?.id]);
 
   // Reset per-user tab data when the viewed profile changes, so we refetch for
   // the new user instead of showing the previous one's (or a stale empty) list.

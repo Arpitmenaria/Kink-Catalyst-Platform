@@ -870,7 +870,7 @@ function GalleryPanel() {
 // only albums are backed by a viewer-aware endpoint right now.
 export function MediaTab({ readOnly, userId }) {
   const dispatch = useDispatch();
-  const { token } = useSelector(s => s.auth);
+  const { token, user: authUser } = useSelector(s => s.auth);
   const { photos, albums, viewedAlbums } = useSelector(s => s.profile);
   const albumList = userId ? viewedAlbums : albums;
   const photoInputRef = useRef(null);
@@ -966,7 +966,7 @@ export function MediaTab({ readOnly, userId }) {
       if (data.albumId) {
         setAlbumLikes(prev => ({
           ...prev,
-          [data.albumId]: { count: data.likesCount, liked: false }
+          [data.albumId]: { count: data.likesCount, liked: data.userId === authUser?.id }
         }));
       }
     };
@@ -975,7 +975,7 @@ export function MediaTab({ readOnly, userId }) {
       if (data.albumId) {
         setAlbumLikes(prev => ({
           ...prev,
-          [data.albumId]: { count: data.likesCount, liked: false }
+          [data.albumId]: { count: data.likesCount, liked: data.userId === authUser?.id }
         }));
       }
     };
@@ -984,7 +984,7 @@ export function MediaTab({ readOnly, userId }) {
       if (data.photoId) {
         setPhotoLikes(prev => ({
           ...prev,
-          [data.photoId]: { count: data.likesCount, liked: false }
+          [data.photoId]: { count: data.likesCount, liked: data.userId === authUser?.id }
         }));
       }
     };
@@ -993,7 +993,7 @@ export function MediaTab({ readOnly, userId }) {
       if (data.photoId) {
         setPhotoLikes(prev => ({
           ...prev,
-          [data.photoId]: { count: data.likesCount, liked: false }
+          [data.photoId]: { count: data.likesCount, liked: data.userId === authUser?.id }
         }));
       }
     };
@@ -1009,7 +1009,7 @@ export function MediaTab({ readOnly, userId }) {
       socket.off('photo:liked', handlePhotoLiked);
       socket.off('photo:unliked', handlePhotoUnliked);
     };
-  }, []);
+  }, [authUser?.id]);
 
   // Album folder view — clicking an album opens its photos like a real folder.
   if (openAlbum) {
