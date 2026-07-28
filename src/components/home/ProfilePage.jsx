@@ -444,8 +444,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         </div>
       )}
 
-      {/* ── Blocked users view ── */}
-      {connectionTab === 'blocked' && (
+      {/* ── Blocked users list view ── */}
+      {connectionTab === 'blocked' && viewMode === 'list' && (
         <div className="prof-conn-list">
           {blockedUsersListLoading && blockedUsersList.length === 0 && (
             <p className="prof-conn-empty">Loading blocked users...</p>
@@ -479,6 +479,45 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                   onClick={() => handleUnblock(u.id)}
                 >
                   {blockingId === u.id ? 'Unblocking...' : 'Unblock'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Blocked users grid view ── */}
+      {connectionTab === 'blocked' && viewMode === 'grid' && (
+        <div className="prof-conn-grid">
+          {blockedUsersListLoading && blockedUsersList.length === 0 && (
+            <p className="prof-conn-empty">Loading blocked users...</p>
+          )}
+          {!blockedUsersListLoading && blockedUsersList.length === 0 && (
+            <p className="prof-conn-empty">You haven't blocked anyone.</p>
+          )}
+          {blockedUsersList.map(u => (
+            <div key={u.id} className="prof-conn-card">
+              <div className="prof-conn-card-avatar-wrap">
+                {u.avatar
+                  ? <img src={u.avatar} alt={u.name} className="prof-conn-card-avatar" />
+                  : <span className="prof-conn-card-avatar prof-conn-avatar--fallback">{initials(u.name)}</span>
+                }
+              </div>
+              <p className="prof-conn-card-name">{u.name}</p>
+              <p className="prof-conn-card-role">{u.role}</p>
+              {u.location && (
+                <div className="prof-conn-card-mutual">
+                  <span className="prof-conn-shared-text"><SuggLocationIcon />{u.location}</span>
+                </div>
+              )}
+              <div className="prof-conn-card-actions">
+                <button
+                  className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove"
+                  disabled={blockingId === u.id}
+                  onClick={() => handleUnblock(u.id)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                  <span className="prof-conn-remove-tooltip">{blockingId === u.id ? 'Unblocking...' : 'Unblock'}</span>
                 </button>
               </div>
             </div>
