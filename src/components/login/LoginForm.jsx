@@ -204,7 +204,7 @@ export default function LoginForm() {
                   id="login-password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="Enter your password"
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="current-password"
