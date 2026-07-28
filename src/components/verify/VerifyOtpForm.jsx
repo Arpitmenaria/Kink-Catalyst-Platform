@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { verifyOtp, resendOtp, clearAuthState, resetToSignup } from '../../store/slices/authSlice';
 import OtpInput from './OtpInput';
@@ -11,7 +11,7 @@ function LoadingContent() {
         <span className="btn-dot" />
         <span className="btn-dot" />
       </span>
-      Verifying…
+      Verifyingâ€¦
     </>
   );
 }
@@ -99,7 +99,7 @@ export default function VerifyOtpForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">SocialPlatform</div>
+      <div className="signup-logo">Kick Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card verify-card">
@@ -109,7 +109,7 @@ export default function VerifyOtpForm() {
             onClick={handleBack}
             disabled={!isIdle}
           >
-            ← Back to login
+            â† Back to login
           </button>
 
           <div className="signup-card-header verify-header">
@@ -159,7 +159,7 @@ export default function VerifyOtpForm() {
               onClick={handleResend}
               disabled={resendLoading || !isIdle}
             >
-              {resendLoading ? 'Sending…' : 'Resend'}
+              {resendLoading ? 'Sendingâ€¦' : 'Resend'}
             </button>
           </p>
         </div>
@@ -167,3 +167,4 @@ export default function VerifyOtpForm() {
     </div>
   );
 }
+

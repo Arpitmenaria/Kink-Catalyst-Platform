@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { verifyResetOtp, sendResetOtp, goToStep, clearForgotState } from '../../store/slices/forgotPasswordSlice';
 import OtpInput from '../verify/OtpInput';
@@ -33,7 +33,7 @@ export default function ForgotOtpForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">SocialPlatform</div>
+      <div className="signup-logo">Kick Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card fp-card verify-card">
@@ -43,7 +43,7 @@ export default function ForgotOtpForm() {
             onClick={() => dispatch(goToStep('email'))}
             disabled={loading}
           >
-            ← Back
+            â† Back
           </button>
 
           <div className="signup-card-header verify-header">
@@ -62,7 +62,7 @@ export default function ForgotOtpForm() {
             )}
 
             <button type="submit" className="submit-btn" disabled={loading || otp.length < 6}>
-              {loading ? <><Spinner /> Verifying…</> : 'Verify Code'}
+              {loading ? <><Spinner /> Verifyingâ€¦</> : 'Verify Code'}
             </button>
           </form>
 
@@ -74,7 +74,7 @@ export default function ForgotOtpForm() {
               onClick={handleResend}
               disabled={resendLoading || loading}
             >
-              {resendLoading ? 'Sending…' : 'Resend'}
+              {resendLoading ? 'Sendingâ€¦' : 'Resend'}
             </button>
           </p>
         </div>
@@ -82,3 +82,4 @@ export default function ForgotOtpForm() {
     </div>
   );
 }
+

@@ -163,7 +163,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
-        <span className="navbar-logo">Kink Analyst</span>
+        <span className="navbar-logo">Kick Analyst</span>
         <div className="navbar-search-wrap" ref={searchRef} style={{ position: 'relative', marginLeft: '24px' }}>
           <input
             type="text"

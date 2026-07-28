@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { resetPassword, goToStep, clearForgotState } from '../../store/slices/forgotPasswordSlice';
 import { showLogin } from '../../store/slices/uiSlice';
@@ -49,10 +49,10 @@ export default function ResetPasswordForm() {
   if (step === 'done') {
     return (
       <div className="signup-left-panel">
-        <div className="signup-logo">SocialPlatform</div>
+        <div className="signup-logo">Kick Analyst</div>
         <div className="signup-form-wrapper">
           <div className="signup-card fp-card">
-            <div className="fp-success-icon" aria-hidden="true">✓</div>
+            <div className="fp-success-icon" aria-hidden="true">âœ“</div>
             <h1 className="signup-title" style={{ textAlign: 'center', marginTop: 12 }}>
               Password reset!
             </h1>
@@ -74,7 +74,7 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">SocialPlatform</div>
+      <div className="signup-logo">Kick Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card fp-card">
@@ -84,7 +84,7 @@ export default function ResetPasswordForm() {
             onClick={() => dispatch(goToStep('otp'))}
             disabled={loading}
           >
-            ← Back
+            â† Back
           </button>
 
           <div className="signup-card-header">
@@ -174,7 +174,7 @@ export default function ResetPasswordForm() {
               className="submit-btn"
               disabled={loading || !hasLength || !hasSymbol || !confirmPassword}
             >
-              {loading ? <><Spinner /> Resetting…</> : 'Reset Password'}
+              {loading ? <><Spinner /> Resettingâ€¦</> : 'Reset Password'}
             </button>
           </form>
         </div>
@@ -182,3 +182,4 @@ export default function ResetPasswordForm() {
     </div>
   );
 }
+

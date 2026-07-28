@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, googleLogin, clearAuthState } from '../../store/slices/authSlice';
 import { showSignup, showForgotPassword } from '../../store/slices/uiSlice';
@@ -38,7 +38,7 @@ function EyeIcon({ open }) {
   );
 }
 
-/* ── Button content components ── */
+/* â”€â”€ Button content components â”€â”€ */
 function LoadingContent() {
   return (
     <>
@@ -158,7 +158,7 @@ export default function LoginForm() {
 
     setBtnState('loading');
     const result = await dispatch(loginUser({ email: form.email, password: form.password }));
-    // requiresPlanSelection isn't a failed login — App.jsx redirects to
+    // requiresPlanSelection isn't a failed login â€” App.jsx redirects to
     // PlansPage for it, so treat it like success rather than flashing
     // "Invalid credentials" for what was actually a correct login.
     const isRealError = loginUser.rejected.match(result) && !result.payload?.requiresPlanSelection;
@@ -172,7 +172,7 @@ export default function LoginForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">SocialPlatform</div>
+      <div className="signup-logo">Kick Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card">
@@ -204,7 +204,7 @@ export default function LoginForm() {
                   id="login-password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="current-password"
@@ -288,3 +288,4 @@ export default function LoginForm() {
     </div>
   );
 }
+

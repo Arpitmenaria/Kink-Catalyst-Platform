@@ -67,7 +67,7 @@ function EventImgPlaceholder({ size = 32 }) {
   return (
     <div className="ev-img-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px', color: 'rgba(255, 255, 255, 0.3)' }}>
       <CalendarIcon size={size} />
-      <span style={{ fontSize: '12px', fontWeight: '500' }}>Kink Analyst</span>
+      <span style={{ fontSize: '12px', fontWeight: '500' }}>Kick Analyst</span>
     </div>
   );
 }
@@ -1035,7 +1035,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     const eventId = selectedEvent?.id || editingEventId;
     const eventTitle = selectedEvent?.title || form.title || 'Check out this event';
     const eventUrl = `${window.location.origin}/events/${eventId}`;
-    const shareText = `${eventTitle} on Kink Analyst`;
+    const shareText = `${eventTitle} on Kick Analyst`;
 
     switch (platform) {
       case 'link':

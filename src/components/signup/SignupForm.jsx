@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { registerUser, clearAuthState } from '../../store/slices/authSlice';
+import { registerUser, clearAuthState, googleLogin } from '../../store/slices/authSlice';
 import { showLogin } from '../../store/slices/uiSlice';
 import { CustomDatePicker } from '../home/DateTimePicker';
 
@@ -98,6 +98,11 @@ export default function SignupForm() {
   const [ageError, setAgeError] = useState('');
 
   const resetTimer = useRef(null);
+  const googleBtnRef = useRef(null);
+  const googleWrapRef = useRef(null);
+
+  const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID
+    || '423673543994-0l046sv4nbb3m7qvb713d44b51npne6f.apps.googleusercontent.com';
 
   useEffect(() => {
     return () => {
@@ -152,6 +157,42 @@ export default function SignupForm() {
     hasLength &&
     isAgeValid;
 
+  const handleCredential = async (response) => {
+    const result = await dispatch(googleLogin(response.credential));
+    const isRealError = googleLogin.rejected.match(result) && !result.payload?.requiresPlanSelection;
+    if (isRealError) {
+      setBtnState('error');
+      resetTimer.current = setTimeout(() => setBtnState('idle'), 3000);
+    }
+  };
+
+  // Google Identity Services: render the REAL Google button invisibly on top of
+  // our custom button. When users click, they get the genuine Google popup (which
+  // hands back an ID token we send to the backend).
+  const renderGoogleButton = () => {
+    if (!window.google?.accounts?.id || !googleBtnRef.current) return;
+    window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
+    googleBtnRef.current.innerHTML = '';
+    const width = Math.max(200, Math.round(googleWrapRef.current?.offsetWidth || 200));
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: 'outline',
+      size: 'large',
+      logo_alignment: 'left',
+      width: `${width}`,
+    });
+  };
+
+  useEffect(() => {
+    if (window.google?.accounts?.id) { renderGoogleButton(); return; }
+    // Google Sign-In script not loaded yet: wait for it, then render.
+    const script = document.createElement('script');
+    script.async = true;
+    script.defer = true;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = () => renderGoogleButton();
+    document.head.appendChild(script);
+  }, []);
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (resetTimer.current) clearTimeout(resetTimer.current);
@@ -182,7 +223,7 @@ export default function SignupForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">SocialPlatform</div>
+      <div className="signup-logo">Kick Analyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card">
@@ -194,10 +235,12 @@ export default function SignupForm() {
           <div className="divider"><span>OR</span></div>
 
           <div className="social-buttons">
-            <button type="button" className="social-btn" disabled={!isIdle}>
-              <GoogleIcon />
-              Google
-            </button>
+            <div ref={googleWrapRef} className="social-btn-wrap">
+              <button ref={googleBtnRef} type="button" className="social-btn" disabled={!isIdle}>
+                <GoogleIcon />
+                Google
+              </button>
+            </div>
             <button type="button" className="social-btn" disabled={!isIdle}>
               <AppleIcon />
               Apple
