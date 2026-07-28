@@ -211,8 +211,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const [filterInd, setFilterInd] = useState('');
   const [openDrop,  setOpenDrop]  = useState(null); // 'loc' | 'ind' | null
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
-  const [showBlocked, setShowBlocked] = useState(false);
-  const [showSentRequests, setShowSentRequests] = useState(false);
+  const [connectionTab, setConnectionTab] = useState('all'); // 'all' | 'sent' | 'incoming' | 'blocked'
   const [sentRequests, setSentRequests] = useState([]);
   const filterBarRef = useRef(null);
 
@@ -222,8 +221,13 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   }, [dispatch]);
 
   useEffect(() => {
-    if (showBlocked) dispatch(fetchBlockedUsers());
-  }, [showBlocked, dispatch]);
+    if (connectionTab === 'blocked') dispatch(fetchBlockedUsers());
+    if (connectionTab === 'sent' && token) {
+      apiRequest(`/api/users/friend-requests/sent`, { token })
+        .then(res => setSentRequests(res.requests || res || []))
+        .catch(err => console.error("Error fetching sent requests:", err));
+    }
+  }, [connectionTab, dispatch, token]);
 
   const { user: authUser, token } = useSelector(s => s.auth);
 
@@ -438,27 +442,20 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           </div>
         )}
 
-        <button
-          className={`prof-conn-fbar-pill${showSentRequests ? ' prof-conn-fbar-pill--active' : ''}`}
-          onClick={() => {
-            setShowSentRequests(!showSentRequests);
-            setShowBlocked(false);
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="16" y1="11" x2="22" y2="11"/><line x1="19" y1="8" x2="19" y2="14"/></svg>
-          Sent Requests
-        </button>
-
-        <button
-          className={`prof-conn-fbar-pill${showBlocked ? ' prof-conn-fbar-pill--active' : ''}`}
-          onClick={() => {
-            setShowBlocked(!showBlocked);
-            setShowSentRequests(false);
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-          Blocked
-        </button>
+        <div className="prof-conn-tabs">
+          {['all', 'sent', 'incoming', 'blocked'].map(tab => (
+            <button
+              key={tab}
+              className={`prof-conn-tab${connectionTab === tab ? ' prof-conn-tab--active' : ''}`}
+              onClick={() => setConnectionTab(tab)}
+            >
+              {tab === 'all' && 'All'}
+              {tab === 'sent' && 'Request Sent'}
+              {tab === 'incoming' && 'Connection Requests'}
+              {tab === 'blocked' && 'Blocked'}
+            </button>
+          ))}
+        </div>
 
         {hasFilter && (
           <button
