@@ -210,6 +210,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const [filterLoc, setFilterLoc] = useState('');
   const [filterInd, setFilterInd] = useState('');
   const [openDrop,  setOpenDrop]  = useState(null); // 'loc' | 'ind' | null
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [showBlocked, setShowBlocked] = useState(false);
   const [showSentRequests, setShowSentRequests] = useState(false);
   const [sentRequests, setSentRequests] = useState([]);
@@ -389,39 +390,41 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           </div>
         )}
         <button
-          className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
-          onClick={() => { setFilterLoc(''); setFilterInd(''); setOpenDrop(null); }}
+          className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasFilter ? ' prof-conn-fbar-pill--has-filter' : ''}${showFiltersPanel ? ' prof-conn-fbar-pill--open' : ''}`}
+          onClick={() => { setShowFiltersPanel(!showFiltersPanel); setOpenDrop(null); }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filters
           {hasFilter && <span className="prof-conn-fbar-dot" />}
         </button>
 
-        <div className="prof-conn-fbar-item">
-          <button
-            className={`prof-conn-fbar-pill${filterLoc ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'loc' ? ' prof-conn-fbar-pill--open' : ''}`}
-            onClick={() => setOpenDrop(openDrop === 'loc' ? null : 'loc')}
-          >
-            {filterLoc || 'Location'} <ChevronDown />
-          </button>
-          {openDrop === 'loc' && (
-            <div className="prof-conn-fbar-dropdown">
-              {CONN_LOCATIONS.length === 0 && <span className="prof-conn-fbar-empty">No locations</span>}
-              {CONN_LOCATIONS.map(loc => (
-                <button
-                  key={loc}
-                  className={`prof-conn-fbar-opt${filterLoc === loc ? ' prof-conn-fbar-opt--active' : ''}`}
-                  onClick={() => { setFilterLoc(filterLoc === loc ? '' : loc); setOpenDrop(null); }}
-                >
-                  {filterLoc === loc && <CheckIcon />}
-                  {loc}
-                </button>
-              ))}
+        {showFiltersPanel && (
+          <>
+            <div className="prof-conn-fbar-item">
+              <button
+                className={`prof-conn-fbar-pill${filterLoc ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'loc' ? ' prof-conn-fbar-pill--open' : ''}`}
+                onClick={() => setOpenDrop(openDrop === 'loc' ? null : 'loc')}
+              >
+                {filterLoc || 'Location'} <ChevronDown />
+              </button>
+              {openDrop === 'loc' && (
+                <div className="prof-conn-fbar-dropdown">
+                  {CONN_LOCATIONS.length === 0 && <span className="prof-conn-fbar-empty">No locations</span>}
+                  {CONN_LOCATIONS.map(loc => (
+                    <button
+                      key={loc}
+                      className={`prof-conn-fbar-opt${filterLoc === loc ? ' prof-conn-fbar-opt--active' : ''}`}
+                      onClick={() => { setFilterLoc(filterLoc === loc ? '' : loc); setOpenDrop(null); }}
+                    >
+                      {filterLoc === loc && <CheckIcon />}
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="prof-conn-fbar-item">
+            <div className="prof-conn-fbar-item">
           <button
             className={`prof-conn-fbar-pill${filterInd ? ' prof-conn-fbar-pill--active' : ''}${openDrop === 'ind' ? ' prof-conn-fbar-pill--open' : ''}`}
             onClick={() => setOpenDrop(openDrop === 'ind' ? null : 'ind')}
@@ -442,8 +445,10 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 </button>
               ))}
             </div>
-          )}
-        </div>
+              )}
+            </div>
+          </>
+        )}
 
         <button
           className={`prof-conn-fbar-pill${showSentRequests ? ' prof-conn-fbar-pill--active' : ''}`}
