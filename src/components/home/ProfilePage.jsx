@@ -277,28 +277,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   return (
     <div className="prof-conn-layout">
     <div className="prof-conn-tab">
-      {friendRequests.length > 0 && (
-        <div className="prof-invites">
-          <h3 className="prof-invites-title">Invitations <span className="prof-conn-count">{friendRequests.length}</span></h3>
-          <div className="prof-invites-list">
-            {friendRequests.map(req => (
-              <div key={req.requestId ?? req.userId} className="prof-invite-item">
-                <div className="prof-invite-left" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>
-                  {req.avatar
-                    ? <img src={req.avatar} alt={req.name} className="prof-invite-avatar" />
-                    : <span className="prof-invite-avatar prof-conn-avatar--fallback">{initials(req.name)}</span>
-                  }
-                  <span className="prof-invite-name">{req.name}</span>
-                </div>
-                <div className="prof-invite-actions">
-                  <button className="prof-invite-btn prof-invite-btn--accept" onClick={() => dispatch(acceptFriendRequest(req.userId)).then(() => dispatch(fetchConnections()))}>Accept</button>
-                  <button className="prof-invite-btn prof-invite-btn--ignore" onClick={() => dispatch(rejectFriendRequest(req.userId))}>Ignore</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       <div className="prof-conn-header">
         <div className="prof-conn-header-left">
           <h3 className="prof-conn-title">Connections</h3>
@@ -403,9 +381,10 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           <button
             className={`prof-conn-tab prof-conn-tab-incoming${connectionTab === 'incoming' ? ' prof-conn-tab--active' : ''}`}
             onClick={() => setConnectionTab('incoming')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
             Invitations
+            {friendRequests.length > 0 && <span className="prof-conn-count">{friendRequests.length}</span>}
           </button>
           <button
             className={`prof-conn-tab prof-conn-tab-blocked${connectionTab === 'blocked' ? ' prof-conn-tab--active' : ''}`}
