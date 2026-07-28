@@ -1044,7 +1044,7 @@
   gap: 6px;
   margin-top: -6px;
 }
-.prof-conn-card-actions { display: flex; gap: 6px; width: 100%; margin-top: auto; flex-wrap: wrap; justify-content: center; margin-top: -4px; }
+.prof-conn-card-actions { display: flex; gap: 6px; width: 100%; margin-top: auto; flex-wrap: wrap; justify-content: center; margin-top: -2px; }
 .prof-conn-card-actions .prof-conn-btn { padding: 5px 12px; font-size: 11px; flex: 1; min-width: 80px; }
 
 .prof-conn-btn--icon-remove { position: relative; }
