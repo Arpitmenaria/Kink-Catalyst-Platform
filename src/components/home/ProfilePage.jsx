@@ -215,6 +215,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const [sentRequests, setSentRequests] = useState([]);
   const filterBarRef = useRef(null);
 
+  const { user: authUser, token } = useSelector(s => s.auth);
+
   useEffect(() => {
     dispatch(fetchConnections());
     dispatch(fetchFriendRequests());
@@ -228,8 +230,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         .catch(err => console.error("Error fetching sent requests:", err));
     }
   }, [connectionTab, dispatch, token]);
-
-  const { user: authUser, token } = useSelector(s => s.auth);
 
   useEffect(() => {
     if (showSentRequests && token) {
