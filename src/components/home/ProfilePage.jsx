@@ -225,7 +225,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   useEffect(() => {
     if (connectionTab === 'blocked') dispatch(fetchBlockedUsers());
     if (connectionTab === 'sent' && token) {
-      apiRequest(`/api/users/friend-requests/sent`, { token })
+      apiRequest(`/api/users/me/friend-requests/sent`, { token })
         .then(res => setSentRequests(res.requests || res || []))
         .catch(err => console.error("Error fetching sent requests:", err));
     }
