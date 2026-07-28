@@ -471,8 +471,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>{req.name}</p>
               <div className="prof-conn-card-actions">
                 <button
-                  className="prof-conn-btn prof-conn-btn--remove"
-                  style={{ width: '100%' }}
+                  className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove"
                   onClick={() => {
                     dispatch(rejectFriendRequest(req.userId)).then(() => {
                       setSentRequests(sentRequests.filter(r => r.userId !== req.userId));
@@ -480,7 +479,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                     });
                   }}
                 >
-                  Cancel Request
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span className="prof-conn-remove-tooltip">Cancel Request</span>
                 </button>
               </div>
             </div>
