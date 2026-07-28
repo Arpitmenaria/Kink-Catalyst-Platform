@@ -395,8 +395,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
               onClick={() => setConnectionTab(tab)}
             >
               {tab === 'all' && 'All'}
-              {tab === 'sent' && 'Request Sent'}
-              {tab === 'incoming' && 'Connection Requests'}
+              {tab === 'sent' && 'Sent'}
+              {tab === 'incoming' && 'Invitations'}
               {tab === 'blocked' && 'Blocked'}
             </button>
           ))}
