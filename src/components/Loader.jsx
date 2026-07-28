@@ -13,9 +13,14 @@
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 100vh;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
           background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
           font-family: 'Plus Jakarta Sans', sans-serif;
+          z-index: 9999;
         }
 
         .loader-content {

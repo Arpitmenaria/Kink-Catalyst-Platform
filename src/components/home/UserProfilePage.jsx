@@ -10,6 +10,7 @@ import { normalizePost, setViewedPosts as setViewedPostsAction } from "../../sto
 import { fetchConnections } from "../../store/slices/profileSlice";
 import { showToast } from "../../store/slices/toastSlice";
 import { apiRequest } from "../../services/api";
+import { getSocket } from "../../services/socket";
 import Loader from "../Loader";
 
 const TABS = ["Feed", "About", "Connections", "Photos", "Events"];
@@ -252,6 +253,7 @@ export default function UserProfilePage({
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [photoLbIdx, setPhotoLbIdx] = useState(null); // Photos tab lightbox
   const [blockedMessage, setBlockedMessage] = useState(null); // Block error message
+  const [photoLikes, setPhotoLikes] = useState({}); // { photoId: { count, liked } }
 
   useEffect(() => {
     if (!userId) return;
@@ -304,12 +306,71 @@ export default function UserProfilePage({
   useEffect(() => {
     if (activeTab !== "Photos" || !userId) return;
     apiRequest(`/api/users/${userId}/photos`, { token })
-      .then((res) => setViewedPhotos(res?.photos ?? res ?? []))
+      .then((res) => {
+        const photos = res?.photos ?? res ?? [];
+        setViewedPhotos(photos);
+        const likes = {};
+        photos.forEach(photo => {
+          likes[photo.id] = { count: photo.likesCount || 0, liked: photo.likedByMe || false };
+        });
+        setPhotoLikes(likes);
+      })
       .catch((err) => {
         console.warn("Falling back to mock photos:", err.message);
         setViewedPhotos(MOCK_PHOTOS);
       });
   }, [activeTab, userId, token]);
+
+  function handlePhotoLike(photoId, e) {
+    e.stopPropagation();
+    setPhotoLikes(prev => {
+      const current = prev[photoId] || { count: 0, liked: false };
+      const newLiked = !current.liked;
+      const newCount = newLiked ? current.count + 1 : Math.max(0, current.count - 1);
+
+      apiRequest(`/api/photos/${photoId}/like`, {
+        token,
+        method: newLiked ? 'POST' : 'DELETE'
+      }).catch((err) => {
+        console.warn("Failed to update like:", err.message);
+        setPhotoLikes(prev => ({ ...prev, [photoId]: current }));
+      });
+
+      return { ...prev, [photoId]: { count: newCount, liked: newLiked } };
+    });
+  }
+
+  // Socket listeners for real-time photo like updates
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handlePhotoLiked = (data) => {
+      if (data.photoId) {
+        setPhotoLikes(prev => ({
+          ...prev,
+          [data.photoId]: { count: data.likesCount, liked: false }
+        }));
+      }
+    };
+
+    const handlePhotoUnliked = (data) => {
+      if (data.photoId) {
+        setPhotoLikes(prev => ({
+          ...prev,
+          [data.photoId]: { count: data.likesCount, liked: false }
+        }));
+      }
+    };
+
+    socket.on('photo:liked', handlePhotoLiked);
+    socket.on('photo:unliked', handlePhotoUnliked);
+
+    return () => {
+      socket.off('photo:liked', handlePhotoLiked);
+      socket.off('photo:unliked', handlePhotoUnliked);
+    };
+  }, []);
 
   // Reset per-user tab data when the viewed profile changes, so we refetch for
   // the new user instead of showing the previous one's (or a stale empty) list.
@@ -672,13 +733,67 @@ export default function UserProfilePage({
                       No photos yet.
                     </div>
                   )}
-                  {viewedPhotos.map((photo, i) => (
-                    <div key={photo.id} className="media-photo-card" style={{ cursor: "pointer" }} onClick={() => setPhotoLbIdx(i)}>
-                      <div className="media-photo-wrap">
-                        <SkeletonImg src={photo.images?.[0]} alt="" className="media-photo-img" />
+                  {viewedPhotos.map((photo, i) => {
+                    const likeInfo = photoLikes[photo.id] || { count: 0, liked: false };
+                    return (
+                      <div key={photo.id} className="media-photo-card" style={{ cursor: "pointer", position: 'relative' }} onClick={() => setPhotoLbIdx(i)}>
+                        <div className="media-photo-wrap">
+                          <SkeletonImg src={photo.images?.[0]} alt="" className="media-photo-img" />
+                        </div>
+                        <button
+                          className={`media-photo-like-btn${likeInfo.liked ? ' liked' : ''}`}
+                          onClick={(e) => handlePhotoLike(photo.id, e)}
+                          title={likeInfo.liked ? "Unlike" : "Like"}
+                          style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            background: likeInfo.liked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0, 0, 0, 0.5)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '36px',
+                            height: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            zIndex: 10
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                            e.currentTarget.style.background = likeInfo.liked ? 'rgba(239, 68, 68, 1)' : 'rgba(0, 0, 0, 0.7)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.background = likeInfo.liked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0, 0, 0, 0.5)';
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill={likeInfo.liked ? 'currentColor' : 'none'} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                          </svg>
+                        </button>
+                        {likeInfo.count > 0 && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: '8px',
+                              left: '8px',
+                              background: 'rgba(0, 0, 0, 0.6)',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              zIndex: 10
+                            }}
+                          >
+                            {likeInfo.count}
+                          </span>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
               </div>

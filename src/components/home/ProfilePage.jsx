@@ -114,10 +114,22 @@ function FriendSuggestionsPanel({ onUserClick }) {
     });
     setPoppingIds(p => new Set([...p, id]));
     setTimeout(() => setPoppingIds(p => { const s = new Set(p); s.delete(id); return s; }), 500);
+    setTimeout(() => {
+      setRemovingIds(p => new Set([...p, id]));
+      setTimeout(() => {
+        dispatch(dismissSuggestion(id));
+        setRemovingIds(p => { const s = new Set(p); s.delete(id); return s; });
+      }, 380);
+    }, 2500);
   }
 
   function handleFollow(id, isFollowing) {
     dispatch(isFollowing ? unfollowUser(id) : followUser(id));
+    setRemovingIds(p => new Set([...p, id]));
+    setTimeout(() => {
+      dispatch(dismissSuggestion(id));
+      setRemovingIds(p => { const s = new Set(p); s.delete(id); return s; });
+    }, 3500);
   }
 
   function handleRemove(id) {
@@ -596,8 +608,16 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 )}
               </div>
               <div className="prof-conn-actions">
-                <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => onMessageUser?.(conn.id)}>Chat</button>
-                <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => handleRemove(conn.id)}>Remove from friends</button>
+                {blockedUsersList.some(b => b.id === conn.id || b._id === conn.id) ? (
+                  <button className="prof-conn-btn prof-conn-btn--remove" style={{ width: '100%' }} disabled={blockingId === conn.id} onClick={() => handleUnblock(conn.id)}>
+                    {blockingId === conn.id ? 'Unblocking...' : 'Unblock'}
+                  </button>
+                ) : (
+                  <>
+                    <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => onMessageUser?.(conn.id)}>Chat</button>
+                    <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => handleRemove(conn.id)}>Remove from friends</button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -630,7 +650,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 )}
               </div>
               <div className="prof-conn-actions">
-                <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => handleAdd(req)}>Accept</button>
+                <button className="prof-conn-btn prof-conn-btn--msg" onClick={() => dispatch(acceptFriendRequest(req.userId))}>Accept</button>
                 <button className="prof-conn-btn prof-conn-btn--remove" onClick={() => dispatch(rejectFriendRequest(req.id))}>Reject</button>
               </div>
             </div>
@@ -661,11 +681,19 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 </div>
               )}
               <div className="prof-conn-card-actions">
-                <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }} onClick={() => onMessageUser?.(conn.id)}>Chat</button>
-                <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => handleRemove(conn.id)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                  <span className="prof-conn-remove-tooltip">Remove from friends</span>
-                </button>
+                {blockedUsersList.some(b => b.id === conn.id || b._id === conn.id) ? (
+                  <button className="prof-conn-btn prof-conn-btn--remove" style={{ width: '100%' }} disabled={blockingId === conn.id} onClick={() => handleUnblock(conn.id)}>
+                    {blockingId === conn.id ? 'Unblocking...' : 'Unblock'}
+                  </button>
+                ) : (
+                  <>
+                    <button className="prof-conn-btn prof-conn-btn--msg" style={{ flex: 1 }} onClick={() => onMessageUser?.(conn.id)}>Chat</button>
+                    <button className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove" onClick={() => handleRemove(conn.id)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                      <span className="prof-conn-remove-tooltip">Remove from friends</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -787,12 +815,14 @@ function GalleryPanel() {
 // only albums are backed by a viewer-aware endpoint right now.
 export function MediaTab({ readOnly, userId }) {
   const dispatch = useDispatch();
+  const { token } = useSelector(s => s.auth);
   const { photos, albums, viewedAlbums } = useSelector(s => s.profile);
   const albumList = userId ? viewedAlbums : albums;
   const photoInputRef = useRef(null);
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
   const [openAlbum, setOpenAlbum] = useState(null);
   const [lbIdx, setLbIdx] = useState(null); // album image lightbox index
+  const [albumLikes, setAlbumLikes] = useState({}); // { albumId: { count, liked } }
 
   useEffect(() => {
     if (userId) {
@@ -804,12 +834,71 @@ export function MediaTab({ readOnly, userId }) {
     dispatch(fetchAlbums());
   }, [dispatch, userId]);
 
+  useEffect(() => {
+    const likes = {};
+    albumList.forEach(album => {
+      likes[album.id] = { count: album.likesCount || 0, liked: album.likedByMe || false };
+    });
+    setAlbumLikes(likes);
+  }, [albumList]);
+
   function handleFilesChosen(e) {
     const files = [...(e.target.files ?? [])];
     e.target.value = '';
     if (files.length === 0) return;
     dispatch(uploadPhoto({ files })).then(() => dispatch(fetchGallery()));
   }
+
+  function handleAlbumLike(albumId, e) {
+    e.stopPropagation();
+    setAlbumLikes(prev => {
+      const current = prev[albumId] || { count: 0, liked: false };
+      const newLiked = !current.liked;
+      const newCount = newLiked ? current.count + 1 : Math.max(0, current.count - 1);
+
+      apiRequest(`/api/albums/${albumId}/like`, {
+        token,
+        method: newLiked ? 'POST' : 'DELETE'
+      }).catch((err) => {
+        console.warn("Failed to update album like:", err.message);
+        setAlbumLikes(prev => ({ ...prev, [albumId]: current }));
+      });
+
+      return { ...prev, [albumId]: { count: newCount, liked: newLiked } };
+    });
+  }
+
+  // Socket listeners for real-time album like updates
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleAlbumLiked = (data) => {
+      if (data.albumId) {
+        setAlbumLikes(prev => ({
+          ...prev,
+          [data.albumId]: { count: data.likesCount, liked: false }
+        }));
+      }
+    };
+
+    const handleAlbumUnliked = (data) => {
+      if (data.albumId) {
+        setAlbumLikes(prev => ({
+          ...prev,
+          [data.albumId]: { count: data.likesCount, liked: false }
+        }));
+      }
+    };
+
+    socket.on('album:liked', handleAlbumLiked);
+    socket.on('album:unliked', handleAlbumUnliked);
+
+    return () => {
+      socket.off('album:liked', handleAlbumLiked);
+      socket.off('album:unliked', handleAlbumUnliked);
+    };
+  }, []);
 
   // Album folder view — clicking an album opens its photos like a real folder.
   if (openAlbum) {
@@ -877,18 +966,72 @@ export function MediaTab({ readOnly, userId }) {
         <>
           <h3 className="media-subhead">{userId ? 'Albums' : 'Albums (These are private directories)'}</h3>
           <div className="media-album-grid">
-            {albumList.map(album => (
-              <div key={album.id} className="media-album-card" style={{ cursor: 'pointer' }} onClick={() => setOpenAlbum(album)}>
-                <div className="media-album-cover">
-                  {album.cover
-                    ? <SkeletonImg src={album.cover} alt={album.name} className="media-album-cover-img" />
-                    : <div className="media-album-cover media-album-cover--empty"><CameraIcon /></div>
-                  }
-                  <span className="media-album-count">{album.count} photo{album.count === 1 ? '' : 's'}</span>
+            {albumList.map(album => {
+              const likeInfo = albumLikes[album.id] || { count: 0, liked: false };
+              return (
+                <div key={album.id} className="media-album-card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setOpenAlbum(album)}>
+                  <div className="media-album-cover">
+                    {album.cover
+                      ? <SkeletonImg src={album.cover} alt={album.name} className="media-album-cover-img" />
+                      : <div className="media-album-cover media-album-cover--empty"><CameraIcon /></div>
+                    }
+                    <span className="media-album-count">{album.count} photo{album.count === 1 ? '' : 's'}</span>
+                    <button
+                      className={`media-album-like-btn${likeInfo.liked ? ' liked' : ''}`}
+                      onClick={(e) => handleAlbumLike(album.id, e)}
+                      title={likeInfo.liked ? "Unlike" : "Like"}
+                      style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        right: '8px',
+                        background: likeInfo.liked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0, 0, 0, 0.5)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.background = likeInfo.liked ? 'rgba(239, 68, 68, 1)' : 'rgba(0, 0, 0, 0.7)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.background = likeInfo.liked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0, 0, 0, 0.5)';
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={likeInfo.liked ? 'currentColor' : 'none'} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                    </button>
+                    {likeInfo.count > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          bottom: '8px',
+                          left: '8px',
+                          background: 'rgba(0, 0, 0, 0.6)',
+                          color: 'white',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          zIndex: 10
+                        }}
+                      >
+                        {likeInfo.count}
+                      </span>
+                    )}
+                  </div>
+                  <p className="media-album-name">{album.name}</p>
                 </div>
-                <p className="media-album-name">{album.name}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {!userId && <h3 className="media-subhead">All photos</h3>}
         </>
@@ -1546,6 +1689,32 @@ export default function ProfilePage({
   useEffect(() => {
     onViewStateChange?.({ tab: activeTab });
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Socket listeners for real-time follower/following count updates
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !authUser?.id) return;
+
+    const handleFollowUpdate = (data) => {
+      if (data.type === 'follow') {
+        dispatch(fetchUserProfile());
+      }
+    };
+
+    const handleConnectionCountUpdate = (data) => {
+      if (data.userId === authUser.id) {
+        dispatch(fetchUserProfile());
+      }
+    };
+
+    socket.on('follow_update', handleFollowUpdate);
+    socket.on('connection_count_update', handleConnectionCountUpdate);
+
+    return () => {
+      socket.off('follow_update', handleFollowUpdate);
+      socket.off('connection_count_update', handleConnectionCountUpdate);
+    };
+  }, [authUser?.id, dispatch]);
   const [followPanel,     setFollowPanel]     = useState(null); // 'followers' | 'following' | null
   const [followSearch,    setFollowSearch]    = useState('');
   const [followingIds,    setFollowingIds]    = useState(new Set());
