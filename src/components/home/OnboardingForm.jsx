@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile, updateProfile, updateEducation, updateAvatar, updateCover } from '../../store/slices/profileSlice';
 import { consumeJustSelectedPlan } from '../../store/slices/plansSlice';
@@ -100,13 +100,33 @@ const Req = () => <span className="ob-req">*</span>;
 // shows the country name so it stays identifiable while picking.
 function PhoneCodeSelect({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [opensUp, setOpensUp] = useState(false);
   const ref = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Opens downward by default, which cuts it off when the field sits near the
+  // bottom of the viewport (e.g. deep in a long onboarding form) — flip
+  // upward when there isn't room below, and cap its height either way so it
+  // scrolls internally instead of rendering past the fold.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const wrap = ref.current;
+    const list = listRef.current;
+    if (!wrap || !list) return;
+    const MARGIN = 12;
+    const wrapRect = wrap.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - wrapRect.bottom - MARGIN;
+    const spaceAbove = wrapRect.top - MARGIN;
+    const up = list.scrollHeight > spaceBelow && spaceAbove > spaceBelow;
+    setOpensUp(up);
+    list.style.maxHeight = `${Math.max(up ? spaceAbove : spaceBelow, 120)}px`;
   }, [open]);
 
   return (
@@ -120,7 +140,7 @@ function PhoneCodeSelect({ value, onChange }) {
         <Chevron />
       </button>
       {open && (
-        <div className="ob-phone-code-list">
+        <div className={`ob-phone-code-list${opensUp ? ' ob-phone-code-list--up' : ''}`} ref={listRef}>
           {COUNTRY_CODES.map(c => (
             <button
               key={c.code + c.country}
@@ -142,13 +162,30 @@ function PhoneCodeSelect({ value, onChange }) {
 // matches this app's dark theme instead of the OS/browser popup.
 function CustomSelect({ value, onChange, options, placeholder = 'Select', hasError }) {
   const [open, setOpen] = useState(false);
+  const [opensUp, setOpensUp] = useState(false);
   const ref = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Same flip-upward-when-cramped behavior as PhoneCodeSelect above.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const wrap = ref.current;
+    const list = listRef.current;
+    if (!wrap || !list) return;
+    const MARGIN = 12;
+    const wrapRect = wrap.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - wrapRect.bottom - MARGIN;
+    const spaceAbove = wrapRect.top - MARGIN;
+    const up = list.scrollHeight > spaceBelow && spaceAbove > spaceBelow;
+    setOpensUp(up);
+    list.style.maxHeight = `${Math.max(up ? spaceAbove : spaceBelow, 120)}px`;
   }, [open]);
 
   const selected = options.find(o => o.value === value);
@@ -164,7 +201,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select', hasErr
         <Chevron />
       </button>
       {open && (
-        <div className="ob-custom-select-list">
+        <div className={`ob-custom-select-list${opensUp ? ' ob-custom-select-list--up' : ''}`} ref={listRef}>
           {options.map(o => (
             <button
               key={o.value}
@@ -339,7 +376,7 @@ export default function OnboardingForm() {
               />
             </div>
 
-            <div className="prof-avatar-wrap" style={{ position: 'relative', overflow: 'hidden', marginTop: -46 }}>
+            <div className="prof-avatar-wrap" style={{ position: 'relative', overflow: 'hidden', marginTop: -70, marginLeft: 'auto', marginRight: 'auto' }}>
               {displayAvatar
                 ? <SkeletonImg src={displayAvatar} alt={form.name || 'Profile'} className="prof-avatar-img" />
                 : (
@@ -520,6 +557,9 @@ export default function OnboardingForm() {
         )}
 
         <div className="ob-footer">
+          {step === 1 && (
+            <button type="button" className="ob-skip-btn" onClick={goNext}>Skip</button>
+          )}
           {step > 1 && (
             <button type="button" className="ob-back-btn" onClick={() => setStep(s => s - 1)}>Back</button>
           )}

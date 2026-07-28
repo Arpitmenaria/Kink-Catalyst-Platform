@@ -1,6 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../../services/api';
 
+// A pure-attachment message (image/video/file, no caption) has no `text` to
+// preview with — show a plain-English stand-in instead of a blank line, same
+// convention WhatsApp/Messenger use for their conversation list.
+function attachmentPreviewText(type, fromMe) {
+  const label = type === 'image' ? 'a photo' : type === 'video' ? 'a video' : 'an attachment';
+  return fromMe ? `You sent ${label}` : `Sent ${label}`;
+}
+
+function lastMessagePreviewText({ text, type, fromMe }) {
+  return text || attachmentPreviewText(type, fromMe);
+}
+
 function normalizeConversation(c) {
   return {
     id: c.id ?? c._id ?? '',
@@ -8,9 +20,21 @@ function normalizeConversation(c) {
     name: c.name ?? '',
     role: c.role ?? '',
     color: c.color ?? '#3b82f6',
-    avatarUrl: c.avatarUrl?.startsWith?.('http') ? c.avatarUrl : '',
+    avatarUrl: c.avatarUrl?.startsWith?.('http') ? c.avatarUrl : (c.avatar?.startsWith?.('http') ? c.avatar : ''),
     online: c.online ?? false,
-    lastMessage: c.lastMessage ?? null,
+    // Some list-endpoint entries carry a truthy-but-empty `lastMessage: {}` for
+    // conversations that have no messages yet — only treat it as a real
+    // message when it actually has text or a type, otherwise fall through to
+    // null so the UI shows the user's location instead of a fake preview.
+    lastMessage: (c.lastMessage && (c.lastMessage.text || c.lastMessage.type)) ? {
+      text: lastMessagePreviewText({
+        text: c.lastMessage.text,
+        type: c.lastMessage.type,
+        fromMe: c.lastMessage.fromMe ?? false,
+      }),
+      time: c.lastMessage.time ?? '',
+      fromMe: c.lastMessage.fromMe ?? false,
+    } : null,
     unreadCount: c.unreadCount ?? 0,
     participantId: c.participantId ?? c.participant?.id ?? c.participant?._id ?? null,
     location: c.location ?? '',
@@ -50,6 +74,10 @@ function normalizeMessage(m) {
     : (m.mediaUrl?.startsWith?.('http')
         ? [{ url: m.mediaUrl, type: m.type ?? 'file', fileName: m.fileName ?? m.name ?? decodeURIComponent(m.mediaUrl.split('/').pop()), fileSize: null, fileType: null }]
         : []);
+  // Group chats need to know WHICH member sent each message (a DM only ever
+  // has one possible "them", so it never needed this) — accept whatever shape
+  // the backend uses (nested `sender` object or flat senderId/senderName/senderAvatar).
+  const sender = m.sender ?? null;
   return {
     id: m.id ?? m._id ?? '',
     from: m.from ?? 'them',
@@ -66,6 +94,12 @@ function normalizeMessage(m) {
     time: m.time ?? '',
     read: m.read ?? false,
     createdAt: m.createdAt ?? '',
+    senderId: m.senderId ?? sender?.id ?? sender?._id ?? null,
+    senderName: m.senderName ?? sender?.name ?? sender?.fullName ?? '',
+    senderAvatar: m.senderAvatar?.startsWith?.('http') ? m.senderAvatar
+      : sender?.avatarUrl?.startsWith?.('http') ? sender.avatarUrl
+      : sender?.avatar?.startsWith?.('http') ? sender.avatar
+      : '',
   };
 }
 
@@ -486,7 +520,8 @@ const messagesSlice = createSlice({
       if (isNew) state.messages[convId].push(normalized);
       const conv = state.conversations.find(c => c.id === convId);
       if (conv) {
-        conv.lastMessage = { text: normalized.text, time: normalized.time, fromMe: normalized.from === 'me' };
+        const fromMe = normalized.from === 'me';
+        conv.lastMessage = { text: lastMessagePreviewText({ text: normalized.text, type: normalized.type, fromMe }), time: normalized.time, fromMe };
         // Don't bump unread for a conversation the user is actively viewing —
         // `activeConvId` is reliably null whenever MessagesPage isn't mounted
         // (see its unmount cleanup), so this correctly covers "on Home/Feed" too.
@@ -676,7 +711,7 @@ const messagesSlice = createSlice({
           s.messages[convId].push(normalized);
         }
         const conv = s.conversations.find(c => c.id === convId);
-        if (conv) conv.lastMessage = { text: normalized.text, time: normalized.time, fromMe: true };
+        if (conv) conv.lastMessage = { text: lastMessagePreviewText({ text: normalized.text, type: normalized.type, fromMe: true }), time: normalized.time, fromMe: true };
       })
       .addCase(sendMessage.rejected, (s, a) => {
         s.sending = false;

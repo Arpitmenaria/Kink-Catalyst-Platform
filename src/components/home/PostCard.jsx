@@ -1016,7 +1016,24 @@ export default function PostCard({ post, onUserClick }) {
                     ) : (
                       <div className="pc-bubble">
                         <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(c.authorId)}>{c.name}</span>
-                        <span className="pc-time">{c.time}{c.editedAt ? ' · edited' : ''}</span>
+                        <div className="pc-bubble-meta">
+                          <span className="pc-time">{c.time}{c.editedAt ? ' · edited' : ''}</span>
+                          <div className="pc-comment-menu-wrap" ref={commentMenuOpenId === c.id ? commentMenuRef : null}>
+                            <button type="button" className="pc-comment-more-btn" onClick={() => toggleCommentMenu(c.id)}><MoreIcon /></button>
+                            {commentMenuOpenId === c.id && (
+                              <div className="pc-comment-menu-dropdown">
+                                {c.authorId === userId ? (
+                                  <>
+                                    <button type="button" className="pc-comment-menu-item" onClick={() => startEditComment(c)}><EditIcon /> Edit</button>
+                                    <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openDeleteCommentConfirm(c.id, null)}><TrashIcon /> Delete</button>
+                                  </>
+                                ) : !c.isReported && (
+                                  <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openReportComment(c.id, null)}><ReportIcon /> Report</button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         <p className="pc-text">{renderTaggedText(c.text, c.mentions, onUserClick)}</p>
                       </div>
                     )}
@@ -1037,23 +1054,6 @@ export default function PostCard({ post, onUserClick }) {
                             {expandedReplies.has(c.id) ? `Hide replies` : `View ${c.replies.length} replies`}
                           </button>
                         </>
-                      )}
-                      {editingCommentId !== c.id && (
-                        <div className="pc-comment-menu-wrap" ref={commentMenuOpenId === c.id ? commentMenuRef : null}>
-                          <button type="button" className="pc-comment-more-btn" onClick={() => toggleCommentMenu(c.id)}><MoreIcon /></button>
-                          {commentMenuOpenId === c.id && (
-                            <div className="pc-comment-menu-dropdown">
-                              {c.authorId === userId ? (
-                                <>
-                                  <button type="button" className="pc-comment-menu-item" onClick={() => startEditComment(c)}><EditIcon /> Edit</button>
-                                  <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openDeleteCommentConfirm(c.id, null)}><TrashIcon /> Delete</button>
-                                </>
-                              ) : !c.isReported && (
-                                <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openReportComment(c.id, null)}><ReportIcon /> Report</button>
-                              )}
-                            </div>
-                          )}
-                        </div>
                       )}
                     </div>
 
@@ -1115,7 +1115,24 @@ export default function PostCard({ post, onUserClick }) {
                               ) : (
                                 <div className="pc-bubble pc-bubble--reply">
                                   <span className="pc-name" style={{ cursor: 'pointer' }} onClick={() => handleCommentAuthorClick(r.authorId)}>{r.name}</span>
-                                  <span className="pc-time">{r.time}{r.editedAt ? ' · edited' : ''}</span>
+                                  <div className="pc-bubble-meta">
+                                    <span className="pc-time">{r.time}{r.editedAt ? ' · edited' : ''}</span>
+                                    <div className="pc-comment-menu-wrap" ref={commentMenuOpenId === r.id ? commentMenuRef : null}>
+                                      <button type="button" className="pc-comment-more-btn" onClick={() => toggleCommentMenu(r.id)}><MoreIcon /></button>
+                                      {commentMenuOpenId === r.id && (
+                                        <div className="pc-comment-menu-dropdown">
+                                          {r.authorId === userId ? (
+                                            <>
+                                              <button type="button" className="pc-comment-menu-item" onClick={() => startEditComment(r)}><EditIcon /> Edit</button>
+                                              <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openDeleteCommentConfirm(r.id, c.id)}><TrashIcon /> Delete</button>
+                                            </>
+                                          ) : !r.isReported && (
+                                            <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openReportComment(r.id, c.id)}><ReportIcon /> Report</button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
                                   <p className="pc-text">{renderTaggedText(r.text, r.mentions, onUserClick)}</p>
                                 </div>
                               )}
@@ -1126,21 +1143,6 @@ export default function PostCard({ post, onUserClick }) {
                                   </button>
                                   <span className="pc-dot">·</span>
                                   <button className="pc-act" onClick={() => openReplyBox(c.id, { replyId: r.id, userId: r.authorId, name: r.name })}>Reply</button>
-                                  <div className="pc-comment-menu-wrap" ref={commentMenuOpenId === r.id ? commentMenuRef : null}>
-                                    <button type="button" className="pc-comment-more-btn" onClick={() => toggleCommentMenu(r.id)}><MoreIcon /></button>
-                                    {commentMenuOpenId === r.id && (
-                                      <div className="pc-comment-menu-dropdown">
-                                        {r.authorId === userId ? (
-                                          <>
-                                            <button type="button" className="pc-comment-menu-item" onClick={() => startEditComment(r)}><EditIcon /> Edit</button>
-                                            <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openDeleteCommentConfirm(r.id, c.id)}><TrashIcon /> Delete</button>
-                                          </>
-                                        ) : !r.isReported && (
-                                          <button type="button" className="pc-comment-menu-item pc-comment-menu-item--danger" onClick={() => openReportComment(r.id, c.id)}><ReportIcon /> Report</button>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
                                 </div>
                               )}
 

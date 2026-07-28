@@ -51,7 +51,9 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173)",
       "Bash(npx --yes playwright --version)",
       "Bash(command -v chromium-cli)",
-      "Bash(xargs -I{} sh -c 'echo \"--- {} ---\"; grep -niE \"socket|post.*like|comment\" \"{}\" 2>/dev/null | head -5')"
+      "Bash(xargs -I{} sh -c 'echo \"--- {} ---\"; grep -niE \"socket|post.*like|comment\" \"{}\" 2>/dev/null | head -5')",
+      "Bash(git fetch *)",
+      "Bash(git commit -m ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,
