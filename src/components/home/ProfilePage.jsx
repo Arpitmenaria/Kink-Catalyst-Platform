@@ -226,7 +226,18 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
     if (connectionTab === 'blocked') dispatch(fetchBlockedUsers());
     if (connectionTab === 'sent' && token) {
       apiRequest(`/api/users/me/friend-requests/sent`, { token })
-        .then(res => setSentRequests(res.requests || res || []))
+        .then(res => {
+          const requests = res.requests || [];
+          const transformed = requests.map(req => ({
+            requestId: req._id,
+            userId: req.toUser?._id,
+            name: req.toUser?.name || req.toUser?.fullName || '',
+            avatar: req.toUser?.avatar,
+            role: req.toUser?.role,
+            location: req.toUser?.location,
+          }));
+          setSentRequests(transformed);
+        })
         .catch(err => console.error("Error fetching sent requests:", err));
     }
   }, [connectionTab, dispatch, token]);
@@ -406,8 +417,8 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         )}
       </div>
 
-      {/* ── Sent requests view ── */}
-      {connectionTab === 'sent' && (
+      {/* ── Sent requests list view ── */}
+      {connectionTab === 'sent' && viewMode === 'list' && (
         <div className="prof-conn-list">
           {sentRequests.length === 0 && (
             <p className="prof-conn-empty">You haven't sent any friend requests.</p>
@@ -429,7 +440,6 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                 <button
                   className="prof-conn-btn prof-conn-btn--remove"
                   onClick={() => {
-                    // Cancel friend request
                     dispatch(rejectFriendRequest(req.userId)).then(() => {
                       setSentRequests(sentRequests.filter(r => r.userId !== req.userId));
                       dispatch(showToast({ message: 'Request cancelled', type: 'success' }));
@@ -437,6 +447,40 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
                   }}
                 >
                   Cancel Request
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Sent requests grid view ── */}
+      {connectionTab === 'sent' && viewMode === 'grid' && (
+        <div className="prof-conn-grid">
+          {sentRequests.length === 0 && (
+            <p className="prof-conn-empty">You haven't sent any friend requests.</p>
+          )}
+          {sentRequests.map(req => (
+            <div key={req.requestId ?? req.userId} className="prof-conn-card">
+              <div className="prof-conn-card-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>
+                {req.avatar
+                  ? <img src={req.avatar} alt={req.name} className="prof-conn-card-avatar" />
+                  : <span className="prof-conn-card-avatar prof-conn-avatar--fallback">{initials(req.name)}</span>
+                }
+              </div>
+              <p className="prof-conn-card-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(req.userId)}>{req.name}</p>
+              <div className="prof-conn-card-actions">
+                <button
+                  className="prof-conn-btn prof-conn-btn--remove prof-conn-btn--icon-remove"
+                  onClick={() => {
+                    dispatch(rejectFriendRequest(req.userId)).then(() => {
+                      setSentRequests(sentRequests.filter(r => r.userId !== req.userId));
+                      dispatch(showToast({ message: 'Request cancelled', type: 'success' }));
+                    });
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span className="prof-conn-remove-tooltip">Cancel Request</span>
                 </button>
               </div>
             </div>
