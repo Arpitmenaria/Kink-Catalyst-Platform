@@ -8,7 +8,7 @@ export const searchGroups = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(
-        `/api/search/groups?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
+        `/api/groups/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
         { token }
       );
       return { type: 'groups', results: data.groups ?? [], total: data.total ?? 0, page };
@@ -25,7 +25,7 @@ export const searchGroupPosts = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(
-        `/api/groups/${groupId}/search/posts?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
+        `/api/groups/${groupId}/posts/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
         { token }
       );
       return { groupId, type: 'posts', results: data.posts ?? [], total: data.total ?? 0, page };
@@ -42,7 +42,7 @@ export const searchGroupMembers = createAsyncThunk(
     try {
       const { token } = getState().auth;
       const data = await apiRequest(
-        `/api/groups/${groupId}/search/members?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
+        `/api/groups/${groupId}/members/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
         { token }
       );
       return { groupId, type: 'members', results: data.members ?? [], total: data.total ?? 0, page };
