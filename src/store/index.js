@@ -12,6 +12,7 @@ import messagesReducer from './slices/messagesSlice';
 import groupsReducer from './slices/groupsSlice';
 import eventsReducer from './slices/eventsSlice';
 import commentsReducer from './slices/commentsSlice';
+import invitationsReducer from './slices/invitationsSlice';
 
 const store = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ const store = configureStore({
     groups: groupsReducer,
     events: eventsReducer,
     comments: commentsReducer,
+    invitations: invitationsReducer,
   },
 });
 

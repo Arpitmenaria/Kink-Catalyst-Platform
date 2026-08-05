@@ -1,0 +1,159 @@
+.user-invitations {
+  background: #0f1419;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.user-invitations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.user-invitations-header h3 {
+  margin: 0;
+  color: #f3f4f6;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-invitations-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.user-invitations-loading {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+  padding: 20px;
+}
+
+.user-invitations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-invitations-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #131626;
+  border-radius: 6px;
+  border: 1px solid #1f2937;
+}
+
+.user-invitations-group-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-invitations-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #1f2937;
+}
+
+.user-invitations-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-invitations-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.user-invitations-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-invitations-group-name {
+  margin: 0 0 4px 0;
+  color: #f3f4f6;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-invitations-invited-by {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.user-invitations-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.user-invitations-accept-btn,
+.user-invitations-reject-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.user-invitations-accept-btn {
+  background: #10b981;
+  color: white;
+}
+
+.user-invitations-accept-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.user-invitations-accept-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.user-invitations-reject-btn {
+  background: #1f2937;
+  color: #f3f4f6;
+  border: 1px solid #374151;
+}
+
+.user-invitations-reject-btn:hover:not(:disabled) {
+  background: #374151;
+}
+
+.user-invitations-reject-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
