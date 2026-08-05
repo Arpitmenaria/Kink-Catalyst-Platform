@@ -8,6 +8,10 @@ import PostCard from './PostCard';
 import CommentSection from './CommentSection';
 import LikeButton from './LikeButton';
 import PostActionsMenu from './PostActionsMenu';
+import UserInvitations from './UserInvitations';
+import ActivityLog from './ActivityLog';
+import GlobalSearch from './GlobalSearch';
+import InviteButton from './InviteButton';
 import {
   fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
@@ -677,6 +681,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   Pending Requests {pendingList.length > 0 && <span className="adm-tab-count">{pendingList.length}</span>}
                 </button>
               )}
+              <button className={`adm-tab${activeTab === 'activity' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('activity')}>
+                Activity Log
+              </button>
             </div>
             {activeTab !== 'posts' && activeTab !== 'about' && (
               <div className="prof-conn-filter-bar adm-filter-bar-override" ref={activeTab === 'members' ? memberFilterRef : activeTab === 'pending' ? pendingFilterRef : null}>
@@ -833,6 +840,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           {/* Members table */}
           {activeTab === 'members' && (
             <>
+              <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                <InviteButton groupId={groupId} groupMembers={baseMembers} />
+              </div>
               <table className="adm-table">
                 <thead>
                   <tr>
@@ -1097,6 +1107,13 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                 </tbody>
               </table>
             )
+          )}
+
+          {/* Activity Log tab */}
+          {activeTab === 'activity' && (
+            <div style={{ padding: '16px 0' }}>
+              <ActivityLog groupId={groupId} />
+            </div>
           )}
         </div>
 
@@ -1581,6 +1598,9 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
           </div>
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      {joinedLocal && <UserInvitations />}
 
       {/* Tabs + content card */}
       <div className="gd-tab-card">
@@ -2139,12 +2159,28 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [detailGroup,    setDetailGroup]    = useState(null);
   const [detailFromHome, setDetailFromHome] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [searchOpen,     setSearchOpen]     = useState(false);
   const [hubTab,         setHubTab]         = useState('suggested');
   const [hubCat,         setHubCat]         = useState('All');
 
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
   }, [dispatch, hubTab, hubCat]);
+
+  // Search keyboard shortcut (Cmd/Ctrl + K)
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(!searchOpen);
+      }
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchOpen]);
 
   // Socket listeners for hub updates (group created, member joined, etc.)
   useEffect(() => {
@@ -2277,6 +2313,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     <div className="grp-page">
 
       <AnimatedNav activeId="friends" onNavigate={navClick} />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <main className="grp-hub-main">
 
