@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "dev-jay",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "dev-jay": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "dev-jay",
+    "origin"
+  ]
+}
