@@ -1406,6 +1406,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
   const [likePostLoading,  setLikePostLoading]  = useState({});
+  const [sharing,         setSharing]         = useState(false);
 
   const isJoining = joiningIds.includes(groupId);
   const isLeaving = leavingIds.includes(groupId);
@@ -1491,6 +1492,37 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     setShowReportModal(false);
     setReportSelected('');
     setReportDone(false);
+  }
+
+  function handleShare() {
+    setSharing(true);
+    const groupName = group.name ?? 'Group';
+    const groupUrl = `${window.location.origin}/groups/${groupId}`;
+    const shareText = `Check out "${groupName}" on Kick Analyst!`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: groupName,
+        text: shareText,
+        url: groupUrl,
+      }).then(() => {
+        dispatch(showToast({ message: 'Group shared!', type: 'success' }));
+        setSharing(false);
+      }).catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Share error:', err);
+        }
+        setSharing(false);
+      });
+    } else {
+      navigator.clipboard.writeText(groupUrl).then(() => {
+        dispatch(showToast({ message: 'Group link copied to clipboard!', type: 'success' }));
+        setSharing(false);
+      }).catch(() => {
+        dispatch(showToast({ message: 'Failed to copy link', type: 'error' }));
+        setSharing(false);
+      });
+    }
   }
 
   function handleLeaveConfirm() {
@@ -1591,7 +1623,14 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                 {isJoining ? 'Joining...' : 'Join Group'}
               </button>
             )}
-            <button className="gd-share-btn"><ShareIcon2 /> Share</button>
+            <button
+              className="gd-share-btn"
+              onClick={handleShare}
+              disabled={sharing}
+              title="Share this group with others"
+            >
+              <ShareIcon2 /> {sharing ? 'Sharing...' : 'Share'}
+            </button>
             {!isOwned && (
               <button className="gd-report-btn" onClick={() => setShowReportModal(true)}>Report</button>
             )}
