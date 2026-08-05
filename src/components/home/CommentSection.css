@@ -1,0 +1,255 @@
+/* Comment Section */
+.comment-section {
+  border-top: 1px solid #1e2a42;
+  padding: 16px 0;
+  margin-top: 12px;
+}
+
+/* Compose */
+.comment-compose {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.comment-compose-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #3b82f6;
+}
+
+.comment-compose-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-compose-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.comment-compose-input-wrap {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-compose-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: #131626;
+  border: 1px solid #1e2a42;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.comment-compose-input:focus {
+  border-color: #3b82f6;
+}
+
+.comment-compose-btn {
+  padding: 6px 14px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.comment-compose-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.comment-compose-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Toggle */
+.comment-toggle {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.comment-toggle:hover {
+  color: #cbd5e1;
+}
+
+/* Comments List */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.comment-loading,
+.comment-empty {
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+  padding: 16px 8px;
+}
+
+/* Comment Item */
+.comment-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #3b82f6;
+}
+
+.comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.comment-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.comment-time {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+.comment-text {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-like-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.comment-like-btn:hover {
+  color: #e879f9;
+}
+
+.comment-like-btn.liked {
+  color: #e879f9;
+}
+
+.comment-like-btn span {
+  margin-left: 2px;
+}
+
+.comment-delete-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.comment-delete-btn:hover:not(:disabled) {
+  color: #ef4444;
+}
+
+.comment-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar */
+.comment-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comment-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comment-list::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
+
+.comment-list::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

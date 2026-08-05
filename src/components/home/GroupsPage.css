@@ -10,6 +10,36 @@
   position: relative;
 }
 
+/* Post Actions */
+.gd-post-wrapper {
+  margin-bottom: 16px;
+}
+
+.gd-post-actions {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #1e2a42;
+  align-items: center;
+}
+
+.gd-post-action-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.gd-post-action-btn:hover {
+  color: #cbd5e1;
+}
+
 /* ── Left sidebar ── */
 .grp-sidebar {
   width: 196px;

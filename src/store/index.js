@@ -11,6 +11,7 @@ import toastReducer from './slices/toastSlice';
 import messagesReducer from './slices/messagesSlice';
 import groupsReducer from './slices/groupsSlice';
 import eventsReducer from './slices/eventsSlice';
+import commentsReducer from './slices/commentsSlice';
 
 const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ const store = configureStore({
     messages: messagesReducer,
     groups: groupsReducer,
     events: eventsReducer,
+    comments: commentsReducer,
   },
 });
 

@@ -5,6 +5,8 @@ import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import PostCard from './PostCard';
+import CommentSection from './CommentSection';
+import LikeButton from './LikeButton';
 import {
   fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
@@ -14,6 +16,7 @@ import {
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
+import { likePost, unlikePost } from '../../store/slices/commentsSlice';
 
 
 /* ── UI icons ── */
@@ -1373,16 +1376,18 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const rdxPosts   = useSelector(s => s.groups.groupPosts[groupId]   ?? null);
   const rdxMembers = useSelector(s => s.groups.groupMembers[groupId] ?? null);
 
-  const [detailTab,      setDetailTab]      = useState('about');
-  const [joinedLocal,    setJoinedLocal]    = useState(group.joined || false);
-  const [pendingLocal,   setPendingLocal]   = useState(group.pending || false);
-  const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [gdFriendIds,    setGdFriendIds]    = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
+  const { postLikes, likingPostIds } = useSelector(s => s.comments);
+  const [detailTab,        setDetailTab]        = useState('about');
+  const [joinedLocal,      setJoinedLocal]      = useState(group.joined || false);
+  const [pendingLocal,     setPendingLocal]     = useState(group.pending || false);
+  const [createPostOpen,   setCreatePostOpen]   = useState(false);
+  const [gdFriendIds,      setGdFriendIds]      = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
   const [showLeaveModal,   setShowLeaveModal]   = useState(false);
   const [leaveReason,      setLeaveReason]      = useState('');
   const [showReportModal,  setShowReportModal]  = useState(false);
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
+  const [likePostLoading,  setLikePostLoading]  = useState({});
 
   const isJoining = joiningIds.includes(groupId);
   const isLeaving = leavingIds.includes(groupId);
@@ -1410,6 +1415,24 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
       }
     });
 
+    socket.on('group:post-liked', (data) => {
+      if (data.groupId === groupId) {
+        dispatch({ type: 'comments/likePost/fulfilled', payload: { groupId, postId: data.postId, liked: true, likes: data.likes } });
+      }
+    });
+
+    socket.on('group:post-unliked', (data) => {
+      if (data.groupId === groupId) {
+        dispatch({ type: 'comments/unlikePost/fulfilled', payload: { groupId, postId: data.postId, liked: false, likes: data.likes } });
+      }
+    });
+
+    socket.on('group:post-comment', (data) => {
+      if (data.groupId === groupId) {
+        dispatch(fetchGroupPosts({ groupId, page: 1 }));
+      }
+    });
+
     socket.on('group:updated', (data) => {
       if (data.groupId === groupId) {
         // Optionally refresh group detail
@@ -1420,6 +1443,9 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
       socket.emit('leave-room', roomId);
       socket.off('group:new-post');
       socket.off('group:member-joined');
+      socket.off('group:post-liked');
+      socket.off('group:post-unliked');
+      socket.off('group:post-comment');
       socket.off('group:updated');
     };
   }, [dispatch, groupId]);
@@ -1693,7 +1719,25 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
             )}
 
             {rdxPosts === null && <p style={{ padding: 24, color: '#94a3b8' }}>Loading posts...</p>}
-            {rdxPosts?.map(p => <PostCard key={p._id} post={p} />)}
+            {rdxPosts?.map(p => (
+              <div key={p._id} className="gd-post-wrapper">
+                <PostCard post={p} />
+                <div className="gd-post-actions">
+                  <LikeButton
+                    isLiked={postLikes[p._id]?.liked ?? false}
+                    count={postLikes[p._id]?.count ?? p.likes ?? 0}
+                    onLike={() => dispatch(likePost({ groupId, postId: p._id }))}
+                    onUnlike={() => dispatch(unlikePost({ groupId, postId: p._id }))}
+                    isLoading={likePostLoading[p._id] ?? false}
+                  />
+                  <button className="gd-post-action-btn" onClick={() => {}}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    {(p.comments?.length ?? 0) || 0}
+                  </button>
+                </div>
+                <CommentSection groupId={groupId} postId={p._id} />
+              </div>
+            ))}
             {rdxPosts?.length === 0 && (
               <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>
                 {(joinedLocal || isOwned) ? 'No posts yet. Be the first to post!' : 'Join this group to see and create posts.'}
