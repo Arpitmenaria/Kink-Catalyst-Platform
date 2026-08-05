@@ -189,20 +189,6 @@
   z-index: 10;
 }
 
-.cp-user-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-}
-
 .cp-audience-chip {
   display: flex;
   align-items: center;
@@ -683,16 +669,6 @@
 
 /* Audience row */
 .cp-audience-row { animation: cpSlideUp 0.28s ease 0.22s both; }
-
-/* Avatar subtle entrance */
-.cp-user-avatar {
-  animation: cpSlideUp 0.28s ease 0.20s both;
-  transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease;
-}
-.cp-user-avatar:hover {
-  transform: scale(1.06);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.28);
-}
 
 /* Audience chip spring hover */
 .cp-audience-chip {

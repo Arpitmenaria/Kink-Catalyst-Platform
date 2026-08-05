@@ -517,12 +517,6 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
         <div className="cp-body">
           {/* Audience row */}
           <div className="cp-audience-row">
-            <div className="cp-user-avatar" style={{ overflow: avatarUrl ? 'hidden' : undefined }}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : getInitials(displayName)
-              }
-            </div>
             <div className="cp-audience-wrap" ref={dropdownRef}>
               <button
                 className={`cp-audience-chip${dropdownOpen ? ' cp-audience-chip--open' : ''}`}
