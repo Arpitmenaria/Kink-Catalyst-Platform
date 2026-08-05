@@ -14,6 +14,7 @@ import eventsReducer from './slices/eventsSlice';
 import commentsReducer from './slices/commentsSlice';
 import invitationsReducer from './slices/invitationsSlice';
 import activityReducer from './slices/activitySlice';
+import searchReducer from './slices/searchSlice';
 
 const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ const store = configureStore({
     comments: commentsReducer,
     invitations: invitationsReducer,
     activity: activityReducer,
+    search: searchReducer,
   },
 });
 
