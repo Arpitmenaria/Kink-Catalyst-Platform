@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { io } from 'socket.io-client';
 import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
@@ -434,9 +435,40 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     dispatch(fetchGroupPosts({ groupId, page: 1 }));
     if (group?.privacy === 'private') dispatch(fetchPendingRequests({ groupId }));
     dispatch(fetchAdminDashboard(groupId));
-    // PostCard's @mention comment box reads state.profile.connections.
     dispatch(fetchConnections());
-  }, [dispatch, groupId]);
+
+    // Socket listeners for admin dashboard real-time updates
+    const socket = io();
+    const roomId = `group:${groupId}`;
+    socket.emit('join-room', roomId);
+
+    socket.on('group:new-post', (data) => {
+      if (data.groupId === groupId) {
+        dispatch(fetchGroupPosts({ groupId, page: 1 }));
+      }
+    });
+
+    socket.on('group:member-joined', (data) => {
+      if (data.groupId === groupId) {
+        dispatch(fetchGroupMembers({ groupId }));
+        dispatch(fetchAdminDashboard(groupId));
+      }
+    });
+
+    socket.on('group:pending-request', (data) => {
+      if (data.groupId === groupId && group?.privacy === 'private') {
+        dispatch(fetchPendingRequests({ groupId }));
+        dispatch(fetchAdminDashboard(groupId));
+      }
+    });
+
+    return () => {
+      socket.emit('leave-room', roomId);
+      socket.off('group:new-post');
+      socket.off('group:member-joined');
+      socket.off('group:pending-request');
+    };
+  }, [dispatch, groupId, group?.privacy]);
 
   useEffect(() => {
     if (rdxMembers.length === 0) return;
@@ -1100,9 +1132,24 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
   }
 
   function handleCreate() {
-    if (!groupName.trim() || creating) return;
+    if (creating) return;
+
+    const name = groupName.trim();
+    if (!name) {
+      dispatch(showToast({ message: 'Group name is required', type: 'error' }));
+      return;
+    }
+    if (name.length > 50) {
+      dispatch(showToast({ message: 'Group name must be 50 characters or less', type: 'error' }));
+      return;
+    }
+    if (mission && mission.length > 100) {
+      dispatch(showToast({ message: 'Mission must be 100 characters or less', type: 'error' }));
+      return;
+    }
+
     dispatch(createGroup({
-      name: groupName.trim(),
+      name,
       mission,
       description,
       category,
@@ -1113,6 +1160,8 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
     })).then(action => {
       if (createGroup.fulfilled.match(action)) {
         onCreateGroup?.(action.payload);
+      } else if (createGroup.rejected.match(action)) {
+        dispatch(showToast({ message: action.payload?.message ?? 'Failed to create group', type: 'error' }));
       }
     });
   }
@@ -1342,8 +1391,37 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     if (!groupId) return;
     dispatch(fetchGroupPosts({ groupId, page: 1 }));
     dispatch(fetchGroupMembers({ groupId }));
-    // PostCard's @mention comment box reads state.profile.connections.
     dispatch(fetchConnections());
+
+    // Socket listeners for real-time group updates
+    const socket = io();
+    const roomId = `group:${groupId}`;
+    socket.emit('join-room', roomId);
+
+    socket.on('group:new-post', (data) => {
+      if (data.groupId === groupId) {
+        dispatch(fetchGroupPosts({ groupId, page: 1 }));
+      }
+    });
+
+    socket.on('group:member-joined', (data) => {
+      if (data.groupId === groupId) {
+        dispatch(fetchGroupMembers({ groupId }));
+      }
+    });
+
+    socket.on('group:updated', (data) => {
+      if (data.groupId === groupId) {
+        // Optionally refresh group detail
+      }
+    });
+
+    return () => {
+      socket.emit('leave-room', roomId);
+      socket.off('group:new-post');
+      socket.off('group:member-joined');
+      socket.off('group:updated');
+    };
   }, [dispatch, groupId]);
 
   useEffect(() => {
@@ -1979,7 +2057,6 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const { user: authUser } = useSelector(s => s.auth);
   const myId = authUser?._id ?? authUser?.id;
 
-  const [modalOpen,      setModalOpen]      = useState(false);
   const [showCreate,     setShowCreate]     = useState(startCreate || false);
   const [showAdmin,      setShowAdmin]      = useState(false);
   const [showModeration, setShowModeration] = useState(false);
@@ -1993,6 +2070,28 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
 
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
+  }, [dispatch, hubTab, hubCat]);
+
+  // Socket listeners for hub updates (group created, member joined, etc.)
+  useEffect(() => {
+    const socket = io();
+    socket.emit('join-room', 'groups-hub');
+
+    socket.on('group:created', (data) => {
+      // Refresh groups to show newly created group
+      dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
+    });
+
+    socket.on('group:member-count-changed', (data) => {
+      // Update specific group's member count
+      dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
+    });
+
+    return () => {
+      socket.emit('leave-room', 'groups-hub');
+      socket.off('group:created');
+      socket.off('group:member-count-changed');
+    };
   }, [dispatch, hubTab, hubCat]);
 
   useEffect(() => {
@@ -2172,7 +2271,6 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
 
       </main>
 
-      {modalOpen && <CreateGroupModal onClose={() => setModalOpen(false)} />}
       {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
     </div>
