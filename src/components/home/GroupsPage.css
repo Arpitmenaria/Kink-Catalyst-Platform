@@ -13,6 +13,34 @@
 /* Post Actions */
 .gd-post-wrapper {
   margin-bottom: 16px;
+  position: relative;
+}
+
+.gd-post-wrapper.pinned {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.gd-post-pinned-badge {
+  padding: 6px 12px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.gd-post-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-right: 8px;
+}
+
+.gd-post-header > :first-child {
+  flex: 1;
 }
 
 .gd-post-actions {

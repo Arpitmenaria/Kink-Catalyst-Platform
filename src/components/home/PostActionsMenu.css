@@ -1,0 +1,72 @@
+.post-actions-menu {
+  position: relative;
+}
+
+.post-actions-trigger {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.post-actions-trigger:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #cbd5e1;
+}
+
+.post-actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: #131626;
+  border: 1px solid #1e2a42;
+  border-radius: 8px;
+  min-width: 140px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.post-action-item {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.post-action-item:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  color: #e2e8f0;
+}
+
+.post-action-item.delete {
+  color: #ef4444;
+}
+
+.post-action-item.delete:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.post-action-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.post-action-item svg {
+  flex-shrink: 0;
+}

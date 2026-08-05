@@ -135,6 +135,77 @@ export const unlikePost = createAsyncThunk(
   }
 );
 
+// POST ACTIONS
+
+export const deletePost = createAsyncThunk(
+  'comments/deletePost',
+  async ({ groupId, postId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/groups/${groupId}/posts/${postId}`, {
+        method: 'DELETE',
+        token,
+      });
+      return { groupId, postId };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const editPost = createAsyncThunk(
+  'comments/editPost',
+  async ({ groupId, postId, caption, media = [] }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const form = new FormData();
+      if (caption) form.append('caption', caption);
+      Array.from(media).forEach((file) => form.append('media', file));
+      const data = await apiRequest(`/api/groups/${groupId}/posts/${postId}`, {
+        method: 'PUT',
+        token,
+        body: form,
+        isFormData: true,
+      });
+      return { groupId, post: data.post ?? data };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const pinPost = createAsyncThunk(
+  'comments/pinPost',
+  async ({ groupId, postId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/groups/${groupId}/posts/${postId}/pin`, {
+        method: 'POST',
+        token,
+      });
+      return { groupId, postId, pinned: true };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const unpinPost = createAsyncThunk(
+  'comments/unpinPost',
+  async ({ groupId, postId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/groups/${groupId}/posts/${postId}/pin`, {
+        method: 'DELETE',
+        token,
+      });
+      return { groupId, postId, pinned: false };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const commentsSlice = createSlice({
   name: 'comments',
   initialState: {
@@ -147,6 +218,10 @@ const commentsSlice = createSlice({
     unlikingPostIds: [],
     creatingCommentPostIds: [],
     deletingCommentIds: [],
+    deletingPostIds: [],
+    editingPostIds: [],
+    pinningPostIds: [],
+    pinnedPosts: {}, // { "postId": bool }
     error: null,
   },
   reducers: {},
@@ -258,6 +333,71 @@ const commentsSlice = createSlice({
       .addCase(unlikePost.rejected, (s, a) => {
         const postId = a.meta.arg.postId;
         s.unlikingPostIds = s.unlikingPostIds.filter((id) => id !== postId);
+      })
+
+      .addCase(deletePost.pending, (s, a) => {
+        const postId = a.meta.arg.postId;
+        if (!s.deletingPostIds.includes(postId)) {
+          s.deletingPostIds.push(postId);
+        }
+      })
+      .addCase(deletePost.fulfilled, (s, a) => {
+        const { postId } = a.payload;
+        s.deletingPostIds = s.deletingPostIds.filter((id) => id !== postId);
+      })
+      .addCase(deletePost.rejected, (s, a) => {
+        const postId = a.meta.arg.postId;
+        s.deletingPostIds = s.deletingPostIds.filter((id) => id !== postId);
+        s.error = a.payload;
+      })
+
+      .addCase(editPost.pending, (s, a) => {
+        const postId = a.meta.arg.postId;
+        if (!s.editingPostIds.includes(postId)) {
+          s.editingPostIds.push(postId);
+        }
+      })
+      .addCase(editPost.fulfilled, (s, a) => {
+        const { post } = a.payload;
+        const postId = post._id ?? post.id;
+        s.editingPostIds = s.editingPostIds.filter((id) => id !== postId);
+      })
+      .addCase(editPost.rejected, (s, a) => {
+        const postId = a.meta.arg.postId;
+        s.editingPostIds = s.editingPostIds.filter((id) => id !== postId);
+        s.error = a.payload;
+      })
+
+      .addCase(pinPost.pending, (s, a) => {
+        const postId = a.meta.arg.postId;
+        if (!s.pinningPostIds.includes(postId)) {
+          s.pinningPostIds.push(postId);
+        }
+      })
+      .addCase(pinPost.fulfilled, (s, a) => {
+        const { postId } = a.payload;
+        s.pinningPostIds = s.pinningPostIds.filter((id) => id !== postId);
+        s.pinnedPosts[postId] = true;
+      })
+      .addCase(pinPost.rejected, (s, a) => {
+        const postId = a.meta.arg.postId;
+        s.pinningPostIds = s.pinningPostIds.filter((id) => id !== postId);
+      })
+
+      .addCase(unpinPost.pending, (s, a) => {
+        const postId = a.meta.arg.postId;
+        if (!s.pinningPostIds.includes(postId)) {
+          s.pinningPostIds.push(postId);
+        }
+      })
+      .addCase(unpinPost.fulfilled, (s, a) => {
+        const { postId } = a.payload;
+        s.pinningPostIds = s.pinningPostIds.filter((id) => id !== postId);
+        s.pinnedPosts[postId] = false;
+      })
+      .addCase(unpinPost.rejected, (s, a) => {
+        const postId = a.meta.arg.postId;
+        s.pinningPostIds = s.pinningPostIds.filter((id) => id !== postId);
       });
   },
 });

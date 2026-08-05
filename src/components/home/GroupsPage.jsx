@@ -7,6 +7,7 @@ import CreatePostModal from './CreatePostModal';
 import PostCard from './PostCard';
 import CommentSection from './CommentSection';
 import LikeButton from './LikeButton';
+import PostActionsMenu from './PostActionsMenu';
 import {
   fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
@@ -16,7 +17,7 @@ import {
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
-import { likePost, unlikePost } from '../../store/slices/commentsSlice';
+import { likePost, unlikePost, deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
 
 
 /* ── UI icons ── */
@@ -1376,7 +1377,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const rdxPosts   = useSelector(s => s.groups.groupPosts[groupId]   ?? null);
   const rdxMembers = useSelector(s => s.groups.groupMembers[groupId] ?? null);
 
-  const { postLikes, likingPostIds } = useSelector(s => s.comments);
+  const { postLikes, likingPostIds, pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
   const [detailTab,        setDetailTab]        = useState('about');
   const [joinedLocal,      setJoinedLocal]      = useState(group.joined || false);
   const [pendingLocal,     setPendingLocal]     = useState(group.pending || false);
@@ -1719,25 +1720,54 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
             )}
 
             {rdxPosts === null && <p style={{ padding: 24, color: '#94a3b8' }}>Loading posts...</p>}
-            {rdxPosts?.map(p => (
-              <div key={p._id} className="gd-post-wrapper">
-                <PostCard post={p} />
-                <div className="gd-post-actions">
-                  <LikeButton
-                    isLiked={postLikes[p._id]?.liked ?? false}
-                    count={postLikes[p._id]?.count ?? p.likes ?? 0}
-                    onLike={() => dispatch(likePost({ groupId, postId: p._id }))}
-                    onUnlike={() => dispatch(unlikePost({ groupId, postId: p._id }))}
-                    isLoading={likePostLoading[p._id] ?? false}
-                  />
-                  <button className="gd-post-action-btn" onClick={() => {}}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    {(p.comments?.length ?? 0) || 0}
-                  </button>
+            {rdxPosts?.map(p => {
+              const pid = p._id ?? p.id;
+              const isPostAuthor = (authUser?._id ?? authUser?.id) === (p.author?._id ?? p.author?.id);
+              const isPinned = pinnedPosts[pid] ?? false;
+              const isDeleting = deletingPostIds.includes(pid);
+              const isPinning = pinningPostIds.includes(pid);
+
+              return (
+                <div key={pid} className={`gd-post-wrapper ${isPinned ? 'pinned' : ''}`}>
+                  {isPinned && <div className="gd-post-pinned-badge">📌 Pinned</div>}
+                  <div className="gd-post-header">
+                    <PostCard post={p} />
+                    <PostActionsMenu
+                      isAuthor={isPostAuthor}
+                      isAdmin={isOwned}
+                      isPinned={isPinned}
+                      onDelete={() => {
+                        dispatch(deletePost({ groupId, postId: pid })).then((action) => {
+                          if (deletePost.fulfilled.match(action)) {
+                            dispatch(fetchGroupPosts({ groupId, page: 1 }));
+                            dispatch(showToast({ message: 'Post deleted', type: 'success' }));
+                          }
+                        });
+                      }}
+                      onEdit={() => {}}
+                      onPin={() => dispatch(pinPost({ groupId, postId: pid }))}
+                      onUnpin={() => dispatch(unpinPost({ groupId, postId: pid }))}
+                      isDeleting={isDeleting}
+                      isPinning={isPinning}
+                    />
+                  </div>
+                  <div className="gd-post-actions">
+                    <LikeButton
+                      isLiked={postLikes[pid]?.liked ?? false}
+                      count={postLikes[pid]?.count ?? p.likes ?? 0}
+                      onLike={() => dispatch(likePost({ groupId, postId: pid }))}
+                      onUnlike={() => dispatch(unlikePost({ groupId, postId: pid }))}
+                      isLoading={likePostLoading[pid] ?? false}
+                    />
+                    <button className="gd-post-action-btn" onClick={() => {}}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      {(p.comments?.length ?? 0) || 0}
+                    </button>
+                  </div>
+                  <CommentSection groupId={groupId} postId={pid} />
                 </div>
-                <CommentSection groupId={groupId} postId={p._id} />
-              </div>
-            ))}
+              );
+            })}
             {rdxPosts?.length === 0 && (
               <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>
                 {(joinedLocal || isOwned) ? 'No posts yet. Be the first to post!' : 'Join this group to see and create posts.'}
