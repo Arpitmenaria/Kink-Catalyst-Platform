@@ -1,0 +1,176 @@
+.notification-prefs {
+  background: #0f1419;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.notification-prefs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #1f2937;
+  background: #131626;
+}
+
+.notification-prefs-header h3 {
+  margin: 0;
+  color: #f3f4f6;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notification-prefs-unsaved {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #fca5a5;
+  color: #7f1d1d;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.notification-prefs-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notification-pref-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #131626;
+  border-radius: 6px;
+  border: 1px solid #1f2937;
+}
+
+.notification-pref-info {
+  flex: 1;
+}
+
+.notification-pref-label {
+  margin: 0;
+  color: #f3f4f6;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notification-pref-desc {
+  margin: 4px 0 0 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #374151;
+  transition: 0.3s;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #10b981;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notification-pref-select {
+  padding: 6px 10px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #f3f4f6;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  min-width: 120px;
+  transition: border-color 0.2s;
+}
+
+.notification-pref-select:hover:not(:disabled) {
+  border-color: #4b5563;
+}
+
+.notification-pref-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.notification-pref-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notification-prefs-footer {
+  padding: 16px;
+  border-top: 1px solid #1f2937;
+  background: #131626;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notification-prefs-save {
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.notification-prefs-save:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.notification-prefs-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

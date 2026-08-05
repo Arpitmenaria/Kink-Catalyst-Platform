@@ -15,6 +15,11 @@ import commentsReducer from './slices/commentsSlice';
 import invitationsReducer from './slices/invitationsSlice';
 import activityReducer from './slices/activitySlice';
 import searchReducer from './slices/searchSlice';
+import notificationPrefsReducer from './slices/notificationPrefsSlice';
+import moderationReducer from './slices/moderationSlice';
+import memberManagementReducer from './slices/memberManagementSlice';
+import groupSettingsReducer from './slices/groupSettingsSlice';
+import reportingReducer from './slices/reportingSlice';
 
 const store = configureStore({
   reducer: {
@@ -34,6 +39,11 @@ const store = configureStore({
     invitations: invitationsReducer,
     activity: activityReducer,
     search: searchReducer,
+    notificationPrefs: notificationPrefsReducer,
+    moderation: moderationReducer,
+    memberManagement: memberManagementReducer,
+    groupSettings: groupSettingsReducer,
+    reporting: reportingReducer,
   },
 });
 
