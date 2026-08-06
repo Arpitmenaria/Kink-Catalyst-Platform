@@ -11,7 +11,6 @@ import UserInvitations from './UserInvitations';
 import ImageCropper from './ImageCropper';
 import UserProfilePage from './UserProfilePage';
 import GlobalSearch from './GlobalSearch';
-import InviteButton from './InviteButton';
 import {
   fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
@@ -819,9 +818,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           {/* Members table */}
           {activeTab === 'members' && (
             <>
-              <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                <InviteButton groupId={groupId} groupMembers={baseMembers} />
-              </div>
               <table className="adm-table">
                 <thead>
                   <tr>
