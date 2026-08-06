@@ -687,7 +687,10 @@ export default function PostCard({ post, onUserClick, groupId }) {
         pending: true, // Mark as pending so we can style differently if needed
       };
       if (groupId) {
-        dispatch(createGroupComment({ groupId, postId: post._id, text }));
+        dispatch(createGroupComment({ groupId, postId: post._id, text })).then(() => {
+          setShowComments(true);
+          dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
+        });
       } else {
         dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
         dispatch(commentPost({ postId: post._id, text, mentions }));
