@@ -2263,6 +2263,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [showAdmin,      setShowAdmin]      = useState(false);
   const [showModeration, setShowModeration] = useState(false);
   const [showDetail,     setShowDetail]     = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [adminGroup,     setAdminGroup]     = useState(null);
   const [detailGroup,    setDetailGroup]    = useState(null);
   const [detailFromHome, setDetailFromHome] = useState(false);
@@ -2274,6 +2276,15 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
   }, [dispatch, hubTab, hubCat]);
+
+  // Handle user profile navigation
+  useEffect(() => {
+    if (showUserProfile && selectedUserId) {
+      // For now, just log - wire to ProfilePage navigation when available
+      console.log('Viewing user profile:', selectedUserId);
+      // TODO: Navigate to user profile page or show profile modal
+    }
+  }, [showUserProfile, selectedUserId]);
 
   // Search keyboard shortcut (Cmd/Ctrl + K)
   useEffect(() => {
@@ -2392,7 +2403,11 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
           if (detailFromHome) onBack?.();
         }}
         onManage={() => { setAdminGroup(detailGroup); setShowDetail(false); setShowAdmin(true); }}
-        onUserClick={() => {}} // Placeholder for future profile navigation
+        onUserClick={(userId) => {
+          setShowDetail(false);
+          setSelectedUserId(userId);
+          setShowUserProfile(true);
+        }}
         onFeedClick={onBack}
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
