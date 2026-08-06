@@ -75,7 +75,6 @@ const ROLE_CONFIG = {
 };
 
 const MEMBER_ROLES   = ['Admin', 'Moderator', 'Member'];
-const MEMBER_JOINED  = ['2023', '2024'];
 
 function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
   const ref = useRef(null);
@@ -420,7 +419,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const [memberRoles,    setMemberRoles]    = useState({});
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [filterRole,     setFilterRole]     = useState('');
-  const [filterJoined,   setFilterJoined]   = useState('');
   const [openMbrDrop,    setOpenMbrDrop]    = useState(null);
   const memberFilterRef = useRef(null);
   const [filterMutual,   setFilterMutual]   = useState('');
@@ -557,15 +555,14 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     return () => document.removeEventListener('mousedown', onOut);
   }, [openPndDrop]);
 
-  const hasMbrFilter = filterRole || filterJoined;
+  const hasMbrFilter = filterRole;
   const hasPndFilter = filterMutual || filterDate;
 
   const filteredMembers = baseMembers.filter(m => {
     const id = m._id ?? m.id;
     const role = memberRoles[id] ?? normalizeRole(m.role);
     return (m.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (!filterRole   || role === filterRole) &&
-      (!filterJoined || (m.joined ?? '').includes(filterJoined));
+      (!filterRole   || role === filterRole);
   });
   const filteredPending = pendingList.filter(r =>
     (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -633,7 +630,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
             <div className="adm-header-btns">
               <button className="adm-export-btn"><ExportIcon /> Export List</button>
-              <button className="adm-invite-btn"><InviteIcon /> Invite Members</button>
             </div>
           </div>
 
@@ -729,27 +725,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     )}
                   </div>
 
-                  <div className="prof-conn-fbar-item">
-                    <button
-                      className={`prof-conn-fbar-pill${filterJoined ? ' prof-conn-fbar-pill--active' : ''}${openMbrDrop === 'joined' ? ' prof-conn-fbar-pill--open' : ''}`}
-                      onClick={() => setOpenMbrDrop(openMbrDrop === 'joined' ? null : 'joined')}
-                    >
-                      {filterJoined || 'Joined'} <ChevronDownIcon />
-                    </button>
-                    {openMbrDrop === 'joined' && (
-                      <div className="prof-conn-fbar-dropdown">
-                        {MEMBER_JOINED.map(y => (
-                          <button
-                            key={y}
-                            className={`prof-conn-fbar-opt${filterJoined === y ? ' prof-conn-fbar-opt--active' : ''}`}
-                            onClick={() => { setFilterJoined(filterJoined === y ? '' : y); setOpenMbrDrop(null); }}
-                          >
-                            {filterJoined === y && <CheckSmIcon />} {y}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
                   {hasMbrFilter && (
                     <button className="prof-conn-fbar-clear" onClick={() => { setFilterRole(''); setFilterJoined(''); setOpenMbrDrop(null); }}>
