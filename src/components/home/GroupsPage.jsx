@@ -415,6 +415,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const rdxStats    = useSelector(s => s.groups.adminDashboard[groupId]?.stats ?? null);
 
   const [activeTab,      setActiveTab]      = useState('about');
+  const [aboutExpanded,  setAboutExpanded]  = useState(false);
   const [searchQuery,    setSearchQuery]    = useState('');
   const [memberRoles,    setMemberRoles]    = useState({});
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -925,8 +926,28 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     <span className="adm-about-card-title">About this Group</span>
                   </div>
                   <p className="adm-about-body">
-                    {group?.description}
+                    {aboutExpanded || (group?.description ?? '').length <= 300
+                      ? group?.description
+                      : (group?.description ?? '').slice(0, 300) + '…'
+                    }
                   </p>
+                  {(group?.description ?? '').length > 300 && (
+                    <button
+                      onClick={() => setAboutExpanded(!aboutExpanded)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#3b82f6',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: 0,
+                        marginTop: '8px',
+                      }}
+                    >
+                      {aboutExpanded ? 'See less' : 'See more'}
+                    </button>
+                  )}
                 </div>
 
                 {/* Mission */}
@@ -1426,6 +1447,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
   const { pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
   const [detailTab,        setDetailTab]        = useState('about');
+  const [aboutExpanded,    setAboutExpanded]    = useState(false);
   const [joinedLocal,      setJoinedLocal]      = useState(group.joined || false);
   const [pendingLocal,     setPendingLocal]     = useState(group.pending || false);
   const [createPostOpen,   setCreatePostOpen]   = useState(false);
@@ -1702,7 +1724,29 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     <span className="adm-about-icon adm-about-icon--blue"><InfoCircleIcon /></span>
                     <span className="adm-about-card-title">About this Group</span>
                   </div>
-                  <p className="adm-about-body">{group.description || 'No description provided for this group yet.'}</p>
+                  <p className="adm-about-body">
+                    {aboutExpanded || (group.description ?? '').length <= 300
+                      ? group.description
+                      : (group.description ?? '').slice(0, 300) + '…'
+                    }
+                  </p>
+                  {(group.description ?? '').length > 300 && (
+                    <button
+                      onClick={() => setAboutExpanded(!aboutExpanded)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#3b82f6',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: 0,
+                        marginTop: '8px',
+                      }}
+                    >
+                      {aboutExpanded ? 'See less' : 'See more'}
+                    </button>
+                  )}
                 </div>
 
                 <div className="adm-about-card">
