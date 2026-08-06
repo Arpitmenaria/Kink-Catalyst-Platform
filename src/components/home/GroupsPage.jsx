@@ -1417,8 +1417,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
     // Socket listeners for real-time group updates
     const socket = io();
-    const roomId = `group:${groupId}`;
-    socket.emit('join-room', roomId);
+    socket.emit('join:group', { groupId });
 
     socket.on('group:new-post', (data) => {
       if (data.groupId === groupId) {
@@ -1457,7 +1456,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     });
 
     return () => {
-      socket.emit('leave-room', roomId);
+      socket.emit('leave:group', { groupId });
       socket.off('group:new-post');
       socket.off('group:member-joined');
       socket.off('group:post-liked');
