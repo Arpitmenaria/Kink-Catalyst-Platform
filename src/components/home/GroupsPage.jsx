@@ -1435,13 +1435,13 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
     socket.on('group:post-liked', (data) => {
       if (data.groupId === groupId) {
-        dispatch({ type: 'comments/likePost/fulfilled', payload: { groupId, postId: data.postId, liked: true, likes: data.likes } });
+        dispatch({ type: 'comments/likePost/fulfilled', payload: { groupId, postId: data.postId, liked: true, likes: data.likesCount ?? data.likes } });
       }
     });
 
     socket.on('group:post-unliked', (data) => {
       if (data.groupId === groupId) {
-        dispatch({ type: 'comments/unlikePost/fulfilled', payload: { groupId, postId: data.postId, liked: false, likes: data.likes } });
+        dispatch({ type: 'comments/unlikePost/fulfilled', payload: { groupId, postId: data.postId, liked: false, likes: data.likesCount ?? data.likes } });
       }
     });
 
