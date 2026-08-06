@@ -6,6 +6,7 @@ import {
   deletePost, reportPost, addCommentRealtime,
   editComment, deleteComment, editReply, deleteReply,
 } from '../../store/slices/postsSlice';
+import { createComment as createGroupComment, fetchComments as fetchGroupComments } from '../../store/slices/commentsSlice';
 import { blockUser } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
@@ -189,7 +190,7 @@ function normalizeComment(c) {
   };
 }
 
-export default function PostCard({ post, onUserClick }) {
+export default function PostCard({ post, onUserClick, groupId }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
@@ -505,8 +506,12 @@ export default function PostCard({ post, onUserClick }) {
     // Nothing to fetch for a post with no comments — showing the empty state
     // immediately (below) avoids a fetch that could leave the panel stuck.
     if (commentCount === 0) return;
-    dispatch(fetchPostComments(post._id));
-  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, commentCount]);
+    if (groupId) {
+      dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
+    } else {
+      dispatch(fetchPostComments(post._id));
+    }
+  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, commentCount, groupId]);
 
   // Subscribe to real-time updates (comments, reactions) for this post
   useEffect(() => {
@@ -681,8 +686,12 @@ export default function PostCard({ post, onUserClick }) {
         mentions,
         pending: true, // Mark as pending so we can style differently if needed
       };
-      dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
-      dispatch(commentPost({ postId: post._id, text, mentions }));
+      if (groupId) {
+        dispatch(createGroupComment({ groupId, postId: post._id, text }));
+      } else {
+        dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
+        dispatch(commentPost({ postId: post._id, text, mentions }));
+      }
       setComment('');
       setCommentMentions([]);
       setCommentDropdown(null);

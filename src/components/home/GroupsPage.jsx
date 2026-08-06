@@ -1782,7 +1782,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                 <div key={pid} className={`gd-post-wrapper ${isPinned ? 'pinned' : ''}`}>
                   {isPinned && <div className="gd-post-pinned-badge">📌 Pinned</div>}
                   <div className="gd-post-header">
-                    <PostCard post={p} />
+                    <PostCard post={p} groupId={groupId} />
                     <PostActionsMenu
                       isAuthor={isPostAuthor}
                       isAdmin={isOwned}
