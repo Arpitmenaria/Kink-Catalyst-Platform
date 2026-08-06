@@ -20,7 +20,7 @@ import {
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
-import { deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
+import { deletePost, editPost, pinPost, unpinPost, fetchComments } from '../../store/slices/commentsSlice';
 
 
 /* ── UI icons ── */
@@ -1446,6 +1446,9 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     socket.on('group:post-comment', (data) => {
       if (data.groupId === groupId) {
         dispatch(fetchGroupPosts({ groupId, page: 1 }));
+        if (data.postId && data.commentsCount > 0) {
+          dispatch(fetchComments({ groupId, postId: data.postId, page: 1, limit: 50 }));
+        }
       }
     });
 
