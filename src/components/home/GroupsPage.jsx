@@ -1475,6 +1475,16 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     }
   }, [rdxMembers]);
 
+  // Auto-fetch comments for all posts when they load
+  useEffect(() => {
+    if (!rdxPosts || rdxPosts.length === 0 || !groupId) return;
+    rdxPosts.forEach(post => {
+      if ((post.commentCount ?? 0) > 0) {
+        dispatch(fetchComments({ groupId, postId: post._id, page: 1, limit: 50 }));
+      }
+    });
+  }, [rdxPosts, groupId, dispatch]);
+
   const GROUP_REPORT_REASONS = [
     'Spam or misleading content',
     'Hate speech or discrimination',
