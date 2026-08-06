@@ -1345,9 +1345,11 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
         <ImageCropper
           key={`cover-${coverCropIdx}`}
           file={coverCropQueue[coverCropIdx]}
-          onCropComplete={handleCoverCropComplete}
+          onSave={handleCoverCropComplete}
           onSkip={handleCoverCropSkip}
-          aspectRatio={4}
+          onCancel={() => { setCoverCropQueue([]); setCoverCropIdx(0); }}
+          defaultAspect="landscape"
+          cropShape="rect"
         />
       )}
 
@@ -1356,9 +1358,11 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
         <ImageCropper
           key={`photo-${photoCropIdx}`}
           file={photoCropQueue[photoCropIdx]}
-          onCropComplete={handlePhotoCropComplete}
+          onSave={handlePhotoCropComplete}
           onSkip={handlePhotoCropSkip}
-          aspectRatio={1}
+          onCancel={() => { setPhotoCropQueue([]); setPhotoCropIdx(0); }}
+          defaultAspect="square"
+          cropShape="round"
         />
       )}
     </div>
