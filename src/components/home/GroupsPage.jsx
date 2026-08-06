@@ -1756,12 +1756,6 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
             {/* Create post compose box — only for members */}
             {(joinedLocal || isOwned) && !pendingLocal && (
               <div className="gd-compose-box" onClick={() => setCreatePostOpen(true)}>
-                <div className="gd-compose-avatar">
-                  {authUser?.profileImage
-                    ? <img src={authUser.profileImage} alt={authUser.name} className="gd-compose-av-img" />
-                    : <div className="gd-compose-av-placeholder">{(authUser?.name ?? 'U')[0].toUpperCase()}</div>
-                  }
-                </div>
                 <div className="gd-compose-input-fake">
                   <span>Write something to the group...</span>
                 </div>
