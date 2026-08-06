@@ -989,7 +989,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
           </button>
           <div className="post-action-sep" />
           <button className="post-action-btn" onClick={handleShare} disabled={isSharing}>
-            <ShareIcon /> {shareCount > 1 ? 'Shares' : 'Share'} ({shareCount})
+            <ShareIcon /> Share
           </button>
         </div>
 
