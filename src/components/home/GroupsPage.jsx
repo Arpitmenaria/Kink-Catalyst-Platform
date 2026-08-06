@@ -594,12 +594,18 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         <div className="adm-cover-section">
 
           {/* Banner */}
-          <div className="adm-cover">
-            <img
-              src={coverImg || group?.coverImg || `https://picsum.photos/seed/adm-cover-${group?._id || group?.id || 'default'}/1200/300`}
-              alt="Group cover"
-              className="adm-cover-img"
-            />
+          <div className="adm-cover" style={{ background: '#0d1424', position: 'relative' }}>
+            {(coverImg || group?.coverImg) ? (
+              <img
+                src={coverImg || group?.coverImg}
+                alt="Group cover"
+                className="adm-cover-img"
+              />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                <span style={{ fontSize: '24px', fontWeight: 600, color: '#94a3b8' }}>{group?.category || 'Social Platform'}</span>
+              </div>
+            )}
             <button className="adm-cover-back-btn" onClick={onBack} title="Back to Groups">
               <BackArrowIcon />
             </button>
@@ -918,7 +924,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     <span className="adm-about-card-title">About this Group</span>
                   </div>
                   <p className="adm-about-body">
-                    {group?.description || 'No description provided for this group yet.'}
+                    {group?.description}
                   </p>
                 </div>
 
@@ -929,7 +935,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     <span className="adm-about-card-title">Group Mission</span>
                   </div>
                   <p className="adm-about-body">
-                    {group?.mission || 'No mission statement defined.'}
+                    {group?.mission}
                   </p>
                 </div>
 
