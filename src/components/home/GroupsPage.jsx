@@ -930,24 +930,27 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                       ? group?.description
                       : (group?.description ?? '').slice(0, 300) + '…'
                     }
+                    {(group?.description ?? '').length > 300 && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={() => setAboutExpanded(!aboutExpanded)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#3b82f6',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'inline',
+                          }}
+                        >
+                          {aboutExpanded ? 'See less' : 'See more'}
+                        </button>
+                      </>
+                    )}
                   </p>
-                  {(group?.description ?? '').length > 300 && (
-                    <button
-                      onClick={() => setAboutExpanded(!aboutExpanded)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#3b82f6',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        padding: 0,
-                        marginTop: '8px',
-                      }}
-                    >
-                      {aboutExpanded ? 'See less' : 'See more'}
-                    </button>
-                  )}
                 </div>
 
                 {/* Mission */}
@@ -1729,24 +1732,27 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                       ? group.description
                       : (group.description ?? '').slice(0, 300) + '…'
                     }
+                    {(group.description ?? '').length > 300 && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={() => setAboutExpanded(!aboutExpanded)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#3b82f6',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'inline',
+                          }}
+                        >
+                          {aboutExpanded ? 'See less' : 'See more'}
+                        </button>
+                      </>
+                    )}
                   </p>
-                  {(group.description ?? '').length > 300 && (
-                    <button
-                      onClick={() => setAboutExpanded(!aboutExpanded)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#3b82f6',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        padding: 0,
-                        marginTop: '8px',
-                      }}
-                    >
-                      {aboutExpanded ? 'See less' : 'See more'}
-                    </button>
-                  )}
                 </div>
 
                 <div className="adm-about-card">
