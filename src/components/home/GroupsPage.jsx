@@ -1959,23 +1959,28 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                     <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{normalizeRole(m.role)}</span></td>
                     <td>
                       <div className="adm-action-cell">
-                        {!isSelf && (isFriendOrRequested ? (
-                          <button
-                            className="prof-conn-btn prof-conn-btn--msg"
-                            onClick={() => {
-                              dispatch(startDM(mid));
-                              onMessagesClick?.();
-                            }}
-                          >Chat</button>
-                        ) : (
-                          <button
-                            className="prof-conn-btn prof-conn-btn--add"
-                            onClick={() => {
-                              dispatch(sendFriendRequest(mid));
-                              setGdFriendIds(s => new Set([...s, mid]));
-                            }}
-                          >Add Friend</button>
-                        ))}
+                        {!isSelf && (
+                          friendRequestIds.includes(mid) ? (
+                            <button className="prof-conn-btn prof-conn-btn--pending" disabled>
+                              Request Pending
+                            </button>
+                          ) : gdFriendIds.has(mid) ? (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--msg"
+                              onClick={() => {
+                                dispatch(startDM(mid));
+                                onMessagesClick?.();
+                              }}
+                            >Chat</button>
+                          ) : (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--add"
+                              onClick={() => {
+                                dispatch(sendFriendRequest(mid));
+                              }}
+                            >Add Friend</button>
+                          )
+                        )}
                         {/* Only group admin can remove; cannot remove themselves or another admin */}
                         {isOwned && !isSelf && !isAdmin && (
                           <button
