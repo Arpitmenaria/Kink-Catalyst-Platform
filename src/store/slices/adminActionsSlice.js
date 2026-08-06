@@ -72,7 +72,13 @@ const adminActionsSlice = createSlice({
     markingAsReadIds: [],
     error: null,
   },
-  reducers: {},
+  reducers: {
+    addAdminActionNotification(s, a) {
+      const notification = a.payload;
+      s.notifications.unshift(notification);
+      s.notificationsTotal = (s.notificationsTotal ?? 0) + 1;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Fetch notifications
@@ -127,4 +133,5 @@ const adminActionsSlice = createSlice({
   },
 });
 
+export const { addAdminActionNotification } = adminActionsSlice.actions;
 export default adminActionsSlice.reducer;
