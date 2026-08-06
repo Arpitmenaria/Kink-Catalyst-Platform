@@ -871,7 +871,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             {m.location && (
                               <span className="gd-member-location"><PinIcon /> {m.location}</span>
                             )}
-                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                            <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
                               <div className="prof-conn-shared-avatars">
                                 {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -885,18 +885,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                         </div>
                       </td>
                       <td className="adm-date-cell">{m.joined}</td>
-                      <td>
-                        <RoleSelect
-                          value={role}
-                          memberId={mid}
-                          openId={openDropdownId}
-                          onToggle={setOpenDropdownId}
-                          onChange={newRole => {
-                            setMemberRoles(p => ({ ...p, [mid]: newRole }));
-                            dispatch(changeMemberRole({ groupId, memberId: mid, role: apiRole(newRole) }));
-                          }}
-                        />
-                      </td>
+                      <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{role}</span></td>
                       <td>
                         <div className="adm-action-cell">
                           {!isSelfRow && (isFriendOrRequested ? (
@@ -1079,7 +1068,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             {r.location && (
                               <span className="gd-member-location"><PinIcon /> {r.location}</span>
                             )}
-                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                            <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
                               <div className="prof-conn-shared-avatars">
                                 {(r.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -1860,7 +1849,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                           {m.location && (
                             <span className="gd-member-location"><PinIcon /> {m.location}</span>
                           )}
-                          <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                          <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
                             <div className="prof-conn-shared-avatars">
                               {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                 <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
