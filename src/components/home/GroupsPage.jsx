@@ -20,7 +20,7 @@ import {
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
-import { likeGroupPost, unlikeGroupPost, deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
+import { deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
 
 
 /* ── UI icons ── */
@@ -1393,7 +1393,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const rdxPosts   = useSelector(s => s.groups.groupPosts[groupId]   ?? null);
   const rdxMembers = useSelector(s => s.groups.groupMembers[groupId] ?? null);
 
-  const { postLikes, likingPostIds, pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
+  const { pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
   const [detailTab,        setDetailTab]        = useState('about');
   const [joinedLocal,      setJoinedLocal]      = useState(group.joined || false);
   const [pendingLocal,     setPendingLocal]     = useState(group.pending || false);
@@ -1404,7 +1404,6 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const [showReportModal,  setShowReportModal]  = useState(false);
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
-  const [likePostLoading,  setLikePostLoading]  = useState({});
   const [sharing,         setSharing]         = useState(false);
 
   const isJoining = joiningIds.includes(groupId);
@@ -1802,19 +1801,6 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                       isDeleting={isDeleting}
                       isPinning={isPinning}
                     />
-                  </div>
-                  <div className="gd-post-actions">
-                    <LikeButton
-                      isLiked={postLikes[pid]?.liked !== undefined ? postLikes[pid].liked : (p.liked ?? false)}
-                      count={postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0)}
-                      onLike={() => dispatch(likeGroupPost({ groupId, postId: pid }))}
-                      onUnlike={() => dispatch(unlikeGroupPost({ groupId, postId: pid }))}
-                      isLoading={likePostLoading[pid] ?? false}
-                    />
-                    <button className="gd-post-action-btn" onClick={() => {}}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                      {(p.comments?.length ?? 0) || 0}
-                    </button>
                   </div>
                 </div>
               );
