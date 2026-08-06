@@ -444,7 +444,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
   }
 
   const likeCount    = isStatic ? post.likes    : (post.likesCount ?? post.likes?.length ?? 0);
-  const commentCount = isStatic ? post.comments : (post.commentsCount ?? post.comments?.length ?? 0);
+  const commentCount = groupId ? groupComments.length : (isStatic ? post.comments : (post.commentsCount ?? post.comments?.length ?? 0));
   const shareCount   = isStatic ? post.shares   : (post.shares?.length   ?? 0);
   const recentReactors = isStatic ? [] : (post.recentReactors ?? []);
 
