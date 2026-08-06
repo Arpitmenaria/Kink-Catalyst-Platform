@@ -17,7 +17,7 @@ export const fetchMe = createAsyncThunk(
     try {
       const { token } = getState().auth;
       if (!token) return rejectWithValue('no token');
-      const data = await apiRequest('/api/user/profile', { token });
+      const data = await apiRequest('/api/users/me/profile', { token });
       return data.user ?? data;
     } catch (err) {
       return rejectWithValue(err.message);
