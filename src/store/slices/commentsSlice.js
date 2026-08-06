@@ -103,8 +103,8 @@ export const unlikeComment = createAsyncThunk(
 
 // POST LIKES
 
-export const likePost = createAsyncThunk(
-  'comments/likePost',
+export const likeGroupPost = createAsyncThunk(
+  'comments/likeGroupPost',
   async ({ groupId, postId }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
@@ -119,8 +119,8 @@ export const likePost = createAsyncThunk(
   }
 );
 
-export const unlikePost = createAsyncThunk(
-  'comments/unlikePost',
+export const unlikeGroupPost = createAsyncThunk(
+  'comments/unlikeGroupPost',
   async ({ groupId, postId }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
@@ -303,34 +303,34 @@ const commentsSlice = createSlice({
         s.commentLikes[commentId] = { liked: false, count: likes };
       })
 
-      .addCase(likePost.pending, (s, a) => {
+      .addCase(likeGroupPost.pending, (s, a) => {
         const postId = a.meta.arg.postId;
         if (!s.likingPostIds.includes(postId)) {
           s.likingPostIds.push(postId);
         }
       })
-      .addCase(likePost.fulfilled, (s, a) => {
+      .addCase(likeGroupPost.fulfilled, (s, a) => {
         const { postId, likes } = a.payload;
         s.likingPostIds = s.likingPostIds.filter((id) => id !== postId);
         s.postLikes[postId] = { liked: true, count: likes };
       })
-      .addCase(likePost.rejected, (s, a) => {
+      .addCase(likeGroupPost.rejected, (s, a) => {
         const postId = a.meta.arg.postId;
         s.likingPostIds = s.likingPostIds.filter((id) => id !== postId);
       })
 
-      .addCase(unlikePost.pending, (s, a) => {
+      .addCase(unlikeGroupPost.pending, (s, a) => {
         const postId = a.meta.arg.postId;
         if (!s.unlikingPostIds.includes(postId)) {
           s.unlikingPostIds.push(postId);
         }
       })
-      .addCase(unlikePost.fulfilled, (s, a) => {
+      .addCase(unlikeGroupPost.fulfilled, (s, a) => {
         const { postId, likes } = a.payload;
         s.unlikingPostIds = s.unlikingPostIds.filter((id) => id !== postId);
         s.postLikes[postId] = { liked: false, count: likes };
       })
-      .addCase(unlikePost.rejected, (s, a) => {
+      .addCase(unlikeGroupPost.rejected, (s, a) => {
         const postId = a.meta.arg.postId;
         s.unlikingPostIds = s.unlikingPostIds.filter((id) => id !== postId);
       })

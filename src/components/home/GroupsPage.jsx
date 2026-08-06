@@ -20,7 +20,7 @@ import {
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
-import { likePost, unlikePost, deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
+import { likeGroupPost, unlikeGroupPost, deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
 
 
 /* ── UI icons ── */
@@ -1809,11 +1809,11 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                       count={postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0)}
                       onLike={() => {
                         console.log('Liking post:', { groupId, postId: pid });
-                        dispatch(likePost({ groupId, postId: pid }));
+                        dispatch(likeGroupPost({ groupId, postId: pid }));
                       }}
                       onUnlike={() => {
                         console.log('Unliking post:', { groupId, postId: pid });
-                        dispatch(unlikePost({ groupId, postId: pid }));
+                        dispatch(unlikeGroupPost({ groupId, postId: pid }));
                       }}
                       isLoading={likePostLoading[pid] ?? false}
                     />
