@@ -195,6 +195,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
   const { connections, profile } = useSelector(s => s.profile);
+  const groupComments = groupId ? useSelector(s => s.comments.commentsByPost[post._id] ?? []) : [];
   // Logged-in user's avatar for the comment composer (profile is the freshest
   // source; auth.user is the fallback right after login).
   const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
@@ -457,7 +458,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
   const isCommenting = isStatic ? false : commentingId === post._id;
   const commentsLoading = !isStatic && commentsLoadingIds.includes(post._id);
 
-  const realComments = (post.comments ?? [])
+  const realComments = (groupId ? groupComments : (post.comments ?? []))
     .map(normalizeComment)
     .filter(Boolean)
     .filter(c => !c.deleted);
