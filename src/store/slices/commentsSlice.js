@@ -112,7 +112,7 @@ export const likePost = createAsyncThunk(
         method: 'POST',
         token,
       });
-      return { groupId, postId, liked: true, likes: data.likes ?? 0 };
+      return { groupId, postId, liked: true, likes: data.likesCount ?? 0 };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -128,7 +128,7 @@ export const unlikePost = createAsyncThunk(
         method: 'DELETE',
         token,
       });
-      return { groupId, postId, liked: false, likes: data.likes ?? 0 };
+      return { groupId, postId, liked: false, likes: data.likesCount ?? 0 };
     } catch (err) {
       return rejectWithValue(err.message);
     }
