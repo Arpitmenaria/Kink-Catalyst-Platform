@@ -8,6 +8,7 @@ import PostCard from './PostCard';
 import LikeButton from './LikeButton';
 import PostActionsMenu from './PostActionsMenu';
 import UserInvitations from './UserInvitations';
+import ImageCropper from './ImageCropper';
 import GlobalSearch from './GlobalSearch';
 import InviteButton from './InviteButton';
 import {
@@ -1098,16 +1099,49 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
   const [coverImgFile,   setCoverImgFile]   = useState(null);
   const [groupImg,       setGroupImg]       = useState('');
   const [groupImgFile,   setGroupImgFile]   = useState(null);
+  const [coverCropQueue, setCoverCropQueue] = useState([]);
+  const [coverCropIdx,   setCoverCropIdx]   = useState(0);
+  const [photoCropQueue, setPhotoCropQueue] = useState([]);
+  const [photoCropIdx,   setPhotoCropIdx]   = useState(0);
   const coverInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
   function handleCoverChange(e) {
     const f = e.target.files?.[0];
-    if (f) { setCoverImgFile(f); setCoverImg(URL.createObjectURL(f)); }
+    if (f) { setCoverCropQueue([f]); setCoverCropIdx(0); }
+    e.target.value = '';
   }
   function handlePhotoChange(e) {
     const f = e.target.files?.[0];
-    if (f) { setGroupImgFile(f); setGroupImg(URL.createObjectURL(f)); }
+    if (f) { setPhotoCropQueue([f]); setPhotoCropIdx(0); }
+    e.target.value = '';
+  }
+
+  function handleCoverCropComplete(croppedFile) {
+    setCoverImgFile(croppedFile);
+    setCoverImg(URL.createObjectURL(croppedFile));
+    setCoverCropQueue([]);
+    setCoverCropIdx(0);
+  }
+  function handlePhotoCropComplete(croppedFile) {
+    setGroupImgFile(croppedFile);
+    setGroupImg(URL.createObjectURL(croppedFile));
+    setPhotoCropQueue([]);
+    setPhotoCropIdx(0);
+  }
+  function handleCoverCropSkip() {
+    const original = coverCropQueue[coverCropIdx];
+    setCoverImgFile(original);
+    setCoverImg(URL.createObjectURL(original));
+    setCoverCropQueue([]);
+    setCoverCropIdx(0);
+  }
+  function handlePhotoCropSkip() {
+    const original = photoCropQueue[photoCropIdx];
+    setGroupImgFile(original);
+    setGroupImg(URL.createObjectURL(original));
+    setPhotoCropQueue([]);
+    setPhotoCropIdx(0);
   }
 
   function handleCreate() {
@@ -1305,6 +1339,28 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
         </div>
 
       </div>
+
+      {/* Cover Image Cropper */}
+      {coverCropQueue.length > 0 && (
+        <ImageCropper
+          key={`cover-${coverCropIdx}`}
+          file={coverCropQueue[coverCropIdx]}
+          onCropComplete={handleCoverCropComplete}
+          onSkip={handleCoverCropSkip}
+          aspectRatio={4}
+        />
+      )}
+
+      {/* Photo Image Cropper */}
+      {photoCropQueue.length > 0 && (
+        <ImageCropper
+          key={`photo-${photoCropIdx}`}
+          file={photoCropQueue[photoCropIdx]}
+          onCropComplete={handlePhotoCropComplete}
+          onSkip={handlePhotoCropSkip}
+          aspectRatio={1}
+        />
+      )}
     </div>
   );
 }
