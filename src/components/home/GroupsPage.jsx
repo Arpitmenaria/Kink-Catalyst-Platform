@@ -1440,7 +1440,7 @@ const GD_MEMBERS = [
   { id: 8, name: 'Nina Petrova',   title: 'Cloud Architect at Microsoft',   location: 'London, UK',        role: 'Member',    joined: 'Jun 2024', mutual: 3,  sharedAvatars: ['https://i.pravatar.cc/28?img=45','https://i.pravatar.cc/28?img=49'],                                   img: 'https://i.pravatar.cc/40?img=25', isFriend: true  },
 ];
 
-function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const dispatch = useDispatch();
   const groupId = group?._id ?? group?.id;
   const { user: authUser } = useSelector(s => s.auth);
@@ -1931,7 +1931,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                   return (
                   <tr key={mid}>
                     <td>
-                      <div className="adm-member-cell">
+                      <div className="adm-member-cell" onClick={() => onUserClick?.(mid)} style={{ cursor: 'pointer' }}>
                         {m.img
                           ? <img src={m.img} alt={m.name} className="adm-member-avatar" />
                           : <div className="adm-member-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>{initials(m.name ?? '')}</div>
@@ -2392,6 +2392,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
           if (detailFromHome) onBack?.();
         }}
         onManage={() => { setAdminGroup(detailGroup); setShowDetail(false); setShowAdmin(true); }}
+        onUserClick={onUserClick}
         onFeedClick={onBack}
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
