@@ -5,7 +5,6 @@ import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import PostCard from './PostCard';
-import CommentSection from './CommentSection';
 import LikeButton from './LikeButton';
 import PostActionsMenu from './PostActionsMenu';
 import UserInvitations from './UserInvitations';
@@ -1817,7 +1816,6 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                       {(p.comments?.length ?? 0) || 0}
                     </button>
                   </div>
-                  <CommentSection groupId={groupId} postId={pid} />
                 </div>
               );
             })}
