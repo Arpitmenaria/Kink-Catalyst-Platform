@@ -1479,9 +1479,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   useEffect(() => {
     if (!rdxPosts || rdxPosts.length === 0 || !groupId) return;
     rdxPosts.forEach(post => {
-      if ((post.commentCount ?? 0) > 0) {
-        dispatch(fetchComments({ groupId, postId: post._id, page: 1, limit: 50 }));
-      }
+      dispatch(fetchComments({ groupId, postId: post._id, page: 1, limit: 50 }));
     });
   }, [rdxPosts, groupId, dispatch]);
 

@@ -22,6 +22,7 @@ function normalizeGroupPost(p) {
     .filter(item => item?.url)
     .map(item => ({ ...item, type: detectMediaType(item.url, item.type) }));
 
+  const commentCount = p.commentCount ?? p.commentsCount ?? (typeof p.comments === 'number' ? p.comments : (Array.isArray(p.comments) ? p.comments.length : 0));
   return {
     ...p,
     author: p.author ? { ...p.author, fullName: p.author.fullName ?? p.author.name ?? '' } : p.author,
@@ -30,6 +31,7 @@ function normalizeGroupPost(p) {
     likes: Array.isArray(p.likes) ? p.likes : (typeof p.likes === 'number' ? p.likes : 0),
     likeCount: p.likeCount ?? (Array.isArray(p.likes) ? p.likes.length : (typeof p.likes === 'number' ? p.likes : 0)),
     liked: p.liked ?? false,
+    commentCount,
     comments: typeof p.comments === 'number' ? new Array(p.comments).fill(null) : (Array.isArray(p.comments) ? p.comments : []),
     shares: typeof p.shares === 'number' ? new Array(p.shares).fill(null) : (Array.isArray(p.shares) ? p.shares : []),
   };

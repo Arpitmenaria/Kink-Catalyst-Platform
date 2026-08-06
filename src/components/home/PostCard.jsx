@@ -504,15 +504,12 @@ export default function PostCard({ post, onUserClick, groupId }) {
   // fetch the actual thread the first time this post's comments are opened.
   useEffect(() => {
     if (isStatic || !showComments || post.commentsLoaded) return;
-    // Nothing to fetch for a post with no comments — showing the empty state
-    // immediately (below) avoids a fetch that could leave the panel stuck.
-    if (commentCount === 0) return;
     if (groupId) {
       dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
     } else {
       dispatch(fetchPostComments(post._id));
     }
-  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, commentCount, groupId]);
+  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId]);
 
   // Subscribe to real-time updates (comments, reactions) for this post
   useEffect(() => {
@@ -987,7 +984,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
             ))}
           </div>
           <div className="post-action-sep" />
-          <button className="post-action-btn" onClick={() => { if (commentCount > 0) setShowComments(v => !v); }}>
+          <button className="post-action-btn" onClick={() => setShowComments(v => !v)}>
             <CommentIcon /> Comment ({commentCount})
           </button>
           <div className="post-action-sep" />
