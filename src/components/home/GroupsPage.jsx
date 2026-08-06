@@ -1167,12 +1167,18 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 
         {/* Cover + Group Photo */}
         <div className="cg-cover-section">
-          <div className="adm-cover">
-            <img
-              src={coverImg || 'https://picsum.photos/seed/cg-new-cover/1200/300'}
-              alt="Group cover"
-              className="adm-cover-img"
-            />
+          <div className="adm-cover" style={{ background: '#0d1424', position: 'relative' }}>
+            {coverImg ? (
+              <img
+                src={coverImg}
+                alt="Group cover"
+                className="adm-cover-img"
+              />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                <span style={{ fontSize: '24px', fontWeight: 600, color: '#94a3b8' }}>{category}</span>
+              </div>
+            )}
             <button className="gd-cover-back-btn" onClick={onBack} title="Back to Groups">
               <BackArrowIcon />
             </button>
@@ -1184,11 +1190,17 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
             {/* Centered profile photo overlapping cover bottom */}
             <div className="cg-photo-center">
               <div className="adm-group-photo-area">
-                <img
-                  src={groupImg || 'https://picsum.photos/seed/cg-new-gp/120/120'}
-                  alt="Group photo"
-                  className="adm-group-photo-img"
-                />
+                {groupImg ? (
+                  <img
+                    src={groupImg}
+                    alt="Group photo"
+                    className="adm-group-photo-img"
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: '#1a2744', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: '#94a3b8', fontSize: '32px', fontWeight: 700 }}>
+                    G
+                  </div>
+                )}
                 <button className="adm-edit-photo-btn" onClick={() => photoInputRef.current?.click()}>
                   <EditIcon />
                 </button>
@@ -1209,19 +1221,19 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 
               <div className="cg-field">
                 <label className="cg-label">Group Name</label>
-                <input className="cg-input" placeholder="e.g. Design Systems Weekly" value={groupName} onChange={e => setGroupName(e.target.value)} maxLength={50} />
+                <input className="cg-input" value={groupName} onChange={e => setGroupName(e.target.value)} maxLength={50} />
                 <p className="cg-hint">Keep it short and descriptive. Max 50 characters.</p>
               </div>
 
               <div className="cg-field">
                 <label className="cg-label">Group Mission</label>
-                <input className="cg-input" placeholder="e.g. Empowering designers to build scalable systems" value={mission} onChange={e => setMission(e.target.value)} maxLength={100} />
+                <input className="cg-input" value={mission} onChange={e => setMission(e.target.value)} maxLength={100} />
                 <p className="cg-hint">A one-line purpose statement for your group. Max 100 characters.</p>
               </div>
 
               <div className="cg-field">
                 <label className="cg-label">Description</label>
-                <textarea className="cg-textarea" placeholder="What is this group about?" value={description} onChange={e => setDescription(e.target.value)} rows={5} />
+                <textarea className="cg-textarea" value={description} onChange={e => setDescription(e.target.value)} rows={5} />
               </div>
 
               <div className="cg-field">
