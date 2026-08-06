@@ -9,6 +9,7 @@ import LikeButton from './LikeButton';
 import PostActionsMenu from './PostActionsMenu';
 import UserInvitations from './UserInvitations';
 import ImageCropper from './ImageCropper';
+import UserProfilePage from './UserProfilePage';
 import GlobalSearch from './GlobalSearch';
 import InviteButton from './InviteButton';
 import {
@@ -2388,6 +2389,27 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         onCoursesClick={onCoursesClick}
         onMinisitesClick={onMinisitesClick}
         onModerationClick={() => setShowModeration(true)}
+      />
+    );
+  }
+
+  if (showUserProfile && selectedUserId) {
+    return (
+      <UserProfilePage
+        userId={selectedUserId}
+        onBack={() => {
+          setShowUserProfile(false);
+          setSelectedUserId(null);
+        }}
+        onMessageUser={onMessagesClick}
+        onEventsClick={onEventsClick}
+        onEventsCreateClick={() => {}}
+        onGroupsClick={() => setShowUserProfile(false)}
+        onCoursesClick={onCoursesClick}
+        onLibraryClick={onLibraryClick}
+        onMinisitesClick={onMinisitesClick}
+        onUserClick={(userId) => setSelectedUserId(userId)}
+        onEventClick={() => {}}
       />
     );
   }
