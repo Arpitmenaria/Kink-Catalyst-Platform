@@ -1804,23 +1804,11 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     />
                   </div>
                   <div className="gd-post-actions">
-                    {(() => {
-                      const isLikedValue = postLikes[pid]?.liked !== undefined ? postLikes[pid].liked : (p.liked ?? false);
-                      const countValue = postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0);
-                      console.log(`Post ${pid}:`, { postLikesState: postLikes[pid], pLiked: p.liked, pLikeCount: p.likeCount, isLikedValue, countValue });
-                      return null;
-                    })()}
                     <LikeButton
                       isLiked={postLikes[pid]?.liked !== undefined ? postLikes[pid].liked : (p.liked ?? false)}
                       count={postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0)}
-                      onLike={() => {
-                        console.log('Liking post:', { groupId, postId: pid });
-                        dispatch(likeGroupPost({ groupId, postId: pid }));
-                      }}
-                      onUnlike={() => {
-                        console.log('Unliking post:', { groupId, postId: pid });
-                        dispatch(unlikeGroupPost({ groupId, postId: pid }));
-                      }}
+                      onLike={() => dispatch(likeGroupPost({ groupId, postId: pid }))}
+                      onUnlike={() => dispatch(unlikeGroupPost({ groupId, postId: pid }))}
                       isLoading={likePostLoading[pid] ?? false}
                     />
                     <button className="gd-post-action-btn" onClick={() => {}}>
