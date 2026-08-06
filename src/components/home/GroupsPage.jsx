@@ -8,7 +8,6 @@ import PostCard from './PostCard';
 import LikeButton from './LikeButton';
 import PostActionsMenu from './PostActionsMenu';
 import UserInvitations from './UserInvitations';
-import ActivityLog from './ActivityLog';
 import GlobalSearch from './GlobalSearch';
 import InviteButton from './InviteButton';
 import {
@@ -676,9 +675,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   Pending Requests {pendingList.length > 0 && <span className="adm-tab-count">{pendingList.length}</span>}
                 </button>
               )}
-              <button className={`adm-tab${activeTab === 'activity' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('activity')}>
-                Activity Log
-              </button>
             </div>
             {activeTab !== 'posts' && activeTab !== 'about' && (
               <div className="prof-conn-filter-bar adm-filter-bar-override" ref={activeTab === 'members' ? memberFilterRef : activeTab === 'pending' ? pendingFilterRef : null}>
@@ -1070,13 +1066,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                 </tbody>
               </table>
             )
-          )}
-
-          {/* Activity Log tab */}
-          {activeTab === 'activity' && (
-            <div style={{ padding: '16px 0' }}>
-              <ActivityLog groupId={groupId} />
-            </div>
           )}
         </div>
 
