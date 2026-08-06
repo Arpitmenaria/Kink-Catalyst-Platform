@@ -1457,6 +1457,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const [showReportModal,  setShowReportModal]  = useState(false);
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
+  const [isReported,       setIsReported]       = useState(false);
   const [sharing,         setSharing]         = useState(false);
 
   const isJoining = joiningIds.includes(groupId);
@@ -1546,8 +1547,12 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
 
   function handleReportSubmit() {
     if (!reportSelected) return;
-    dispatch(reportGroup({ groupId, reason: reportSelected }));
-    setReportDone(true);
+    dispatch(reportGroup({ groupId, reason: reportSelected })).then((result) => {
+      if (reportGroup.fulfilled.match(result)) {
+        setIsReported(true);
+      }
+      setReportDone(true);
+    });
   }
   function handleReportClose() {
     setShowReportModal(false);
@@ -1693,7 +1698,14 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
               <ShareIcon2 /> {sharing ? 'Sharing...' : 'Share'}
             </button>
             {!isOwned && (
-              <button className="gd-report-btn" onClick={() => setShowReportModal(true)}>Report</button>
+              <button
+                className="gd-report-btn"
+                onClick={() => setShowReportModal(true)}
+                disabled={isReported}
+                style={{ opacity: isReported ? 0.6 : 1, cursor: isReported ? 'not-allowed' : 'pointer' }}
+              >
+                {isReported ? 'Reported' : 'Report'}
+              </button>
             )}
           </div>
         </div>
