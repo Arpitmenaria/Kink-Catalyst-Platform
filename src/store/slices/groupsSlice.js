@@ -27,7 +27,9 @@ function normalizeGroupPost(p) {
     author: p.author ? { ...p.author, fullName: p.author.fullName ?? p.author.name ?? '' } : p.author,
     caption: p.caption ?? p.content ?? '',
     media,
-    likes: typeof p.likes === 'number' ? p.likes : (Array.isArray(p.likes) ? p.likes : 0),
+    likes: Array.isArray(p.likes) ? p.likes : (typeof p.likes === 'number' ? p.likes : 0),
+    likeCount: p.likeCount ?? (Array.isArray(p.likes) ? p.likes.length : (typeof p.likes === 'number' ? p.likes : 0)),
+    liked: p.liked ?? false,
     comments: typeof p.comments === 'number' ? new Array(p.comments).fill(null) : (Array.isArray(p.comments) ? p.comments : []),
     shares: typeof p.shares === 'number' ? new Array(p.shares).fill(null) : (Array.isArray(p.shares) ? p.shares : []),
   };

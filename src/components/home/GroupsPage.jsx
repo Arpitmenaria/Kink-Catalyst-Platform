@@ -1805,8 +1805,8 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                   </div>
                   <div className="gd-post-actions">
                     <LikeButton
-                      isLiked={postLikes[pid]?.liked ?? false}
-                      count={postLikes[pid]?.count ?? p.likes ?? 0}
+                      isLiked={postLikes[pid]?.liked !== undefined ? postLikes[pid].liked : (p.liked ?? false)}
+                      count={postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0)}
                       onLike={() => dispatch(likePost({ groupId, postId: pid }))}
                       onUnlike={() => dispatch(unlikePost({ groupId, postId: pid }))}
                       isLoading={likePostLoading[pid] ?? false}
