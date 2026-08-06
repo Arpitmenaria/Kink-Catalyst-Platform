@@ -1457,7 +1457,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const [showReportModal,  setShowReportModal]  = useState(false);
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
-  const [isReported,       setIsReported]       = useState(false);
+  const [isReported,       setIsReported]       = useState(group?.reported ?? false);
   const [sharing,         setSharing]         = useState(false);
 
   const isJoining = joiningIds.includes(groupId);
@@ -1524,6 +1524,12 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   }, [dispatch, groupId]);
 
   useEffect(() => {
+    if (group?.reported !== undefined) {
+      setIsReported(group.reported);
+    }
+  }, [group?.reported]);
+
+  useEffect(() => {
     if (rdxMembers) {
       setGdFriendIds(new Set(rdxMembers.filter(m => m.isFriend).map(m => m._id ?? m.id)));
     }
@@ -1550,6 +1556,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
     dispatch(reportGroup({ groupId, reason: reportSelected })).then((result) => {
       if (reportGroup.fulfilled.match(result)) {
         setIsReported(true);
+        setShowReportModal(false);
       }
       setReportDone(true);
     });
