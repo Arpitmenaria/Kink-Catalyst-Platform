@@ -2392,7 +2392,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
           if (detailFromHome) onBack?.();
         }}
         onManage={() => { setAdminGroup(detailGroup); setShowDetail(false); setShowAdmin(true); }}
-        onUserClick={onUserClick}
+        onUserClick={() => {}} // Placeholder for future profile navigation
         onFeedClick={onBack}
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
