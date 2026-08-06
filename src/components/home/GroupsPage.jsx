@@ -1176,7 +1176,7 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
               />
             ) : (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                <span style={{ fontSize: '24px', fontWeight: 600, color: '#94a3b8' }}>{category}</span>
+                <span style={{ fontSize: '24px', fontWeight: 600, color: '#94a3b8' }}>Social Platform</span>
               </div>
             )}
             <button className="gd-cover-back-btn" onClick={onBack} title="Back to Groups">
