@@ -1804,6 +1804,12 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     />
                   </div>
                   <div className="gd-post-actions">
+                    {(() => {
+                      const isLikedValue = postLikes[pid]?.liked !== undefined ? postLikes[pid].liked : (p.liked ?? false);
+                      const countValue = postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0);
+                      console.log(`Post ${pid}:`, { postLikesState: postLikes[pid], pLiked: p.liked, pLikeCount: p.likeCount, isLikedValue, countValue });
+                      return null;
+                    })()}
                     <LikeButton
                       isLiked={postLikes[pid]?.liked !== undefined ? postLikes[pid].liked : (p.liked ?? false)}
                       count={postLikes[pid]?.count ?? (p.likeCount ?? p.likes ?? 0)}

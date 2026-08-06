@@ -12,6 +12,8 @@ function HeartIcon({ filled = false }) {
 function LikeButton({ isLiked = false, count = 0, onLike, onUnlike, isLoading = false, showCount = true }) {
   const [animate, setAnimate] = useState(false);
 
+  console.log('🎨 LikeButton rendered:', { isLiked, count, showCount });
+
   function handleClick() {
     if (isLoading) return;
 
