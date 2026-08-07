@@ -1163,7 +1163,7 @@ function InviteMembersModal({ groupId, groupName, onClose }) {
 
     setIsInviting(true);
     let successCount = 0;
-    let failureCount = 0;
+    const errorMessages = [];
 
     try {
       for (const userId of Array.from(selectedIds)) {
@@ -1173,7 +1173,9 @@ function InviteMembersModal({ groupId, groupName, onClose }) {
           successCount++;
         } catch (err) {
           console.error(`Failed to invite user ${userId}:`, err);
-          failureCount++;
+          // Capture specific error message from API
+          const errorMsg = err?.message || 'Failed to invite user';
+          errorMessages.push(errorMsg);
         }
       }
 
@@ -1186,10 +1188,12 @@ function InviteMembersModal({ groupId, groupName, onClose }) {
         }));
       }
 
-      if (failureCount > 0) {
+      if (errorMessages.length > 0) {
+        // Show the first unique error message
+        const uniqueErrors = [...new Set(errorMessages)];
         dispatch(showToast({
           type: 'error',
-          message: `Failed to invite ${failureCount} user${failureCount > 1 ? 's' : ''}`,
+          message: uniqueErrors[0], // Show specific error like "Invitation already sent"
           duration: 3000
         }));
       }
@@ -1202,7 +1206,7 @@ function InviteMembersModal({ groupId, groupName, onClose }) {
       console.error('Invitation error:', err);
       dispatch(showToast({
         type: 'error',
-        message: 'Error sending invitations',
+        message: err?.message || 'Error sending invitations',
         duration: 3000
       }));
     } finally {
