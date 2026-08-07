@@ -470,6 +470,11 @@ const eventsSlice = createSlice({
     publishingId: null,
     soldOutTogglingId: null,
 
+    // Socket: event:deleted — { eventId, eventName, deletedBy, reason, deletedAt }.
+    // Set so EventsPage can pop a "deleted by admin" modal if this event is
+    // the one currently open; cleared right after it's read.
+    eventDeletedNotice: null,
+
     error: null,
   },
   reducers: {
@@ -510,6 +515,20 @@ const eventsSlice = createSlice({
         const idx = state.comments[evId].findIndex(c => c.id === commentId);
         if (idx !== -1) state.comments[evId][idx].likes = likes;
       });
+    },
+    // Socket: event:deleted — admin removed this event; drop it from every
+    // cached list immediately so it vanishes for anyone browsing, and leave
+    // a notice behind for EventsPage to react to if it's the open detail view.
+    eventDeletedRemote(state, action) {
+      const { eventId } = action.payload;
+      state.events        = state.events.filter(e => e.id !== eventId);
+      state.bookedEvents  = state.bookedEvents.filter(e => e.id !== eventId);
+      state.savedEvents   = state.savedEvents.filter(e => e.id !== eventId);
+      state.createdEvents = state.createdEvents.filter(e => e.id !== eventId);
+      state.eventDeletedNotice = action.payload;
+    },
+    clearEventDeletedNotice(state) {
+      state.eventDeletedNotice = null;
     },
   },
   extraReducers: builder => {
@@ -739,5 +758,5 @@ const eventsSlice = createSlice({
   },
 });
 
-export const { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } = eventsSlice.actions;
+export const { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated, eventDeletedRemote, clearEventDeletedNotice } = eventsSlice.actions;
 export default eventsSlice.reducer;

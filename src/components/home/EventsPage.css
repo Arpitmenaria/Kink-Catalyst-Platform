@@ -3003,6 +3003,39 @@
 .ev-attendees-modal-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ev-attendees-modal-name { font-size: 13.5px; font-weight: 600; color: #e0e6f8; }
 
+/* ── "Event deleted by admin" notice — blocking, dismiss-to-redirect ── */
+.ev-deleted-modal-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.ev-deleted-modal {
+  background: #161b2e; border: 1px solid #252d4a; border-radius: 16px;
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 28px 24px 22px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+}
+.ev-deleted-modal-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12); border: 1.5px solid rgba(239, 68, 68, 0.3);
+  font-size: 22px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.ev-deleted-modal-title {
+  font-size: 17px; font-weight: 700; color: #e8ecf8; margin: 0 0 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.ev-deleted-modal-text { font-size: 13.5px; color: #c8cfe0; line-height: 1.55; margin: 0; }
+.ev-deleted-modal-reason { font-size: 12.5px; color: #8b9cc8; line-height: 1.55; margin: 8px 0 0; }
+.ev-deleted-modal-ok-btn {
+  margin-top: 18px; background: #2563eb; border: none; border-radius: 8px; color: #fff;
+  font-size: 14px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 9px 32px; cursor: pointer; transition: background 0.15s;
+}
+.ev-deleted-modal-ok-btn:hover { background: #1d4ed8; }
+
 /* "See more" link under a clamped card description */
 .ev-desc-seemore-btn {
   background: none; border: none; padding: 0; margin-top: 2px;

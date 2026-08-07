@@ -13,7 +13,7 @@ import {
   fetchEvents, fetchEventDetail, createEvent, updateEvent, deleteEvent,
   bookEvent, cancelBooking, saveEvent, unsaveEvent,
   fetchMyBooked, fetchMySaved, fetchMyCreated, publishEvent, reportEvent,
-  calendarEvent, uncalendarEvent, setEventSoldOut,
+  calendarEvent, uncalendarEvent, setEventSoldOut, clearEventDeletedNotice,
 } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { apiRequest } from '../../services/api';
@@ -556,6 +556,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // render time); the "X attending" click opens a modal over the same data.
   const [attendeeList, setAttendeeList] = useState({});
   const [attendeesModalOpen, setAttendeesModalOpen] = useState(false);
+  // Set when the event currently open in detail view gets deleted by an
+  // admin (socket: event:deleted) — shows a blocking notice with the reason,
+  // then redirects back to the list on dismiss. See eventDeletedNotice effect.
+  const [deletedNoticeModal, setDeletedNoticeModal] = useState(null);
   // "See more" on a card's clamped description opens this event's full text
   // in a lightweight modal, instead of navigating into the full detail page.
   const [descModalEvent, setDescModalEvent] = useState(null);
@@ -645,7 +649,19 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     createdEvents, createdLoading,
     eventDetail,
     bookingLoading, createLoading, updateLoading, publishingId, soldOutTogglingId,
+    eventDeletedNotice,
   } = useSelector(s => s.events);
+
+  // An admin deleted this event elsewhere while it was open here — the
+  // reducer has already dropped it from every list; if it's the event on
+  // screen right now, surface the notice as a blocking modal.
+  useEffect(() => {
+    if (!eventDeletedNotice) return;
+    if (selectedEvent?.id === eventDeletedNotice.eventId) {
+      setDeletedNoticeModal(eventDeletedNotice);
+    }
+    dispatch(clearEventDeletedNotice());
+  }, [eventDeletedNotice]); // eslint-disable-line
 
   // Opened from elsewhere (e.g. the Calendar page) with a specific event id
   // to jump straight to — fetch it directly by id rather than searching
@@ -3612,6 +3628,31 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {deletedNoticeModal && (
+        <div className="ev-deleted-modal-overlay">
+          <div className="ev-deleted-modal">
+            <div className="ev-deleted-modal-icon">🚫</div>
+            <h2 className="ev-deleted-modal-title">Event Deleted</h2>
+            <p className="ev-deleted-modal-text">
+              "{deletedNoticeModal.eventName}" has been deleted by an admin.
+            </p>
+            {deletedNoticeModal.reason && (
+              <p className="ev-deleted-modal-reason">Reason: {deletedNoticeModal.reason}</p>
+            )}
+            <button
+              className="ev-deleted-modal-ok-btn"
+              onClick={() => {
+                setDeletedNoticeModal(null);
+                setSelectedEvent(null);
+                if (eventFromHome) onBack?.();
+              }}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
