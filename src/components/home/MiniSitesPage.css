@@ -338,6 +338,110 @@
   color: #2e3d58;
 }
 
+/* ── Filter Buttons ── */
+.ms-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ms-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #1a2540;
+  background: rgba(26, 37, 64, 0.4);
+  color: #4b5a7a;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.ms-filter-btn:hover {
+  background: rgba(26, 37, 64, 0.7);
+  color: #7c8fb0;
+}
+.ms-filter-btn--active {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #fff;
+  border-color: #2563eb;
+}
+
+/* ── Site Actions ── */
+.ms-site-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #1a2540;
+}
+
+.ms-action-btn {
+  flex: 1;
+  min-width: 60px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.ms-action-btn--secondary {
+  background: rgba(75, 85, 99, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+.ms-action-btn--secondary:hover {
+  background: rgba(75, 85, 99, 0.3);
+  color: #cbd5e1;
+}
+
+.ms-action-btn--publish {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.ms-action-btn--publish:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+.ms-action-btn--unpublish {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.ms-action-btn--unpublish:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+/* ── Empty State ── */
+.ms-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 40px;
+  background: #0d1526;
+  border: 2px dashed #1a2540;
+  border-radius: 14px;
+}
+
+.ms-empty-icon {
+  font-size: 64px;
+  margin: 0 0 16px;
+}
+
+.ms-empty-text {
+  font-size: 14px;
+  color: #4b5a7a;
+  margin: 0 0 20px;
+}
+
 /* ── Templates Grid ── */
 .ms-templates-grid {
   display: grid;
@@ -430,4 +534,54 @@
   /* Fixed 4-column stat row overflowed the viewport — wrap to 2 columns. */
   .ms-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .ms-header { flex-wrap: wrap; gap: 12px; }
+
+  /* Adjust site grid for smaller screens */
+  .ms-sites-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  /* Action buttons stack on mobile */
+  .ms-site-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ms-action-btn {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ms-main {
+    padding: 16px 12px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .ms-sites-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ms-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ms-stat-card {
+    padding: 12px 14px;
+  }
+
+  .ms-title {
+    font-size: 18px;
+  }
+
+  .ms-create-btn {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .ms-filter-btn {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
 }

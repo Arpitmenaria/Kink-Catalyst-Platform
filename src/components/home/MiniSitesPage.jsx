@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
-import CreatePostModal from './CreatePostModal';
+import CreateNewSitePage from './CreateNewSitePage';
+import SiteBuilderPage from './SiteBuilderPage';
 import { ALEX_AVATAR } from './mockData';
 import './MiniSitesPage.css';
 
@@ -74,12 +75,15 @@ export default function MiniSitesPage({
   onCalendarClick, onCoursesClick, onLibraryClick, onMinisitesClick,
 }) {
   const avatarUrl = useSelector(s => s.user?.avatar) || ALEX_AVATAR;
-  const [activeTab,      setActiveTab]      = useState('my-sites');
-  const [createPostOpen, setCreatePostOpen] = useState(false);
-  const [openMenuId,     setOpenMenuId]     = useState(null);
+  const [activeTab,        setActiveTab]        = useState('my-sites');
+  const [showCreateSite,   setShowCreateSite]   = useState(false);
+  const [currentBuilder,   setCurrentBuilder]   = useState(null);
+  const [openMenuId,       setOpenMenuId]       = useState(null);
+  const [sites,            setSites]            = useState(MINI_SITES);
+  const [filterStatus,     setFilterStatus]     = useState('all');
 
   function handleNav(id) {
-    if (id === 'create')    { setCreatePostOpen(true); return; }
+    if (id === 'create')    { setShowCreateSite(true); return; }
     if (id === 'home')      onBack?.();
     if (id === 'courses')   onCoursesClick?.();
     if (id === 'library')   onLibraryClick?.();
@@ -90,11 +94,76 @@ export default function MiniSitesPage({
     if (id === 'minisites') onMinisitesClick?.();
   }
 
+  const handleCreateSite = () => {
+    console.log('Navigate to: Create New Site');
+    setShowCreateSite(true);
+  };
+
+  const handleSiteCreated = (newSite) => {
+    console.log('Site created, navigating to builder:', newSite);
+    setSites(prev => [newSite, ...prev]);
+    setShowCreateSite(false);
+    setCurrentBuilder(newSite);
+  };
+
+  const handleBackFromBuilder = () => {
+    setCurrentBuilder(null);
+  };
+
+  const handleEditSite = (siteId) => {
+    console.log('Navigate to: Edit Site', siteId);
+    // window.location.hash = `#/mini-sites/edit/${siteId}`;
+  };
+
+  const handlePreviewSite = (siteId) => {
+    console.log('Navigate to: Preview Site', siteId);
+    // window.location.hash = `#/mini-sites/preview/${siteId}`;
+  };
+
+  const handlePublishSite = (siteId, e) => {
+    e?.stopPropagation();
+    const site = sites.find(s => s.id === siteId);
+    const newStatus = site.status === 'live' ? 'draft' : 'live';
+    setSites(sites.map(s => (s.id === siteId ? { ...s, status: newStatus, lastEdited: 'just now' } : s)));
+    console.log(`Site ${siteId} status changed to: ${newStatus}`);
+  };
+
+  const handleDeleteSite = (siteId, e) => {
+    e?.stopPropagation();
+    setSites(sites.filter(s => s.id !== siteId));
+    setOpenMenuId(null);
+    console.log('Site deleted:', siteId);
+  };
+
+  const filteredSites = filterStatus === 'all' ? sites : sites.filter(s => s.status === filterStatus);
+  const liveSites = sites.filter(s => s.status === 'live');
+
+  // Show create site page
+  if (showCreateSite) {
+    return (
+      <CreateNewSitePage
+        onCancel={() => setShowCreateSite(false)}
+        onSiteCreated={handleSiteCreated}
+      />
+    );
+  }
+
+  // Show site builder page
+  if (currentBuilder) {
+    return (
+      <SiteBuilderPage
+        siteId={currentBuilder.id}
+        site={currentBuilder}
+        onBack={handleBackFromBuilder}
+      />
+    );
+  }
+
+  // Show mini sites dashboard
   return (
     <>
     <div className="ms-page">
       <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
-      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       <div className="ms-main">
 
@@ -104,7 +173,7 @@ export default function MiniSitesPage({
             <h1 className="ms-title">Mini Sites</h1>
             <p className="ms-subtitle">Build and manage your personal web pages</p>
           </div>
-          <button className="ms-create-btn"><PlusIcon /> Create New Site</button>
+          <button className="ms-create-btn" onClick={handleCreateSite}><PlusIcon /> Create New Site</button>
         </div>
 
         {/* Stat cards */}
@@ -133,56 +202,96 @@ export default function MiniSitesPage({
           ))}
         </div>
 
+        {/* Filter buttons */}
+        {activeTab === 'my-sites' && (
+          <div className="ms-filters">
+            <button
+              className={`ms-filter-btn${filterStatus === 'all' ? ' ms-filter-btn--active' : ''}`}
+              onClick={() => setFilterStatus('all')}
+            >
+              All Sites ({sites.length})
+            </button>
+            <button
+              className={`ms-filter-btn${filterStatus === 'live' ? ' ms-filter-btn--active' : ''}`}
+              onClick={() => setFilterStatus('live')}
+            >
+              🔴 Live ({liveSites.length})
+            </button>
+            <button
+              className={`ms-filter-btn${filterStatus === 'draft' ? ' ms-filter-btn--active' : ''}`}
+              onClick={() => setFilterStatus('draft')}
+            >
+              📝 Draft ({sites.filter(s => s.status === 'draft').length})
+            </button>
+          </div>
+        )}
+
         {activeTab === 'my-sites' && (
           <div className="ms-sites-grid">
             {/* New site card */}
-            <button className="ms-new-card">
+            <button className="ms-new-card" onClick={handleCreateSite}>
               <div className="ms-new-icon"><PlusIcon /></div>
               <p className="ms-new-label">Create New Site</p>
               <p className="ms-new-sub">Start from scratch or use a template</p>
             </button>
 
-            {MINI_SITES.map(site => (
-              <div
-                key={site.id}
-                className="ms-site-card"
-                onClick={() => setOpenMenuId(null)}
-              >
-                <div className="ms-site-thumb">
-                  <img src={site.thumb} alt={site.name} />
-                  <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                    {site.status === 'live' ? 'Live' : 'Draft'}
-                  </div>
-                  <div className="ms-site-actions-overlay">
-                    <button className="ms-site-action-btn" title="Preview"><EyeIcon /></button>
-                    <button className="ms-site-action-btn" title="Edit"><EditIcon /></button>
-                  </div>
-                </div>
-                <div className="ms-site-info">
-                  <div className="ms-site-row">
-                    <span className="ms-site-name">{site.name}</span>
-                    <div className="ms-site-menu-wrap">
-                      <button
-                        className="ms-site-dots"
-                        onClick={e => { e.stopPropagation(); setOpenMenuId(openMenuId === site.id ? null : site.id); }}
-                      ><DotsIcon /></button>
-                      {openMenuId === site.id && (
-                        <div className="ms-site-dropdown">
-                          <button className="ms-dd-item"><EditIcon /> Edit</button>
-                          <button className="ms-dd-item"><EyeIcon /> Preview</button>
-                          <button className="ms-dd-item ms-dd-item--danger"><TrashIcon /> Delete</button>
-                        </div>
-                      )}
+            {filteredSites.length > 0 ? (
+              filteredSites.map(site => (
+                <div
+                  key={site.id}
+                  className="ms-site-card"
+                  onClick={() => setOpenMenuId(null)}
+                >
+                  <div className="ms-site-thumb">
+                    <img src={site.thumb} alt={site.name} />
+                    <div className={`ms-site-badge ms-site-badge--${site.status}`}>
+                      {site.status === 'live' ? '🔴 Live' : '📝 Draft'}
+                    </div>
+                    <div className="ms-site-actions-overlay">
+                      <button className="ms-site-action-btn" title="Preview" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site.id); }}><EyeIcon /></button>
+                      <button className="ms-site-action-btn" title="Edit" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /></button>
                     </div>
                   </div>
-                  <p className="ms-site-url">{site.url}</p>
-                  <div className="ms-site-meta">
-                    <span className="ms-site-views"><EyeIcon /> {site.views.toLocaleString()}</span>
-                    <span className="ms-site-edited">Edited {site.lastEdited}</span>
+                  <div className="ms-site-info">
+                    <div className="ms-site-row">
+                      <span className="ms-site-name">{site.name}</span>
+                      <div className="ms-site-menu-wrap">
+                        <button
+                          className="ms-site-dots"
+                          onClick={e => { e.stopPropagation(); setOpenMenuId(openMenuId === site.id ? null : site.id); }}
+                        ><DotsIcon /></button>
+                        {openMenuId === site.id && (
+                          <div className="ms-site-dropdown">
+                            <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); setOpenMenuId(null); }}><EditIcon /> Edit</button>
+                            <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site.id); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
+                            <button className="ms-dd-item" onClick={(e) => handlePublishSite(site.id, e)}>{site.status === 'live' ? '📋 Unpublish' : '🚀 Publish'}</button>
+                            <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site.id, e)}><TrashIcon /> Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="ms-site-url">{site.url}</p>
+                    <div className="ms-site-meta">
+                      <span className="ms-site-views"><EyeIcon /> {site.views.toLocaleString()}</span>
+                      <span className="ms-site-edited">Edited {site.lastEdited}</span>
+                    </div>
+                    <div className="ms-site-actions">
+                      <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}>✏️ Edit</button>
+                      <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site.id); }}>👁️ Preview</button>
+                      <button className={`ms-action-btn ${site.status === 'live' ? 'ms-action-btn--unpublish' : 'ms-action-btn--publish'}`} onClick={(e) => handlePublishSite(site.id, e)}>
+                        {site.status === 'live' ? '🌐 Unpublish' : '🚀 Publish'}
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="ms-empty-state">
+                <p className="ms-empty-icon">📭</p>
+                <p className="ms-empty-text">No {filterStatus !== 'all' ? filterStatus : ''} sites found</p>
+                <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button>
               </div>
-            ))}
+            )}
           </div>
         )}
 
