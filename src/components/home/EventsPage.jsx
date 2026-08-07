@@ -1128,11 +1128,17 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   }
 
   const EVENT_REPORT_REASONS = [
-    'Spam or misleading content',
-    'Inappropriate or offensive content',
+    'Sexual content',
+    'Violent or repulsive content',
+    'Hateful or abusive content',
     'Harassment or bullying',
-    'Fraud or scam',
-    'Violates community guidelines',
+    'Harmful or dangerous acts',
+    'Suicide, self-harm or eating disorders',
+    'Misinformation',
+    'Child abuse',
+    'Promotes terrorism',
+    'Spam or misleading',
+    'Legal issue',
   ];
 
   function closeReportModal() {
