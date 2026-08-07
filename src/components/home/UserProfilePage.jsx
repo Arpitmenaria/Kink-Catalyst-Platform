@@ -255,6 +255,17 @@ export default function UserProfilePage({
   const [blockedMessage, setBlockedMessage] = useState(null); // Block error message
   const [photoLikes, setPhotoLikes] = useState({}); // { photoId: { count, liked } }
 
+  // Fetch user data
+  const fetchViewedUser = async () => {
+    if (!userId || !token) return;
+    try {
+      const userRes = await apiRequest(`/api/users/${userId}`, { token });
+      setViewedUser(userRes?.user ?? userRes);
+    } catch (err) {
+      console.error("Error refetching user data:", err);
+    }
+  };
+
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -302,6 +313,13 @@ export default function UserProfilePage({
       cancelled = true;
     };
   }, [userId, token, dispatch]);
+
+  // Refetch user data when follower/following counts change
+  useEffect(() => {
+    if (!userId || userId === authUser?.id) return;
+    // Refetch user data to get updated follower/following counts
+    fetchViewedUser();
+  }, [followingIds, userId, authUser?.id, token]);
 
   useEffect(() => {
     if (activeTab !== "Photos" || !userId) return;
@@ -963,7 +981,13 @@ export default function UserProfilePage({
                             <button
                               className="prof-conn-btn prof-conn-btn--msg"
                               disabled={cStatus === "requested" || cStatus === "connected"}
-                              onClick={() => cStatus === "none" && dispatch(sendFriendRequest(cid))}
+                              onClick={() => {
+                                if (cStatus === "none") {
+                                  dispatch(sendFriendRequest(cid));
+                                } else if (cStatus === "incoming") {
+                                  dispatch(acceptFriendRequest(cid));
+                                }
+                              }}
                             >
                               {cStatus === "connected" ? "Connected" : cStatus === "requested" ? "Pending" : cStatus === "incoming" ? "Respond" : "Connect"}
                             </button>

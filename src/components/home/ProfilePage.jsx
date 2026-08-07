@@ -1809,6 +1809,11 @@ export default function ProfilePage({
     onViewStateChange?.({ tab: activeTab });
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Refetch profile when following count changes (Redux updates)
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [reduxFollowingIds, dispatch]);
+
   // Socket listeners for real-time follower/following count updates
   useEffect(() => {
     const socket = getSocket();
@@ -2134,22 +2139,24 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
                 </div>
               )}
               {!listLoading && list.length === 0 && <p className="fp-empty">No results found</p>}
-              {list.map(person => (
+              {list.map(person => {
+                const personName = person.fullName || person.name || 'Unknown User';
+                return (
                 <div className="fp-person" key={person.id}>
                   {person.avatar?.startsWith?.('http')
-                    ? <img className="fp-avatar" style={{ cursor: 'pointer' }} src={person.avatar} alt={person.name} onClick={() => onUserClick?.(person.id)} />
+                    ? <img className="fp-avatar" style={{ cursor: 'pointer' }} src={person.avatar} alt={personName} onClick={() => onUserClick?.(person.id)} />
                     : (
                       <div
                         className="fp-avatar"
                         style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0, cursor: 'pointer' }}
                         onClick={() => onUserClick?.(person.id)}
                       >
-                        {initials(person.name)}
+                        {initials(personName)}
                       </div>
                     )
                   }
                   <div className="fp-info">
-                    <span className="fp-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(person.id)}>{person.name}</span>
+                    <span className="fp-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(person.id)}>{personName}</span>
                     <span className="fp-role">{person.role}</span>
                     {person.mutual > 0 && (
                       <span className="fp-mutual">
@@ -2179,7 +2186,8 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
                     {followingIds.has(person.id) ? 'Following' : '+ Follow'}
                   </button>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         </div>

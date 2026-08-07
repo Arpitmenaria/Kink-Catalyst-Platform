@@ -82,6 +82,11 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     dispatch(fetchEvents({ tab: 'upcoming', limit: 3 }));
   }, [dispatch]);
 
+  // Refetch profile when following changes to keep sidebar counts in sync
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [followingIds, dispatch]);
+
   function handleAddFriend(id, status) {
     if (!id) return;
     const selfId = authUser?._id ?? authUser?.id;
@@ -111,8 +116,8 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
 
   const displayName    = profile?.fullName ?? authUser?.fullName ?? 'You';
   const role           = profile?.role ?? '';
-  const followingCount = formatCount(authUser?.followingCount ?? profile?.following?.length ?? profile?.followingCount ?? 0);
-  const followersCount = formatCount(authUser?.followerCount  ?? profile?.followers?.length ?? profile?.followersCount ?? 0);
+  const followingCount = formatCount(profile?.followingCount ?? profile?.following?.length ?? 0);
+  const followersCount = formatCount(profile?.followersCount ?? profile?.followers?.length ?? 0);
   const rawAvatar      = profile?.avatar ?? authUser?.avatar ?? '';
   const avatarUrl      = rawAvatar?.startsWith?.('http') ? rawAvatar : '';
   const rawCover       = profile?.coverPhoto ?? authUser?.coverPhoto ?? '';

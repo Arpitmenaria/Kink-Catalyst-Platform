@@ -17,6 +17,7 @@ import {
   fetchPendingRequests, acceptGroupRequest, rejectGroupRequest,
   fetchAdminDashboard, sendFriendRequest,
 } from '../../store/slices/groupsSlice';
+import { inviteUserToGroup } from '../../store/slices/invitationsSlice';
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
@@ -427,6 +428,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const [openPndDrop,    setOpenPndDrop]    = useState(null);
   const pendingFilterRef = useRef(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteSearchQuery, setInviteSearchQuery] = useState('');
+  const [selectedInvites, setSelectedInvites] = useState(new Set());
   const [friendIds,      setFriendIds]      = useState(new Set());
   const [coverImg,       setCoverImg]       = useState(group?.coverImg ?? null);
   const [coverImgFile,   setCoverImgFile]   = useState(null);
@@ -445,8 +449,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
     // Socket listeners for admin dashboard real-time updates
     const socket = io();
-    const roomId = `group:${groupId}`;
-    socket.emit('join-room', roomId);
+
+    // Join group room for group events
+    socket.emit('join:group', { groupId });
 
     socket.on('group:new-post', (data) => {
       if (data.groupId === groupId) {
@@ -468,11 +473,18 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
       }
     });
 
+    // Listen for new invitations sent (for notification badge)
+    socket.on('notification:new-invite', (data) => {
+      console.log('New group invite received:', data);
+      // This will trigger fetchUserInvitations in the notifications component
+    });
+
     return () => {
-      socket.emit('leave-room', roomId);
+      socket.emit('leave:group', { groupId });
       socket.off('group:new-post');
       socket.off('group:member-joined');
       socket.off('group:pending-request');
+      socket.off('notification:new-invite');
     };
   }, [dispatch, groupId, group?.privacy]);
 
@@ -698,6 +710,15 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                 </div>
 
                 {activeTab === 'members' && (<>
+                  <button
+                    className="prof-conn-fbar-pill prof-conn-fbar-pill--action"
+                    onClick={() => setShowInviteModal(true)}
+                    title="Invite new members to the group"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    Invite Members
+                  </button>
+
                   <button
                     className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasMbrFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
                     onClick={() => { setFilterRole(''); setFilterJoined(''); setOpenMbrDrop(null); }}
@@ -1098,6 +1119,257 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         </div>
 
 
+        {/* Invite Members Modal */}
+        {showInviteModal && (
+          <InviteMembersModal
+            groupId={groupId}
+            groupName={group?.name}
+            onClose={() => { setShowInviteModal(false); setSelectedInvites(new Set()); setInviteSearchQuery(''); }}
+          />
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════
+   Invite Members Modal
+══════════════════════════ */
+function InviteMembersModal({ groupId, groupName, onClose }) {
+  const dispatch = useDispatch();
+  const { connections } = useSelector(s => s.profile);
+  const { invitingIds } = useSelector(s => s.invitations);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [invitedIds, setInvitedIds] = useState(new Set());
+  const [isInviting, setIsInviting] = useState(false);
+
+  // Fetch connections when modal opens
+  useEffect(() => {
+    dispatch(fetchConnections());
+  }, [dispatch]);
+
+  // Filter connections based on search
+  const filteredConnections = (connections || []).filter(conn => {
+    const name = (conn.fullName || conn.name || '').toLowerCase();
+    const email = (conn.email || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return name.includes(query) || email.includes(query);
+  });
+
+  const handleInvite = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsInviting(true);
+    let successCount = 0;
+    let failureCount = 0;
+
+    try {
+      for (const userId of Array.from(selectedIds)) {
+        try {
+          await dispatch(inviteUserToGroup({ groupId, userId })).unwrap();
+          setInvitedIds(prev => new Set([...prev, userId]));
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to invite user ${userId}:`, err);
+          failureCount++;
+        }
+      }
+
+      // Show results
+      if (successCount > 0) {
+        dispatch(showToast({
+          type: 'success',
+          message: `✓ Invited ${successCount} member${successCount > 1 ? 's' : ''} to ${groupName}`,
+          duration: 3000
+        }));
+      }
+
+      if (failureCount > 0) {
+        dispatch(showToast({
+          type: 'error',
+          message: `Failed to invite ${failureCount} user${failureCount > 1 ? 's' : ''}`,
+          duration: 3000
+        }));
+      }
+
+      // Close after 1 second
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Invitation error:', err);
+      dispatch(showToast({
+        type: 'error',
+        message: 'Error sending invitations',
+        duration: 3000
+      }));
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleToggle = (userId) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-content" style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <h2>Invite Members to {groupName}</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="modal-body" style={{ padding: '20px' }}>
+          {/* Search */}
+          <div className="prof-conn-search-wrap" style={{ marginBottom: 20 }}>
+            <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              className="prof-conn-search"
+              type="text"
+              placeholder="Search connections by name or email…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {/* Connections list */}
+          <div style={{ maxHeight: 320, overflowY: 'auto', marginBottom: 20 }}>
+            {filteredConnections.length > 0 ? (
+              filteredConnections.map(conn => {
+                const userId = conn._id || conn.id;
+                const isSelected = selectedIds.has(userId);
+                const isInviting = invitingIds.includes(userId);
+                const wasInvited = invitedIds.has(userId);
+
+                return (
+                  <div
+                    key={userId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px',
+                      borderRadius: 8,
+                      marginBottom: 8,
+                      border: '1px solid #2d3748',
+                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                      cursor: wasInvited ? 'default' : 'pointer',
+                      opacity: wasInvited ? 0.6 : 1,
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => !wasInvited && handleToggle(userId)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => !wasInvited && handleToggle(userId)}
+                      disabled={wasInvited}
+                      style={{ marginRight: 12, cursor: wasInvited ? 'not-allowed' : 'pointer' }}
+                    />
+
+                    {/* Avatar */}
+                    {conn.avatar ? (
+                      <img
+                        src={conn.avatar}
+                        alt={conn.fullName || conn.name}
+                        style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 12, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: 12,
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 700
+                        }}
+                      >
+                        {(conn.fullName || conn.name || '?')[0].toUpperCase()}
+                      </div>
+                    )}
+
+                    {/* User info */}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, color: '#e2e8f0', fontWeight: 500 }}>
+                        {conn.fullName || conn.name}
+                      </p>
+                      {conn.location && (
+                        <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
+                          {conn.location}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Status indicator */}
+                    {wasInvited && (
+                      <span style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>✓ Invited</span>
+                    )}
+                    {isInviting && (
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Inviting...</span>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p style={{ color: '#94a3b8', textAlign: 'center', padding: 20 }}>
+                {connections.length === 0
+                  ? 'No connections yet. Make some friends first!'
+                  : 'No matching connections found'}
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="modal-actions" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 6,
+                border: '1px solid #3b82f6',
+                color: '#3b82f6',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 500
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleInvite}
+              disabled={selectedIds.size === 0 || isInviting}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 6,
+                backgroundColor: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                cursor: selectedIds.size > 0 && !isInviting ? 'pointer' : 'not-allowed',
+                fontSize: 14,
+                fontWeight: 500,
+                opacity: selectedIds.size > 0 && !isInviting ? 1 : 0.5
+              }}
+            >
+              {isInviting ? 'Inviting...' : `Send Invites (${selectedIds.size})`}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
