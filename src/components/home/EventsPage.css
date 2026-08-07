@@ -224,6 +224,47 @@
 .ev-disc-view-btn--active { background: #1a2540; color: #93c5fd; }
 .ev-disc-view-btn:not(.ev-disc-view-btn--active):hover { color: #7c8fb0; }
 
+/* ── Keyword search bar — inline in the topbar next to Create Event/Filters,
+   not a dedicated full-width row, so it doesn't burn an extra row of
+   vertical space just for a single input. ── */
+.ev-disc-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 200px;
+  padding: 8px 12px;
+  background: #0d1526;
+  border: 1px solid #1a2540;
+  border-radius: 8px;
+  color: #4b5a7a;
+  transition: border-color 0.15s, width 0.15s;
+}
+.ev-disc-search-wrap:focus-within { border-color: #2563eb88; width: 240px; }
+.ev-disc-search-wrap svg { flex-shrink: 0; }
+.ev-disc-search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: #c8d0e0;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.ev-disc-search-input::placeholder { color: #3a4a68; }
+.ev-disc-search-clear {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #4b5a7a;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.ev-disc-search-clear:hover { background: #1a2540; color: #93c5fd; }
+
 /* ── Category chips ── */
 .ev-disc-cats {
   display: flex;
@@ -499,6 +540,38 @@
 }
 .ev-disc-book-btn--publish:hover { background: #10b981; }
 .ev-disc-book-btn--publish:disabled { opacity: 0.6; cursor: default; }
+
+/* Creator's own-card "Mark Sold Out" / "Mark Available" toggle */
+.ev-disc-book-btn--sold-toggle {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
+}
+.ev-disc-book-btn--sold-toggle:hover { background: rgba(239,68,68,0.18); }
+.ev-disc-book-btn--sold-toggle-active {
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.3);
+  color: #34d399;
+}
+.ev-disc-book-btn--sold-toggle-active:hover { background: rgba(16,185,129,0.18); }
+.ev-disc-book-btn--sold-toggle:disabled { opacity: 0.6; cursor: default; }
+
+/* "SOLD OUT" ribbon on the card image, top-right — matches the date badge's
+   frosted-glass treatment so it reads as part of the same UI family. */
+.ev-sold-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  background: rgba(239,68,68,0.85);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 4px 9px;
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+}
 
 /* ── Newsletter strip ── */
 .ev-disc-newsletter {
@@ -1825,6 +1898,29 @@
   height: 160px;
 }
 
+/* Plain Google Maps "q=...&output=embed" iframe — used for the create-form
+   venue preview, the step-4 review thumbnail, and the detail-page map card. */
+.ev-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.ev-map-empty-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(13, 16, 32, 0.92);
+  border: 1px solid #252d4a;
+  border-radius: 6px;
+  color: #5c6a8c;
+  font-size: 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  backdrop-filter: blur(4px);
+}
+
 .ev-map-bg {
   width: 100%;
   height: 100%;
@@ -1843,24 +1939,6 @@
   gap: 8px;
   white-space: nowrap;
 }
-
-.ev-map-pin-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  background: rgba(13, 16, 32, 0.92);
-  border: 1px solid #252d4a;
-  border-radius: 6px;
-  color: #8b9cc8;
-  font-size: 12px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  backdrop-filter: blur(4px);
-}
-
-.ev-map-pin-btn:hover { background: #131626; color: #c8cfe0; }
 
 .ev-map-open-btn {
   display: flex;
@@ -2059,15 +2137,6 @@
   background-image: radial-gradient(ellipse at 40% 50%, rgba(37,99,235,0.2) 0%, transparent 60%);
 }
 
-/* Right sidebar */
-.ev-s4-sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .ev-s4-panel {
   border: 1px solid #1a1f35;
   border-radius: 12px;
@@ -2238,6 +2307,25 @@
 .ev-publish-notice span { color: #3b82f6; cursor: pointer; }
 .ev-publish-notice span:hover { text-decoration: underline; }
 
+/* Step 4 footer actions — Publish/Save-as-Draft rendered inline in
+   .ev-form-footer (next to Back) instead of the old floating sidebar. */
+.ev-s4-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ev-publish-notice--inline {
+  text-align: right;
+  max-width: 240px;
+}
+.ev-publish-btn--footer,
+.ev-draft-btn--footer {
+  width: auto;
+  padding: 10px 22px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ══════════════════════════════════════
    Events Page — Premium Animations
 ══════════════════════════════════════ */
@@ -2299,8 +2387,14 @@
   box-shadow: 0 0 0 0px rgba(37,99,235,0.55);
 }
 
-/* ── Step content transition ── */
-.ev-step-content { overflow: hidden; }
+/* ── Step content transition ──
+   No overflow:hidden here (same reasoning as .ev-form-card above) — this
+   used to clip it, which cut off the Country/Phone-code dropdowns whenever
+   they opened near the bottom of a step (e.g. Organizer Details' phone
+   field), since their absolutely-positioned popover extends past this
+   element's own auto-computed height. The 40px horizontal slide-in is small
+   enough that any transient overflow during the ~0.4s animation is a
+   non-issue in practice. */
 
 .ev-step-content--forward {
   animation: evStepForward 0.40s cubic-bezier(0.16,1,0.3,1) both;
@@ -2611,7 +2705,17 @@
   font-size: 28px;
   font-weight: 800;
   text-align: center;
-  padding: 6px 0 9px;
+  padding: 6px 0 6px;
+  line-height: 1;
+}
+.ev-detail-cal-year {
+  background: #111829;
+  color: #5c6a8c;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px 0 7px;
+  border-top: 1px solid #1a2338;
   line-height: 1;
 }
 
@@ -2620,6 +2724,12 @@
 .ev-detail-title     { font-size: 22px; font-weight: 800; color: #e2e8f0; margin: 0 0 7px; line-height: 1.3; }
 .ev-detail-location  { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #60a5fa; margin: 0; }
 .ev-detail-attendees { font-size: 13px; color: #94a3b8; margin: 6px 0 0; }
+.ev-detail-attendees--clickable {
+  background: none; border: none; padding: 0; font-family: inherit;
+  cursor: pointer; display: flex; align-items: center; gap: 5px;
+}
+.ev-detail-attendees--clickable:hover:not(:disabled) { color: #c8d0e0; text-decoration: underline; }
+.ev-detail-attendees--clickable:disabled { cursor: default; }
 
 /* Tabs + action row */
 .ev-detail-tab-row {
@@ -2698,6 +2808,8 @@
 .ev-detail-join-btn--joined { background: #0d9488; border-color: #059669; }
 .ev-detail-join-btn:hover { background: #047857; }
 .ev-detail-join-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.ev-detail-join-btn--sold { background: #1a2540; border-color: #1e2e4a; color: #4b5a7a; }
+.ev-detail-join-btn--sold:hover { background: #1a2540; }
 
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -2729,7 +2841,10 @@
 .ev-more-link-row {
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px 10px;
+  width: 100%; background: none; border: none; cursor: pointer;
+  text-align: left; font-family: inherit;
 }
+.ev-more-link-row:hover .ev-more-link-url { text-decoration: underline; }
 .ev-more-icon {
   flex-shrink: 0; width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
@@ -2763,6 +2878,169 @@
 }
 .ev-more-item:hover .ev-more-item-icon { background: #1e2a50; color: #60a5fa; }
 
+/* ── Report Event modal — same visual design as PostCard's/GroupsPage's
+   report modal (kept as its own copy here since this file doesn't import
+   PostCard.css) ── */
+.report-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.report-modal {
+  background: #161b2e; border: 1px solid #252d4a; border-radius: 16px;
+  width: 100%; max-width: 500px; max-height: 88vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+}
+.report-modal-header {
+  display: flex; align-items: center;
+  padding: 18px 20px 16px; border-bottom: 1px solid #1e2238; flex-shrink: 0;
+}
+.report-modal-title {
+  font-size: 17px; font-weight: 700; color: #e8ecf8; margin: 0; flex: 1;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.report-close-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #1a2040; border: 1px solid #252d4a; color: #8b9cc8;
+  font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s; font-family: inherit;
+}
+.report-close-btn:hover { background: #252d4a; color: #e0e6f8; }
+.report-modal-body {
+  flex: 1; overflow-y: auto; padding: 20px 20px 8px;
+  scrollbar-width: thin; scrollbar-color: #1e2238 transparent;
+}
+.report-modal-body::-webkit-scrollbar { width: 4px; }
+.report-modal-body::-webkit-scrollbar-track { background: transparent; }
+.report-modal-body::-webkit-scrollbar-thumb { background: #1e2238; border-radius: 4px; }
+.report-question {
+  font-size: 16px; font-weight: 700; color: #e0e6f8; margin: 0 0 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.report-subtitle { font-size: 12.5px; color: #5c6a8c; line-height: 1.55; margin: 0 0 16px; }
+.report-reasons { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.report-reason-item { border-radius: 8px; overflow: hidden; }
+.report-reason-label {
+  display: flex; align-items: center; gap: 14px; padding: 12px 10px;
+  cursor: pointer; transition: background 0.15s;
+}
+.report-reason-label:hover { background: #1a2040; border-radius: 8px; }
+.report-reason-text { font-size: 13.5px; color: #c8cfe0; font-family: 'Plus Jakarta Sans', sans-serif; }
+.report-radio {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #2d3450; background: transparent; flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.report-radio--checked { border-color: #3b82f6; background: #3b82f6; }
+.report-radio--checked::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+.report-modal-footer {
+  padding: 14px 20px 18px; border-top: 1px solid #1e2238;
+  display: flex; justify-content: flex-end; flex-shrink: 0;
+}
+.report-submit-btn {
+  background: #2563eb; border: none; border-radius: 8px; color: #fff;
+  font-size: 14px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 9px 32px; cursor: pointer; transition: background 0.15s;
+}
+.report-submit-btn:hover:not(:disabled) { background: #1d4ed8; }
+.report-submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.report-success { padding: 40px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.report-success-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(34, 197, 94, 0.12); border: 1.5px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+  font-size: 22px; display: flex; align-items: center; justify-content: center;
+}
+.report-success p { font-size: 14px; color: #8b9cc8; margin: 0; line-height: 1.55; }
+.report-success-close {
+  margin-top: 4px; background: #2563eb; border: none; border-radius: 8px; color: #fff;
+  font-size: 14px; font-weight: 600; font-family: inherit; padding: 9px 28px;
+  cursor: pointer; transition: background 0.15s;
+}
+.report-success-close:hover { background: #1d4ed8; }
+
+/* ── Attendees modal — "who's attending", same visual language as the
+   post-likes Reactions modal (kept as its own scoped copy since this file
+   doesn't import PostCard.css) ── */
+.ev-attendees-modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.ev-attendees-modal {
+  background: #10131f; border: 1px solid #1e2338; border-radius: 14px;
+  width: 380px; max-width: 100%; max-height: 78vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+.ev-attendees-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 12px; flex-shrink: 0;
+}
+.ev-attendees-modal-title { font-size: 17px; font-weight: 700; color: #e8ecf8; margin: 0; }
+.ev-attendees-modal-close {
+  background: none; border: none; color: #6b7a9a; font-size: 16px;
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.ev-attendees-modal-close:hover { background: #1a1f35; color: #cbd5e1; }
+.ev-attendees-modal-list { overflow-y: auto; padding: 8px 12px 16px; flex: 1; }
+.ev-attendees-modal-empty { text-align: center; color: #4a5270; font-size: 13px; padding: 32px 0; margin: 0; }
+.ev-attendees-modal-person {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: 8px; transition: background 0.15s;
+}
+.ev-attendees-modal-person:hover { background: #161a2c; }
+.ev-attendees-modal-avatar {
+  width: 42px; height: 42px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; background: #3b82f6;
+}
+.ev-attendees-modal-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ev-attendees-modal-name { font-size: 13.5px; font-weight: 600; color: #e0e6f8; }
+
+/* "See more" link under a clamped card description */
+.ev-desc-seemore-btn {
+  background: none; border: none; padding: 0; margin-top: 2px;
+  color: #60a5fa; font-size: 11.5px; font-weight: 700;
+  cursor: pointer; font-family: inherit; align-self: flex-start;
+}
+.ev-desc-seemore-btn:hover { text-decoration: underline; }
+
+/* Full-description modal, same visual language as the other event modals */
+.ev-desc-modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.ev-desc-modal {
+  background: #10131f; border: 1px solid #1e2338; border-radius: 14px;
+  width: 480px; max-width: 100%; max-height: 78vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+.ev-desc-modal-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 18px 20px 12px; flex-shrink: 0;
+}
+.ev-desc-modal-title { font-size: 17px; font-weight: 700; color: #e8ecf8; margin: 0; }
+.ev-desc-modal-close {
+  background: none; border: none; color: #6b7a9a; font-size: 16px;
+  cursor: pointer; padding: 4px; border-radius: 6px; flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.ev-desc-modal-close:hover { background: #1a1f35; color: #cbd5e1; }
+.ev-desc-modal-body { overflow-y: auto; padding: 4px 20px 22px; }
+.ev-desc-modal-body p {
+  font-size: 13.5px; color: #a5b0c9; line-height: 1.65; margin: 0;
+  white-space: pre-wrap;
+}
+
 
 /* Body layout */
 .ev-detail-body {
@@ -2793,6 +3071,10 @@
   object-fit: cover; border: 2px solid #111422; margin-left: -8px;
 }
 .ev-detail-resp-av:first-child { margin-left: 0; }
+.ev-detail-resp-av--fallback {
+  display: flex; align-items: center; justify-content: center;
+  background: #3b82f6; color: #fff; font-weight: 700; font-size: 11px;
+}
 .ev-detail-responded-txt { font-size: 13px; color: #94a3b8; font-weight: 500; }
 
 /* About */
@@ -2838,6 +3120,8 @@
   width: 100%; justify-content: center;
 }
 .ev-detail-map-btn:hover { background: rgba(37,99,235,0.22); }
+.ev-detail-map-btn:disabled { opacity: 0.5; cursor: default; }
+.ev-detail-map-btn:disabled:hover { background: rgba(37,99,235,0.12); }
 
 /* Discussion tab */
 .ev-disc-compose {

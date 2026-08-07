@@ -13,12 +13,28 @@ function fmtFullDate(startDate, startTime) {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTH_FULL[d.getMonth()]} ${d.getFullYear()}${timeStr}`;
 }
 
+// The backend nests the venue's full address (street/city/state/country/
+// pinCode, plus the venue's own name under the `venue` key) inside the
+// event's `location` object — there's no separate top-level `venue` object.
+// Its own `label` field is only "city, state" and drops street/country
+// entirely, so build our own strings from the structured fields whenever
+// they're present rather than trusting `label` for anything beyond a
+// same-shape fallback (plain-string `location`, or no structured fields).
+function composeAddress(loc) {
+  if (!loc || typeof loc !== 'object') return '';
+  const parts = [loc.venue, loc.street, loc.city, loc.state, loc.country].filter(Boolean);
+  let addr = parts.join(', ');
+  if (loc.pinCode) addr = addr ? `${addr} ${loc.pinCode}` : loc.pinCode;
+  return addr;
+}
+
 function normalizeEvent(e) {
   const d     = e.startDate ? new Date(e.startDate + 'T00:00') : null;
   const valid = d && !isNaN(d);
   const loc   = e.location;
   const locLabel = typeof loc === 'string' ? loc
-    : (loc?.label ?? [loc?.city, loc?.state, loc?.country].filter(Boolean).join(', ') ?? '');
+    : ([loc?.city, loc?.state, loc?.country].filter(Boolean).join(', ') || loc?.label || '');
+  const fullAddress = composeAddress(loc);
   const coverImages = readCoverImages(e);
   return {
     id:          e.id ?? e._id ?? '',
@@ -49,11 +65,19 @@ function normalizeEvent(e) {
     totalSeats:  e.totalSeats ?? null,
     soldOut:     e.soldOut ?? false,
     responded:   e.attendingCount != null ? Number(e.attendingCount).toLocaleString() : '0',
-    venue:       (typeof loc === 'object' && loc?.venue) ? loc.venue : locLabel,
-    // Raw structured venue object (name/street/city/state/country/pinCode) as
-    // returned by the backend under its own 'venue' field — distinct from the
-    // display-string `venue` above. Needed to prefill the edit-event form.
-    venueObj:    e.venue ?? null,
+    venue:       fullAddress || locLabel,
+    // Raw structured venue object (name/street/city/state/country/pinCode),
+    // read out of the nested `location` object above (see composeAddress) —
+    // falls back to a legacy top-level `venue` field if a backend response
+    // ever sends one. Needed to prefill the edit-event form.
+    venueObj:    e.venue ?? (typeof loc === 'object' && loc !== null ? {
+      name:    loc.venue ?? '',
+      street:  loc.street ?? '',
+      city:    loc.city ?? '',
+      state:   loc.state ?? '',
+      country: loc.country ?? '',
+      pinCode: loc.pinCode ?? '',
+    } : null),
     visibility:  e.visibility ?? 'anyone',
     isSaved:     e.isSaved ?? false,
     isBooked:    e.isBooked ?? false,
@@ -61,6 +85,7 @@ function normalizeEvent(e) {
     // Join" button had no way to know an event was already joined until the
     // user joined it again in the current session.
     isAttending: e.isAttending ?? false,
+    isInCalendar: e.isInCalendar ?? false,
     tickets:     e.tickets ?? [],
     registration: e.registration ?? null,
     organizer:   e.organizer ?? null,
@@ -345,6 +370,68 @@ export const likeComment = createAsyncThunk(
   }
 );
 
+// 16. POST /api/events/:id/report — same shape as groups'/conversations' report endpoints.
+export const reportEvent = createAsyncThunk(
+  'events/reportEvent',
+  async ({ eventId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      await apiRequest(`/api/events/${eventId}/report`, { method: 'POST', token, body: { reason } });
+      return { eventId };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 17. POST /api/events/:id/calendar
+export const calendarEvent = createAsyncThunk(
+  'events/calendarEvent',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/calendar`, { method: 'POST', token });
+      return { eventId, inCalendar: data.inCalendar ?? true };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 18. DELETE /api/events/:id/calendar
+export const uncalendarEvent = createAsyncThunk(
+  'events/uncalendarEvent',
+  async (eventId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/calendar`, { method: 'DELETE', token });
+      return { eventId, inCalendar: data.inCalendar ?? false };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 19. GET /api/events/my/calendar
+export const fetchMyCalendar = createAsyncThunk(
+  'events/fetchMyCalendar',
+  async ({ page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/my/calendar?page=${page}&limit=${limit}`, { token });
+      return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
+// 20. PATCH /api/events/:id/sold-out — creator-only manual sold-out toggle,
+// independent of seatsLeft (an organizer may sell tickets outside the app
+// and just wants Join blocked once real-world seats run out).
+export const setEventSoldOut = createAsyncThunk(
+  'events/setEventSoldOut',
+  async ({ eventId, soldOut }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events/${eventId}/sold-out`, { method: 'PATCH', token, body: { soldOut } });
+      return { eventId, soldOut: data.soldOut ?? soldOut };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
 const eventsSlice = createSlice({
   name: 'events',
   initialState: {
@@ -365,6 +452,10 @@ const eventsSlice = createSlice({
     createdTotal: 0,
     createdLoading: false,
 
+    calendarEvents: [],
+    calendarTotal: 0,
+    calendarLoading: false,
+
     eventDetail: null,
     detailLoading: false,
 
@@ -377,6 +468,7 @@ const eventsSlice = createSlice({
     updateLoading: false,
     deleteLoading: false,
     publishingId: null,
+    soldOutTogglingId: null,
 
     error: null,
   },
@@ -461,6 +553,20 @@ const eventsSlice = createSlice({
       })
       .addCase(publishEvent.rejected, s => { s.publishingId = null; })
 
+      // setEventSoldOut
+      .addCase(setEventSoldOut.pending, (s, a) => { s.soldOutTogglingId = a.meta.arg.eventId; })
+      .addCase(setEventSoldOut.fulfilled, (s, a) => {
+        const { eventId, soldOut } = a.payload;
+        s.soldOutTogglingId = null;
+        s.events        = patchEventInList(s.events,        eventId, { soldOut });
+        s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { soldOut });
+        s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { soldOut });
+        s.createdEvents = patchEventInList(s.createdEvents, eventId, { soldOut });
+        s.calendarEvents = patchEventInList(s.calendarEvents, eventId, { soldOut });
+        if (s.eventDetail?.id === eventId) s.eventDetail.soldOut = soldOut;
+      })
+      .addCase(setEventSoldOut.rejected, s => { s.soldOutTogglingId = null; })
+
       // deleteEvent
       .addCase(deleteEvent.pending, s => { s.deleteLoading = true; })
       .addCase(deleteEvent.fulfilled, (s, a) => {
@@ -533,6 +639,52 @@ const eventsSlice = createSlice({
         s.bookedEvents = patchEventInList(s.bookedEvents, eventId, { isSaved: true });
         if (s.eventDetail?.id === eventId) s.eventDetail.isSaved = true;
       })
+
+      // calendarEvent — optimistic
+      .addCase(calendarEvent.pending, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events        = patchEventInList(s.events,        eventId, { isInCalendar: true });
+        s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: true });
+        s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { isInCalendar: true });
+        s.createdEvents = patchEventInList(s.createdEvents, eventId, { isInCalendar: true });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isInCalendar = true;
+      })
+      .addCase(calendarEvent.rejected, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events        = patchEventInList(s.events,        eventId, { isInCalendar: false });
+        s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: false });
+        s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { isInCalendar: false });
+        s.createdEvents = patchEventInList(s.createdEvents, eventId, { isInCalendar: false });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isInCalendar = false;
+      })
+
+      // uncalendarEvent — optimistic
+      .addCase(uncalendarEvent.pending, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events         = patchEventInList(s.events,        eventId, { isInCalendar: false });
+        s.bookedEvents   = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: false });
+        s.savedEvents    = patchEventInList(s.savedEvents,   eventId, { isInCalendar: false });
+        s.createdEvents  = patchEventInList(s.createdEvents, eventId, { isInCalendar: false });
+        s.calendarEvents = s.calendarEvents.filter(e => e.id !== eventId);
+        if (s.eventDetail?.id === eventId) s.eventDetail.isInCalendar = false;
+      })
+      .addCase(uncalendarEvent.rejected, (s, a) => {
+        const eventId = a.meta.arg;
+        s.events        = patchEventInList(s.events,        eventId, { isInCalendar: true });
+        s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: true });
+        s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { isInCalendar: true });
+        s.createdEvents = patchEventInList(s.createdEvents, eventId, { isInCalendar: true });
+        if (s.eventDetail?.id === eventId) s.eventDetail.isInCalendar = true;
+      })
+
+      // fetchMyCalendar
+      .addCase(fetchMyCalendar.pending, s => { s.calendarLoading = true; s.calendarEvents = []; })
+      .addCase(fetchMyCalendar.fulfilled, (s, a) => {
+        s.calendarLoading = false;
+        s.calendarEvents = a.payload.events;
+        s.calendarTotal  = a.payload.total;
+      })
+      .addCase(fetchMyCalendar.rejected, s => { s.calendarLoading = false; })
 
       // fetchMyBooked
       .addCase(fetchMyBooked.pending, s => { s.bookedLoading = true; s.bookedEvents = []; })

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import './CalendarPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
-import { fetchEvents } from '../../store/slices/eventsSlice';
+import { fetchEvents, fetchMyCalendar } from '../../store/slices/eventsSlice';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>; }
@@ -56,8 +56,12 @@ function formatTimeLabel(timeStr) {
 }
 
 // Places each event on whichever weekDay column its startDate matches,
-// clamped into the visible 9am–6pm grid (events entirely outside it just
-// won't show — the grid doesn't scroll).
+// clamped into the visible 9am–6pm grid. Events entirely outside that
+// window (e.g. a midnight event) used to be dropped outright — now they're
+// pinned as a thin sliver at whichever edge they're closest to instead, so
+// nothing you've added to your calendar silently disappears. `sH/sM/eH/eM`
+// are the clamped block position; `realStart*/realEnd*` (used for the
+// on-screen time label) always carry the event's actual, unclamped time.
 function buildWeekEvents(events, weekDays) {
   const gridEnd = GRID_START + HOURS.length;
   const out = [];
@@ -67,15 +71,17 @@ function buildWeekEvents(events, weekDays) {
     const start = parseHM(ev.startTime) ?? { h: GRID_START, m: 0 };
     const endRaw = ev.isAllDay ? null : parseHM(ev.endTime);
     const end = endRaw ?? { h: Math.min(start.h + 1, gridEnd), m: start.m };
-    if (start.h >= gridEnd || (end.h < GRID_START)) continue; // fully outside the visible window
+    const outsideWindow = start.h >= gridEnd || end.h < GRID_START;
     out.push({
       id: ev.id,
       dayIdx,
       title: ev.title || 'Untitled event',
-      sH: Math.max(start.h, GRID_START),
-      sM: start.h < GRID_START ? 0 : start.m,
-      eH: Math.min(end.h, gridEnd),
-      eM: end.h > gridEnd ? 0 : end.m,
+      sH: outsideWindow ? (start.h >= gridEnd ? gridEnd - 1 : GRID_START) : Math.max(start.h, GRID_START),
+      sM: outsideWindow ? 0 : (start.h < GRID_START ? 0 : start.m),
+      eH: outsideWindow ? (start.h >= gridEnd ? gridEnd : GRID_START + 1) : Math.min(end.h, gridEnd),
+      eM: outsideWindow ? 0 : (end.h > gridEnd ? 0 : end.m),
+      realStartH: start.h, realStartM: start.m,
+      realEndH: end.h, realEndM: end.m,
       color: colorFor(ev.category || ev.title),
     });
   }
@@ -243,19 +249,26 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   // (see EventsPage), so a week/month you navigate into the past will show
   // no events — a real gap if past events need to show here too; would need
   // either a date-range query param or a tab that includes past events.
-  const { events: allEvents } = useSelector(s => s.events);
+  const { events: allEvents, calendarEvents, eventsLoading, calendarLoading } = useSelector(s => s.events);
   const [monday,    setMonday]   = useState(getMondayOf(initialDate ? new Date(initialDate) : new Date()));
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(initialDate ? new Date(initialDate) : new Date());
   const [view,      setView]      = useState(initialView === 'month' ? 'month' : 'week');
+  // 'all' = every upcoming event (previous/default behavior); 'mine' = only
+  // events the user explicitly added via "Add to Calendar" on an event page.
+  const [scope,     setScope]     = useState('all');
   // Independent of the desktop week grid's `monday` anchor — the mobile
   // day-agenda (see the "Mobile calendar" section below) navigates one day
   // at a time rather than one week at a time, so it tracks its own date.
   const [mobileDay, setMobileDay] = useState(new Date());
 
   useEffect(() => {
-    dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
-  }, [dispatch]);
+    if (scope === 'mine') dispatch(fetchMyCalendar({ limit: 100 }));
+    else dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
+  }, [dispatch, scope]);
+
+  const scopedEvents = scope === 'mine' ? calendarEvents : allEvents;
+  const isLoading = scope === 'mine' ? calendarLoading : eventsLoading;
 
   // Report the desktop week/month view up to HomePage so it can keep the URL
   // in sync (?section=calendar&tab=&date=) for refresh restore. The mobile
@@ -270,10 +283,10 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   const weekDays   = getWeekDays(monday);
   const monthGrid  = getMonthGrid(monthDate.getFullYear(), monthDate.getMonth());
   const monthWeeks = Array.from({ length: 6 }, (_, i) => monthGrid.slice(i * 7, i * 7 + 7));
-  const weekEvents  = buildWeekEvents(allEvents, weekDays);
-  const monthEvents = buildMonthEvents(allEvents, monthDate.getFullYear(), monthDate.getMonth());
-  const todayEvents = buildTodayEvents(allEvents);
-  const dayEvents    = buildDayEvents(allEvents, toISODate(mobileDay));
+  const weekEvents  = buildWeekEvents(scopedEvents, weekDays);
+  const monthEvents = buildMonthEvents(scopedEvents, monthDate.getFullYear(), monthDate.getMonth());
+  const todayEvents = buildTodayEvents(scopedEvents);
+  const dayEvents    = buildDayEvents(scopedEvents, toISODate(mobileDay));
   const isMobileToday = toISODate(mobileDay) === toISODate(new Date());
 
   function prevMobileDay() { const d = new Date(mobileDay); d.setDate(d.getDate() - 1); setMobileDay(d); }
@@ -332,6 +345,10 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
               <button className={`cal-view-btn${view === 'week'  ? ' cal-view-btn--active' : ''}`} onClick={() => setView('week')}>Week</button>
               <button className={`cal-view-btn${view === 'month' ? ' cal-view-btn--active' : ''}`} onClick={() => setView('month')}>Month</button>
             </div>
+            <div className="cal-view-toggle">
+              <button className={`cal-view-btn${scope === 'all'  ? ' cal-view-btn--active' : ''}`} onClick={() => setScope('all')}>All Events</button>
+              <button className={`cal-view-btn${scope === 'mine' ? ' cal-view-btn--active' : ''}`} onClick={() => setScope('mine')}>My Calendar</button>
+            </div>
             <div className="cal-date-nav">
               <button className="cal-arrow-btn" onClick={prevPeriod}><ChevronLeftIcon /></button>
               <span className="cal-date-range">{headerLabel}</span>
@@ -340,6 +357,13 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
           </div>
         </div>
 
+        {isLoading ? (
+          <div className="cal-loading">
+            <div className="cal-loading-spinner" />
+            <p>{scope === 'mine' ? 'Loading your calendar…' : 'Loading events…'}</p>
+          </div>
+        ) : (
+        <>
         {/* ── WEEK VIEW ── */}
         {view === 'week' && (
           <>
@@ -370,7 +394,7 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
                         style={{ top: evTop(ev.sH, ev.sM), height: evH(ev.sH, ev.sM, ev.eH, ev.eM), cursor: onEventClick ? 'pointer' : undefined }}
                         onClick={() => onEventClick?.(ev.id)}>
                         <p className="cal-ev-title">{ev.title}</p>
-                        <p className="cal-ev-time">{fmtT(ev.sH, ev.sM)} –<br />{fmtT(ev.eH, ev.eM)} {fmtPeriod(ev.eH)}</p>
+                        <p className="cal-ev-time">{fmtT(ev.realStartH, ev.realStartM)} –<br />{fmtT(ev.realEndH, ev.realEndM)} {fmtPeriod(ev.realEndH)}</p>
                       </div>
                     ))}
                   </div>
@@ -462,6 +486,8 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
               })}
             </div>
           </div>
+        )}
+        </>
         )}
 
       </main>

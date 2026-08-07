@@ -33,23 +33,26 @@ function CloseIcon() {
 }
 
 /**
- * Share sheet for a single post.
+ * Share sheet — for a post by default, or any other shareable item (e.g. an
+ * event) by passing `title`/`text`/`heading` directly instead of `post`.
  *
- * `url` is a real, crawlable permalink (/p/:id) — the server renders Open Graph
- * tags there so WhatsApp/Facebook/Telegram show the post's photo and caption.
- * Every target below is a plain link, so no SDKs and no third-party scripts.
+ * `url` is a real, crawlable permalink — the server renders Open Graph tags
+ * there so WhatsApp/Facebook/Telegram show a photo/caption preview. Every
+ * target below is a plain link, so no SDKs and no third-party scripts.
  *
  * onShared() fires only when a share actually completes, so the share counter
  * doesn't increment when someone just opens and dismisses the sheet.
  */
-export default function ShareSheet({ post, url, onClose, onShared }) {
+export default function ShareSheet({ post, url, title, text, heading, onClose, onShared }) {
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef(null);
   const inputRef  = useRef(null);
 
   const authorName = post?.author?.fullName || post?.author?.name || 'Someone';
   const caption    = post?.caption?.trim() || '';
-  const shareText  = caption ? `${authorName}: ${caption}` : `Check out this post by ${authorName}`;
+  const shareTitle = title ?? `Post by ${authorName}`;
+  const shareText  = text ?? (caption ? `${authorName}: ${caption}` : `Check out this post by ${authorName}`);
+  const sheetHeading = heading ?? 'Share post';
 
   const encUrl  = encodeURIComponent(url);
   const encText = encodeURIComponent(shareText);
@@ -66,7 +69,7 @@ export default function ShareSheet({ post, url, onClose, onShared }) {
     { key: 'linkedin', label: 'LinkedIn', Icon: LinkedInIcon, cls: 'ss-linkedin',
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encUrl}` },
     { key: 'email', label: 'Email', Icon: MailIcon, cls: 'ss-email',
-      href: `mailto:?subject=${encodeURIComponent(`Post by ${authorName}`)}&body=${encodeURIComponent(`${shareText}\n\n${url}`)}` },
+      href: `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`${shareText}\n\n${url}`)}` },
   ];
 
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function ShareSheet({ post, url, onClose, onShared }) {
 
   async function handleNativeShare() {
     try {
-      await navigator.share({ title: `Post by ${authorName}`, text: shareText, url });
+      await navigator.share({ title: shareTitle, text: shareText, url });
       onShared?.();
     } catch (err) {
       // Dismissing the OS sheet throws AbortError — not a real failure.
@@ -107,9 +110,9 @@ export default function ShareSheet({ post, url, onClose, onShared }) {
 
   return (
     <div className="ss-backdrop" onClick={onClose}>
-      <div className="ss-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share post">
+      <div className="ss-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={sheetHeading}>
         <div className="ss-head">
-          <h3 className="ss-title">Share post</h3>
+          <h3 className="ss-title">{sheetHeading}</h3>
           <button className="ss-close" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>

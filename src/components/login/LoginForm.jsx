@@ -38,7 +38,7 @@ function EyeIcon({ open }) {
   );
 }
 
-/* â”€â”€ Button content components â”€â”€ */
+/* ── Button content components ── */
 function LoadingContent() {
   return (
     <>
@@ -158,7 +158,7 @@ export default function LoginForm() {
 
     setBtnState('loading');
     const result = await dispatch(loginUser({ email: form.email, password: form.password }));
-    // requiresPlanSelection isn't a failed login â€” App.jsx redirects to
+    // requiresPlanSelection isn't a failed login — App.jsx redirects to
     // PlansPage for it, so treat it like success rather than flashing
     // "Invalid credentials" for what was actually a correct login.
     const isRealError = loginUser.rejected.match(result) && !result.payload?.requiresPlanSelection;

@@ -49,7 +49,7 @@ function LoadingContent() {
         <span className="btn-dot" />
         <span className="btn-dot" />
       </span>
-      Creating accountâ€¦
+      Creating account…
     </>
   );
 }
@@ -123,7 +123,7 @@ export default function SignupForm() {
     return age;
   }
 
-  // Latest birth date that still makes someone 18 today â€” disables the
+  // Latest birth date that still makes someone 18 today — disables the
   // last 18 years in the calendar instead of just erroring after the fact.
   const maxDob = (() => {
     const d = new Date();
@@ -285,7 +285,7 @@ export default function SignupForm() {
                   id="signup-password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="Enter your password"
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="new-password"

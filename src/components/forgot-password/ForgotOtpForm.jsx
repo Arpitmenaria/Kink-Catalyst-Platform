@@ -43,7 +43,7 @@ export default function ForgotOtpForm() {
             onClick={() => dispatch(goToStep('email'))}
             disabled={loading}
           >
-            â† Back
+            ← Back
           </button>
 
           <div className="signup-card-header verify-header">
@@ -62,7 +62,7 @@ export default function ForgotOtpForm() {
             )}
 
             <button type="submit" className="submit-btn" disabled={loading || otp.length < 6}>
-              {loading ? <><Spinner /> Verifyingâ€¦</> : 'Verify Code'}
+              {loading ? <><Spinner /> Verifying…</> : 'Verify Code'}
             </button>
           </form>
 
@@ -74,7 +74,7 @@ export default function ForgotOtpForm() {
               onClick={handleResend}
               disabled={resendLoading || loading}
             >
-              {resendLoading ? 'Sendingâ€¦' : 'Resend'}
+              {resendLoading ? 'Sending…' : 'Resend'}
             </button>
           </p>
         </div>
