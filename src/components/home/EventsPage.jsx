@@ -422,7 +422,7 @@ function normalizeAttendee(a) {
   const u = a?.user ?? a ?? {};
   const avatar = u.avatar ?? u.profileImage ?? u.photo ?? '';
   return {
-    id:     u.id ?? u._id ?? a?.id ?? a?._id ?? '',
+    id:     u.id ?? u._id ?? u.userId ?? a?.id ?? a?._id ?? a?.userId ?? '',
     name:   u.fullName ?? u.name ?? 'Someone',
     avatar: typeof avatar === 'string' && avatar.startsWith('http') ? avatar : '',
   };

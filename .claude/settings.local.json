@@ -88,7 +88,9 @@
       "Bash(grep -nE \"^\\(h1|h2|h3|h4|p|a|button|input|textarea|ul|li\\)\\(\\\\s*[,{]|,\\)\" /Users/jaymandaliya/Documents/codetown/kick-analyst-frontend/src/index.css)",
       "Bash(node drive2.js)",
       "Bash(node drive3.js)",
-      "Bash(node drive4.js)"
+      "Bash(node drive4.js)",
+      "Bash(lsof -i :5173 -sTCP:LISTEN)",
+      "Bash(curl -s \"https://kick-analyst-backend-production.jay886631.workers.dev/api/events/6a797fcaf9b82062e66aba42/attendees\")"
     ]
   },
   "enableAllProjectMcpServers": true,
