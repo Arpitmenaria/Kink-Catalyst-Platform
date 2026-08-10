@@ -11,7 +11,7 @@ import ShareSheet from './ShareSheet';
 import './ShareSheet.css';
 import {
   fetchEvents, fetchEventDetail, createEvent, updateEvent, deleteEvent,
-  bookEvent, cancelBooking, saveEvent, unsaveEvent,
+  saveEvent, unsaveEvent,
   fetchMyBooked, fetchMySaved, fetchMyCreated, publishEvent, reportEvent,
   calendarEvent, uncalendarEvent, setEventSoldOut, clearEventDeletedNotice,
 } from '../../store/slices/eventsSlice';
@@ -407,6 +407,15 @@ export const CREATED_EVENTS = [
   },
 ];
 
+// Falls back to "Online" (instead of "N/A") when the event has no physical
+// venue/location because it's an online-only event.
+function eventLocationLabel(ev) {
+  if (!ev) return 'N/A';
+  const loc = ev.venue || ev.location;
+  if (loc) return loc;
+  return ev.eventType === 'online' ? 'Online' : 'N/A';
+}
+
 // Attendee list API returns either a flat user record or one nested under
 // `user` — accept both, same defensive pattern as the discussion normalizers.
 function normalizeAttendee(a) {
@@ -543,7 +552,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [evDetailTab,   setEvDetailTab]   = useState('about');
   const [eventFromHome, setEventFromHome] = useState(false);
-  const [goingIds,      setGoingIds]      = useState(new Set());
   const [joinedIds,     setJoinedIds]     = useState(new Set());
   // The event's own creator can always see the discussion — everyone else
   // has to actually join first, same as the "+ Join" button gates. Declared
@@ -648,7 +656,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     savedEvents, savedLoading,
     createdEvents, createdLoading,
     eventDetail,
-    bookingLoading, createLoading, updateLoading, publishingId, soldOutTogglingId,
+    createLoading, updateLoading, publishingId, soldOutTogglingId,
     eventDeletedNotice,
   } = useSelector(s => s.events);
 
@@ -736,15 +744,6 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     ]);
     setCalendarIds(ids);
   }, [rdxEvents, bookedEvents, savedEvents, createdEvents, eventDetail]);
-
-  // Sync goingIds from Redux
-  useEffect(() => {
-    const ids = new Set([
-      ...rdxEvents.filter(e => e.isBooked).map(e => e.id),
-      ...bookedEvents.map(e => e.id),
-    ]);
-    setGoingIds(ids);
-  }, [rdxEvents, bookedEvents]);
 
   // Sync joinedIds from Redux's isAttending flag — without this, an event
   // the user already joined (in a previous session, or just fetched fresh)
@@ -1982,7 +1981,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
             <div className="ev-detail-hero-info">
               <p className="ev-detail-datetime">{selectedEvent.fullDate}</p>
               <h1 className="ev-detail-title">{selectedEvent.title}</h1>
-              <p className="ev-detail-location"><MapPinIcon /> {selectedEvent.location || 'N/A'}</p>
+              <p className="ev-detail-location"><MapPinIcon /> {eventLocationLabel(selectedEvent)}</p>
               {attendeeCount[selectedEvent.id] !== undefined && (
                 <button
                   type="button"
@@ -2013,41 +2012,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               </button>
             </div>
             <div className="ev-detail-actions">
-              {selectedEvent._sourceTab === 'created' ? (
+              {selectedEvent._sourceTab === 'created' && (
                 <button className="ev-detail-going-btn" onClick={() => openEditEvent(eventDetail?.id === selectedEvent.id ? { ...selectedEvent, ...eventDetail } : selectedEvent)}>
                   <EditIcon /> Edit Event
-                </button>
-              ) : (
-                <button
-                  className={`ev-detail-going-btn${goingIds.has(selectedEvent.id) ? ' ev-detail-going-btn--active' : ''}`}
-                  disabled={bookingLoading}
-                  onClick={() => {
-                    const isGoing = goingIds.has(selectedEvent.id);
-                    setGoingIds(s => { const n = new Set(s); isGoing ? n.delete(selectedEvent.id) : n.add(selectedEvent.id); return n; });
-                    if (isGoing) {
-                      dispatch(cancelBooking(selectedEvent.id)).then(action => {
-                        if (cancelBooking.rejected.match(action)) {
-                          setGoingIds(s => { const n = new Set(s); n.add(selectedEvent.id); return n; });
-                          dispatch(showToast({ message: action.payload ?? 'Failed to cancel booking.', type: 'error' }));
-                        } else {
-                          dispatch(showToast({ message: 'Booking cancelled.', type: 'success' }));
-                        }
-                      });
-                    } else {
-                      dispatch(bookEvent({ eventId: selectedEvent.id })).then(action => {
-                        if (bookEvent.rejected.match(action)) {
-                          setGoingIds(s => { const n = new Set(s); n.delete(selectedEvent.id); return n; });
-                          dispatch(showToast({ message: action.payload ?? 'Booking failed.', type: 'error' }));
-                        } else {
-                          dispatch(showToast({ message: 'Booking confirmed!', type: 'success' }));
-                        }
-                      });
-                    }
-                  }}
-                >
-                  {goingIds.has(selectedEvent.id) && <CheckIcon />}
-                  {goingIds.has(selectedEvent.id) ? 'Going' : 'Going?'}
-                  <ChevronDownIcon />
                 </button>
               )}
               {selectedEvent._sourceTab !== 'created' && (() => {
@@ -2097,12 +2064,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         { id: 'share',    icon: <ShareIcon />,    label: 'Share', onClick: () => setShareOpen(true) },
                         { id: 'save',     icon: <BookmarkIcon />, label: savedIds.has(selectedEvent.id) ? 'Saved' : 'Save', onClick: () => toggleSave(selectedEvent.id) },
                         { id: 'notify',   icon: <BellIcon />,     label: 'Notification settings' },
-                        { id: 'unfollow', icon: <UnfollowIcon />, label: 'Unfollow event' },
+                        { id: 'unfollow', icon: <UnfollowIcon />, label: 'Unfollow event', danger: true },
                         { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Added to Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
-                        { id: 'report',   icon: <FlagIcon />,     label: 'Report Event', onClick: () => setReportOpen(true) },
+                        { id: 'report',   icon: <FlagIcon />,     label: 'Report Event', onClick: () => setReportOpen(true), danger: true },
                       ]).map(item => (
                         <button key={item.id} className="ev-more-item" onClick={() => { setMoreOpen(false); item.onClick?.(); }}>
-                          <span className="ev-more-item-icon">{item.icon}</span>
+                          <span className={`ev-more-item-icon${item.danger ? ' ev-more-item-icon--danger' : ''}`}>{item.icon}</span>
                           <span>{item.label}</span>
                         </button>
                       ))}
@@ -2151,7 +2118,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <h3 className="ev-detail-card-title">Event Info</h3>
                     <div className="ev-detail-info-rows">
                       <div className="ev-detail-info-row"><CalendarIcon /><span>{selectedEvent.fullDate}</span></div>
-                      <div className="ev-detail-info-row"><MapPinIcon /><span>{selectedEvent.venue || selectedEvent.location || 'N/A'}</span></div>
+                      <div className="ev-detail-info-row"><MapPinIcon /><span>{eventLocationLabel(selectedEvent)}</span></div>
                       <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{displayCategory(selectedEvent)}</span></div>
                     </div>
                   </div>
@@ -2172,19 +2139,23 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         />
                       ) : (
                         <div className="ev-detail-map-overlay">
-                          <span className="ev-detail-map-label"><MapPinIcon /> N/A</span>
+                          <span className="ev-detail-map-label">
+                            {selectedEvent.eventType === 'online' ? <OnlineIcon /> : <MapPinIcon />} {eventLocationLabel(selectedEvent)}
+                          </span>
                         </div>
                       )}
                     </div>
                     <div className="ev-detail-map-footer">
-                      <p className="ev-detail-map-venue">{selectedEvent.venue || selectedEvent.location || 'N/A'}</p>
-                      <button
-                        className="ev-detail-map-btn"
-                        disabled={!(selectedEvent.venue || selectedEvent.location)}
-                        onClick={() => window.open(googleMapsSearchUrl(selectedEvent.venue || selectedEvent.location), '_blank', 'noopener,noreferrer')}
-                      >
-                        <ExternalLinkIcon /> Open in Maps
-                      </button>
+                      <p className="ev-detail-map-venue">{eventLocationLabel(selectedEvent)}</p>
+                      {selectedEvent.eventType !== 'online' && (
+                        <button
+                          className="ev-detail-map-btn"
+                          disabled={!(selectedEvent.venue || selectedEvent.location)}
+                          onClick={() => window.open(googleMapsSearchUrl(selectedEvent.venue || selectedEvent.location), '_blank', 'noopener,noreferrer')}
+                        >
+                          <ExternalLinkIcon /> Open in Maps
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2415,15 +2386,19 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-detail-info-row">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <span>Alex Vanguard's Event</span>
+                        <span>{selectedEvent.organizer?.fullName ? `${selectedEvent.organizer.fullName}'s Event` : selectedEvent.title}</span>
                       </div>
                       <div className="ev-detail-info-row">
                         <MapPinIcon />
-                        <span>{selectedEvent.location || 'N/A'}</span>
+                        <span>{eventLocationLabel(selectedEvent)}</span>
                       </div>
                       <div className="ev-detail-info-row">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                        <span>Public · Anyone can join</span>
+                        <span>
+                          {selectedEvent.visibility === 'friends' ? 'Friends only · Only friends can join'
+                            : selectedEvent.visibility === 'only_me' ? 'Only me · Private event'
+                            : 'Public · Anyone can join'}
+                        </span>
                       </div>
                     </div>
 
@@ -2596,7 +2571,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
                 <div className="ev-disc-card-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {eventLocationLabel(ev)} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
                     <button type="button" className="ev-desc-seemore-btn" onClick={e => { e.stopPropagation(); setDescModalEvent(ev); }}>See more</button>
@@ -2662,7 +2637,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <div className="ev-list-top">
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ev.location || 'N/A'} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {eventLocationLabel(ev)} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   </div>
                   <p className="ev-list-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
@@ -3815,7 +3790,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       ))}
                     </div>
 
-                    <p className="ev-join-refund-note">You will not receive a refund if you cancel after joining.</p>
+                    {total > 0 && (
+                      <p className="ev-join-refund-note">You will not receive a refund if you cancel after joining.</p>
+                    )}
                   </>
                 );
               })()}
