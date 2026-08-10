@@ -1,110 +1,220 @@
-export default function WebsitePreview({ sections, selectedSection, onSelectSection }) {
-  return (
-    <div className="wp-preview-container">
-      {/* Website Header */}
-      <div className="wp-header">
-        <div className="wp-logo">📱 KickSite</div>
-        <nav className="wp-nav">
-          <a href="#home">Home</a>
-          <a href="#about">About</a>
-          <a href="#services">Services</a>
-          <a href="#contact">Contact</a>
-        </nav>
-      </div>
+const DEVICE_WIDTH = {
+  desktop: '100%',
+  tablet: '768px',
+  mobile: '375px',
+};
 
-      {/* Website Sections Preview */}
-      <div className="wp-content">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className={`wp-section wp-section-${section.type} ${selectedSection?.id === section.id ? 'wp-section--selected' : ''}`}
-            onClick={() => onSelectSection(section)}
-          >
-            {/* Hero Section */}
-            {section.type === 'hero' && (
-              <div className="wp-hero">
-                <div className="wp-hero-content">
-                  <span className="wp-section-badge">{section.icon}</span>
-                  <h1>{section.name}</h1>
-                  <p>Premium content for your {section.name.toLowerCase()} section</p>
-                  <div className="wp-hero-buttons">
-                    <button className="wp-btn wp-btn-primary">Learn More</button>
-                    <button className="wp-btn wp-btn-secondary">Get Started</button>
-                  </div>
-                </div>
-                <div className="wp-hero-image">
-                  <div className="wp-placeholder-img">{section.icon}</div>
-                </div>
-              </div>
-            )}
+function SectionContent({ section }) {
+  const c = section.content || {};
 
-            {/* Text/Content Section */}
-            {section.type === 'text' && (
-              <div className="wp-text-section">
-                <div className="wp-text-icon">{section.icon}</div>
-                <h2>{section.name}</h2>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-              </div>
-            )}
+  switch (section.type) {
+    case 'navbar':
+      return (
+        <div className="wp-navbar">
+          <div className="wp-navbar-logo">{c.logoText}</div>
+          <nav className="wp-navbar-links">
+            {(c.links || []).map((l, i) => (
+              <a key={i} href={l.url} onClick={(e) => e.preventDefault()}>{l.label}</a>
+            ))}
+          </nav>
+          {c.ctaText && <button type="button" className="wp-btn wp-btn-primary wp-navbar-cta">{c.ctaText}</button>}
+        </div>
+      );
 
-            {/* Gallery Section */}
-            {section.type === 'gallery' && (
-              <div className="wp-gallery-section">
-                <h2>{section.name}</h2>
-                <div className="wp-gallery-grid">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="wp-gallery-item">
-                      <div className="wp-gallery-placeholder">{section.icon}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Grid Section */}
-            {section.type === 'grid' && (
-              <div className="wp-grid-section">
-                <h2>{section.name}</h2>
-                <div className="wp-grid">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="wp-grid-item">
-                      <div className="wp-grid-icon">{section.icon}</div>
-                      <h3>Feature {i}</h3>
-                      <p>Description for feature</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Form Section */}
-            {section.type === 'form' && (
-              <div className="wp-form-section">
-                <h2>{section.name}</h2>
-                <form className="wp-form">
-                  <input type="text" placeholder="Your Name" />
-                  <input type="email" placeholder="Your Email" />
-                  <textarea placeholder="Your Message"></textarea>
-                  <button type="submit" className="wp-btn wp-btn-primary">Submit</button>
-                </form>
-              </div>
-            )}
-
-            {/* Default Section */}
-            {!['hero', 'text', 'gallery', 'grid', 'form'].includes(section.type) && (
-              <div className="wp-default-section">
-                <div className="wp-section-icon">{section.icon}</div>
-                <h2>{section.name}</h2>
-                <p className="wp-section-type">Type: {section.type}</p>
-              </div>
+    case 'hero':
+      return (
+        <div className="wp-hero">
+          <div className="wp-hero-content">
+            <span className="wp-section-badge">{section.icon}</span>
+            <h1>{c.headline}</h1>
+            <p>{c.subheadline}</p>
+            <div className="wp-hero-buttons">
+              {c.primaryButtonText && <button type="button" className="wp-btn wp-btn-primary">{c.primaryButtonText}</button>}
+              {c.secondaryButtonText && <button type="button" className="wp-btn wp-btn-secondary">{c.secondaryButtonText}</button>}
+            </div>
+          </div>
+          <div className="wp-hero-image">
+            {c.image ? (
+              <img src={c.image} alt={c.headline} className="wp-hero-img" />
+            ) : (
+              <div className="wp-placeholder-img">{section.icon}</div>
             )}
           </div>
-        ))}
-      </div>
+        </div>
+      );
 
-      {/* Website Footer */}
-      <div className="wp-footer">
-        <p>&copy; 2024 Your Website. All rights reserved.</p>
+    case 'text':
+      return (
+        <div className="wp-text-section">
+          <div className="wp-text-icon">{c.icon}</div>
+          <h2>{c.headline}</h2>
+          <p>{c.body}</p>
+        </div>
+      );
+
+    case 'grid':
+      return (
+        <div className="wp-grid-section">
+          <h2>{c.headline}</h2>
+          <div className="wp-grid">
+            {(c.items || []).map((item, i) => (
+              <div key={i} className="wp-grid-item">
+                <div className="wp-grid-icon">{item.icon}</div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'gallery':
+      return (
+        <div className="wp-gallery-section">
+          <h2>{c.headline}</h2>
+          <div className="wp-gallery-grid">
+            {(c.items || []).map((item, i) => (
+              <div key={i} className="wp-gallery-item">
+                {item.image ? (
+                  <img src={item.image} alt={item.caption} className="wp-gallery-img" />
+                ) : (
+                  <div className="wp-gallery-placeholder">{section.icon}</div>
+                )}
+                {item.caption && <p className="wp-gallery-caption">{item.caption}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'form':
+      return (
+        <div className="wp-form-section">
+          <h2>{c.headline}</h2>
+          {c.subheadline && <p className="wp-form-sub">{c.subheadline}</p>}
+          <form className="wp-form" onSubmit={(e) => e.preventDefault()}>
+            {(c.fields || []).map((f, i) =>
+              f.type === 'textarea' ? (
+                <textarea key={i} placeholder={f.label} readOnly />
+              ) : (
+                <input key={i} type={f.type || 'text'} placeholder={f.label} readOnly />
+              )
+            )}
+            <button type="submit" className="wp-btn wp-btn-primary">{c.submitButtonText || 'Submit'}</button>
+          </form>
+        </div>
+      );
+
+    case 'cta':
+      return (
+        <div className="wp-cta-section">
+          <h2>{c.headline}</h2>
+          <p>{c.subheadline}</p>
+          {c.buttonText && <button type="button" className="wp-btn wp-btn-primary">{c.buttonText}</button>}
+        </div>
+      );
+
+    case 'testimonial':
+      return (
+        <div className="wp-testimonial-section">
+          <h2>{c.headline}</h2>
+          <div className="wp-testimonial-grid">
+            {(c.items || []).map((t, i) => (
+              <div key={i} className="wp-testimonial-card">
+                <p className="wp-testimonial-quote">&ldquo;{t.quote}&rdquo;</p>
+                <p className="wp-testimonial-author">{t.author}</p>
+                {t.role && <p className="wp-testimonial-role">{t.role}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'footer':
+      return (
+        <div className="wp-footer-section">
+          <div className="wp-footer-links">
+            {(c.links || []).map((l, i) => (
+              <a key={i} href={l.url} onClick={(e) => e.preventDefault()}>{l.label}</a>
+            ))}
+          </div>
+          <p className="wp-footer-text">{c.text}</p>
+        </div>
+      );
+
+    default:
+      return (
+        <div className="wp-default-section">
+          <div className="wp-section-icon">{section.icon}</div>
+          <h2>{section.name}</h2>
+          <p className="wp-section-type">Type: {section.type}</p>
+        </div>
+      );
+  }
+}
+
+export default function WebsitePreview({
+  sections,
+  selectedSectionId,
+  onSelectSection,
+  device = 'desktop',
+  interactive = true,
+}) {
+  const visibleSections = sections.filter((section) =>
+    device === 'mobile' ? section.visibleOnMobile !== false : section.visibleOnDesktop !== false
+  );
+
+  return (
+    <div className="wp-preview-container">
+      <div className="wp-canvas" style={{ width: DEVICE_WIDTH[device] || '100%' }}>
+        {/* Website Sections Preview */}
+        <div className="wp-content">
+          {visibleSections.length === 0 && (
+            <div className="wp-empty-state">
+              <span style={{ fontSize: 40 }}>🧱</span>
+              <p>No sections yet — add one from the sidebar.</p>
+            </div>
+          )}
+
+          {visibleSections.map((section) => {
+            const style = section.style || {};
+            const wrapperStyle = {
+              background: style.background,
+              color: style.textColor,
+              paddingTop: style.paddingTop != null ? `${style.paddingTop}px` : undefined,
+              paddingBottom: style.paddingBottom != null ? `${style.paddingBottom}px` : undefined,
+              textAlign: style.align,
+              borderRadius: style.borderRadius ? `${style.borderRadius}px` : undefined,
+              overflow: style.borderRadius ? 'hidden' : undefined,
+              '--wp-accent': style.accentColor || '#3b82f6',
+              '--wp-btn-radius': `${style.buttonRadius ?? 8}px`,
+              ...(style.contentWidth === 'boxed' ? { maxWidth: 1100, marginLeft: 'auto', marginRight: 'auto' } : null),
+              ...(style.backgroundImage
+                ? {
+                    backgroundImage: `linear-gradient(rgba(0,0,0,${style.overlayOpacity ?? 0}), rgba(0,0,0,${style.overlayOpacity ?? 0})), url(${style.backgroundImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }
+                : null),
+            };
+
+            return (
+              <div
+                key={section.id}
+                className={[
+                  'wp-section',
+                  `wp-section-${section.type}`,
+                  interactive ? 'wp-section--interactive' : '',
+                  interactive && selectedSectionId === section.id ? 'wp-section--selected' : '',
+                ].join(' ').trim()}
+                style={wrapperStyle}
+                onClick={interactive ? () => onSelectSection(section.id) : undefined}
+              >
+                <SectionContent section={section} />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

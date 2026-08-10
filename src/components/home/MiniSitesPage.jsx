@@ -110,9 +110,14 @@ export default function MiniSitesPage({
     setCurrentBuilder(null);
   };
 
+  const handleSiteUpdate = (siteIdToUpdate, patch) => {
+    setSites(prev => prev.map(s => (s.id === siteIdToUpdate ? { ...s, ...patch } : s)));
+    setCurrentBuilder(prev => (prev && prev.id === siteIdToUpdate ? { ...prev, ...patch } : prev));
+  };
+
   const handleEditSite = (siteId) => {
-    console.log('Navigate to: Edit Site', siteId);
-    // window.location.hash = `#/mini-sites/edit/${siteId}`;
+    const site = sites.find(s => s.id === siteId);
+    if (site) setCurrentBuilder(site);
   };
 
   const handlePreviewSite = (siteId) => {
@@ -155,6 +160,7 @@ export default function MiniSitesPage({
         siteId={currentBuilder.id}
         site={currentBuilder}
         onBack={handleBackFromBuilder}
+        onSiteUpdate={handleSiteUpdate}
       />
     );
   }

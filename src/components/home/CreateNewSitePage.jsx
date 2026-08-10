@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DEFAULT_STARTER_SECTIONS } from './sectionTemplates';
 import './CreateNewSitePage.css';
 
 function UploadIcon() {
@@ -150,6 +151,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
         views: 0,
         lastEdited: 'just now',
         coverImage: formData.coverImagePreview || 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&q=80&fit=crop',
+        sections: DEFAULT_STARTER_SECTIONS,
       };
 
       console.log('Navigate to: Builder page with site:', newSite);
