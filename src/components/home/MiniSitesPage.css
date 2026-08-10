@@ -129,7 +129,7 @@
 /* ── Sites Grid ── */
 .ms-sites-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
@@ -371,7 +371,7 @@
 /* ── Site Actions ── */
 .ms-site-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #1a2540;
@@ -379,8 +379,8 @@
 
 .ms-action-btn {
   flex: 1;
-  min-width: 60px;
-  padding: 6px 10px;
+  min-width: 0;
+  padding: 6px 4px;
   border: none;
   border-radius: 7px;
   font-size: 11px;
@@ -389,6 +389,9 @@
   transition: all 0.15s;
   font-family: inherit;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .ms-action-btn--secondary {
@@ -412,11 +415,23 @@
 }
 
 .ms-action-btn--unpublish {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.ms-action-btn--unpublish:hover {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fcd34d;
+}
+
+/* Report (used on other users' cards in the All Sites gallery) keeps the
+   red/danger treatment — unlike Unpublish, it IS a "flag as bad" action. */
+.ms-action-btn--report {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
-.ms-action-btn--unpublish:hover {
+.ms-action-btn--report:hover {
   background: rgba(239, 68, 68, 0.25);
   color: #fca5a5;
 }
@@ -440,6 +455,12 @@
   font-size: 14px;
   color: #4b5a7a;
   margin: 0 0 20px;
+}
+
+.ms-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 
 /* ── Templates Grid ── */
@@ -584,4 +605,84 @@
     font-size: 11px;
     padding: 6px 12px;
   }
+}
+
+/* ── "Yours" badge on All Sites gallery cards ── */
+.ms-site-mine-badge {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ms-browse-search {
+  width: 100%;
+  max-width: 360px;
+  background: #0d1526;
+  border: 1px solid #1a2540;
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 13px;
+  padding: 10px 14px;
+}
+.ms-browse-search:focus { outline: none; border-color: #3b82f6; }
+
+.ms-site-creator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7a9a;
+  margin: 0 0 6px;
+}
+.ms-site-creator-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ── Report Site Modal ── */
+.ms-report-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+.ms-report-modal {
+  background: #10131f; border: 1px solid #1e2338; border-radius: 14px;
+  width: 380px; max-width: 100%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  padding: 20px 22px 22px;
+  display: flex; flex-direction: column;
+}
+
+.ms-report-title {
+  font-size: 16px; font-weight: 700; color: #e8ecf8; margin: 0 0 14px;
+}
+
+.ms-report-label {
+  font-size: 12px; font-weight: 600; color: #8a97b8; margin: 10px 0 6px;
+}
+
+.ms-report-select,
+.ms-report-textarea {
+  width: 100%;
+  background: #0d1526; border: 1px solid #1a2540; border-radius: 8px;
+  color: #e8ecf8; font-size: 13px; padding: 10px 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.ms-report-select:focus,
+.ms-report-textarea:focus {
+  outline: none; border-color: #3b82f6;
+}
+
+.ms-report-error {
+  color: #f87171; font-size: 12px; margin: 8px 0 0;
+}
+
+.ms-report-actions {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;
 }

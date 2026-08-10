@@ -7,11 +7,22 @@ import VerifyOtpPage from './components/verify/VerifyOtpPage';
 import PlansPage from './components/plans/PlansPage';
 import HomePage from './components/home/HomePage';
 import OnboardingForm from './components/home/OnboardingForm';
+import PublicSitePage from './components/home/PublicSitePage';
+
+// A Mini Site's public link (?site=<slug>) must be viewable by anyone,
+// logged in or not, so it's checked before every auth-gated branch below.
+function readPublicSiteSlug() {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('site');
+}
 
 export default function App() {
   const { otpPending, isAuthenticated, requiresPlanSelection, user } = useSelector((state) => state.auth);
   const { planSelectionComplete, justSelectedPlan } = useSelector((state) => state.plans);
   const { page } = useSelector((state) => state.ui);
+
+  const publicSiteSlug = readPublicSiteSlug();
+  if (publicSiteSlug) return <><Toast /><PublicSitePage slug={publicSiteSlug} /></>;
 
   if (otpPending) return <><Toast /><VerifyOtpPage /></>;
 

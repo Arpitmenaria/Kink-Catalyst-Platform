@@ -90,7 +90,16 @@
       "Bash(node drive3.js)",
       "Bash(node drive4.js)",
       "Bash(lsof -i :5173 -sTCP:LISTEN)",
-      "Bash(curl -s \"https://kick-analyst-backend-production.jay886631.workers.dev/api/events/6a797fcaf9b82062e66aba42/attendees\")"
+      "Bash(curl -s \"https://kick-analyst-backend-production.jay886631.workers.dev/api/events/6a797fcaf9b82062e66aba42/attendees\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5173/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5173/?site=test-slug\")",
+      "Bash(grep -v \"set-state-in-effect\\\\|Calling setState\\\\|Effects are intended\\\\|Update external\\\\|Subscribe for\\\\|cascading renders\\\\|^$\\\\|^ *\\\\*\\\\|^  1\\\\d\\\\d:\\\\|^  6\\\\d:\\\\|^  1\\\\d\\\\d |\\\\|^>\")",
+      "Bash(curl -s -o /tmp/vite_check3.html -w \"%{http_code}\" \"http://localhost:5173/src/components/home/MiniSitesPage.jsx\")",
+      "Bash(curl -s -o /tmp/vite_check4.html -w \"%{http_code}\" \"http://localhost:5173/src/components/home/miniSiteUtils.js\")",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" \"https://kick-analyst-backend-production.jay886631.workers.dev/api/mini-sites/browse?page=1&limit=12\")",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" -X POST \"https://kick-analyst-backend-production.jay886631.workers.dev/api/mini-sites\" -H \"Content-Type: application/json\" -d '{\"name\":\"JAY\",\"description\":\"jay\",\"visibility\":\"public\"}')",
+      "Bash(curl -s -o /tmp/vite_check5.html -w \"%{http_code}\" \"http://localhost:5173/src/components/home/MiniSitesPage.jsx\")",
+      "Bash(curl -s -o /tmp/vite_check6.html -w \"%{http_code}\" \"http://localhost:5173/src/components/home/MiniSitesPage.jsx\")"
     ]
   },
   "enableAllProjectMcpServers": true,

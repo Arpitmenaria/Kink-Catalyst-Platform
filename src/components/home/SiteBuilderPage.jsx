@@ -1,6 +1,9 @@
 import { useState, useRef, useId } from 'react';
+import { useSelector } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
 import { SECTION_TYPES, createSection, createId, DEFAULT_STARTER_SECTIONS, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
+import { apiRequest } from '../../services/api';
+import { normalizeSite, publicSiteUrl } from './miniSiteUtils';
 import './SiteBuilderPage.css';
 
 /* Icons */
@@ -162,6 +165,7 @@ function ItemsEditor({ items = [], onChange, renderItem, newItemFactory, addLabe
 }
 
 export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) {
+  const authToken = useSelector(s => s.auth?.token);
   const [sections, setSections] = useState(() => (site?.sections?.length ? site.sections : DEFAULT_STARTER_SECTIONS));
   const [selectedSectionId, setSelectedSectionId] = useState(() => sections[0]?.id ?? null);
   const [activePropTab, setActivePropTab] = useState('content');
@@ -171,6 +175,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const [draggingIndex, setDraggingIndex] = useState(null);
   const [savedStatus, setSavedStatus] = useState('all-saved');
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
 
   const dragItem = useRef(null);
   const rowRefs = useRef([]);
@@ -279,21 +284,54 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
     window.addEventListener('pointerup', onPointerUp);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSavedStatus('saving');
-    setTimeout(() => {
+    try {
+      const res = await apiRequest(`/api/mini-sites/${mockSite.id}`, {
+        method: 'PUT',
+        token: authToken,
+        body: { sections },
+      });
       setSavedStatus('all-saved');
-      onSiteUpdate?.(mockSite.id, { sections, lastEdited: 'just now' });
-    }, 1000);
+      onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...res?.data }));
+    } catch (err) {
+      setSavedStatus('all-saved');
+      alert(err.message || 'Failed to save site');
+    }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
+    try {
+      const res = await apiRequest(`/api/mini-sites/${mockSite.id}/publish`, {
+        method: 'POST',
+        token: authToken,
+        body: {},
+      });
+      const updated = normalizeSite({ ...mockSite, ...res?.data });
+      onSiteUpdate?.(mockSite.id, updated);
+      alert(`✅ Site "${mockSite.name}" published successfully!\n\nView it at: ${updated.publishedUrl || publicSiteUrl(updated.slug)}`);
+    } catch (err) {
+      alert(err.message || 'Failed to publish site');
+    } finally {
       setIsPublishing(false);
-      onSiteUpdate?.(mockSite.id, { sections, status: 'live', lastEdited: 'just now' });
-      alert(`✅ Site "${mockSite.name}" published successfully!\n\nView it at: ${mockSite.slug}.kicksite.io`);
-    }, 1500);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    setIsUnpublishing(true);
+    try {
+      const res = await apiRequest(`/api/mini-sites/${mockSite.id}/unpublish`, {
+        method: 'POST',
+        token: authToken,
+        body: {},
+      });
+      onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...res?.data }));
+    } catch (err) {
+      alert(err.message || 'Failed to unpublish site');
+    } finally {
+      setIsUnpublishing(false);
+    }
   };
 
   function renderContentFields() {
@@ -688,13 +726,20 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
 
           <button className="sbp-btn sbp-btn--save" onClick={handleSave} disabled={savedStatus === 'saving'}>
             <SaveIcon />
-            Save Draft
+            {savedStatus === 'saving' ? 'Saving...' : 'Save Draft'}
           </button>
 
-          <button className="sbp-btn sbp-btn--publish" onClick={handlePublish} disabled={isPublishing}>
-            <PublishIcon />
-            {isPublishing ? 'Publishing...' : 'Publish'}
-          </button>
+          {mockSite.status === 'live' ? (
+            <button className="sbp-btn sbp-btn--publish" onClick={handleUnpublish} disabled={isUnpublishing}>
+              <PublishIcon />
+              {isUnpublishing ? 'Unpublishing...' : 'Unpublish'}
+            </button>
+          ) : (
+            <button className="sbp-btn sbp-btn--publish" onClick={handlePublish} disabled={isPublishing}>
+              <PublishIcon />
+              {isPublishing ? 'Publishing...' : 'Publish'}
+            </button>
+          )}
         </div>
       </div>
 
