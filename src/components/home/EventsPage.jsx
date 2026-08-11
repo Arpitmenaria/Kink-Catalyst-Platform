@@ -375,9 +375,6 @@ function CheckIcon()       { return <svg width="13" height="13" viewBox="0 0 24 
 function BackArrowIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 function SendIcon()        { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>; }
 function ThumbUpIcon()     { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>; }
-function BookmarkIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>; }
-function BellIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>; }
-function UnfollowIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>; }
 function FlagIcon()        { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
 
 export const CREATED_EVENTS = [
@@ -2036,7 +2033,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     ) : isJoined ? (
                       <>✓ Joined</>
                     ) : blockedBySoldOut ? (
-                      <>Sold Out</>
+                      <>Sold Out <LockIcon /></>
                     ) : (
                       <>+ Join</>
                     )}
@@ -2061,14 +2058,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       <div className="ev-more-divider" />
                       {(selectedEvent._sourceTab === 'created' ? [
                         { id: 'share',    icon: <ShareIcon />,    label: 'Share', onClick: () => setShareOpen(true) },
-                        { id: 'save',     icon: <BookmarkIcon />, label: savedIds.has(selectedEvent.id) ? 'Saved' : 'Save', onClick: () => toggleSave(selectedEvent.id) },
                         { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Added to Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
                         { id: 'sold',     icon: <TicketIcon />,   label: selectedEvent.soldOut ? 'Mark as Available' : 'Mark as Sold Out', onClick: () => handleToggleSoldOut(selectedEvent) },
                       ] : [
                         { id: 'share',    icon: <ShareIcon />,    label: 'Share', onClick: () => setShareOpen(true) },
-                        { id: 'save',     icon: <BookmarkIcon />, label: savedIds.has(selectedEvent.id) ? 'Saved' : 'Save', onClick: () => toggleSave(selectedEvent.id) },
-                        { id: 'notify',   icon: <BellIcon />,     label: 'Notification settings' },
-                        { id: 'unfollow', icon: <UnfollowIcon />, label: 'Unfollow event', danger: true },
                         { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Added to Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
                         { id: 'report',   icon: <FlagIcon />,     label: 'Report Event', onClick: () => setReportOpen(true), danger: true },
                       ]).map(item => (
@@ -2611,7 +2604,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             title={ev.soldOut ? 'Mark as available' : 'Mark as sold out'}
                             onClick={e => { e.stopPropagation(); handleToggleSoldOut(ev); }}
                           >
-                            {soldOutTogglingId === ev.id ? '⟳' : ev.soldOut ? 'Available' : 'Sold Out'}
+                            {soldOutTogglingId === ev.id ? '⟳' : ev.soldOut ? 'Mark Available' : 'Mark Sold Out'}
                           </button>
                         )}
                       </div>
@@ -2687,7 +2680,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                               title={ev.soldOut ? 'Mark as available' : 'Mark as sold out'}
                               onClick={e => { e.stopPropagation(); handleToggleSoldOut(ev); }}
                             >
-                              {soldOutTogglingId === ev.id ? '⟳' : ev.soldOut ? 'Available' : 'Sold Out'}
+                              {soldOutTogglingId === ev.id ? '⟳' : ev.soldOut ? 'Mark Available' : 'Mark Sold Out'}
                             </button>
                           )}
                         </div>
