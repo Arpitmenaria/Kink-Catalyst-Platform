@@ -185,8 +185,15 @@
 }
 
 .csp-visibility-icon {
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
   flex-shrink: 0;
+}
+.csp-visibility-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .csp-visibility-content {
@@ -236,6 +243,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   padding: 40px 24px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -248,6 +256,17 @@
 
 .csp-file-input {
   display: none;
+}
+
+/* .csp-upload-content is a plain block div wrapping the icon + text — without
+   its own flex centering, the fixed-size icon box (unaffected by the parent's
+   text-align, since that only centers inline text) sinks to the left edge
+   while the paragraph text centers independently, throwing the two out of
+   alignment with each other. */
+.csp-upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .csp-upload-icon {
@@ -389,8 +408,9 @@
     gap: 12px;
   }
 
-  .csp-visibility-icon {
-    font-size: 20px;
+  .csp-visibility-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .csp-actions {

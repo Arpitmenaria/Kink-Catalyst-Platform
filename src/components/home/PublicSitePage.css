@@ -36,7 +36,8 @@
 }
 
 .pub-site-state-icon {
-  font-size: 44px;
+  display: inline-flex;
+  color: #7c8aab;
   margin-bottom: 8px;
 }
 

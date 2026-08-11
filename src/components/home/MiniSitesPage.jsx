@@ -19,6 +19,30 @@ function BarChartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24"
 function LinkIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>; }
 function DotsIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function FlagIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
+function LiveDotIcon() { return <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>; }
+function DraftIcon()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>; }
+function PublishIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>; }
+function UnpublishIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>; }
+function AlertTriangleIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
+function InboxIcon() { return <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>; }
+function LockIcon()  { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>; }
+function KeyIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L18 10"/></svg>; }
+
+const VISIBILITY_META = {
+  public:   { Icon: GlobeIcon, label: 'Public' },
+  private:  { Icon: LockIcon,  label: 'Private' },
+  password: { Icon: KeyIcon,   label: 'Password protected' },
+};
+
+function VisibilityBadge({ visibility }) {
+  const meta = VISIBILITY_META[visibility] || VISIBILITY_META.private;
+  const { Icon, label } = meta;
+  return (
+    <div className={`ms-visibility-badge ms-visibility-badge--${visibility}`} title={label}>
+      <Icon /> {label}
+    </div>
+  );
+}
 
 const FALLBACK_THUMB = 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&q=80&fit=crop';
 
@@ -237,6 +261,10 @@ export default function MiniSitesPage({
 
   const handlePreviewSite = (site) => {
     if (!site.slug) return;
+    // A draft has no public page yet (the /public/:slug endpoint 404s for
+    // anything unpublished) — send them to the builder's own live preview
+    // instead of a dead link.
+    if (site.status !== 'live') { handleEditSite(site.id); return; }
     window.open(publicSiteUrl(site.slug), '_blank', 'noopener,noreferrer');
   };
 
@@ -374,13 +402,13 @@ export default function MiniSitesPage({
               className={`ms-filter-btn${filterStatus === 'live' ? ' ms-filter-btn--active' : ''}`}
               onClick={() => setFilterStatus('live')}
             >
-              🔴 Live ({liveSites.length})
+              <LiveDotIcon /> Live ({liveSites.length})
             </button>
             <button
               className={`ms-filter-btn${filterStatus === 'draft' ? ' ms-filter-btn--active' : ''}`}
               onClick={() => setFilterStatus('draft')}
             >
-              📝 Draft ({draftSites.length})
+              <DraftIcon /> Draft ({draftSites.length})
             </button>
           </div>
         )}
@@ -391,7 +419,7 @@ export default function MiniSitesPage({
 
         {activeTab === 'my-sites' && !loading && loadError && sites.length === 0 && (
           <div className="ms-empty-state">
-            <p className="ms-empty-icon">⚠️</p>
+            <p className="ms-empty-icon"><AlertTriangleIcon /></p>
             <p className="ms-empty-text">{loadError}</p>
             <button className="ms-create-btn" onClick={() => fetchSites(1, false)}>Retry</button>
           </div>
@@ -417,8 +445,9 @@ export default function MiniSitesPage({
                   <div className="ms-site-thumb">
                     <img src={site.coverImage || FALLBACK_THUMB} alt={site.name} />
                     <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                      {site.status === 'live' ? '🔴 Live' : '📝 Draft'}
+                      {site.status === 'live' ? <><LiveDotIcon /> Live</> : <><DraftIcon /> Draft</>}
                     </div>
+                    <VisibilityBadge visibility={site.visibility} />
                     <div className="ms-site-actions-overlay">
                       <button className="ms-site-action-btn" title="Preview" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}><EyeIcon /></button>
                       <button className="ms-site-action-btn" title="Edit" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}>{loadingEditId === site.id ? '…' : <EditIcon />}</button>
@@ -437,13 +466,20 @@ export default function MiniSitesPage({
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); setAnalyticsSite(site); setOpenMenuId(null); }}><BarChartIcon /> Analytics</button>
-                            <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? '📋 Unpublish' : '🚀 Publish'}</button>
+                            <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? <><UnpublishIcon /> Unpublish</> : <><PublishIcon /> Publish</>}</button>
                             <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                           </div>
                         )}
                       </div>
                     </div>
-                    <p className="ms-site-url">{site.slug}.kicksite.io</p>
+                    <button
+                      type="button"
+                      className="ms-site-url"
+                      onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}
+                      title="Open public link"
+                    >
+                      {site.slug}.kicksite.io
+                    </button>
                     <div className="ms-site-meta">
                       <span className="ms-site-views"><EyeIcon /> {site.views.toLocaleString()}</span>
                       <span className="ms-site-edited">Edited {timeAgo(site.updatedAt) || 'just now'}</span>
@@ -460,7 +496,7 @@ export default function MiniSitesPage({
               ))
             ) : (
               <div className="ms-empty-state">
-                <p className="ms-empty-icon">📭</p>
+                <p className="ms-empty-icon"><InboxIcon /></p>
                 <p className="ms-empty-text">No {filterStatus !== 'all' ? filterStatus : ''} sites found</p>
                 <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button>
               </div>
@@ -482,7 +518,7 @@ export default function MiniSitesPage({
 
         {activeTab === 'all-sites' && !allSitesLoading && allSitesError && allSites.length === 0 && (
           <div className="ms-empty-state">
-            <p className="ms-empty-icon">⚠️</p>
+            <p className="ms-empty-icon"><AlertTriangleIcon /></p>
             <p className="ms-empty-text">{allSitesError}</p>
             <button className="ms-create-btn" onClick={() => fetchAllSites(1, false)}>Retry</button>
           </div>
@@ -504,8 +540,9 @@ export default function MiniSitesPage({
                     <div className="ms-site-thumb">
                       <img src={site.coverImage || FALLBACK_THUMB} alt={site.name} />
                       <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                        {site.status === 'live' ? '🔴 Live' : '📝 Draft'}
+                        {site.status === 'live' ? <><LiveDotIcon /> Live</> : <><DraftIcon /> Draft</>}
                       </div>
+                      <VisibilityBadge visibility={site.visibility} />
                       <div className="ms-site-actions-overlay">
                         <button className="ms-site-action-btn" title="Preview" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}><EyeIcon /></button>
                         {isMine ? (
@@ -529,14 +566,21 @@ export default function MiniSitesPage({
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); setAnalyticsSite(site); setOpenMenuId(null); }}><BarChartIcon /> Analytics</button>
-                                <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? '📋 Unpublish' : '🚀 Publish'}</button>
+                                <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? <><UnpublishIcon /> Unpublish</> : <><PublishIcon /> Publish</>}</button>
                                 <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                      <p className="ms-site-url">{site.slug}.kicksite.io</p>
+                      <button
+                      type="button"
+                      className="ms-site-url"
+                      onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}
+                      title="Open public link"
+                    >
+                      {site.slug}.kicksite.io
+                    </button>
                       {!isMine && site.creatorName && (
                         <p className="ms-site-creator">
                           {site.creatorAvatar && <img src={site.creatorAvatar} alt={site.creatorName} className="ms-site-creator-avatar" />}
@@ -567,7 +611,7 @@ export default function MiniSitesPage({
               })
             ) : (
               <div className="ms-empty-state">
-                <p className="ms-empty-icon">🌐</p>
+                <p className="ms-empty-icon"><GlobeIcon /></p>
                 <p className="ms-empty-text">{allSitesSearchTerm ? `No sites found for "${allSitesSearchTerm}"` : 'No public sites yet'}</p>
               </div>
             )}

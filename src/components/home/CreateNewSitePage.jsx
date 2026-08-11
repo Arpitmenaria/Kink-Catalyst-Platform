@@ -2,10 +2,30 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { apiRequest } from '../../services/api';
 import { normalizeSite } from './miniSiteUtils';
+import ImageCropper from './ImageCropper';
 import './CreateNewSitePage.css';
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function UploadIcon() {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
+}
+
+function GlobeIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+}
+function LockIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
+}
+function KeyIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L18 10"/></svg>;
 }
 
 function CheckIcon() {
@@ -30,6 +50,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cropFile, setCropFile] = useState(null); // raw File pending crop, or null
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -65,41 +86,33 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
     }
   };
 
-  // Handle image upload
+  // Handle image upload — validate, then hand off to the cropper before
+  // it ever lands in formData (same crop-first flow as ProfilePage/OnboardingForm).
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          coverImage: 'Image size must be less than 5MB',
-        }));
-        return;
-      }
+    e.target.value = '';
+    if (!file) return;
 
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({
-          ...prev,
-          coverImage: 'Please upload a valid image file',
-        }));
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData(prev => ({
-          ...prev,
-          coverImage: file,
-          coverImagePreview: event.target.result,
-        }));
-        if (errors.coverImage) {
-          setErrors(prev => ({ ...prev, coverImage: '' }));
-        }
-      };
-      reader.readAsDataURL(file);
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, coverImage: 'Image size must be less than 5MB' }));
+      return;
     }
+    if (!file.type.startsWith('image/')) {
+      setErrors(prev => ({ ...prev, coverImage: 'Please upload a valid image file' }));
+      return;
+    }
+    if (errors.coverImage) setErrors(prev => ({ ...prev, coverImage: '' }));
+    setCropFile(file);
+  };
+
+  const applyCroppedCover = async (croppedFile) => {
+    setCropFile(null);
+    const dataUrl = await fileToDataUrl(croppedFile);
+    setFormData(prev => ({
+      ...prev,
+      coverImage: croppedFile,
+      coverImagePreview: dataUrl,
+    }));
   };
 
   // Validate form
@@ -154,6 +167,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
   };
 
   return (
+    <>
     <div className="create-site-page">
       <div className="csp-container">
         {/* Header */}
@@ -216,9 +230,9 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
             <label className="csp-label">Visibility</label>
             <div className="csp-visibility-options">
               {[
-                { value: 'public', label: 'Public', icon: '🌐', description: 'Anyone can view' },
-                { value: 'private', label: 'Private', icon: '🔒', description: 'Only you can view' },
-                { value: 'password', label: 'Password Protected', icon: '🔐', description: 'Requires password' },
+                { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can view' },
+                { value: 'private', label: 'Private', Icon: LockIcon, description: 'Only you can view' },
+                { value: 'password', label: 'Password Protected', Icon: KeyIcon, description: 'Requires password' },
               ].map(option => (
                 <label key={option.value} className="csp-visibility-option">
                   <input
@@ -230,7 +244,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
                     className="csp-radio-input"
                   />
                   <div className="csp-visibility-card">
-                    <span className="csp-visibility-icon">{option.icon}</span>
+                    <span className="csp-visibility-icon"><option.Icon /></span>
                     <div className="csp-visibility-content">
                       <p className="csp-visibility-label">{option.label}</p>
                       <p className="csp-visibility-desc">{option.description}</p>
@@ -320,5 +334,17 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
         </form>
       </div>
     </div>
+
+    {cropFile && (
+      <ImageCropper
+        file={cropFile}
+        defaultAspect="cover"
+        cropShape="rect"
+        onCancel={() => setCropFile(null)}
+        onSkip={() => applyCroppedCover(cropFile)}
+        onSave={applyCroppedCover}
+      />
+    )}
+    </>
   );
 }

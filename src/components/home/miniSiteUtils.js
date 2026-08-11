@@ -13,8 +13,11 @@ export function normalizeSite(raw) {
     name: raw.name ?? '',
     description: raw.description ?? '',
     slug: raw.slug ?? '',
-    visibility: raw.visibility ?? 'private',
-    status: raw.status ?? 'draft',
+    // Backend returns status/visibility in UPPERCASE ("LIVE", "PUBLIC", ...)
+    // but every comparison in this app checks lowercase — normalize here so
+    // "site.status === 'live'" keeps working everywhere else unmodified.
+    visibility: (raw.visibility ?? 'private').toLowerCase(),
+    status: (raw.status ?? 'draft').toLowerCase(),
     coverImage: raw.coverImage ?? '',
     sections: Array.isArray(raw.sections) ? raw.sections : [],
     sectionsCount: raw.sectionsCount ?? (Array.isArray(raw.sections) ? raw.sections.length : 0),
