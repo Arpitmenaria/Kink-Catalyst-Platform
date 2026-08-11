@@ -518,10 +518,10 @@ export default function MiniSitesPage({
                 </div>
               ))
             ) : (
-              <div className="ms-empty-state">
-                <p className="ms-empty-icon"><InboxIcon /></p>
+              <div>
+                {/* <p className="ms-empty-icon"><InboxIcon /></p>
                 <p className="ms-empty-text">No {filterStatus !== 'all' ? filterStatus : ''} sites found</p>
-                <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button>
+                <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button> */}
               </div>
             )}
           </div>
