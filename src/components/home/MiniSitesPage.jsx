@@ -77,10 +77,10 @@ function ReportSiteModal({ site, authToken, onClose, onReported }) {
     setSubmitting(true);
     setError('');
     try {
-      await apiRequest(`/api/mini-sites/${site.id}/report`, {
+      await apiRequest(`/api/mini-sites/public/${site.slug}/report`, {
         method: 'POST',
         token: authToken,
-        body: { reason, details },
+        body: { reason, description: details },
       });
       onReported(site.id);
       onClose();
