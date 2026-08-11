@@ -22,6 +22,7 @@ export function normalizeSite(raw) {
     sections: Array.isArray(raw.sections) ? raw.sections : [],
     sectionsCount: raw.sectionsCount ?? (Array.isArray(raw.sections) ? raw.sections.length : 0),
     views: raw.views ?? 0,
+    reported: raw.reported ?? false,
     createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
     publishedAt: raw.publishedAt ?? null,

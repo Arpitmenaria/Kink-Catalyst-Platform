@@ -166,7 +166,6 @@ export default function MiniSitesPage({
   const [allSitesPage,      setAllSitesPage]      = useState(1);
   const [allSitesTotalPages, setAllSitesTotalPages] = useState(1);
   const [reportTarget,      setReportTarget]      = useState(null);
-  const [reportedIds,       setReportedIds]       = useState(() => new Set());
   const [deleteTarget,      setDeleteTarget]      = useState(null);
   const [allSitesSearch,    setAllSitesSearch]    = useState('');
   const [allSitesSearchTerm, setAllSitesSearchTerm] = useState(''); // debounced
@@ -232,7 +231,12 @@ export default function MiniSitesPage({
   }, [allSitesSearchTerm]);
 
   const handleReportSite = (siteId) => {
-    setReportedIds(prev => new Set(prev).add(siteId));
+    // Update the reported flag on the site in all lists
+    const updateReportedFlag = (siteList) =>
+      siteList.map(site => site.id === siteId ? { ...site, reported: true } : site);
+
+    setSites(prev => updateReportedFlag(prev));
+    setAllSites(prev => updateReportedFlag(prev));
   };
 
   function handleNav(id) {
@@ -552,7 +556,7 @@ export default function MiniSitesPage({
             {allSites.length > 0 ? (
               allSites.map(site => {
                 const isMine = site.userId && site.userId === currentUserId;
-                const alreadyReported = reportedIds.has(site.id);
+                const alreadyReported = site.reported ?? false;
                 return (
                   <div
                     key={site.id}
@@ -624,7 +628,7 @@ export default function MiniSitesPage({
                             disabled={alreadyReported}
                             onClick={(e) => { e.stopPropagation(); setReportTarget(site); }}
                           >
-                            {alreadyReported ? 'Reported' : 'Report'}
+                            {alreadyReported ? 'Already Reported ✓' : 'Report'}
                           </button>
                         )}
                       </div>
