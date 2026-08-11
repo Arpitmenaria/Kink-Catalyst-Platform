@@ -443,7 +443,22 @@
   opacity: 0.75;
   max-width: 600px;
   margin: 0 auto;
+  white-space: pre-line;
 }
+
+.wp-text-toggle {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--wp-accent, #3b82f6);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.wp-text-toggle:hover { text-decoration: underline; }
 
 /* Gallery Section */
 .wp-gallery-section {
@@ -554,6 +569,13 @@
   font-size: 14px;
   font-family: inherit;
   transition: all 0.2s;
+  background: var(--wp-form-bg, #ffffff);
+  color: var(--wp-form-text, #1f2937);
+}
+
+.wp-form input::placeholder,
+.wp-form textarea::placeholder {
+  color: var(--wp-form-placeholder, #9ca3af);
 }
 
 .wp-form input:focus,
@@ -1351,6 +1373,67 @@
   background: rgba(59, 130, 246, 0.2);
 }
 
+.sbp-emoji-input-row {
+  display: flex;
+  gap: 8px;
+}
+.sbp-emoji-input-row .sbp-property-input { flex: 1; }
+
+.sbp-emoji-picker-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.04);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sbp-emoji-picker-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.sbp-emoji-picker-popover {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 10px;
+  background: #0d1526;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.sbp-emoji-picker-option {
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sbp-emoji-picker-option:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
 .sbp-property-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1380,7 +1463,14 @@
 .sbp-color-picker {
   display: flex;
   gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
 }
+.sbp-color-picker::-webkit-scrollbar { height: 6px; }
+.sbp-color-picker::-webkit-scrollbar-thumb { background: rgba(75, 85, 99, 0.4); border-radius: 3px; }
+.sbp-color-picker::-webkit-scrollbar-track { background: transparent; }
 
 .sbp-color-option {
   width: 36px;

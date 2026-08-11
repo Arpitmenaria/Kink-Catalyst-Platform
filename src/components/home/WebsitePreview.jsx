@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const DEVICE_WIDTH = {
   desktop: '100%',
   tablet: '768px',
@@ -16,6 +18,26 @@ function handleNavLinkClick(e, url, interactive) {
   if (!target) return;
   e.preventDefault();
   target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+const BODY_TRUNCATE_AT = 240;
+
+function TextBody({ text }) {
+  const [expanded, setExpanded] = useState(false);
+  const body = text || '';
+  const isLong = body.length > BODY_TRUNCATE_AT;
+  const shown = expanded || !isLong ? body : `${body.slice(0, BODY_TRUNCATE_AT).trimEnd()}…`;
+
+  return (
+    <>
+      <p>{shown}</p>
+      {isLong && (
+        <button type="button" className="wp-text-toggle" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </>
+  );
 }
 
 function SectionContent({ section, interactive }) {
@@ -74,7 +96,7 @@ function SectionContent({ section, interactive }) {
         <div className="wp-text-section">
           <div className="wp-text-icon">{c.icon}</div>
           <h2>{c.headline}</h2>
-          <p>{c.body}</p>
+          <TextBody text={c.body} />
         </div>
       );
 
@@ -218,6 +240,13 @@ export default function WebsitePreview({
               overflow: style.borderRadius ? 'hidden' : undefined,
               '--wp-accent': style.accentColor || '#3b82f6',
               '--wp-btn-radius': `${style.buttonRadius ?? 8}px`,
+              ...(section.type === 'form'
+                ? {
+                    '--wp-form-bg': style.formFieldBackground || '#ffffff',
+                    '--wp-form-text': style.formFieldTextColor || '#1f2937',
+                    '--wp-form-placeholder': style.formPlaceholderColor || '#9ca3af',
+                  }
+                : null),
               ...(style.contentWidth === 'boxed' ? { maxWidth: 1100, marginLeft: 'auto', marginRight: 'auto' } : null),
               ...(style.backgroundImage
                 ? {

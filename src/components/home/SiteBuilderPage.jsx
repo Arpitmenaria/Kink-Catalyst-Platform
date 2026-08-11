@@ -1,4 +1,4 @@
-import { useState, useRef, useId } from 'react';
+import { useState, useRef, useId, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
 import { SECTION_TYPES, createSection, createId, createStarterSections, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
@@ -100,6 +100,59 @@ function LinkField({ label, value, onChange, sections = [] }) {
           onChange={(e) => onChange(e.target.value)}
           style={{ marginTop: 6 }}
         />
+      )}
+    </div>
+  );
+}
+
+const EMOJI_CHOICES = [
+  '🎯', '🚀', '💡', '⭐', '✨', '🔥', '⚡', '🏆', '🎉', '❤️', '👍', '✅',
+  '📷', '🎨', '🎬', '🎵', '🖼️', '📱', '💻', '⌚', '🖥️', '📡', '🔌', '🔒',
+  '☕', '🍕', '🍔', '🥗', '🍰', '🍷', '🍪', '🧊', '🌱', '🍃', '🌍', '🌤️',
+  '💪', '🏋️', '🧘', '🏃', '⚽', '🏀', '🎾', '🚴', '🏊', '🧗', '🩺', '💊',
+  '🏠', '🏢', '🏨', '🚗', '✈️', '🚢', '📍', '🗺️', '🔧', '🛠️', '⚙️', '📐',
+  '💼', '📊', '📈', '💰', '💳', '🎓', '📚', '✏️', '📝', '🗓️', '⏰', '📞',
+  '✉️', '💬', '🔔', '🎁', '🛒', '🏷️', '🔍', '🔑', '🛡️', '🌟', '👑', '💎',
+];
+
+function EmojiField({ label, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  return (
+    <div className="sbp-property-group" ref={ref} style={{ position: 'relative' }}>
+      <label className="sbp-property-label">{label}</label>
+      <div className="sbp-emoji-input-row">
+        <input
+          type="text"
+          className="sbp-property-input"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <button type="button" className="sbp-emoji-picker-btn" onClick={() => setOpen((o) => !o)} title="Pick an emoji">
+          {value || '🙂'}
+        </button>
+      </div>
+      {open && (
+        <div className="sbp-emoji-picker-popover">
+          {EMOJI_CHOICES.map((e) => (
+            <button
+              type="button"
+              key={e}
+              className="sbp-emoji-picker-option"
+              onClick={() => { onChange(e); setOpen(false); }}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -423,7 +476,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
       case 'hero':
         return (
           <>
-            <TextField label="Icon (emoji)" value={c.icon} onChange={(v) => setContent({ icon: v })} />
+            <EmojiField label="Icon (emoji)" value={c.icon} onChange={(v) => setContent({ icon: v })} />
             <TextField label="Headline" value={c.headline} onChange={(v) => setContent({ headline: v })} />
             <TextAreaField label="Subheadline" rows={2} value={c.subheadline} onChange={(v) => setContent({ subheadline: v })} />
             <TextField label="Primary Button Text" value={c.primaryButtonText} onChange={(v) => setContent({ primaryButtonText: v })} />
@@ -437,7 +490,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
       case 'text':
         return (
           <>
-            <TextField label="Icon (emoji)" value={c.icon} onChange={(v) => setContent({ icon: v })} />
+            <EmojiField label="Icon (emoji)" value={c.icon} onChange={(v) => setContent({ icon: v })} />
             <TextField label="Headline" value={c.headline} onChange={(v) => setContent({ headline: v })} />
             <TextAreaField label="Body" rows={5} value={c.body} onChange={(v) => setContent({ body: v })} />
           </>
@@ -454,7 +507,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
               newItemFactory={() => ({ icon: '✨', title: 'New Feature', description: 'Description' })}
               renderItem={(item, index, updateItem) => (
                 <>
-                  <TextField label="Icon (emoji)" value={item.icon} onChange={(v) => updateItem(index, { icon: v })} />
+                  <EmojiField label="Icon (emoji)" value={item.icon} onChange={(v) => updateItem(index, { icon: v })} />
                   <TextField label="Title" value={item.title} onChange={(v) => updateItem(index, { title: v })} />
                   <TextAreaField label="Description" rows={2} value={item.description} onChange={(v) => updateItem(index, { description: v })} />
                 </>
@@ -572,6 +625,14 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
     return (
       <>
         <ColorField label="Background Color" value={style.background} onChange={(v) => updateSelectedStyle({ background: v })} />
+
+        {selectedSection.type === 'form' && (
+          <>
+            <ColorField label="Form Field Background" value={style.formFieldBackground} onChange={(v) => updateSelectedStyle({ formFieldBackground: v })} />
+            <ColorField label="Form Field Text Color" value={style.formFieldTextColor} onChange={(v) => updateSelectedStyle({ formFieldTextColor: v })} />
+            <ColorField label="Placeholder Color" value={style.formPlaceholderColor} onChange={(v) => updateSelectedStyle({ formPlaceholderColor: v })} />
+          </>
+        )}
 
         <ImageField label="Background Image (optional)" value={style.backgroundImage} onChange={(v) => updateSelectedStyle({ backgroundImage: v })} />
 
@@ -1008,7 +1069,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
               <a href={publishedInfo.url} target="_blank" rel="noopener noreferrer" className="sbp-btn sbp-btn--publish">
                 <EyeIcon /> View Site
               </a>
-              <button type="button" className="sbp-btn sbp-btn--save" onClick={() => { setPublishedInfo(null); setLinkCopied(false); }}>
+              <button type="button" className="sbp-btn sbp-btn--save" onClick={() => { setPublishedInfo(null); setLinkCopied(false); onBack?.(); }}>
                 Done
               </button>
             </div>
