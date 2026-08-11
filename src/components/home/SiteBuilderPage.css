@@ -384,6 +384,7 @@
 }
 
 .wp-btn {
+  display: inline-block;
   padding: 12px 28px;
   border: none;
   border-radius: var(--wp-btn-radius, 8px);
@@ -392,6 +393,7 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .wp-btn-primary {

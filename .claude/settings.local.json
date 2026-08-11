@@ -163,7 +163,15 @@
       "Bash(curl -s __TRACKED_VAR__/api/mini-sites/6a7ab7c5bdc0dfd2e8da7470 -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
       "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ab7c5bdc0dfd2e8da7470 -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
       "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ab815bdc0dfd2e8da7472 -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
-      "Bash(python3 mock_batch.py)"
+      "Bash(python3 mock_batch.py)",
+      "Bash(python3 -c \"import requests\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-jaymandaliya-Documents-codetown-kick-analyst-frontend/db23f90d-f97b-4e35-af92-9a977fde55d3/scratchpad/create_batch.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:5173/src/components/home/WebsitePreview.jsx\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:5173/src/components/home/SiteBuilderPage.css\")",
+      "Bash(sort -t: -k3 -rn)",
+      "Bash(curl -s -o /tmp/imgcrop_css_check.html -w \"%{http_code}\" \"http://localhost:5173/src/components/home/ImageCropper.css\")",
+      "Bash(curl -s \"http://localhost:5173/src/components/home/ImageCropper.css\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-jaymandaliya-Documents-codetown-kick-analyst-frontend/db23f90d-f97b-4e35-af92-9a977fde55d3/scratchpad/fix_nav_links.py)"
     ]
   },
   "enableAllProjectMcpServers": true,

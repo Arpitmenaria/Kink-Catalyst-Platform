@@ -4,7 +4,21 @@ const DEVICE_WIDTH = {
   mobile: '375px',
 };
 
-function SectionContent({ section }) {
+// In the builder canvas (interactive=true) a nav-link click must not
+// navigate — it's editing, not browsing. On the real published/preview
+// render (interactive=false), an in-page "#id" link smooth-scrolls to the
+// matching section; anything else (an external URL) is left to navigate
+// normally.
+function handleNavLinkClick(e, url, interactive) {
+  if (interactive) { e.preventDefault(); return; }
+  if (!url || !url.startsWith('#') || url.length < 2) return;
+  const target = document.getElementById(url.slice(1));
+  if (!target) return;
+  e.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function SectionContent({ section, interactive }) {
   const c = section.content || {};
 
   switch (section.type) {
@@ -14,10 +28,14 @@ function SectionContent({ section }) {
           <div className="wp-navbar-logo">{c.logoText}</div>
           <nav className="wp-navbar-links">
             {(c.links || []).map((l, i) => (
-              <a key={i} href={l.url} onClick={(e) => e.preventDefault()}>{l.label}</a>
+              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive)}>{l.label}</a>
             ))}
           </nav>
-          {c.ctaText && <button type="button" className="wp-btn wp-btn-primary wp-navbar-cta">{c.ctaText}</button>}
+          {c.ctaText && (
+            <a href={c.ctaLink || '#'} className="wp-btn wp-btn-primary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.ctaLink, interactive)}>
+              {c.ctaText}
+            </a>
+          )}
         </div>
       );
 
@@ -29,8 +47,16 @@ function SectionContent({ section }) {
             <h1>{c.headline}</h1>
             <p>{c.subheadline}</p>
             <div className="wp-hero-buttons">
-              {c.primaryButtonText && <button type="button" className="wp-btn wp-btn-primary">{c.primaryButtonText}</button>}
-              {c.secondaryButtonText && <button type="button" className="wp-btn wp-btn-secondary">{c.secondaryButtonText}</button>}
+              {c.primaryButtonText && (
+                <a href={c.primaryButtonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.primaryButtonLink, interactive)}>
+                  {c.primaryButtonText}
+                </a>
+              )}
+              {c.secondaryButtonText && (
+                <a href={c.secondaryButtonLink || '#'} className="wp-btn wp-btn-secondary" onClick={(e) => handleNavLinkClick(e, c.secondaryButtonLink, interactive)}>
+                  {c.secondaryButtonText}
+                </a>
+              )}
             </div>
           </div>
           <div className="wp-hero-image">
@@ -110,7 +136,11 @@ function SectionContent({ section }) {
         <div className="wp-cta-section">
           <h2>{c.headline}</h2>
           <p>{c.subheadline}</p>
-          {c.buttonText && <button type="button" className="wp-btn wp-btn-primary">{c.buttonText}</button>}
+          {c.buttonText && (
+            <a href={c.buttonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.buttonLink, interactive)}>
+              {c.buttonText}
+            </a>
+          )}
         </div>
       );
 
@@ -135,7 +165,7 @@ function SectionContent({ section }) {
         <div className="wp-footer-section">
           <div className="wp-footer-links">
             {(c.links || []).map((l, i) => (
-              <a key={i} href={l.url} onClick={(e) => e.preventDefault()}>{l.label}</a>
+              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive)}>{l.label}</a>
             ))}
           </div>
           <p className="wp-footer-text">{c.text}</p>
@@ -201,6 +231,7 @@ export default function WebsitePreview({
             return (
               <div
                 key={section.id}
+                id={section.id}
                 className={[
                   'wp-section',
                   `wp-section-${section.type}`,
@@ -210,7 +241,7 @@ export default function WebsitePreview({
                 style={wrapperStyle}
                 onClick={interactive ? () => onSelectSection(section.id) : undefined}
               >
-                <SectionContent section={section} />
+                <SectionContent section={section} interactive={interactive} />
               </div>
             );
           })}

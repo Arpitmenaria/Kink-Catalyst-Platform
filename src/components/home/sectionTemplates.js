@@ -181,12 +181,41 @@ export function createSection(type) {
   };
 }
 
-export const DEFAULT_STARTER_SECTIONS = [
-  { ...createSection('navbar'), name: 'Navbar' },
-  { ...createSection('hero'), name: 'Hero' },
-  { ...createSection('text'), name: 'About' },
-  { ...createSection('grid'), name: 'Services' },
-  { ...createSection('gallery'), name: 'Portfolio' },
-  { ...createSection('form'), name: 'Contact' },
-  { ...createSection('footer'), name: 'Footer' },
-];
+// A factory (not a static array) so every new site gets its own fresh ids —
+// and, critically, so the navbar/footer's default links can point at the
+// *real* ids of the sections generated alongside them, instead of guessed
+// text like "#about" that happens to match nothing once rendered.
+export function createStarterSections() {
+  const hero = { ...createSection('hero'), name: 'Hero' };
+  const about = { ...createSection('text'), name: 'About' };
+  const services = { ...createSection('grid'), name: 'Services' };
+  const portfolio = { ...createSection('gallery'), name: 'Portfolio' };
+  const contact = { ...createSection('form'), name: 'Contact' };
+  const footer = { ...createSection('footer'), name: 'Footer' };
+
+  const navbar = { ...createSection('navbar'), name: 'Navbar' };
+  navbar.content = {
+    ...navbar.content,
+    links: [
+      { label: 'Home', url: `#${hero.id}` },
+      { label: 'About', url: `#${about.id}` },
+      { label: 'Services', url: `#${services.id}` },
+      { label: 'Contact', url: `#${contact.id}` },
+    ],
+    ctaLink: `#${contact.id}`,
+  };
+
+  footer.content = {
+    ...footer.content,
+    links: [
+      { label: 'Home', url: `#${hero.id}` },
+      { label: 'About', url: `#${about.id}` },
+      { label: 'Contact', url: `#${contact.id}` },
+    ],
+  };
+
+  return [navbar, hero, about, services, portfolio, contact, footer];
+}
+
+// Back-compat for any existing call sites expecting a ready-made array.
+export const DEFAULT_STARTER_SECTIONS = createStarterSections();

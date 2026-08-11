@@ -1,7 +1,7 @@
 import { useState, useRef, useId } from 'react';
 import { useSelector } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
-import { SECTION_TYPES, createSection, createId, DEFAULT_STARTER_SECTIONS, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
+import { SECTION_TYPES, createSection, createId, createStarterSections, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
 import { apiRequest } from '../../services/api';
 import { normalizeSite, publicSiteUrl } from './miniSiteUtils';
 import './SiteBuilderPage.css';
@@ -62,6 +62,39 @@ function TextField({ label, value, onChange, placeholder }) {
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+// A URL field with a "jump to this section" shortcut — picking a section
+// sets the link to `#<that section's real id>`, so it's guaranteed to match
+// what WebsitePreview actually scrolls to. Free-text stays available for
+// external links (or anyone who wants a raw #anchor for whatever reason).
+function LinkField({ label, value, onChange, sections = [] }) {
+  const matchedSection = sections.find((s) => `#${s.id}` === value);
+  return (
+    <div className="sbp-property-group">
+      <label className="sbp-property-label">{label}</label>
+      <select
+        className="sbp-property-select"
+        value={matchedSection ? value : '__custom__'}
+        onChange={(e) => onChange(e.target.value === '__custom__' ? '' : e.target.value)}
+      >
+        <option value="__custom__">Custom / external URL…</option>
+        {sections.map((s) => (
+          <option key={s.id} value={`#${s.id}`}>Jump to: {s.name}</option>
+        ))}
+      </select>
+      {!matchedSection && (
+        <input
+          type="text"
+          className="sbp-property-input"
+          value={value || ''}
+          placeholder="https://... or #anchor"
+          onChange={(e) => onChange(e.target.value)}
+          style={{ marginTop: 6 }}
+        />
+      )}
     </div>
   );
 }
@@ -169,7 +202,7 @@ function ItemsEditor({ items = [], onChange, renderItem, newItemFactory, addLabe
 
 export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) {
   const authToken = useSelector(s => s.auth?.token);
-  const [sections, setSections] = useState(() => (site?.sections?.length ? site.sections : DEFAULT_STARTER_SECTIONS));
+  const [sections, setSections] = useState(() => (site?.sections?.length ? site.sections : createStarterSections()));
   const [selectedSectionId, setSelectedSectionId] = useState(() => sections[0]?.id ?? null);
   const [activePropTab, setActivePropTab] = useState('content');
   const [device, setDevice] = useState('desktop');
@@ -354,12 +387,12 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
               renderItem={(item, index, updateItem) => (
                 <>
                   <TextField label="Label" value={item.label} onChange={(v) => updateItem(index, { label: v })} />
-                  <TextField label="URL" value={item.url} onChange={(v) => updateItem(index, { url: v })} />
+                  <LinkField label="Links to" value={item.url} onChange={(v) => updateItem(index, { url: v })} sections={sections} />
                 </>
               )}
             />
             <TextField label="CTA Button Text" value={c.ctaText} onChange={(v) => setContent({ ctaText: v })} />
-            <TextField label="CTA Button Link" value={c.ctaLink} onChange={(v) => setContent({ ctaLink: v })} />
+            <LinkField label="CTA Button Links to" value={c.ctaLink} onChange={(v) => setContent({ ctaLink: v })} sections={sections} />
           </>
         );
 
@@ -370,9 +403,9 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
             <TextField label="Headline" value={c.headline} onChange={(v) => setContent({ headline: v })} />
             <TextAreaField label="Subheadline" rows={2} value={c.subheadline} onChange={(v) => setContent({ subheadline: v })} />
             <TextField label="Primary Button Text" value={c.primaryButtonText} onChange={(v) => setContent({ primaryButtonText: v })} />
-            <TextField label="Primary Button Link" value={c.primaryButtonLink} onChange={(v) => setContent({ primaryButtonLink: v })} />
+            <LinkField label="Primary Button Links to" value={c.primaryButtonLink} onChange={(v) => setContent({ primaryButtonLink: v })} sections={sections} />
             <TextField label="Secondary Button Text" value={c.secondaryButtonText} onChange={(v) => setContent({ secondaryButtonText: v })} />
-            <TextField label="Secondary Button Link" value={c.secondaryButtonLink} onChange={(v) => setContent({ secondaryButtonLink: v })} />
+            <LinkField label="Secondary Button Links to" value={c.secondaryButtonLink} onChange={(v) => setContent({ secondaryButtonLink: v })} sections={sections} />
             <ImageField label="Hero Image" value={c.image} onChange={(v) => setContent({ image: v })} />
           </>
         );
@@ -459,7 +492,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
             <TextField label="Headline" value={c.headline} onChange={(v) => setContent({ headline: v })} />
             <TextAreaField label="Subheadline" rows={2} value={c.subheadline} onChange={(v) => setContent({ subheadline: v })} />
             <TextField label="Button Text" value={c.buttonText} onChange={(v) => setContent({ buttonText: v })} />
-            <TextField label="Button Link" value={c.buttonLink} onChange={(v) => setContent({ buttonLink: v })} />
+            <LinkField label="Button Links to" value={c.buttonLink} onChange={(v) => setContent({ buttonLink: v })} sections={sections} />
           </>
         );
 
@@ -495,7 +528,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
               renderItem={(item, index, updateItem) => (
                 <>
                   <TextField label="Label" value={item.label} onChange={(v) => updateItem(index, { label: v })} />
-                  <TextField label="URL" value={item.url} onChange={(v) => updateItem(index, { url: v })} />
+                  <LinkField label="Links to" value={item.url} onChange={(v) => updateItem(index, { url: v })} sections={sections} />
                 </>
               )}
             />
