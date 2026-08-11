@@ -182,10 +182,12 @@
 
 /* Site card */
 .ms-site-card {
+  position: relative;
   background: #0d1526;
   border: 1px solid #131d2e;
   border-radius: 14px;
-  overflow: hidden;
+  /* NOT overflow:hidden — that clipped the "..." dropdown the moment it grew
+     past the card's edge. The thumbnail below clips its own corners instead. */
   transition: border-color 0.18s, transform 0.18s;
 }
 .ms-site-card:hover {
@@ -196,6 +198,7 @@
 .ms-site-thumb {
   position: relative;
   height: 140px;
+  border-radius: 14px 14px 0 0;
   overflow: hidden;
 }
 .ms-site-thumb img {
@@ -302,6 +305,11 @@
   transition: background 0.15s, color 0.15s;
 }
 .ms-site-dots:hover { background: #1a2540; color: #93c5fd; }
+
+/* Lifts the whole card above the grid rows below it while its dropdown is
+   open, so the dropdown (which now extends past the card's own edge) can
+   never be painted over by a sibling card. */
+.ms-site-card--menu-open { z-index: 20; }
 
 .ms-site-dropdown {
   position: absolute;

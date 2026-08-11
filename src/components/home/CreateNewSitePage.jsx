@@ -293,22 +293,42 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
                   </button>
                 </div>
               ) : (
-                <label className="csp-upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="csp-file-input"
-                  />
-                  <div className="csp-upload-content">
-                    <div className="csp-upload-icon"><UploadIcon /></div>
-                    <p className="csp-upload-text">Click to upload or drag and drop</p>
-                    <p className="csp-upload-hint">PNG, JPG, GIF up to 5MB</p>
+                <>
+                  <label className="csp-upload-area">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="csp-file-input"
+                    />
+                    <div className="csp-upload-content">
+                      <div className="csp-upload-icon"><UploadIcon /></div>
+                      <p className="csp-upload-text">Click to upload or drag and drop</p>
+                      <p className="csp-upload-hint">PNG, JPG, GIF up to 5MB</p>
+                    </div>
+                  </label>
+                  <div className="csp-cover-url-fallback">
+                    <span className="csp-cover-url-divider">or paste an image URL</span>
+                    <input
+                      type="text"
+                      className="csp-input"
+                      placeholder="https://example.com/image.jpg"
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        e.preventDefault();
+                        const url = e.target.value.trim();
+                        if (url) setFormData(prev => ({ ...prev, coverImage: url, coverImagePreview: url }));
+                      }}
+                      onBlur={(e) => {
+                        const url = e.target.value.trim();
+                        if (url) setFormData(prev => ({ ...prev, coverImage: url, coverImagePreview: url }));
+                      }}
+                    />
                   </div>
-                </label>
+                </>
               )}
               {errors.coverImage && <p className="csp-error">{errors.coverImage}</p>}
-              <p className="csp-helper">Recommended: 1200x600px for best results</p>
+              <p className="csp-helper">Recommended: 1200x600px for best results. Uploading a file currently fails on the server (known backend bug) — pasting a direct image URL works reliably in the meantime.</p>
             </div>
           </div>
 

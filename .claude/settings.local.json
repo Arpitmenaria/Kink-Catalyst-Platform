@@ -171,7 +171,20 @@
       "Bash(sort -t: -k3 -rn)",
       "Bash(curl -s -o /tmp/imgcrop_css_check.html -w \"%{http_code}\" \"http://localhost:5173/src/components/home/ImageCropper.css\")",
       "Bash(curl -s \"http://localhost:5173/src/components/home/ImageCropper.css\")",
-      "Bash(python3 /private/tmp/claude-501/-Users-jaymandaliya-Documents-codetown-kick-analyst-frontend/db23f90d-f97b-4e35-af92-9a977fde55d3/scratchpad/fix_nav_links.py)"
+      "Bash(python3 /private/tmp/claude-501/-Users-jaymandaliya-Documents-codetown-kick-analyst-frontend/db23f90d-f97b-4e35-af92-9a977fde55d3/scratchpad/fix_nav_links.py)",
+      "Bash(curl -s \"https://kick-analyst-backend-production.jay886631.workers.dev/api/mini-sites/public/jayreactnative\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:5173/src/components/home/SiteBuilderPage.jsx\")",
+      "Bash(curl -s __TRACKED_VAR__/api/mini-sites/browse?search=santushti -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X POST __TRACKED_VAR__/api/mini-sites -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' --data-binary @/tmp/coverimg_test_body.json)",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X POST __TRACKED_VAR__/api/mini-sites -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"name\":\"NoCoverTest-DeleteMe\",\"visibility\":\"private\"}')",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X POST __TRACKED_VAR__/api/mini-sites -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"name\":\"UrlCoverTest-DeleteMe\",\"visibility\":\"private\",\"coverImage\":\"https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&q=80&fit=crop\"}')",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X PUT __TRACKED_VAR__/api/mini-sites/__TRACKED_VAR__ -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' --data-binary @/tmp/put_coverimg_body.json)",
+      "Bash(curl -s -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ac4ebbdc0dfd2e8da748d -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(python3 -c \"import json,sys;print\\(json.load\\(sys.stdin\\)\\)\")",
+      "Bash(curl -s -X POST __TRACKED_VAR__/api/mini-sites -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"name\":\"SectionImgTest-DeleteMe\",\"visibility\":\"private\"}' -o /tmp/secimg_create.json)",
+      "Bash(python3 -c \"import json;print\\(json.load\\(open\\('/tmp/secimg_create.json'\\)\\)['data']['_id']\\)\")",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X PUT __TRACKED_VAR__/api/mini-sites/__TRACKED_VAR__ -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' --data-binary @/tmp/secimg_put_body.json)",
+      "Bash(curl -s -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ac565bdc0dfd2e8da748f -H 'Authorization: Bearer __CMDSUB_OUTPUT__')"
     ]
   },
   "enableAllProjectMcpServers": true,

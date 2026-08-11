@@ -72,6 +72,7 @@
 }
 
 .sbp-site-url {
+  display: block;
   font-size: 12px;
   color: #60a5fa;
   margin: 4px 0 0 0;
@@ -79,7 +80,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+  text-decoration: none;
 }
+.sbp-site-url--link { cursor: pointer; }
+.sbp-site-url--link:hover { text-decoration: underline; }
 
 .sbp-header-right {
   display: flex;
@@ -1883,4 +1887,96 @@
   .sbp-right-section {
     padding: 16px;
   }
+}
+
+/* ── Publish Success Modal ── */
+.sbp-publish-modal {
+  max-width: 460px;
+  position: relative;
+  text-align: center;
+  padding: 36px 32px 28px;
+}
+
+.sbp-publish-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.sbp-publish-modal-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sbp-publish-modal-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sbp-publish-modal-sub {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: #8b95a5;
+}
+
+.sbp-publish-modal-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 10px;
+  padding: 10px 10px 10px 14px;
+  margin-bottom: 20px;
+}
+
+.sbp-publish-modal-link {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #93c5fd;
+  text-align: left;
+  text-decoration: none;
+}
+.sbp-publish-modal-link:hover { text-decoration: underline; }
+
+.sbp-publish-modal-copy {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.sbp-publish-modal-copy:hover { background: rgba(59, 130, 246, 0.25); }
+
+.sbp-publish-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.sbp-publish-modal-actions .sbp-btn {
+  flex: 1;
+  justify-content: center;
+  text-decoration: none;
 }

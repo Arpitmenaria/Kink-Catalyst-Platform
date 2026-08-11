@@ -49,6 +49,12 @@ function UploadIcon() {
 function SettingsIcon() {
   return <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 }
+function CheckCircleIcon() {
+  return <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+}
+function CopyIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+}
 
 /* ── Small reusable property-field components ── */
 function TextField({ label, value, onChange, placeholder }) {
@@ -212,6 +218,8 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const [savedStatus, setSavedStatus] = useState('all-saved');
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
+  const [publishedInfo, setPublishedInfo] = useState(null); // { name, url } | null
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const dragItem = useRef(null);
   const rowRefs = useRef([]);
@@ -339,15 +347,31 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const handlePublish = async () => {
     setIsPublishing(true);
     try {
+      // /publish only flips status on whatever was last saved — it does NOT
+      // take the editor's current sections. Without saving first, Publish
+      // would ship stale (or, for a never-saved new site, empty) content.
+      setSavedStatus('saving');
+      const saveRes = await apiRequest(`/api/mini-sites/${mockSite.id}`, {
+        method: 'PUT',
+        token: authToken,
+        body: { sections },
+      });
+      setSavedStatus('all-saved');
+      onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...saveRes?.data }));
+
       const res = await apiRequest(`/api/mini-sites/${mockSite.id}/publish`, {
         method: 'POST',
         token: authToken,
         body: {},
       });
-      const updated = normalizeSite({ ...mockSite, ...res?.data });
+      const updated = normalizeSite({ ...mockSite, ...saveRes?.data, ...res?.data });
       onSiteUpdate?.(mockSite.id, updated);
-      alert(`Site "${mockSite.name}" published successfully!\n\nView it at: ${updated.publishedUrl || publicSiteUrl(updated.slug)}`);
+      // publishedUrl from the API is a kicksite.io domain that doesn't
+      // actually resolve anywhere — the real, working link is this app's
+      // own ?site= route.
+      setPublishedInfo({ name: updated.name, url: publicSiteUrl(updated.slug) });
     } catch (err) {
+      setSavedStatus('all-saved');
       alert(err.message || 'Failed to publish site');
     } finally {
       setIsPublishing(false);
@@ -735,7 +759,13 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
           </button>
           <div className="sbp-header-info">
             <h1 className="sbp-site-name">{mockSite.name}</h1>
-            <p className="sbp-site-url">{mockSite.slug}.kicksite.io</p>
+            {mockSite.status === 'live' ? (
+              <a href={publicSiteUrl(mockSite.slug)} target="_blank" rel="noopener noreferrer" className="sbp-site-url sbp-site-url--link" title="Open public link">
+                {mockSite.slug}.kicksite.io
+              </a>
+            ) : (
+              <p className="sbp-site-url" title="Publish the site to make this link live">{mockSite.slug}.kicksite.io</p>
+            )}
           </div>
         </div>
 
@@ -760,9 +790,9 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
             Preview
           </button>
 
-          <button className="sbp-btn sbp-btn--save" onClick={handleSave} disabled={savedStatus === 'saving'}>
+          <button className="sbp-btn sbp-btn--save" onClick={handleSave} disabled={savedStatus === 'saving'} title={mockSite.status === 'live' ? 'Saves and updates the live site immediately' : 'Saves your progress without publishing'}>
             <SaveIcon />
-            {savedStatus === 'saving' ? 'Saving...' : 'Save Draft'}
+            {savedStatus === 'saving' ? 'Saving...' : (mockSite.status === 'live' ? 'Save & Update Live Site' : 'Save Draft')}
           </button>
 
           {mockSite.status === 'live' ? (
@@ -942,6 +972,45 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
                   <span className="sbp-type-card-desc">{t.description}</span>
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Success */}
+      {publishedInfo && (
+        <div className="sbp-modal-overlay" onClick={() => { setPublishedInfo(null); setLinkCopied(false); }}>
+          <div className="sbp-modal sbp-publish-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="sbp-modal-close sbp-publish-modal-close" onClick={() => { setPublishedInfo(null); setLinkCopied(false); }}>
+              <CloseIcon />
+            </button>
+            <div className="sbp-publish-modal-icon"><CheckCircleIcon /></div>
+            <h3 className="sbp-publish-modal-title">Published!</h3>
+            <p className="sbp-publish-modal-sub">"{publishedInfo.name}" is now live.</p>
+            <div className="sbp-publish-modal-link-row">
+              <a href={publishedInfo.url} target="_blank" rel="noopener noreferrer" className="sbp-publish-modal-link">
+                {publishedInfo.url}
+              </a>
+              <button
+                type="button"
+                className="sbp-publish-modal-copy"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(publishedInfo.url);
+                  setLinkCopied(true);
+                  setTimeout(() => setLinkCopied(false), 2000);
+                }}
+                title="Copy link"
+              >
+                <CopyIcon /> {linkCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div className="sbp-publish-modal-actions">
+              <a href={publishedInfo.url} target="_blank" rel="noopener noreferrer" className="sbp-btn sbp-btn--publish">
+                <EyeIcon /> View Site
+              </a>
+              <button type="button" className="sbp-btn sbp-btn--save" onClick={() => { setPublishedInfo(null); setLinkCopied(false); }}>
+                Done
+              </button>
             </div>
           </div>
         </div>

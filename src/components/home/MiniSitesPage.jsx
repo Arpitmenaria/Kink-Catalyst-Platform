@@ -438,7 +438,7 @@ export default function MiniSitesPage({
               filteredSites.map(site => (
                 <div
                   key={site.id}
-                  className="ms-site-card"
+                  className={`ms-site-card${openMenuId === site.id ? ' ms-site-card--menu-open' : ''}`}
                   onClick={() => setOpenMenuId(null)}
                   style={{ opacity: busyId === site.id ? 0.6 : 1, pointerEvents: busyId === site.id ? 'none' : 'auto' }}
                 >
@@ -533,7 +533,7 @@ export default function MiniSitesPage({
                 return (
                   <div
                     key={site.id}
-                    className="ms-site-card"
+                    className={`ms-site-card${openMenuId === site.id ? ' ms-site-card--menu-open' : ''}`}
                     onClick={() => setOpenMenuId(null)}
                     style={{ opacity: busyId === site.id ? 0.6 : 1, pointerEvents: busyId === site.id ? 'none' : 'auto' }}
                   >

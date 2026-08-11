@@ -295,6 +295,18 @@
   margin: 0;
 }
 
+.csp-cover-url-fallback {
+  margin-top: 12px;
+}
+
+.csp-cover-url-divider {
+  display: block;
+  font-size: 11px;
+  color: #5b6a7c;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
 /* Image Preview */
 .csp-image-preview {
   position: relative;
