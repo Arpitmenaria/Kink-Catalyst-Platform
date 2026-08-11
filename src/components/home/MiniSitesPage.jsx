@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import CreateNewSitePage from './CreateNewSitePage';
@@ -6,7 +6,8 @@ import SiteBuilderPage from './SiteBuilderPage';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
 import { ALEX_AVATAR } from './mockData';
 import { apiRequest } from '../../services/api';
-import { normalizeSite, timeAgo, publicSiteUrl } from './miniSiteUtils';
+import { normalizeSite, timeAgo, siteUrl, displayUrl } from './miniSiteUtils';
+import { SITE_TEMPLATES } from './templateContent';
 import './MiniSitesPage.css';
 
 /* ── Icons ── */
@@ -45,13 +46,6 @@ function VisibilityBadge({ visibility }) {
 }
 
 const FALLBACK_THUMB = 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&q=80&fit=crop';
-
-const TEMPLATES = [
-  { id: 1, name: 'Portfolio',    thumb: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop', tag: 'Popular' },
-  { id: 2, name: 'Landing Page', thumb: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80&fit=crop', tag: 'New' },
-  { id: 3, name: 'Blog',         thumb: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80&fit=crop', tag: null },
-  { id: 4, name: 'Event Page',   thumb: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&q=80&fit=crop', tag: 'Popular' },
-];
 
 const TABS = [
   { id: 'all-sites', label: 'All Sites' },
@@ -137,6 +131,43 @@ function DeleteConfirmModal({ site, onCancel, onConfirm }) {
   );
 }
 
+// Renders a small live mockup of a template's navbar+hero — using the
+// template's actual copy and the chosen theme's real colors — instead of an
+// unrelated stock photo, so the card shows what you'd actually get.
+function TemplatePreview({ tpl, theme }) {
+  const sections = useMemo(() => tpl.buildSections(theme), [tpl, theme]);
+  const navbar = sections.find(s => s.type === 'navbar')?.content || {};
+  const hero = sections.find(s => s.type === 'hero')?.content || {};
+
+  return (
+    <div className="ms-tpl-preview" style={{ background: theme.dark, color: theme.darkText }}>
+      <div className="ms-tpl-preview-glow" style={{ background: theme.accent }} />
+      <div className="ms-tpl-preview-nav">
+        <span className="ms-tpl-preview-logo">{navbar.logoText}</span>
+        <span className="ms-tpl-preview-navdots">
+          {(navbar.links || []).slice(0, 3).map((_, i) => <i key={i} />)}
+        </span>
+        {navbar.ctaText && (
+          <span className="ms-tpl-preview-navcta" style={{ background: theme.accent, color: theme.dark }}>{navbar.ctaText}</span>
+        )}
+      </div>
+      <div className="ms-tpl-preview-hero">
+        <span className="ms-tpl-preview-icon">{hero.icon}</span>
+        <p className="ms-tpl-preview-headline">{hero.headline}</p>
+        <p className="ms-tpl-preview-sub">{hero.subheadline}</p>
+        <div className="ms-tpl-preview-btns">
+          {hero.primaryButtonText && (
+            <span className="ms-tpl-preview-btn-primary" style={{ background: theme.accent, color: theme.dark }}>{hero.primaryButtonText}</span>
+          )}
+          {hero.secondaryButtonText && (
+            <span className="ms-tpl-preview-btn-secondary" style={{ borderColor: theme.accent2 }}>{hero.secondaryButtonText}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MiniSitesPage({
   onBack, onMessagesClick, onEventsClick, onGroupsClick,
   onCalendarClick, onCoursesClick, onLibraryClick, onMinisitesClick,
@@ -146,6 +177,8 @@ export default function MiniSitesPage({
   const currentUserId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
   const [activeTab,        setActiveTab]        = useState('my-sites');
   const [showCreateSite,   setShowCreateSite]   = useState(false);
+  const [pendingTemplate,  setPendingTemplate]  = useState(null); // template picked via "Use Template", applied on next create
+  const [tplThemeChoice,   setTplThemeChoice]   = useState({}); // { [templateKey]: themeKey } — per-card theme override
   const [currentBuilder,   setCurrentBuilder]   = useState(null);
   const [openMenuId,       setOpenMenuId]       = useState(null);
   const [sites,            setSites]            = useState([]);
@@ -251,12 +284,19 @@ export default function MiniSitesPage({
     if (id === 'minisites') onMinisitesClick?.();
   }
 
-  const handleCreateSite = () => setShowCreateSite(true);
+  const handleCreateSite = () => { setPendingTemplate(null); setShowCreateSite(true); };
+
+  const handleUseTemplate = (tpl, theme) => { setPendingTemplate({ tpl, theme }); setShowCreateSite(true); };
 
   const handleSiteCreated = (newSite) => {
-    setSites(prev => [newSite, ...prev]);
+    // The site is created empty on the backend either way — a template just
+    // seeds the builder's local (unsaved) starting sections, same as the
+    // generic starter template does. Nothing is persisted until Save/Publish.
+    const seeded = pendingTemplate ? { ...newSite, sections: pendingTemplate.tpl.buildSections(pendingTemplate.theme) } : newSite;
+    setPendingTemplate(null);
+    setSites(prev => [seeded, ...prev]);
     setShowCreateSite(false);
-    setCurrentBuilder(newSite);
+    setCurrentBuilder(seeded);
   };
 
   const handleBackFromBuilder = () => {
@@ -288,7 +328,7 @@ export default function MiniSitesPage({
     // anything unpublished) — send them to the builder's own live preview
     // instead of a dead link.
     if (site.status !== 'live') { handleEditSite(site.id); return; }
-    window.open(publicSiteUrl(site.slug), '_blank', 'noopener,noreferrer');
+    window.open(siteUrl(site), '_blank', 'noopener,noreferrer');
   };
 
   const handlePublishSite = async (site, e) => {
@@ -342,8 +382,10 @@ export default function MiniSitesPage({
   if (showCreateSite) {
     return (
       <CreateNewSitePage
-        onCancel={() => setShowCreateSite(false)}
+        onCancel={() => { setShowCreateSite(false); setPendingTemplate(null); }}
         onSiteCreated={handleSiteCreated}
+        initialName={pendingTemplate ? `My ${pendingTemplate.tpl.name}` : ''}
+        templateName={pendingTemplate?.tpl?.name}
       />
     );
   }
@@ -505,7 +547,7 @@ export default function MiniSitesPage({
                       onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}
                       title="Open public link"
                     >
-                      {site.slug}.kicksite.io
+                      {displayUrl(siteUrl(site))}
                     </button>
                     <div className="ms-site-meta">
                       <span className="ms-site-views"><EyeIcon /> {site.views.toLocaleString()}</span>
@@ -522,10 +564,10 @@ export default function MiniSitesPage({
                 </div>
               ))
             ) : (
-              <div>
-                {/* <p className="ms-empty-icon"><InboxIcon /></p>
+              <div className="ms-empty-state">
+                <p className="ms-empty-icon"><InboxIcon /></p>
                 <p className="ms-empty-text">No {filterStatus !== 'all' ? filterStatus : ''} sites found</p>
-                <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button> */}
+                <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button>
               </div>
             )}
           </div>
@@ -606,7 +648,7 @@ export default function MiniSitesPage({
                       onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}
                       title="Open public link"
                     >
-                      {site.slug}.kicksite.io
+                      {displayUrl(siteUrl(site))}
                     </button>
                       {!isMine && site.creatorName && (
                         <p className="ms-site-creator">
@@ -655,18 +697,35 @@ export default function MiniSitesPage({
 
         {activeTab === 'templates' && (
           <div className="ms-templates-grid">
-            {TEMPLATES.map(tpl => (
-              <div key={tpl.id} className="ms-tpl-card">
-                <div className="ms-tpl-thumb">
-                  <img src={tpl.thumb} alt={tpl.name} />
-                  {tpl.tag && <span className="ms-tpl-tag">{tpl.tag}</span>}
-                  <div className="ms-tpl-overlay">
-                    <button className="ms-tpl-use-btn"><PlusIcon /> Use Template</button>
+            {SITE_TEMPLATES.map(tpl => {
+              const chosenKey = tplThemeChoice[tpl.key] || tpl.theme.key;
+              const chosenTheme = tpl.themes.find(t => t.key === chosenKey) || tpl.theme;
+              return (
+                <div key={tpl.key} className="ms-tpl-card" style={{ background: chosenTheme.dark }}>
+                  <div className="ms-tpl-thumb">
+                    <TemplatePreview tpl={tpl} theme={chosenTheme} />
+                    {tpl.tag && <span className="ms-tpl-tag">{tpl.tag}</span>}
+                    <div className="ms-tpl-overlay">
+                      <button className="ms-tpl-use-btn" onClick={() => handleUseTemplate(tpl, chosenTheme)}><PlusIcon /> Use Template</button>
+                    </div>
+                  </div>
+                  <p className="ms-tpl-name">{tpl.name}</p>
+                  <p className="ms-tpl-desc">{tpl.description}</p>
+                  <div className="ms-tpl-themes">
+                    {tpl.themes.map(t => (
+                      <button
+                        key={t.key}
+                        type="button"
+                        className={`ms-tpl-theme-dot${t.key === chosenKey ? ' ms-tpl-theme-dot--active' : ''}`}
+                        style={{ background: t.dark, borderColor: t.accent }}
+                        title={t.name}
+                        onClick={() => setTplThemeChoice(prev => ({ ...prev, [tpl.key]: t.key }))}
+                      />
+                    ))}
                   </div>
                 </div>
-                <p className="ms-tpl-name">{tpl.name}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

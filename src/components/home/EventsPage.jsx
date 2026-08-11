@@ -837,13 +837,17 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   function closeJoinFlow() { setJoinFlow(null); }
 
   function selectJoinTicket(ticket) {
+    if (ticket.seatsAvailable === 0) return;
     setJoinFlow(prev => prev ? { ...prev, ticketId: ticket.id, step: 'members' } : prev);
   }
 
+  // Clamped here (not just on the +/- buttons) so quantity can never exceed
+  // the selected ticket's remaining seats no matter what calls this.
   function setJoinQuantity(qty) {
     setJoinFlow(prev => {
       if (!prev) return prev;
-      const n = Math.max(1, qty);
+      const max = prev.tickets.find(t => t.id === prev.ticketId)?.seatsAvailable;
+      const n = Math.max(1, max != null ? Math.min(qty, max) : qty);
       const members = Array.from({ length: n }, (_, i) => prev.members[i] ?? { name: '', age: '' });
       return { ...prev, quantity: n, members };
     });
@@ -3487,31 +3491,51 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   </div>
                   <div className="ev-review-card-body ev-review-location-row">
                     <div>
-                      <p className="ev-review-field-label">VENUE NAME</p>
-                      <p className="ev-review-field-value ev-review-venue-name">
-                        {venue.name || 'The Innovation Hub – Studio B'}
-                      </p>
-                      <p className="ev-review-field-label" style={{ marginTop: 10 }}>ADDRESS</p>
-                      <p className="ev-review-field-value ev-review-address">
-                        {venue.street
-                          ? `${venue.street}${venue.city ? ', ' + venue.city : ''}${venue.state ? ', ' + venue.state : ''}${venue.pinCode ? ' ' + venue.pinCode : ''}`
-                          : '452 Creative Way,\nDowntown Design District,\nSF 94103'
-                        }
-                      </p>
-                    </div>
-                    <div className="ev-review-map-thumb">
-                      {venueAddressForMap ? (
-                        <iframe
-                          className="ev-map-iframe"
-                          title="Venue location"
-                          src={googleMapsEmbedSrc(venueAddressForMap)}
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                        />
-                      ) : (
-                        <div className="ev-review-map-inner" />
+                      {(form.eventType === 'offline' || form.eventType === 'both') && (
+                        <>
+                          <p className="ev-review-field-label">VENUE NAME</p>
+                          <p className="ev-review-field-value ev-review-venue-name">
+                            {venue.name || 'The Innovation Hub – Studio B'}
+                          </p>
+                          <p className="ev-review-field-label" style={{ marginTop: 10 }}>ADDRESS</p>
+                          <p className="ev-review-field-value ev-review-address">
+                            {venue.street
+                              ? `${venue.street}${venue.city ? ', ' + venue.city : ''}${venue.state ? ', ' + venue.state : ''}${venue.pinCode ? ' ' + venue.pinCode : ''}`
+                              : '452 Creative Way,\nDowntown Design District,\nSF 94103'
+                            }
+                          </p>
+                        </>
+                      )}
+                      {(form.eventType === 'online' || form.eventType === 'both') && (
+                        <div style={form.eventType === 'both' ? { marginTop: 14 } : undefined}>
+                          <p className="ev-review-field-label">MEETING LINK</p>
+                          <p className="ev-review-field-value ev-review-venue-name">
+                            {hasMeaningfulLink(virtual.link) ? virtual.link : 'Link will be shared with attendees'}
+                          </p>
+                          {virtual.instructions.trim() && (
+                            <>
+                              <p className="ev-review-field-label" style={{ marginTop: 10 }}>INSTRUCTIONS</p>
+                              <p className="ev-review-field-value ev-review-address">{virtual.instructions}</p>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
+                    {form.eventType !== 'online' && (
+                      <div className="ev-review-map-thumb">
+                        {venueAddressForMap ? (
+                          <iframe
+                            className="ev-map-iframe"
+                            title="Venue location"
+                            src={googleMapsEmbedSrc(venueAddressForMap)}
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        ) : (
+                          <div className="ev-review-map-inner" />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -3718,33 +3742,46 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <p className="ev-join-loading">Loading tickets…</p>
                 ) : (
                   <div className="ev-ticket-list">
-                    {joinFlow.tickets.map(tk => (
-                      <div
-                        key={tk.id}
-                        className={`ev-ticket-item${joinFlow.ticketId === tk.id ? ' ev-ticket-item--active' : ''}`}
-                        onClick={() => selectJoinTicket(tk)}
-                      >
-                        <div className="ev-ticket-icon">{TICKET_ICONS[tk.iconType] ?? TICKET_ICONS.ticket}</div>
-                        <p className="ev-ticket-name">{tk.name}</p>
-                        <p className={`ev-ticket-price${joinFlow.ticketId === tk.id ? ' ev-ticket-price--active' : ''}`}>
-                          {Number(tk.price) > 0 ? `$${tk.price}` : 'Free'}
-                        </p>
-                        {tk.seatsAvailable != null && <p className="ev-join-seats-left">{tk.seatsAvailable} left</p>}
-                      </div>
-                    ))}
+                    {joinFlow.tickets.map(tk => {
+                      const soldOut = tk.seatsAvailable === 0;
+                      return (
+                        <div
+                          key={tk.id}
+                          className={`ev-ticket-item${joinFlow.ticketId === tk.id ? ' ev-ticket-item--active' : ''}${soldOut ? ' ev-ticket-item--sold-out' : ''}`}
+                          onClick={() => selectJoinTicket(tk)}
+                          aria-disabled={soldOut}
+                        >
+                          <div className="ev-ticket-icon">{TICKET_ICONS[tk.iconType] ?? TICKET_ICONS.ticket}</div>
+                          <p className="ev-ticket-name">{tk.name}</p>
+                          <p className={`ev-ticket-price${joinFlow.ticketId === tk.id ? ' ev-ticket-price--active' : ''}`}>
+                            {Number(tk.price) > 0 ? `$${tk.price}` : 'Free'}
+                          </p>
+                          {tk.seatsAvailable != null && (
+                            <p className={`ev-join-seats-left${soldOut ? ' ev-join-seats-left--sold-out' : ''}`}>
+                              {soldOut ? 'Sold out' : `${tk.seatsAvailable} left`}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 </>
-              ) : joinFlow.step === 'members' ? (
+              ) : joinFlow.step === 'members' ? (() => {
+                const maxSeats = joinFlow.tickets.find(t => t.id === joinFlow.ticketId)?.seatsAvailable;
+                return (
                 <>
                   <div className="ev-join-qty-row">
                     <span className="ev-join-qty-label">Quantity</span>
                     <div className="ev-join-qty-stepper">
                       <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity - 1)} disabled={joinFlow.quantity <= 1}>−</button>
                       <span>{joinFlow.quantity}</span>
-                      <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity + 1)}>+</button>
+                      <button type="button" onClick={() => setJoinQuantity(joinFlow.quantity + 1)} disabled={maxSeats != null && joinFlow.quantity >= maxSeats}>+</button>
                     </div>
                   </div>
+                  {maxSeats != null && (
+                    <p className="ev-join-seats-cap-note">{maxSeats} seat{maxSeats === 1 ? '' : 's'} available for this ticket</p>
+                  )}
 
                   {joinFlow.members.map((m, i) => (
                     <div className="ev-join-member-row" key={i}>
@@ -3756,7 +3793,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     </div>
                   ))}
                 </>
-              ) : (() => {
+                );
+              })() : (() => {
                 const selectedTicket = joinFlow.tickets.find(t => t.id === joinFlow.ticketId);
                 const unitPrice = Number(selectedTicket?.price) || 0;
                 const total = unitPrice * joinFlow.quantity;

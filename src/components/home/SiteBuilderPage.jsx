@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
 import { SECTION_TYPES, createSection, createId, createStarterSections, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
 import { apiRequest } from '../../services/api';
-import { normalizeSite, publicSiteUrl } from './miniSiteUtils';
+import { normalizeSite, siteUrl, displayUrl } from './miniSiteUtils';
 import './SiteBuilderPage.css';
 
 /* Icons */
@@ -419,10 +419,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
       });
       const updated = normalizeSite({ ...mockSite, ...saveRes?.data, ...res?.data });
       onSiteUpdate?.(mockSite.id, updated);
-      // publishedUrl from the API is a kicksite.io domain that doesn't
-      // actually resolve anywhere — the real, working link is this app's
-      // own ?site= route.
-      setPublishedInfo({ name: updated.name, url: publicSiteUrl(updated.slug) });
+      setPublishedInfo({ name: updated.name, url: siteUrl(updated) });
     } catch (err) {
       setSavedStatus('all-saved');
       alert(err.message || 'Failed to publish site');
@@ -821,11 +818,11 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
           <div className="sbp-header-info">
             <h1 className="sbp-site-name">{mockSite.name}</h1>
             {mockSite.status === 'live' ? (
-              <a href={publicSiteUrl(mockSite.slug)} target="_blank" rel="noopener noreferrer" className="sbp-site-url sbp-site-url--link" title="Open public link">
-                {mockSite.slug}.kicksite.io
+              <a href={siteUrl(mockSite)} target="_blank" rel="noopener noreferrer" className="sbp-site-url sbp-site-url--link" title="Open public link">
+                {displayUrl(siteUrl(mockSite))}
               </a>
             ) : (
-              <p className="sbp-site-url" title="Publish the site to make this link live">{mockSite.slug}.kicksite.io</p>
+              <p className="sbp-site-url" title="Publish the site to make this link live">{displayUrl(siteUrl(mockSite))}</p>
             )}
           </div>
         </div>

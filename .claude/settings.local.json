@@ -184,7 +184,10 @@
       "Bash(curl -s -X POST __TRACKED_VAR__/api/mini-sites -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"name\":\"SectionImgTest-DeleteMe\",\"visibility\":\"private\"}' -o /tmp/secimg_create.json)",
       "Bash(python3 -c \"import json;print\\(json.load\\(open\\('/tmp/secimg_create.json'\\)\\)['data']['_id']\\)\")",
       "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X PUT __TRACKED_VAR__/api/mini-sites/__TRACKED_VAR__ -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' --data-binary @/tmp/secimg_put_body.json)",
-      "Bash(curl -s -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ac565bdc0dfd2e8da748f -H 'Authorization: Bearer __CMDSUB_OUTPUT__')"
+      "Bash(curl -s -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ac565bdc0dfd2e8da748f -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Read(//private/tmp/claude-501/bundled-skills/**)",
+      "Bash(find / -iname \"chromium-cli*\" -maxdepth 6)",
+      "Bash(find / -maxdepth 4 -iname \"*chromium-cli*\")"
     ]
   },
   "enableAllProjectMcpServers": true,

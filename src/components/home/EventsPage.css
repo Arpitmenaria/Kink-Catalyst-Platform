@@ -1642,6 +1642,12 @@
 
 .ev-ticket-item--readonly { cursor: default; }
 
+.ev-ticket-item--sold-out {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.ev-ticket-item--sold-out:hover { border-color: #1e2238; }
+
 .ev-ticket-icon {
   width: 32px;
   height: 32px;
@@ -3385,6 +3391,17 @@
   color: #5c6a8c;
   margin: 0 0 0 8px;
   flex-shrink: 0;
+}
+
+.ev-join-seats-left--sold-out {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.ev-join-seats-cap-note {
+  font-size: 11px;
+  color: #5c6a8c;
+  margin: -8px 0 12px;
 }
 
 .ev-join-qty-row {

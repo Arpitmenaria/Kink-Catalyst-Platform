@@ -41,6 +41,17 @@
   margin: 0;
 }
 
+.csp-template-badge {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+  font-size: 12px;
+}
+
 /* Form */
 .csp-form {
   width: 100%;

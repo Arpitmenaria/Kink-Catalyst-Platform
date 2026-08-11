@@ -55,3 +55,17 @@ export function timeAgo(iso) {
 export function publicSiteUrl(slug) {
   return `${window.location.origin}${window.location.pathname}?site=${encodeURIComponent(slug)}`;
 }
+
+// The real, clickable URL for a site — prefers the backend's own
+// `publishedUrl` (now that it correctly returns this deployment's real
+// domain) and only falls back to computing it locally for a site that
+// hasn't been published yet and so has no publishedUrl from the API.
+export function siteUrl(site) {
+  return site?.publishedUrl || publicSiteUrl(site?.slug ?? '');
+}
+
+// Strips the protocol for compact display on cards, e.g.
+// "https://kick-analyst-frontend-yupf.vercel.app/?site=x" -> "kick-analyst-frontend-yupf.vercel.app/?site=x".
+export function displayUrl(url) {
+  return (url || '').replace(/^https?:\/\//, '');
+}

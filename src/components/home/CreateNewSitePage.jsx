@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { apiRequest } from '../../services/api';
-import { normalizeSite } from './miniSiteUtils';
+import { normalizeSite, publicSiteUrl, displayUrl } from './miniSiteUtils';
 import ImageCropper from './ImageCropper';
 import './CreateNewSitePage.css';
 
@@ -36,12 +36,21 @@ function CloseIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 }
 
-export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName = '', templateName = '' }) {
   const authToken = useSelector(s => s.auth?.token);
   const [formData, setFormData] = useState({
-    siteName: '',
+    siteName: initialName,
     description: '',
-    slug: '',
+    slug: initialName ? slugify(initialName) : '',
     visibility: 'public',
     password: '',
     coverImage: null,
@@ -74,12 +83,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
     setFormData(prev => ({
       ...prev,
       siteName: name,
-      slug: name
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-'),
+      slug: slugify(name),
     }));
     if (errors.siteName) {
       setErrors(prev => ({ ...prev, siteName: '' }));
@@ -174,6 +178,9 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
         <div className="csp-header">
           <h1 className="csp-title">Create New Site</h1>
           <p className="csp-subtitle">Build a beautiful website in minutes</p>
+          {templateName && (
+            <div className="csp-template-badge">Using the "{templateName}" template — you'll land in the editor with it pre-built, ready to customize.</div>
+          )}
         </div>
 
         {/* Form */}
@@ -216,11 +223,10 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
             <div className="csp-slug-input-wrapper">
               <input
                 type="text"
-                value={formData.slug || 'your-site-name'}
+                value={displayUrl(publicSiteUrl(formData.slug || 'your-site-name'))}
                 readOnly
                 className="csp-input csp-slug-input"
               />
-              <span className="csp-slug-suffix">.kicksite.io</span>
             </div>
             <p className="csp-helper">Generated automatically from the site name.</p>
           </div>
