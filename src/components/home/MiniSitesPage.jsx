@@ -119,6 +119,24 @@ function ReportSiteModal({ site, authToken, onClose, onReported }) {
   );
 }
 
+function DeleteConfirmModal({ site, onCancel, onConfirm }) {
+  return (
+    <div className="ms-delete-overlay" onClick={onCancel}>
+      <div className="ms-delete-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ms-delete-icon"><AlertTriangleIcon /></div>
+        <h3 className="ms-delete-title">Delete "{site.name}"?</h3>
+        <p className="ms-delete-sub">This can't be undone. The site and all its content will be permanently removed.</p>
+        <div className="ms-delete-actions">
+          <button type="button" className="ms-action-btn ms-action-btn--secondary" onClick={onCancel}>Cancel</button>
+          <button type="button" className="ms-delete-confirm-btn" onClick={() => onConfirm(site)}>
+            <TrashIcon /> Delete Site
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MiniSitesPage({
   onBack, onMessagesClick, onEventsClick, onGroupsClick,
   onCalendarClick, onCoursesClick, onLibraryClick, onMinisitesClick,
@@ -149,6 +167,7 @@ export default function MiniSitesPage({
   const [allSitesTotalPages, setAllSitesTotalPages] = useState(1);
   const [reportTarget,      setReportTarget]      = useState(null);
   const [reportedIds,       setReportedIds]       = useState(() => new Set());
+  const [deleteTarget,      setDeleteTarget]      = useState(null);
   const [allSitesSearch,    setAllSitesSearch]    = useState('');
   const [allSitesSearchTerm, setAllSitesSearchTerm] = useState(''); // debounced
 
@@ -283,10 +302,14 @@ export default function MiniSitesPage({
     }
   };
 
-  const handleDeleteSite = async (site, e) => {
+  const handleDeleteSite = (site, e) => {
     e?.stopPropagation();
     setOpenMenuId(null);
-    if (!window.confirm(`Delete "${site.name}"? This can't be undone.`)) return;
+    setDeleteTarget(site);
+  };
+
+  const confirmDeleteSite = async (site) => {
+    setDeleteTarget(null);
     setBusyId(site.id);
     try {
       await apiRequest(`/api/mini-sites/${site.id}`, { method: 'DELETE', token: authToken });
@@ -656,6 +679,14 @@ export default function MiniSitesPage({
         authToken={authToken}
         onClose={() => setReportTarget(null)}
         onReported={handleReportSite}
+      />
+    )}
+
+    {deleteTarget && (
+      <DeleteConfirmModal
+        site={deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteSite}
       />
     )}
     </>
