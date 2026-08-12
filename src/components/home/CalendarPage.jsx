@@ -235,7 +235,7 @@ function getEventsInWeek(week, events) {
       if (week[i].current && week[i].day === ce) { colEnd = i; break; }
     }
     if (colStart < 0 || colEnd < 0) return;
-    result.push({ ...ev, colStart, colEnd, showTitle: ev.startDay >= minDay, slot: result.length });
+    result.push({ ...ev, colStart, colEnd, slot: result.length });
   });
   return result;
 }
@@ -455,8 +455,16 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
             <div className="cal-month-body">
               {monthWeeks.map((week, wi) => {
                 const weekEvs = getEventsInWeek(week, monthEvents);
+                // Event bars are absolutely positioned so they can span
+                // multiple day cells, which means the row's own height
+                // doesn't naturally grow to fit them — a row with several
+                // stacked events used to overflow its fixed 100px height
+                // and visually bleed into the row below. Size the row to
+                // whatever its tallest stack of bars actually needs instead.
+                const maxSlot = weekEvs.reduce((max, ev) => Math.max(max, ev.slot), -1);
+                const rowMinHeight = Math.max(100, 30 + (maxSlot + 1) * 22 + 8);
                 return (
-                  <div key={wi} className="cal-month-week">
+                  <div key={wi} className="cal-month-week" style={{ minHeight: rowMinHeight }}>
                     {/* Day cells */}
                     {week.map((cell, ci) => (
                       <div key={ci} className={`cal-month-cell${cell.isToday ? ' cal-month-cell--today' : ''}${!cell.current ? ' cal-month-cell--other' : ''}`}>
@@ -478,7 +486,7 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
                         }}
                         onClick={() => onEventClick?.(ev.id)}
                       >
-                        {ev.showTitle && <span className="cal-month-ev-title">{ev.title}</span>}
+                        <span className="cal-month-ev-title">{ev.title}</span>
                       </div>
                     ))}
                   </div>

@@ -187,7 +187,9 @@
       "Bash(curl -s -X DELETE __TRACKED_VAR__/api/mini-sites/6a7ac565bdc0dfd2e8da748f -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
       "Read(//private/tmp/claude-501/bundled-skills/**)",
       "Bash(find / -iname \"chromium-cli*\" -maxdepth 6)",
-      "Bash(find / -maxdepth 4 -iname \"*chromium-cli*\")"
+      "Bash(find / -maxdepth 4 -iname \"*chromium-cli*\")",
+      "Bash(grep -n \"handleSave\\\\|onBack\\\\|Save\\\\b\\\\|apiRequest\\(\\\\`/api/mini-sites\" /Users/jaymandaliya/Documents/codetown/kick-analyst-frontend/src/components/home/SiteBuilderPage.jsx)",
+      "Bash(grep -n \"ev-cover-upload\\\\|ev-cover-preview\\\\|ev-upload\\\\|ev-img-upload\\\\|width: [0-9]\\\\{3,\\\\}px\" /Users/jaymandaliya/Documents/codetown/kick-analyst-frontend/src/components/home/EventsPage.css)"
     ]
   },
   "enableAllProjectMcpServers": true,

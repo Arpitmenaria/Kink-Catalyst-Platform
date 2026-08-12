@@ -1356,12 +1356,20 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       if (virtual.link)         fd.append('virtualLink', virtual.link);
       if (virtual.instructions) fd.append('virtualInstructions', virtual.instructions);
     }
-    if (tickets.length > 0) {
-      fd.append('tickets', JSON.stringify(tickets.map(t => ({
-        name: t.name, description: t.description ?? '', price: parseFloat(t.price) || 0,
-        seats: parseInt(t.seats) || 0, maxPerUser: parseInt(t.maxPerUser) || 1, iconType: t.iconType,
-      }))));
-    }
+    // `tickets` keeps its default (or last-edited) paid tiers in state even
+    // after switching pricingType to 'free' — that only hides the ticket
+    // editor, it doesn't clear the array. Gate on pricingType instead of
+    // tickets.length so a "Free" event never sends paid tiers, and send an
+    // explicit empty array (not just omit the field) so editing a paid
+    // event down to Free also clears any tiers already saved server-side.
+    fd.append('tickets', JSON.stringify(
+      pricingType === 'paid'
+        ? tickets.map(t => ({
+            name: t.name, description: t.description ?? '', price: parseFloat(t.price) || 0,
+            seats: parseInt(t.seats) || 0, maxPerUser: parseInt(t.maxPerUser) || 1, iconType: t.iconType,
+          }))
+        : []
+    ));
     fd.append('registration', JSON.stringify({
       ticketPrice: parseFloat(registration.ticketPrice) || 0,
       totalSeats:  parseInt(registration.totalSeats) || 0,
@@ -2730,7 +2738,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           className={`ev-filter-type-btn${pendingF.eventType === t ? ' ev-filter-type-btn--active' : ''}`}
                           onClick={() => setPendingF(p => ({ ...p, eventType: t }))}
                         >
-                          {t === 'all' ? 'All' : t === 'offline' ? <><OfflineIcon /> In-Person</> : <><OnlineIcon /> Online</>}
+                          {t === 'all' ? 'All' : t === 'offline' ? <><OfflineIcon /> Offline</> : <><OnlineIcon /> Online</>}
                         </button>
                       ))}
                     </div>
@@ -3464,15 +3472,29 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <button type="button" className="ev-review-edit-btn" onClick={() => setStep(2)}><EditIcon /> Edit</button>
                   </div>
                   <div className="ev-review-card-body ev-review-card-body--tickets">
-                    {tickets.map(tk => (
-                      <div key={tk.id} className="ev-review-ticket-row">
+                    {pricingType === 'free' ? (
+                      /* Matches step 2's own "Free events skip priced ticket
+                         tiers" treatment — `tickets` still holds whatever
+                         paid tiers were last configured (or the defaults),
+                         but they're neither shown nor submitted for a free
+                         event. */
+                      <div className="ev-review-ticket-row">
                         <div>
-                          <p className="ev-review-ticket-name">{tk.name}</p>
-                          <p className="ev-review-ticket-cap">Capacity: {tk.seats || '—'} Guests</p>
+                          <p className="ev-review-ticket-name">Free Ticket</p>
                         </div>
-                        <span className="ev-review-ticket-price">${Number(tk.price).toFixed(2)}</span>
+                        <span className="ev-review-ticket-price">Free</span>
                       </div>
-                    ))}
+                    ) : (
+                      tickets.map(tk => (
+                        <div key={tk.id} className="ev-review-ticket-row">
+                          <div>
+                            <p className="ev-review-ticket-name">{tk.name}</p>
+                            <p className="ev-review-ticket-cap">Capacity: {tk.seats || '—'} Guests</p>
+                          </div>
+                          <span className="ev-review-ticket-price">${Number(tk.price).toFixed(2)}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 

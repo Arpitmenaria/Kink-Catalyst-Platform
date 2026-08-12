@@ -391,6 +391,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
       });
       setSavedStatus('all-saved');
       onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...res?.data }));
+      onBack?.();
     } catch (err) {
       setSavedStatus('all-saved');
       alert(err.message || 'Failed to save site');
