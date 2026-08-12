@@ -37,7 +37,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
 
   const ongoingCourses = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100).slice(0, 3);
   const categories = ['All Topics', 'Design', 'Development', 'Business', 'Technology', 'Marketing', 'Finance', 'Soft Skills'];
-  const exploreCourses = COURSES.slice(0, 4);
+  const exploreCourses = COURSES;
   const myCreatedCourses = [
     { id: 'custom-1', title: 'Advanced React Patterns', instructor: 'You', duration: '12h 30m', rating: 4.9, price: '$89.99', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80', category: 'Development', students: 245 },
     { id: 'custom-2', title: 'Web Design Masterclass', instructor: 'You', duration: '15h 45m', rating: 4.8, price: 'Free', img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80', category: 'Design', students: 189 },
@@ -142,7 +142,6 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
         <div className="lap-section">
           <div className="lap-section-header">
             <h2>Explore Categories</h2>
-            <a href="#" className="lap-explore-all">Explore All</a>
           </div>
           <div className="lap-categories">
             {categories.map(cat => (
