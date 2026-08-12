@@ -100,8 +100,8 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           </button>
         </div>
 
-        {/* Ongoing Courses - Show in Ongoing tab and All tab */}
-        {(activeTab === 'ongoing' || activeTab === 'all') && ongoingCourses.length > 0 && (
+        {/* Ongoing Courses - Show only in Ongoing tab */}
+        {activeTab === 'ongoing' && ongoingCourses.length > 0 && (
           <div className="lap-section">
             <div className="lap-section-header">
               <h2>Ongoing Courses</h2>
