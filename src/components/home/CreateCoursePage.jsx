@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ImageCropper from './ImageCropper';
+import Loader from '../Loader';
 import { ALEX_AVATAR } from './mockData';
 import './CreateCoursePage.css';
 
@@ -28,6 +29,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
   });
   const [customCategory, setCustomCategory] = useState('');
   const [cropperFile, setCropperFile] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,6 +66,13 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
 
   const handleCropCancel = () => {
     setCropperFile(null);
+  };
+
+  const handleCreateCourse = () => {
+    setIsCreating(true);
+    setTimeout(() => {
+      onBack?.();
+    }, 2000);
   };
 
   const handleNav = (id) => {
@@ -234,8 +243,8 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
           </button>
           <button
             className="ccp-btn ccp-btn--success"
-            onClick={() => alert('✅ Course Created! Redirecting...')}
-            disabled={!isFormValid}
+            onClick={handleCreateCourse}
+            disabled={!isFormValid || isCreating}
           >
             <PlusIcon /> Create Course
           </button>
@@ -252,6 +261,19 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
           onSkip={handleCropSkip}
           onCancel={handleCropCancel}
         />
+      )}
+
+      {/* Creating Course Loader */}
+      {isCreating && (
+        <div className="ccp-loader-container">
+          <div className="ccp-loader-content">
+            <div className="ccp-loader-spinner">
+              <div className="ccp-spinner"></div>
+            </div>
+            <h1 className="ccp-loader-title">Kink Analyst</h1>
+            <p className="ccp-loader-subtitle">Creating course...</p>
+          </div>
+        </div>
       )}
     </div>
   );
