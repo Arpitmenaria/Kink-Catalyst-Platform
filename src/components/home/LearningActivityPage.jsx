@@ -37,8 +37,6 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const ongoingCourses = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100).slice(0, 3);
   const categories = ['All Topics', 'Design', 'Development', 'Business', 'Technology', 'Marketing', 'Finance', 'Soft Skills'];
   const exploreCourses = COURSES.slice(0, 4);
-  const recommendedCourses = COURSES.slice(4, 7);
-  const popularResources = RESOURCES.slice(0, 3);
 
   return (
     <div className="lap-page">
@@ -151,57 +149,6 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           </div>
         </div>
 
-        {/* Recommended for You */}
-        <div className="lap-section">
-          <div className="lap-section-header">
-            <h2>Recommended for You</h2>
-            <a href="#" className="lap-see-all">View All</a>
-          </div>
-          <div className="lap-courses-grid">
-            {recommendedCourses.map(course => (
-              <div key={course.id} className="lap-explore-card">
-                <div className="lap-card-img-wrapper">
-                  <img src={course.img} alt={course.title} className="lap-card-img" />
-                </div>
-                <div className="lap-card-content">
-                  <h3 className="lap-card-title">{course.title}</h3>
-                  <div className="lap-card-meta">
-                    <span className="lap-instructor">👤 {course.instructor}</span>
-                    <span className="lap-rating">⭐ {course.rating}</span>
-                  </div>
-                  <p className="lap-duration">⏱️ {course.duration}</p>
-                  <button className="lap-enroll-btn" onClick={() => setActiveCourseId(course.id)}>
-                    Enroll this course {course.price ? `· $${course.price}` : '· Free'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Popular Resources */}
-        <div className="lap-section">
-          <div className="lap-section-header">
-            <h2>Popular Resources</h2>
-            <a href="#" className="lap-see-all">View All</a>
-          </div>
-          <div className="lap-resources-grid">
-            {popularResources.map(resource => (
-              <div key={resource.id} className="lap-resource-card">
-                <img src={resource.img} alt={resource.title} className="lap-resource-img" />
-                <div className="lap-resource-content">
-                  <span className="lap-resource-type">{resource.type}</span>
-                  <h3 className="lap-resource-title">{resource.title}</h3>
-                  <p className="lap-resource-desc">{resource.description}</p>
-                  <div className="lap-resource-footer">
-                    <span className="lap-resource-category">{resource.category}</span>
-                    <a href="#" className="lap-view-link">View →</a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
