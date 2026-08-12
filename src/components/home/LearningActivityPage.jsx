@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import CourseDetailPage from './CourseDetailPage';
 import { ALEX_AVATAR } from './mockData';
-import { COURSES, RESOURCES } from './educationData';
-import useEducationProgress from './useEducationProgress';
+import { courseApi } from '../../services/courseApi';
 import './LearningActivityPage.css';
 
 function PlusIcon() {
@@ -18,11 +17,60 @@ function PlayIcon() {
 export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick, onNavigateEducation }) {
   const { profile } = useSelector(s => s.profile);
   const avatarUrl = profile?.avatar ?? ALEX_AVATAR;
-  const progress = useEducationProgress();
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   const [activeTab, setActiveTab] = useState('all');
   const [filterType, setFilterType] = useState('all');
+
+  // API Data
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [createdCourses, setCreatedCourses] = useState([]);
+  const [exploreCourses, setExploreCourses] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({ coursesEnrolled: 0, completed: 0, hoursSpent: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (!profile?.id) return;
+    fetchData();
+  }, [profile?.id, activeTab, filterType, selectedCategory]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch dashboard stats
+      const statsRes = await courseApi.getDashboardStats(profile.id);
+      if (statsRes.success) {
+        setDashboardStats(statsRes);
+      }
+
+      // Fetch enrolled courses
+      const enrolledRes = await courseApi.getUserEnrolledCourses(profile.id);
+      if (enrolledRes.success) {
+        setEnrolledCourses(enrolledRes.courses || []);
+      }
+
+      // Fetch created courses
+      const createdRes = await courseApi.getUserCreatedCourses(profile.id);
+      if (createdRes.success) {
+        setCreatedCourses(createdRes.courses || []);
+      }
+
+      // Fetch explore courses with filters
+      const exploreRes = await courseApi.getAllCourses(filterType, selectedCategory);
+      if (exploreRes.success) {
+        setExploreCourses(exploreRes.courses || []);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err?.error || 'Failed to load courses');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
 
@@ -36,19 +84,8 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
     if (id === 'minisites') onMinisitesClick?.();
   };
 
-  const ongoingCourses = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100).slice(0, 3);
+  const ongoingCourses = enrolledCourses.slice(0, 3);
   const categories = ['All Topics', 'Design', 'Development', 'Business', 'Technology', 'Marketing', 'Finance', 'Soft Skills'];
-
-  let exploreCourses = COURSES;
-  if (filterType === 'recommended') {
-    exploreCourses = COURSES.filter(c => c.rating >= 4.5);
-  } else if (filterType === 'popular') {
-    exploreCourses = COURSES.filter(c => c.students >= 100);
-  }
-  const myCreatedCourses = [
-    { id: 'custom-1', title: 'Advanced React Patterns', instructor: 'You', duration: '12h 30m', rating: 4.9, price: '$89.99', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80', category: 'Development', students: 245 },
-    { id: 'custom-2', title: 'Web Design Masterclass', instructor: 'You', duration: '15h 45m', rating: 4.8, price: 'Free', img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80', category: 'Design', students: 189 },
-  ];
 
   return (
     <div className="lap-page">
@@ -84,21 +121,21 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
               <div className="lap-stat-icon">📚</div>
               <div className="lap-stat-info">
                 <p className="lap-stat-label">COURSES ENROLLED</p>
-                <p className="lap-stat-value">3</p>
+                <p className="lap-stat-value">{dashboardStats.coursesEnrolled || 0}</p>
               </div>
             </div>
             <div className="lap-stat">
               <div className="lap-stat-icon">✅</div>
               <div className="lap-stat-info">
                 <p className="lap-stat-label">COMPLETED</p>
-                <p className="lap-stat-value">0</p>
+                <p className="lap-stat-value">{dashboardStats.completed || 0}</p>
               </div>
             </div>
             <div className="lap-stat">
               <div className="lap-stat-icon">⏱️</div>
               <div className="lap-stat-info">
                 <p className="lap-stat-label">HOURS SPENT</p>
-                <p className="lap-stat-value">48h</p>
+                <p className="lap-stat-value">{dashboardStats.hoursSpent || '0h'}</p>
               </div>
             </div>
           </div>
@@ -108,16 +145,17 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
         </div>
 
         {/* Ongoing Courses - Show only in Ongoing tab */}
-        {activeTab === 'ongoing' && ongoingCourses.length > 0 && (
+        {activeTab === 'ongoing' && (
           <div className="lap-section">
             <div className="lap-section-header">
               <h2>Ongoing Courses</h2>
               <a href="#" className="lap-see-all">See All</a>
             </div>
-            <div className="lap-courses-grid">
-              {ongoingCourses.map((course, idx) => {
-                const pct = progress.getCourseProgressPct(course.id, course);
-                return (
+            {ongoingCourses.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#8b95a5' }}>No ongoing courses</p>
+            ) : (
+              <div className="lap-courses-grid">
+                {ongoingCourses.map((course) => (
                   <div key={course.id} className="lap-course-card">
                     <div className="lap-course-img-wrapper">
                       <img src={course.img} alt={course.title} className="lap-course-img" />
@@ -125,22 +163,22 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                     </div>
                     <div className="lap-course-content">
                       <h3 className="lap-course-title">{course.title}</h3>
-                      <p className="lap-course-price">${course.price || 'Free'}</p>
+                      <p className="lap-course-price">{course.price || 'Free'}</p>
                       <div className="lap-progress-section">
                         <span className="lap-progress-label">Progress</span>
-                        <span className="lap-progress-pct">{pct}%</span>
+                        <span className="lap-progress-pct">{course.progress || 0}%</span>
                       </div>
                       <div className="lap-progress-bar">
-                        <div className="lap-progress-fill" style={{ width: `${pct}%` }} />
+                        <div className="lap-progress-fill" style={{ width: `${course.progress || 0}%` }} />
                       </div>
                       <button className="lap-resume-btn" onClick={() => setActiveCourseId(course.id)}>
                         <PlayIcon /> Resume
                       </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -184,24 +222,32 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
             </div>
           )}
           <div className="lap-courses-grid">
-            {exploreCourses.map(course => (
-              <div key={course.id} className="lap-explore-card">
-                <div className="lap-card-img-wrapper">
-                  <img src={course.img} alt={course.title} className="lap-card-img" />
-                </div>
-                <div className="lap-card-content">
-                  <h3 className="lap-card-title">{course.title}</h3>
-                  <div className="lap-card-meta">
-                    <span className="lap-instructor">👤 {course.instructor}</span>
-                    <span className="lap-rating">⭐ {course.rating}</span>
+            {loading ? (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>Loading courses...</p>
+            ) : error ? (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>{error}</p>
+            ) : exploreCourses.length === 0 ? (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>No courses found</p>
+            ) : (
+              exploreCourses.map(course => (
+                <div key={course.id} className="lap-explore-card">
+                  <div className="lap-card-img-wrapper">
+                    <img src={course.img} alt={course.title} className="lap-card-img" />
                   </div>
-                  <p className="lap-duration">⏱️ {course.duration}</p>
-                  <button className="lap-enroll-btn" onClick={() => setActiveCourseId(course.id)}>
-                    Enroll this course {course.price ? `· $${course.price}` : '· Free'}
-                  </button>
+                  <div className="lap-card-content">
+                    <h3 className="lap-card-title">{course.title}</h3>
+                    <div className="lap-card-meta">
+                      <span className="lap-instructor">👤 {course.instructor}</span>
+                      <span className="lap-rating">⭐ {course.rating}</span>
+                    </div>
+                    <p className="lap-duration">⏱️ {course.duration}</p>
+                    <button className="lap-enroll-btn" onClick={() => setActiveCourseId(course.id)}>
+                      Enroll this course {course.price ? `· $${course.price}` : '· Free'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
         )}
@@ -215,7 +261,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
               + Create New
             </button>
           </div>
-          {myCreatedCourses.length === 0 ? (
+          {createdCourses.length === 0 ? (
             <div className="lap-empty-state">
               <p className="lap-empty-icon">📚</p>
               <p className="lap-empty-text">You haven't created any courses yet</p>
@@ -225,7 +271,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
             </div>
           ) : (
             <div className="lap-courses-grid">
-              {myCreatedCourses.map(course => (
+              {createdCourses.map(course => (
                 <div key={course.id} className="lap-my-course-card">
                   <div className="lap-card-img-wrapper">
                     <img src={course.img} alt={course.title} className="lap-card-img" />
@@ -233,7 +279,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                   <div className="lap-card-content">
                     <h3 className="lap-card-title">{course.title}</h3>
                     <div className="lap-card-meta">
-                      <span className="lap-instructor">👤 {course.instructor}</span>
+                      <span className="lap-instructor">👤 You</span>
                       <span className="lap-rating">⭐ {course.rating}</span>
                     </div>
                     <p className="lap-duration">⏱️ {course.duration}</p>

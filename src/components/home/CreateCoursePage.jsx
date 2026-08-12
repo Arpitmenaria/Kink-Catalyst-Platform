@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import ImageCropper from './ImageCropper';
-import Loader from '../Loader';
-import { ALEX_AVATAR } from './mockData';
+import { courseApi } from '../../services/courseApi';
 import './CreateCoursePage.css';
 
 function PlusIcon() {
@@ -17,7 +17,7 @@ function CheckIcon() {
 }
 
 export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
-  const avatarUrl = ALEX_AVATAR;
+  const { profile } = useSelector(s => s.profile);
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
@@ -30,6 +30,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
   const [customCategory, setCustomCategory] = useState('');
   const [cropperFile, setCropperFile] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,7 +50,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
   const handleCropSave = (croppedFile) => {
     setCourseData(prev => ({
       ...prev,
-      coverImage: URL.createObjectURL(croppedFile),
+      coverImage: croppedFile,
     }));
     setCropperFile(null);
   };
@@ -58,7 +59,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     if (cropperFile) {
       setCourseData(prev => ({
         ...prev,
-        coverImage: URL.createObjectURL(cropperFile),
+        coverImage: cropperFile,
       }));
       setCropperFile(null);
     }
@@ -68,11 +69,49 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     setCropperFile(null);
   };
 
-  const handleCreateCourse = () => {
-    setIsCreating(true);
-    setTimeout(() => {
-      onBack?.();
-    }, 2000);
+  const handleCreateCourse = async () => {
+    if (!profile?.id) {
+      setError('User not authenticated');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      setError(null);
+
+      // Get the actual file from the blob if coverImage is a data URL
+      let fileToUpload = null;
+      if (courseData.coverImage) {
+        // If it's already stored as a blob/file, use it directly
+        // Otherwise, it's a data URL and we need to convert it
+        if (courseData.coverImage instanceof File || courseData.coverImage instanceof Blob) {
+          fileToUpload = courseData.coverImage;
+        }
+      }
+
+      const response = await courseApi.createCourse({
+        title: courseData.title,
+        description: courseData.description,
+        category: courseData.category === 'other' ? customCategory : courseData.category,
+        level: courseData.level,
+        status: courseData.status,
+        price: courseData.status === 'free' ? 0 : parseFloat(courseData.price),
+        coverImage: fileToUpload,
+      });
+
+      if (response.success) {
+        setTimeout(() => {
+          onBack?.();
+        }, 2000);
+      } else {
+        setError(response.error || 'Failed to create course');
+      }
+    } catch (err) {
+      console.error('Error creating course:', err);
+      setError(err?.error || 'Failed to create course');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleNav = (id) => {
@@ -225,7 +264,15 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
             {(courseData.title || courseData.coverImage) && (
               <div className="ccp-preview-card">
                 <div className="ccp-preview-wrapper">
-                  <img src={courseData.coverImage || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80'} alt="Preview" className="ccp-preview-cover" />
+                  <img
+                    src={
+                      courseData.coverImage instanceof Blob || courseData.coverImage instanceof File
+                        ? URL.createObjectURL(courseData.coverImage)
+                        : courseData.coverImage || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80'
+                    }
+                    alt="Preview"
+                    className="ccp-preview-cover"
+                  />
                   <div className="ccp-preview-overlay">
                     <h3 className="ccp-preview-title">{courseData.title || 'Course Title'}</h3>
                     <p className="ccp-preview-category">{courseData.category === 'other' ? customCategory : courseData.category} • {courseData.level}</p>
@@ -235,6 +282,8 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
             )}
           </div>
         </div>
+
+        {error && <div style={{ color: '#ef4444', textAlign: 'center', marginBottom: '20px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>{error}</div>}
 
         {/* Action Buttons */}
         <div className="ccp-actions">
