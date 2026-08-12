@@ -18,6 +18,8 @@
 .ccp-header {
   margin-bottom: 60px;
   text-align: center;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
 
 .ccp-back-btn {
@@ -40,12 +42,15 @@
   font-size: 44px;
   font-weight: 800;
   margin: 0;
+  padding: 20px 0;
+  line-height: 1.2;
   color: #fff;
   background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.5px;
+  word-break: break-word;
 }
 
 .ccp-subtitle {
