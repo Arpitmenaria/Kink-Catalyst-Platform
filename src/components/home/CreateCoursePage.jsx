@@ -26,6 +26,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     status: 'free',
     coverImage: null,
   });
+  const [customCategory, setCustomCategory] = useState('');
   const [cropperFile, setCropperFile] = useState(null);
 
   const handleInputChange = (e) => {
@@ -129,7 +130,18 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
                   <option value="business">Business</option>
                   <option value="marketing">Marketing</option>
                   <option value="technology">Technology</option>
+                  <option value="other">Other</option>
                 </select>
+                {courseData.category === 'other' && (
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    placeholder="Enter your category"
+                    className="ccp-input ccp-custom-input"
+                    maxLength={50}
+                  />
+                )}
               </div>
 
               <div className="ccp-form-group">
@@ -208,7 +220,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
                   <img src={courseData.coverImage || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80'} alt="Preview" className="ccp-preview-cover" />
                   <div className="ccp-preview-overlay">
                     <h3 className="ccp-preview-title">{courseData.title || 'Course Title'}</h3>
-                    <p className="ccp-preview-category">{courseData.category} • {courseData.level}</p>
+                    <p className="ccp-preview-category">{courseData.category === 'other' ? customCategory : courseData.category} • {courseData.level}</p>
                   </div>
                 </div>
               </div>
