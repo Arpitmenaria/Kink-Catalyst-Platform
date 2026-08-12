@@ -18,38 +18,28 @@
   display: flex;
   gap: 12px;
   margin-bottom: 32px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  padding-bottom: 16px;
 }
 
 .lap-tab {
-  background: none;
-  border: none;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid transparent;
   color: #8b95a5;
   font-size: 14px;
   font-weight: 600;
-  padding: 8px 0;
+  padding: 10px 20px;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
+  border-radius: 8px;
 }
 
 .lap-tab:hover {
-  color: #e0e6ed;
+  background: rgba(148, 163, 184, 0.15);
 }
 
 .lap-tab--active {
-  color: #3b82f6;
-}
-
-.lap-tab--active::after {
-  content: '';
-  position: absolute;
-  bottom: -16px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-color: transparent;
 }
 
 /* Header Section with Stats */
