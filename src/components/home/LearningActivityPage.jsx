@@ -22,6 +22,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   const [activeTab, setActiveTab] = useState('all');
+  const [filterType, setFilterType] = useState('all');
 
   if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
 
@@ -37,7 +38,13 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
 
   const ongoingCourses = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100).slice(0, 3);
   const categories = ['All Topics', 'Design', 'Development', 'Business', 'Technology', 'Marketing', 'Finance', 'Soft Skills'];
-  const exploreCourses = COURSES;
+
+  let exploreCourses = COURSES;
+  if (filterType === 'recommended') {
+    exploreCourses = COURSES.filter(c => c.rating >= 4.5);
+  } else if (filterType === 'popular') {
+    exploreCourses = COURSES.filter(c => c.students >= 100);
+  }
   const myCreatedCourses = [
     { id: 'custom-1', title: 'Advanced React Patterns', instructor: 'You', duration: '12h 30m', rating: 4.9, price: '$89.99', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80', category: 'Development', students: 245 },
     { id: 'custom-2', title: 'Web Design Masterclass', instructor: 'You', duration: '15h 45m', rating: 4.8, price: 'Free', img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80', category: 'Design', students: 189 },
@@ -142,6 +149,26 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
         <div className="lap-section">
           <div className="lap-section-header">
             <h2>Explore Categories</h2>
+          </div>
+          <div className="lap-filter-buttons">
+            <button
+              className={`lap-filter-btn ${filterType === 'all' ? 'lap-filter-btn--active' : ''}`}
+              onClick={() => setFilterType('all')}
+            >
+              All Courses
+            </button>
+            <button
+              className={`lap-filter-btn ${filterType === 'recommended' ? 'lap-filter-btn--active' : ''}`}
+              onClick={() => setFilterType('recommended')}
+            >
+              Recommended
+            </button>
+            <button
+              className={`lap-filter-btn ${filterType === 'popular' ? 'lap-filter-btn--active' : ''}`}
+              onClick={() => setFilterType('popular')}
+            >
+              Popular
+            </button>
           </div>
           <div className="lap-categories">
             {categories.map(cat => (
