@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AnimatedNav from './AnimatedNav';
+import ImageCropper from './ImageCropper';
 import { ALEX_AVATAR } from './mockData';
 import './CreateCoursePage.css';
 
@@ -26,6 +26,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     status: 'free',
     coverImage: null,
   });
+  const [cropperFile, setCropperFile] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,11 +39,30 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setCropperFile(file);
+    }
+  };
+
+  const handleCropSave = (croppedFile) => {
+    setCourseData(prev => ({
+      ...prev,
+      coverImage: URL.createObjectURL(croppedFile),
+    }));
+    setCropperFile(null);
+  };
+
+  const handleCropSkip = () => {
+    if (cropperFile) {
       setCourseData(prev => ({
         ...prev,
-        coverImage: URL.createObjectURL(file),
+        coverImage: URL.createObjectURL(cropperFile),
       }));
+      setCropperFile(null);
     }
+  };
+
+  const handleCropCancel = () => {
+    setCropperFile(null);
   };
 
   const handleNav = (id) => {
@@ -210,6 +230,18 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
           </button>
         </div>
       </div>
+
+      {/* Image Cropper Modal */}
+      {cropperFile && (
+        <ImageCropper
+          file={cropperFile}
+          defaultAspect="cover"
+          cropShape="rect"
+          onSave={handleCropSave}
+          onSkip={handleCropSkip}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 }
