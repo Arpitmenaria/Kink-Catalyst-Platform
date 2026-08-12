@@ -13,6 +13,45 @@
   min-width: 0;
 }
 
+/* Tab Navigation */
+.lap-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  padding-bottom: 16px;
+}
+
+.lap-tab {
+  background: none;
+  border: none;
+  color: #8b95a5;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.lap-tab:hover {
+  color: #e0e6ed;
+}
+
+.lap-tab--active {
+  color: #3b82f6;
+}
+
+.lap-tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: -16px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #3b82f6;
+}
+
 /* Header Section with Stats */
 .lap-header-section {
   display: flex;
@@ -422,6 +461,124 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+/* My Created Courses */
+.lap-create-new-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lap-create-new-btn:hover {
+  transform: translateY(-2px);
+}
+
+.lap-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px dashed rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+}
+
+.lap-empty-icon {
+  font-size: 48px;
+  margin: 0 0 16px 0;
+}
+
+.lap-empty-text {
+  font-size: 16px;
+  color: #8b95a5;
+  margin: 0 0 20px 0;
+}
+
+.lap-create-course-link {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lap-create-course-link:hover {
+  transform: translateY(-2px);
+}
+
+.lap-my-course-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.lap-my-course-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+}
+
+.lap-course-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin: 8px 0 12px 0;
+}
+
+.lap-students {
+  color: #8b95a5;
+}
+
+.lap-price {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.lap-course-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lap-edit-btn,
+.lap-manage-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.lap-edit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.lap-edit-btn:hover {
+  transform: translateY(-2px);
+}
+
+.lap-manage-btn {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.lap-manage-btn:hover {
+  background: rgba(139, 92, 246, 0.25);
 }
 
 /* Responsive */

@@ -21,6 +21,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const progress = useEducationProgress();
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
+  const [activeTab, setActiveTab] = useState('all');
 
   if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
 
@@ -37,12 +38,38 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const ongoingCourses = COURSES.filter(c => progress.isEnrolled(c.id) && progress.getCourseProgressPct(c.id, c) < 100).slice(0, 3);
   const categories = ['All Topics', 'Design', 'Development', 'Business', 'Technology', 'Marketing', 'Finance', 'Soft Skills'];
   const exploreCourses = COURSES.slice(0, 4);
+  const myCreatedCourses = [
+    { id: 'custom-1', title: 'Advanced React Patterns', instructor: 'You', duration: '12h 30m', rating: 4.9, price: '$89.99', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80', category: 'Development', students: 245 },
+    { id: 'custom-2', title: 'Web Design Masterclass', instructor: 'You', duration: '15h 45m', rating: 4.8, price: 'Free', img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80', category: 'Design', students: 189 },
+  ];
 
   return (
     <div className="lap-page">
       <AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={handleNav} />
 
       <div className="lap-main">
+        {/* Tab Navigation */}
+        <div className="lap-tabs">
+          <button
+            className={`lap-tab ${activeTab === 'all' ? 'lap-tab--active' : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            All
+          </button>
+          <button
+            className={`lap-tab ${activeTab === 'ongoing' ? 'lap-tab--active' : ''}`}
+            onClick={() => setActiveTab('ongoing')}
+          >
+            Ongoing Courses
+          </button>
+          <button
+            className={`lap-tab ${activeTab === 'created' ? 'lap-tab--active' : ''}`}
+            onClick={() => setActiveTab('created')}
+          >
+            My Created
+          </button>
+        </div>
+
         {/* Header with Stats */}
         <div className="lap-header-section">
           <div className="lap-stats-container">
@@ -73,8 +100,8 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           </button>
         </div>
 
-        {/* Ongoing Courses */}
-        {ongoingCourses.length > 0 && (
+        {/* Ongoing Courses - Show in Ongoing tab and All tab */}
+        {(activeTab === 'ongoing' || activeTab === 'all') && ongoingCourses.length > 0 && (
           <div className="lap-section">
             <div className="lap-section-header">
               <h2>Ongoing Courses</h2>
@@ -110,7 +137,8 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           </div>
         )}
 
-        {/* Explore Categories */}
+        {/* Explore Categories - Show only in All tab */}
+        {activeTab === 'all' && (
         <div className="lap-section">
           <div className="lap-section-header">
             <h2>Explore Categories</h2>
@@ -148,6 +176,54 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
             ))}
           </div>
         </div>
+        )}
+
+        {/* My Created Courses - Show only in Created tab */}
+        {activeTab === 'created' && (
+        <div className="lap-section">
+          <div className="lap-section-header">
+            <h2>My Courses</h2>
+            <button className="lap-create-new-btn" onClick={() => onNavigateEducation?.('create')}>
+              + Create New
+            </button>
+          </div>
+          {myCreatedCourses.length === 0 ? (
+            <div className="lap-empty-state">
+              <p className="lap-empty-icon">📚</p>
+              <p className="lap-empty-text">You haven't created any courses yet</p>
+              <button className="lap-create-course-link" onClick={() => onNavigateEducation?.('create')}>
+                Create your first course
+              </button>
+            </div>
+          ) : (
+            <div className="lap-courses-grid">
+              {myCreatedCourses.map(course => (
+                <div key={course.id} className="lap-my-course-card">
+                  <div className="lap-card-img-wrapper">
+                    <img src={course.img} alt={course.title} className="lap-card-img" />
+                  </div>
+                  <div className="lap-card-content">
+                    <h3 className="lap-card-title">{course.title}</h3>
+                    <div className="lap-card-meta">
+                      <span className="lap-instructor">👤 {course.instructor}</span>
+                      <span className="lap-rating">⭐ {course.rating}</span>
+                    </div>
+                    <p className="lap-duration">⏱️ {course.duration}</p>
+                    <div className="lap-course-stats">
+                      <span className="lap-students">{course.students} students</span>
+                      <span className="lap-price">{course.price}</span>
+                    </div>
+                    <div className="lap-course-actions">
+                      <button className="lap-edit-btn">Edit</button>
+                      <button className="lap-manage-btn">Manage</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        )}
 
       </div>
     </div>
