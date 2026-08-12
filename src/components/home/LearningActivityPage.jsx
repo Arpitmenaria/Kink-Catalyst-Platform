@@ -170,17 +170,19 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
               Popular
             </button>
           </div>
-          <div className="lap-categories">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                className={`lap-category-btn ${selectedCategory === cat ? 'lap-category-btn--active' : ''}`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          {filterType === 'all' && (
+            <div className="lap-categories">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  className={`lap-category-btn ${selectedCategory === cat ? 'lap-category-btn--active' : ''}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="lap-courses-grid">
             {exploreCourses.map(course => (
               <div key={course.id} className="lap-explore-card">
