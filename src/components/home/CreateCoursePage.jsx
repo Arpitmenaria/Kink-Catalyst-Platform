@@ -24,7 +24,8 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     category: 'development',
     level: 'beginner',
     price: '0',
-    status: 'free',
+    pricingType: 'free',
+    status: 'draft',
     coverImage: null,
   });
   const [customCategory, setCustomCategory] = useState('');
@@ -94,8 +95,8 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
         description: courseData.description,
         category: courseData.category === 'other' ? customCategory : courseData.category,
         level: courseData.level,
-        status: courseData.status,
-        price: courseData.status === 'free' ? 0 : parseFloat(courseData.price),
+        status: 'draft',
+        price: courseData.pricingType === 'free' ? 0 : parseFloat(courseData.price),
         coverImage: fileToUpload,
       }, authToken);
 
@@ -203,25 +204,25 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
 
             <div className="ccp-row">
               <div className="ccp-form-group">
-                <label className="ccp-label">Status *</label>
-                <select name="status" value={courseData.status} onChange={handleInputChange} className="ccp-select">
+                <label className="ccp-label">Pricing Type *</label>
+                <select name="pricingType" value={courseData.pricingType} onChange={handleInputChange} className="ccp-select">
                   <option value="free">Free</option>
                   <option value="paid">Paid</option>
                 </select>
               </div>
 
               <div className="ccp-form-group">
-                <label className="ccp-label">Price (USD) {courseData.status === 'paid' && '*'}</label>
+                <label className="ccp-label">Price (USD) {courseData.pricingType === 'paid' && '*'}</label>
                 <input
                   type="number"
                   name="price"
                   value={courseData.price}
                   onChange={handleInputChange}
-                  placeholder={courseData.status === 'paid' ? 'e.g., 49.99' : 'Not required for free courses'}
+                  placeholder={courseData.pricingType === 'paid' ? 'e.g., 49.99' : 'Not required for free courses'}
                   className="ccp-input"
                   min="0"
                   step="0.01"
-                  disabled={courseData.status === 'free'}
+                  disabled={courseData.pricingType === 'free'}
                 />
               </div>
             </div>
