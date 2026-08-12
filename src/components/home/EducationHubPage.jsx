@@ -95,43 +95,16 @@ export default function EducationHubPage({ onBack, onMessagesClick, onEventsClic
 
   return (
     <div className="ehp-page">
-      <div className="ehp-container">
-        <div className="ehp-header">
-          <h1 className="ehp-title">Education Hub</h1>
-          <p className="ehp-subtitle">Learn, Create, and Master New Skills</p>
-        </div>
-
-        {/* Quick Nav */}
-        <div className="ehp-quick-nav">
-          {navItems.map(item => {
-            const IconComponent = item.icon;
-            return (
-              <button
-                key={item.id}
-                className={`ehp-nav-btn ${item.id === currentView ? 'ehp-nav-btn--active' : ''}`}
-                onClick={() => handleViewChange(item.id)}
-              >
-                <IconComponent />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Dashboard Content */}
-        <div className="ehp-dashboard">
-          <LearningActivityPage
-            onBack={onBack}
-            onMessagesClick={onMessagesClick}
-            onEventsClick={onEventsClick}
-            onGroupsClick={onGroupsClick}
-            onCalendarClick={onCalendarClick}
-            onLibraryClick={onLibraryClick}
-            onMinisitesClick={onMinisitesClick}
-            onNavigateEducation={handleViewChange}
-          />
-        </div>
-      </div>
+      <LearningActivityPage
+        onBack={onBack}
+        onMessagesClick={onMessagesClick}
+        onEventsClick={onEventsClick}
+        onGroupsClick={onGroupsClick}
+        onCalendarClick={onCalendarClick}
+        onLibraryClick={onLibraryClick}
+        onMinisitesClick={onMinisitesClick}
+        onNavigateEducation={handleViewChange}
+      />
     </div>
   );
 }
