@@ -16,7 +16,10 @@ function PlayIcon() {
 
 export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick, onNavigateEducation }) {
   const { profile } = useSelector(s => s.profile);
+  const authToken = useSelector(s => s.auth?.token);
+  const userId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
   const avatarUrl = profile?.avatar ?? ALEX_AVATAR;
+
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   const [activeTab, setActiveTab] = useState('all');
@@ -32,9 +35,9 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
 
   // Fetch data on component mount
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!authToken || !userId) return;
     fetchData();
-  }, [profile?.id, activeTab, filterType, selectedCategory]);
+  }, [authToken, userId, activeTab, filterType, selectedCategory]);
 
   const fetchData = async () => {
     try {
@@ -42,31 +45,31 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
       setError(null);
 
       // Fetch dashboard stats
-      const statsRes = await courseApi.getDashboardStats(profile.id);
+      const statsRes = await courseApi.getDashboardStats(userId, authToken);
       if (statsRes.success) {
         setDashboardStats(statsRes);
       }
 
       // Fetch enrolled courses
-      const enrolledRes = await courseApi.getUserEnrolledCourses(profile.id);
+      const enrolledRes = await courseApi.getUserEnrolledCourses(userId, authToken);
       if (enrolledRes.success) {
         setEnrolledCourses(enrolledRes.courses || []);
       }
 
       // Fetch created courses
-      const createdRes = await courseApi.getUserCreatedCourses(profile.id);
+      const createdRes = await courseApi.getUserCreatedCourses(userId, authToken);
       if (createdRes.success) {
         setCreatedCourses(createdRes.courses || []);
       }
 
       // Fetch explore courses with filters
-      const exploreRes = await courseApi.getAllCourses(filterType, selectedCategory);
+      const exploreRes = await courseApi.getAllCourses(filterType, selectedCategory, authToken);
       if (exploreRes.success) {
         setExploreCourses(exploreRes.courses || []);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err?.error || 'Failed to load courses');
+      setError(err?.message || err?.error || 'Failed to load courses');
     } finally {
       setLoading(false);
     }

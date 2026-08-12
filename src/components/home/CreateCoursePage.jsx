@@ -17,7 +17,7 @@ function CheckIcon() {
 }
 
 export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
-  const { profile } = useSelector(s => s.profile);
+  const authToken = useSelector(s => s.auth?.token);
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
@@ -70,8 +70,8 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
   };
 
   const handleCreateCourse = async () => {
-    if (!profile?.id) {
-      setError('User not authenticated');
+    if (!authToken) {
+      setError('User not authenticated. Please login first.');
       return;
     }
 
@@ -97,7 +97,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
         status: courseData.status,
         price: courseData.status === 'free' ? 0 : parseFloat(courseData.price),
         coverImage: fileToUpload,
-      });
+      }, authToken);
 
       if (response.success) {
         setTimeout(() => {
@@ -108,7 +108,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
       }
     } catch (err) {
       console.error('Error creating course:', err);
-      setError(err?.error || 'Failed to create course');
+      setError(err?.message || err?.error || 'Failed to create course');
     } finally {
       setIsCreating(false);
     }

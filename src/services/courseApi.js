@@ -1,9 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = 'https://kick-analyst-backend-production.jay886631.workers.dev';
 
-const getAuthToken = () => localStorage.getItem('token');
-
-const fetchWithAuth = async (url, options = {}) => {
-  const token = getAuthToken();
+const fetchWithAuth = async (url, token, options = {}) => {
   const headers = {
     ...options.headers,
   };
@@ -13,7 +10,7 @@ const fetchWithAuth = async (url, options = {}) => {
   }
 
   const response = await fetch(url, { ...options, headers });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw data;
@@ -24,7 +21,7 @@ const fetchWithAuth = async (url, options = {}) => {
 
 export const courseApi = {
   // Create course
-  createCourse: async (data) => {
+  createCourse: async (data, token) => {
     try {
       const formData = new FormData();
       formData.append('title', data.title);
@@ -37,10 +34,8 @@ export const courseApi = {
         formData.append('file', data.coverImage);
       }
 
-      const token = getAuthToken();
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API_BASE_URL}/courses`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses`, {
         method: 'POST',
         headers,
         body: formData,
@@ -55,34 +50,32 @@ export const courseApi = {
   },
 
   // Get all courses
-  getAllCourses: async (filter = 'all', category = null, page = 1, limit = 12) => {
+  getAllCourses: async (filter = 'all', category = null, token, page = 1, limit = 12) => {
     try {
       const params = new URLSearchParams({ filter, page, limit });
       if (category && category !== 'All Topics') {
         params.append('category', category.toLowerCase());
       }
-      return await fetchWithAuth(`${API_BASE_URL}/courses?${params}`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/courses?${params}`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Get course details
-  getCourseDetails: async (courseId) => {
+  getCourseDetails: async (courseId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/courses/${courseId}`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/courses/${courseId}`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Enroll in course
-  enrollCourse: async (courseId) => {
+  enrollCourse: async (courseId, token) => {
     try {
-      const token = getAuthToken();
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API_BASE_URL}/courses/${courseId}/enroll`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/enroll`, {
         method: 'POST',
         headers,
       });
@@ -96,15 +89,14 @@ export const courseApi = {
   },
 
   // Update course progress
-  updateCourseProgress: async (courseId, percentComplete) => {
+  updateCourseProgress: async (courseId, percentComplete, token) => {
     try {
-      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
       };
 
-      const response = await fetch(`${API_BASE_URL}/courses/${courseId}/progress`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/progress`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ percentComplete }),
@@ -119,25 +111,25 @@ export const courseApi = {
   },
 
   // Get user enrolled courses
-  getUserEnrolledCourses: async (userId) => {
+  getUserEnrolledCourses: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/courses/enrolled`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/courses/enrolled`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Get user created courses
-  getUserCreatedCourses: async (userId) => {
+  getUserCreatedCourses: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/courses/created`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/courses/created`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Update course
-  updateCourse: async (courseId, data) => {
+  updateCourse: async (courseId, data, token) => {
     try {
       const formData = new FormData();
       formData.append('title', data.title);
@@ -150,10 +142,8 @@ export const courseApi = {
         formData.append('file', data.coverImage);
       }
 
-      const token = getAuthToken();
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}`, {
         method: 'PUT',
         headers,
         body: formData,
@@ -168,12 +158,10 @@ export const courseApi = {
   },
 
   // Delete course
-  deleteCourse: async (courseId) => {
+  deleteCourse: async (courseId, token) => {
     try {
-      const token = getAuthToken();
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}`, {
         method: 'DELETE',
         headers,
       });
@@ -187,33 +175,32 @@ export const courseApi = {
   },
 
   // Get quizzes
-  getQuizzes: async (userId) => {
+  getQuizzes: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/quizzes`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/quizzes`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Get quiz details
-  getQuizDetails: async (quizId) => {
+  getQuizDetails: async (quizId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/quizzes/${quizId}`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/quizzes/${quizId}`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Submit quiz
-  submitQuiz: async (quizId, answers) => {
+  submitQuiz: async (quizId, answers, token) => {
     try {
-      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
       };
 
-      const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}/submit`, {
+      const response = await fetch(`${API_BASE_URL}/api/quizzes/${quizId}/submit`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ answers }),
@@ -228,16 +215,16 @@ export const courseApi = {
   },
 
   // Get assignments
-  getAssignments: async (userId) => {
+  getAssignments: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/assignments`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/assignments`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Submit assignment
-  submitAssignment: async (assignmentId, data) => {
+  submitAssignment: async (assignmentId, data, token) => {
     try {
       const formData = new FormData();
       if (data.file) {
@@ -247,10 +234,8 @@ export const courseApi = {
         formData.append('submissionText', data.submissionText);
       }
 
-      const token = getAuthToken();
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API_BASE_URL}/assignments/${assignmentId}/submit`, {
+      const response = await fetch(`${API_BASE_URL}/api/assignments/${assignmentId}/submit`, {
         method: 'POST',
         headers,
         body: formData,
@@ -265,39 +250,37 @@ export const courseApi = {
   },
 
   // Get learning analytics
-  getLearningAnalytics: async (userId) => {
+  getLearningAnalytics: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/learning-analytics`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/learning-analytics`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Get dashboard stats
-  getDashboardStats: async (userId) => {
+  getDashboardStats: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/dashboard-stats`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/dashboard-stats`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Get certificates
-  getCertificates: async (userId) => {
+  getCertificates: async (userId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/users/${userId}/certificates`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/users/${userId}/certificates`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Download certificate
-  downloadCertificate: async (certificateId) => {
+  downloadCertificate: async (certificateId, token) => {
     try {
-      const token = getAuthToken();
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API_BASE_URL}/certificates/${certificateId}/download`, {
+      const response = await fetch(`${API_BASE_URL}/api/certificates/${certificateId}/download`, {
         headers,
       });
 
@@ -309,33 +292,32 @@ export const courseApi = {
   },
 
   // Get discussions
-  getDiscussions: async (courseId) => {
+  getDiscussions: async (courseId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/courses/${courseId}/discussions`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/courses/${courseId}/discussions`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Get discussion details
-  getDiscussionDetails: async (discussionId) => {
+  getDiscussionDetails: async (discussionId, token) => {
     try {
-      return await fetchWithAuth(`${API_BASE_URL}/discussions/${discussionId}`);
+      return await fetchWithAuth(`${API_BASE_URL}/api/discussions/${discussionId}`, token);
     } catch (error) {
       throw error;
     }
   },
 
   // Post discussion
-  postDiscussion: async (courseId, data) => {
+  postDiscussion: async (courseId, data, token) => {
     try {
-      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
       };
 
-      const response = await fetch(`${API_BASE_URL}/courses/${courseId}/discussions`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/discussions`, {
         method: 'POST',
         headers,
         body: JSON.stringify(data),
@@ -350,15 +332,14 @@ export const courseApi = {
   },
 
   // Reply to discussion
-  replyToDiscussion: async (discussionId, body) => {
+  replyToDiscussion: async (discussionId, body, token) => {
     try {
-      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
       };
 
-      const response = await fetch(`${API_BASE_URL}/discussions/${discussionId}/replies`, {
+      const response = await fetch(`${API_BASE_URL}/api/discussions/${discussionId}/replies`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ body }),
