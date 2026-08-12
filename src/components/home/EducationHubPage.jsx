@@ -95,8 +95,6 @@ export default function EducationHubPage({ onBack, onMessagesClick, onEventsClic
 
   return (
     <div className="ehp-page">
-      <AnimatedNav avatarUrl={avatarUrl} activeNav="courses" onNav={handleNav} />
-
       <div className="ehp-container">
         <div className="ehp-header">
           <h1 className="ehp-title">Education Hub</h1>
