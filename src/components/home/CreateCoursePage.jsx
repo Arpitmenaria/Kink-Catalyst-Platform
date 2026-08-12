@@ -23,7 +23,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     category: 'development',
     level: 'beginner',
     price: '0',
-    isFree: true,
+    status: 'free',
     coverImage: null,
   });
 
@@ -32,7 +32,6 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     setCourseData(prev => ({
       ...prev,
       [name]: value,
-      isFree: name === 'price' ? value === '0' : prev.isFree,
     }));
   };
 
@@ -125,22 +124,26 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
 
             <div className="ccp-row">
               <div className="ccp-form-group">
-                <label className="ccp-label">Price (USD) *</label>
+                <label className="ccp-label">Status *</label>
+                <select name="status" value={courseData.status} onChange={handleInputChange} className="ccp-select">
+                  <option value="free">Free</option>
+                  <option value="paid">Paid</option>
+                </select>
+              </div>
+
+              <div className="ccp-form-group">
+                <label className="ccp-label">Price (USD) {courseData.status === 'paid' && '*'}</label>
                 <input
                   type="number"
                   name="price"
                   value={courseData.price}
                   onChange={handleInputChange}
-                  placeholder="0 for free"
+                  placeholder={courseData.status === 'paid' ? 'e.g., 49.99' : 'Not required for free courses'}
                   className="ccp-input"
                   min="0"
                   step="0.01"
+                  disabled={courseData.status === 'free'}
                 />
-              </div>
-
-              <div className="ccp-form-group">
-                <label className="ccp-label">Status</label>
-                <div className="ccp-status-badge">{courseData.isFree ? '✨ Free' : '💰 Paid'}</div>
               </div>
             </div>
           </div>
