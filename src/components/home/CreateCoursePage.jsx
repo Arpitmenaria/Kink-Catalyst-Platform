@@ -83,7 +83,6 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
       <div className="ccp-container">
         {/* Header */}
         <div className="ccp-header">
-          <button className="ccp-back-btn" onClick={onBack}>← Back</button>
           <h1 className="ccp-title">Create New Course</h1>
         </div>
 
