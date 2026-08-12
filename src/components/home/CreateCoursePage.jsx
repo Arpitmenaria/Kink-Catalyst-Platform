@@ -17,7 +17,6 @@ function CheckIcon() {
 
 export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
   const avatarUrl = ALEX_AVATAR;
-  const [step, setStep] = useState(1);
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
@@ -26,7 +25,6 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     price: '0',
     isFree: true,
     coverImage: null,
-    modules: 0,
   });
 
   const handleInputChange = (e) => {
@@ -58,36 +56,22 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     if (id === 'minisites') onMinisitesClick?.();
   };
 
-  const isStep1Valid = courseData.title.trim() && courseData.description.trim();
-  const isStep2Valid = courseData.coverImage;
-  const canFinish = isStep1Valid && isStep2Valid;
+  const isFormValid = courseData.title.trim() && courseData.description.trim() && courseData.coverImage;
 
   return (
     <div className="ccp-page">
-      <AnimatedNav avatarUrl={avatarUrl} activeNav="courses" onNav={handleNav} />
-
       <div className="ccp-container">
         {/* Header */}
         <div className="ccp-header">
           <button className="ccp-back-btn" onClick={onBack}>← Back</button>
           <h1 className="ccp-title">Create New Course</h1>
-          <p className="ccp-subtitle">Launch your course in 3 steps</p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="ccp-progress">
-          {[1, 2, 3].map(s => (
-            <div key={s} className={`ccp-step ${s <= step ? 'ccp-step--active' : ''} ${s < step ? 'ccp-step--done' : ''}`}>
-              <div className="ccp-step-number">{s < step ? <CheckIcon /> : s}</div>
-              <div className="ccp-step-label">{['Course Info', 'Cover Image', 'Modules'][s - 1]}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Step 1: Basic Info */}
-        {step === 1 && (
-          <div className="ccp-form">
-            <h2 className="ccp-form-title">Course Title & Description</h2>
+        {/* Single Page Form */}
+        <div className="ccp-form">
+          {/* Course Info Section */}
+          <div className="ccp-section">
+            <h2 className="ccp-section-title">Course Information</h2>
 
             <div className="ccp-form-group">
               <label className="ccp-label">Course Title *</label>
@@ -160,13 +144,11 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
               </div>
             </div>
           </div>
-        )}
 
-        {/* Step 2: Cover Image */}
-        {step === 2 && (
-          <div className="ccp-form">
-            <h2 className="ccp-form-title">Course Cover Image</h2>
-            <p className="ccp-form-subtitle">Upload a professional cover image (recommended: 1200x600px)</p>
+          {/* Cover Image Section */}
+          <div className="ccp-section">
+            <h2 className="ccp-section-title">Course Cover Image</h2>
+            <p className="ccp-section-desc">Upload a professional cover image (recommended: 1200x600px)</p>
 
             <div className="ccp-image-upload">
               {courseData.coverImage ? (
@@ -197,67 +179,32 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
             </div>
 
             {/* Course Preview */}
-            <div className="ccp-preview-card">
-              <div className="ccp-preview-wrapper">
-                <img src={courseData.coverImage || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80'} alt="Preview" className="ccp-preview-cover" />
-                <div className="ccp-preview-overlay">
-                  <h3 className="ccp-preview-title">{courseData.title || 'Course Title'}</h3>
-                  <p className="ccp-preview-category">{courseData.category} • {courseData.level}</p>
+            {(courseData.title || courseData.coverImage) && (
+              <div className="ccp-preview-card">
+                <div className="ccp-preview-wrapper">
+                  <img src={courseData.coverImage || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80'} alt="Preview" className="ccp-preview-cover" />
+                  <div className="ccp-preview-overlay">
+                    <h3 className="ccp-preview-title">{courseData.title || 'Course Title'}</h3>
+                    <p className="ccp-preview-category">{courseData.category} • {courseData.level}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
-
-        {/* Step 3: Modules */}
-        {step === 3 && (
-          <div className="ccp-form">
-            <h2 className="ccp-form-title">Create Course Modules</h2>
-            <p className="ccp-form-subtitle">You can add modules and lessons after creating the course</p>
-
-            <div className="ccp-module-summary">
-              <div className="ccp-summary-item">
-                <div className="ccp-summary-icon">📚</div>
-                <div className="ccp-summary-info">
-                  <h4 className="ccp-summary-title">Course Created!</h4>
-                  <p className="ccp-summary-desc">You can now add modules and lessons to your course</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="ccp-quick-tips">
-              <h4 className="ccp-tips-title">Quick Tips:</h4>
-              <ul className="ccp-tips-list">
-                <li>✓ Structure your course into 3-5 modules for best results</li>
-                <li>✓ Each module should have 4-6 lessons</li>
-                <li>✓ Keep lessons between 5-15 minutes long</li>
-                <li>✓ Add quizzes and assignments to boost engagement</li>
-              </ul>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Action Buttons */}
         <div className="ccp-actions">
-          {step > 1 && (
-            <button className="ccp-btn ccp-btn--secondary" onClick={() => setStep(step - 1)}>
-              ← Previous
-            </button>
-          )}
-          {step < 3 && (
-            <button
-              className="ccp-btn ccp-btn--primary"
-              onClick={() => setStep(step + 1)}
-              disabled={step === 1 ? !isStep1Valid : !isStep2Valid}
-            >
-              Next →
-            </button>
-          )}
-          {step === 3 && (
-            <button className="ccp-btn ccp-btn--success" onClick={() => alert('✅ Course Created! Redirecting...')}>
-              <PlusIcon /> Publish Course
-            </button>
-          )}
+          <button className="ccp-btn ccp-btn--secondary" onClick={onBack}>
+            Cancel
+          </button>
+          <button
+            className="ccp-btn ccp-btn--success"
+            onClick={() => alert('✅ Course Created! Redirecting...')}
+            disabled={!isFormValid}
+          >
+            <PlusIcon /> Create Course
+          </button>
         </div>
       </div>
     </div>
