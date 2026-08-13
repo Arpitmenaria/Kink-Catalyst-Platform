@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import CourseDetailPage from './CourseDetailPage';
+import ManageChaptersPage from './ManageChaptersPage';
 import { ALEX_AVATAR } from './mockData';
 import { courseApi } from '../../services/courseApi';
 import './LearningActivityPage.css';
@@ -14,6 +15,34 @@ function PlayIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
 }
 
+function BookIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>;
+}
+
+function CheckCircleIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+}
+
+function ClockIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+}
+
+function DurationIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+}
+
+function PersonIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+}
+
+function StarIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+}
+
+function CheckIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+}
+
 export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick, onNavigateEducation }) {
   const { profile } = useSelector(s => s.profile);
   const authToken = useSelector(s => s.auth?.token);
@@ -21,6 +50,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const avatarUrl = profile?.avatar ?? ALEX_AVATAR;
 
   const [activeCourseId, setActiveCourseId] = useState(null);
+  const [managingCourse, setManagingCourse] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   const [activeTab, setActiveTab] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -32,6 +62,10 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const [dashboardStats, setDashboardStats] = useState({ coursesEnrolled: 0, completed: 0, hoursSpent: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [publishingId, setPublishingId] = useState(null);
+  const [enrollingId, setEnrollingId] = useState(null);
+  const [checkoutCourse, setCheckoutCourse] = useState(null);
+  const [checkoutStep, setCheckoutStep] = useState('idle'); // idle | processing | success | error
 
   // Fetch data on component mount
   useEffect(() => {
@@ -75,7 +109,99 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
     }
   };
 
-  if (activeCourseId) return <CourseDetailPage courseId={activeCourseId} onBack={() => setActiveCourseId(null)} />;
+  // Only the course's author (this list is always "my" created courses) can publish/unpublish.
+  const handleTogglePublish = async (course) => {
+    if (!authToken || publishingId) return;
+    const isPublished = course.status === 'published';
+    try {
+      setPublishingId(course.id);
+      const res = isPublished
+        ? await courseApi.unpublishCourse(course.id, authToken)
+        : await courseApi.publishCourse(course.id, authToken);
+      if (res.success) {
+        const nextStatus = res.course?.status ?? (isPublished ? 'draft' : 'published');
+        setCreatedCourses(prev => prev.map(c => (c.id === course.id ? { ...c, status: nextStatus } : c)));
+      }
+    } catch (err) {
+      console.error('Error toggling publish state:', err);
+      setError(err?.message || err?.error || 'Failed to update course status');
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const myCreatedCourseIds = new Set(createdCourses.map(c => c.id));
+  const otherAuthorsCourses = exploreCourses.filter(course => !myCreatedCourseIds.has(course.id));
+  const enrolledCourseIds = new Set(enrolledCourses.map(c => c.id));
+  const isPaidCourse = (course) => course.pricingType === 'paid' || Number(course.price) > 0;
+
+  // Registers the enrollment against the real backend. Used for both the
+  // free path (called directly) and the paid path (called after the mock
+  // payment "succeeds"), since the enroll endpoint itself is payment-agnostic.
+  const performEnroll = async (course) => {
+    setEnrollingId(course.id);
+    try {
+      const res = await courseApi.enrollCourse(course.id, authToken);
+      if (res.success !== false) {
+        setEnrolledCourses(prev => (prev.some(c => c.id === course.id) ? prev : [...prev, course]));
+      }
+      return true;
+    } catch (err) {
+      console.error('Error enrolling in course:', err);
+      setError(err?.message || err?.error || 'Failed to enroll in course');
+      return false;
+    } finally {
+      setEnrollingId(null);
+    }
+  };
+
+  const handleEnrollClick = (course) => {
+    if (!authToken || enrolledCourseIds.has(course.id) || enrollingId) return;
+    if (isPaidCourse(course)) {
+      setCheckoutCourse(course);
+      setCheckoutStep('idle');
+    } else {
+      performEnroll(course);
+    }
+  };
+
+  // No real payment gateway yet — this hits the mock /purchase endpoint,
+  // which validates + records a transaction and enrolls in one step.
+  const handlePurchase = async () => {
+    if (!checkoutCourse) return;
+    setCheckoutStep('processing');
+    try {
+      const res = await courseApi.purchaseCourse(checkoutCourse.id, authToken);
+      if (res.success) {
+        setEnrolledCourses(prev => (prev.some(c => c.id === checkoutCourse.id) ? prev : [...prev, checkoutCourse]));
+        setCheckoutStep('success');
+      } else {
+        setCheckoutStep('error');
+      }
+    } catch (err) {
+      console.error('Error purchasing course:', err);
+      setCheckoutStep('error');
+    }
+  };
+
+  const closeCheckout = () => {
+    setCheckoutCourse(null);
+    setCheckoutStep('idle');
+  };
+
+  if (managingCourse) {
+    return <ManageChaptersPage course={managingCourse} authToken={authToken} onBack={() => setManagingCourse(null)} />;
+  }
+
+  if (activeCourseId) {
+    return (
+      <CourseDetailPage
+        courseId={activeCourseId}
+        authToken={authToken}
+        onBack={() => setActiveCourseId(null)}
+      />
+    );
+  }
 
   const handleNav = (id) => {
     if (id === 'home') onBack?.();
@@ -121,21 +247,21 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
         <div className="lap-header-section">
           <div className="lap-stats-container">
             <div className="lap-stat">
-              <div className="lap-stat-icon">📚</div>
+              <div className="lap-stat-icon"><BookIcon /></div>
               <div className="lap-stat-info">
                 <p className="lap-stat-label">COURSES ENROLLED</p>
                 <p className="lap-stat-value">{dashboardStats.coursesEnrolled || 0}</p>
               </div>
             </div>
             <div className="lap-stat">
-              <div className="lap-stat-icon">✅</div>
+              <div className="lap-stat-icon"><CheckCircleIcon /></div>
               <div className="lap-stat-info">
                 <p className="lap-stat-label">COMPLETED</p>
                 <p className="lap-stat-value">{dashboardStats.completed || 0}</p>
               </div>
             </div>
             <div className="lap-stat">
-              <div className="lap-stat-icon">⏱️</div>
+              <div className="lap-stat-icon"><ClockIcon /></div>
               <div className="lap-stat-info">
                 <p className="lap-stat-label">HOURS SPENT</p>
                 <p className="lap-stat-value">{dashboardStats.hoursSpent || '0h'}</p>
@@ -229,27 +355,40 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>Loading courses...</p>
             ) : error ? (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>{error}</p>
-            ) : exploreCourses.length === 0 ? (
+            ) : otherAuthorsCourses.length === 0 ? (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>No courses found</p>
             ) : (
-              exploreCourses.map(course => (
-                <div key={course.id} className="lap-explore-card">
-                  <div className="lap-card-img-wrapper">
-                    <img src={course.img} alt={course.title} className="lap-card-img" />
-                  </div>
-                  <div className="lap-card-content">
-                    <h3 className="lap-card-title">{course.title}</h3>
-                    <div className="lap-card-meta">
-                      <span className="lap-instructor">👤 {course.instructor}</span>
-                      <span className="lap-rating">⭐ {course.rating}</span>
+              otherAuthorsCourses.map(course => {
+                const enrolled = enrolledCourseIds.has(course.id);
+                const busy = enrollingId === course.id;
+                const paid = isPaidCourse(course);
+                return (
+                  <div key={course.id} className="lap-explore-card">
+                    <div className="lap-card-img-wrapper">
+                      <img src={course.img} alt={course.title} className="lap-card-img" />
                     </div>
-                    <p className="lap-duration">⏱️ {course.duration}</p>
-                    <button className="lap-enroll-btn" onClick={() => setActiveCourseId(course.id)}>
-                      Enroll this course {course.price ? `· $${course.price}` : '· Free'}
-                    </button>
+                    <div className="lap-card-content">
+                      <h3 className="lap-card-title">{course.title}</h3>
+                      <div className="lap-card-meta">
+                        <span className="lap-instructor"><PersonIcon /> {course.instructor}</span>
+                        <span className="lap-rating"><StarIcon /> {course.rating}</span>
+                      </div>
+                      <p className="lap-duration"><DurationIcon /> {course.duration}</p>
+                      <button
+                        className={`lap-enroll-btn ${enrolled ? 'lap-enroll-btn--enrolled' : ''}`}
+                        disabled={busy}
+                        onClick={() => enrolled ? setActiveCourseId(course.id) : handleEnrollClick(course)}
+                      >
+                        {enrolled
+                          ? <><CheckIcon /> Continue Learning</>
+                          : busy
+                            ? 'Enrolling...'
+                            : `Enroll this course · ${paid ? `$${course.price}` : 'Free'}`}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -266,7 +405,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           </div>
           {createdCourses.length === 0 ? (
             <div className="lap-empty-state">
-              <p className="lap-empty-icon">📚</p>
+              <p className="lap-empty-icon"><BookIcon /></p>
               <p className="lap-empty-text">You haven't created any courses yet</p>
               <button className="lap-create-course-link" onClick={() => onNavigateEducation?.('create')}>
                 Create your first course
@@ -274,35 +413,92 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
             </div>
           ) : (
             <div className="lap-courses-grid">
-              {createdCourses.map(course => (
-                <div key={course.id} className="lap-my-course-card">
-                  <div className="lap-card-img-wrapper">
-                    <img src={course.img} alt={course.title} className="lap-card-img" />
+              {createdCourses.map(course => {
+                const isPublished = course.status === 'published';
+                const isBusy = publishingId === course.id;
+                return (
+                  <div key={course.id} className="lap-my-course-card">
+                    <div className="lap-card-img-wrapper">
+                      <img src={course.img} alt={course.title} className="lap-card-img" />
+                      <span className={`lap-status-badge ${isPublished ? 'lap-status-badge--published' : 'lap-status-badge--draft'}`}>
+                        {isPublished ? 'Published' : 'Draft'}
+                      </span>
+                    </div>
+                    <div className="lap-card-content">
+                      <h3 className="lap-card-title">{course.title}</h3>
+                      <div className="lap-card-meta">
+                        <span className="lap-instructor"><PersonIcon /> You</span>
+                        <span className="lap-rating"><StarIcon /> {course.rating}</span>
+                      </div>
+                      <p className="lap-duration"><DurationIcon /> {course.duration}</p>
+                      <div className="lap-course-stats">
+                        <span className="lap-students">{course.students} students</span>
+                        <span className="lap-price">{course.price}</span>
+                      </div>
+                      <div className="lap-course-actions">
+                        <button className="lap-edit-btn" onClick={() => setManagingCourse(course)}>Edit</button>
+                        <button
+                          className={`lap-publish-btn ${isPublished ? 'lap-publish-btn--unpublish' : 'lap-publish-btn--publish'}`}
+                          disabled={isBusy}
+                          onClick={() => handleTogglePublish(course)}
+                        >
+                          {isBusy ? '...' : isPublished ? 'Unpublish' : 'Publish'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="lap-card-content">
-                    <h3 className="lap-card-title">{course.title}</h3>
-                    <div className="lap-card-meta">
-                      <span className="lap-instructor">👤 You</span>
-                      <span className="lap-rating">⭐ {course.rating}</span>
-                    </div>
-                    <p className="lap-duration">⏱️ {course.duration}</p>
-                    <div className="lap-course-stats">
-                      <span className="lap-students">{course.students} students</span>
-                      <span className="lap-price">{course.price}</span>
-                    </div>
-                    <div className="lap-course-actions">
-                      <button className="lap-edit-btn">Edit</button>
-                      <button className="lap-manage-btn">Manage</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
         )}
 
       </div>
+
+      {checkoutCourse && (
+        <div className="lap-checkout-overlay" onClick={() => checkoutStep !== 'processing' && closeCheckout()}>
+          <div className="lap-checkout-modal" onClick={(e) => e.stopPropagation()}>
+            {checkoutStep === 'success' ? (
+              <>
+                <div className="lap-checkout-success-icon"><CheckIcon /></div>
+                <h3>Payment Successful</h3>
+                <p className="lap-checkout-sub">You're enrolled in <strong>{checkoutCourse.title}</strong>.</p>
+                <div className="lap-checkout-actions">
+                  <button className="lap-checkout-primary-btn" onClick={() => { setActiveCourseId(checkoutCourse.id); closeCheckout(); }}>
+                    Start Course
+                  </button>
+                  <button className="lap-checkout-secondary-btn" onClick={closeCheckout}>Close</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>Checkout</h3>
+                <p className="lap-checkout-sub">{checkoutCourse.title}</p>
+                <div className="lap-checkout-price-row">
+                  <span>Total</span>
+                  <span className="lap-checkout-price">${checkoutCourse.price}</span>
+                </div>
+                {checkoutStep === 'error' && (
+                  <p className="lap-checkout-error">Payment failed. Please try again.</p>
+                )}
+                <div className="lap-checkout-actions">
+                  <button
+                    className="lap-checkout-primary-btn"
+                    disabled={checkoutStep === 'processing'}
+                    onClick={handlePurchase}
+                  >
+                    {checkoutStep === 'processing' ? 'Processing…' : `Pay $${checkoutCourse.price}`}
+                  </button>
+                  <button className="lap-checkout-secondary-btn" disabled={checkoutStep === 'processing'} onClick={closeCheckout}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

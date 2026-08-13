@@ -120,6 +120,38 @@
   padding: 24px;
 }
 
+.cdp-chapter-desc {
+  color: #94a3b8;
+  font-size: 14px;
+  margin: -4px 0 16px 0;
+}
+
+.cdp-chapter-resources {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.cdp-resource-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.08);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cdp-resource-link:hover {
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
 /* ── Video lesson player ── */
 .cdp-video-wrap {
   border-radius: 10px;
@@ -175,6 +207,15 @@
   background: linear-gradient(135deg, #10b981, #059669);
   color: #fff;
   box-shadow: 0 4px 16px rgba(16,185,129,0.35);
+}
+
+.cdp-price-badge--enrolled {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16,185,129,0.15);
+  color: #34d399;
+  border-color: rgba(16,185,129,0.35);
 }
 
 .cdp-meta-item {

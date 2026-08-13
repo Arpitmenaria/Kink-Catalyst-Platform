@@ -189,7 +189,21 @@
       "Bash(find / -iname \"chromium-cli*\" -maxdepth 6)",
       "Bash(find / -maxdepth 4 -iname \"*chromium-cli*\")",
       "Bash(grep -n \"handleSave\\\\|onBack\\\\|Save\\\\b\\\\|apiRequest\\(\\\\`/api/mini-sites\" /Users/jaymandaliya/Documents/codetown/kick-analyst-frontend/src/components/home/SiteBuilderPage.jsx)",
-      "Bash(grep -n \"ev-cover-upload\\\\|ev-cover-preview\\\\|ev-upload\\\\|ev-img-upload\\\\|width: [0-9]\\\\{3,\\\\}px\" /Users/jaymandaliya/Documents/codetown/kick-analyst-frontend/src/components/home/EventsPage.css)"
+      "Bash(grep -n \"ev-cover-upload\\\\|ev-cover-preview\\\\|ev-upload\\\\|ev-img-upload\\\\|width: [0-9]\\\\{3,\\\\}px\" /Users/jaymandaliya/Documents/codetown/kick-analyst-frontend/src/components/home/EventsPage.css)",
+      "Bash(grep -rn \"getCourseById\\\\|getCourse\\(\\\\|/api/courses/\\\\${\" src/services/courseApi.js)",
+      "Bash(lsof -i :5174 -sTCP:LISTEN)",
+      "Bash(sed -i '' \"122s/source === 'loading'/resolvedSource === 'loading'/\" src/components/home/CourseDetailPage.jsx)",
+      "Bash(sed -i '' \"177s/source !== 'api'/resolvedSource !== 'api'/\" src/components/home/CourseDetailPage.jsx)",
+      "Bash(curl -s -o /tmp/resp1.json -w \"HTTP %{http_code}\\\\n\" \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123/chapters\")",
+      "Bash(curl -s -o /tmp/resp2.json -w \"HTTP %{http_code}\\\\n\" \"https://kick-analyst-backend-production.jay886631.workers.dev/api/totally-fake-route-xyz\")",
+      "Bash(curl -s -o /tmp/resp3.json -w \"HTTP %{http_code}\\\\n\" \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123\")",
+      "Bash(curl -s -o /tmp/resp.json -w \"HTTP %{http_code}\\\\n\" -X POST \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123/chapters\" -F \"title=Test\" -F \"content=hello\" -F \"order=1\")",
+      "Bash(grep -v \"no-useless-catch\\\\|fetchChapters accessed\\\\|fetchChapters is declared\\\\|missing dependency\\\\|^$\")",
+      "Bash(grep -v \"no-useless-catch\\\\|fetchChapters accessed\\\\|fetchChapters is declared\\\\|missing dependency\\\\|react-hooks/immutability\\\\|^$\\\\|^ *[0-9]\")",
+      "Bash(curl -s -o /tmp/p1.json -w \"HTTP %{http_code}\\\\n\" \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123/progress\")",
+      "Bash(curl -s -o /tmp/p2.json -w \"HTTP %{http_code}\\\\n\" -X POST \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123/chapters/test456/complete\")",
+      "Bash(grep -n \"mcp-duration-badge\\\\|mcp-video-badge,\\\\|mcp-pdf-badge,\\\\|mcp-url-badge {\" ManageChaptersPage.css)",
+      "Bash(grep -v \"no-useless-catch\\\\|fetchChapters accessed\\\\|fetchChapters is declared\\\\|fetchData accessed\\\\|fetchData is declared\\\\|missing dependency\\\\|react-hooks/immutability\\\\|missing dependencies\\\\|^$\\\\|^ *[0-9]\\\\|^>\")"
     ]
   },
   "enableAllProjectMcpServers": true,

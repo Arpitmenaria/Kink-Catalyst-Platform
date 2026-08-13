@@ -88,6 +88,23 @@ export const courseApi = {
     }
   },
 
+  // Purchase a paid course (mock payment — no real gateway) and enroll in one step
+  purchaseCourse: async (courseId, token) => {
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/purchase`, {
+        method: 'POST',
+        headers,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Update course progress
   updateCourseProgress: async (courseId, percentComplete, token) => {
     try {
@@ -100,6 +117,32 @@ export const courseApi = {
         method: 'PUT',
         headers,
         body: JSON.stringify({ percentComplete }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get the current user's chapter-level progress for a course
+  getChapterProgress: async (courseId, token) => {
+    try {
+      return await fetchWithAuth(`${API_BASE_URL}/api/courses/${courseId}/progress`, token);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Mark one chapter complete for the current user
+  completeChapter: async (courseId, chapterId, token) => {
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/chapters/${chapterId}/complete`, {
+        method: 'POST',
+        headers,
       });
 
       const result = await response.json();
@@ -157,11 +200,139 @@ export const courseApi = {
     }
   },
 
+  // Publish course
+  publishCourse: async (courseId, token) => {
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/publish`, {
+        method: 'POST',
+        headers,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Unpublish course
+  unpublishCourse: async (courseId, token) => {
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/unpublish`, {
+        method: 'POST',
+        headers,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Delete course
   deleteCourse: async (courseId, token) => {
     try {
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get course chapters
+  getChapters: async (courseId, token) => {
+    try {
+      return await fetchWithAuth(`${API_BASE_URL}/api/courses/${courseId}/chapters`, token);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Add a chapter (author only)
+  addChapter: async (courseId, data, token) => {
+    try {
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('description', data.description ?? '');
+      formData.append('content', data.content);
+      formData.append('order', data.order);
+      formData.append('status', data.status ?? 'draft');
+      formData.append('duration', data.duration ?? '');
+      formData.append('learningObjectives', data.learningObjectives ?? '');
+      formData.append('externalUrl', data.externalUrl ?? '');
+      if (data.video) {
+        formData.append('video', data.video);
+      }
+      if (data.pdf) {
+        formData.append('pdf', data.pdf);
+      }
+
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/chapters`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update a chapter (author only)
+  updateChapter: async (courseId, chapterId, data, token) => {
+    try {
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('description', data.description ?? '');
+      formData.append('content', data.content);
+      formData.append('order', data.order);
+      formData.append('status', data.status ?? 'draft');
+      formData.append('duration', data.duration ?? '');
+      formData.append('learningObjectives', data.learningObjectives ?? '');
+      formData.append('externalUrl', data.externalUrl ?? '');
+      if (data.video) {
+        formData.append('video', data.video);
+      }
+      if (data.pdf) {
+        formData.append('pdf', data.pdf);
+      }
+
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/chapters/${chapterId}`, {
+        method: 'PUT',
+        headers,
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete a chapter (author only)
+  deleteChapter: async (courseId, chapterId, token) => {
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/chapters/${chapterId}`, {
         method: 'DELETE',
         headers,
       });

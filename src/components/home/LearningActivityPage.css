@@ -69,7 +69,15 @@
 }
 
 .lap-stat-icon {
-  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+}
+
+.lap-stat-icon svg {
+  width: 26px;
+  height: 26px;
 }
 
 .lap-stat-info {
@@ -289,9 +297,33 @@
 }
 
 .lap-card-img-wrapper {
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
+}
+
+.lap-status-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.lap-status-badge--draft {
+  background: rgba(148, 163, 184, 0.9);
+  color: #0f172a;
+}
+
+.lap-status-badge--published {
+  background: #10b981;
+  color: white;
 }
 
 .lap-card-img {
@@ -318,6 +350,14 @@
   font-size: 12px;
 }
 
+.lap-instructor,
+.lap-rating,
+.lap-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .lap-instructor {
   color: #8b95a5;
 }
@@ -334,6 +374,10 @@
 
 .lap-enroll-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
@@ -347,6 +391,124 @@
 
 .lap-enroll-btn:hover {
   transform: translateY(-2px);
+}
+
+.lap-enroll-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lap-enroll-btn--enrolled {
+  background: #10b981;
+}
+
+/* Checkout modal */
+.lap-checkout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.lap-checkout-modal {
+  width: 100%;
+  max-width: 380px;
+  background: #131a29;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+}
+
+.lap-checkout-modal h3 {
+  margin: 0 0 6px 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.lap-checkout-sub {
+  color: #8b95a5;
+  font-size: 13px;
+  margin: 0 0 20px 0;
+}
+
+.lap-checkout-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.lap-checkout-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lap-checkout-error {
+  color: #ef4444;
+  font-size: 12px;
+  margin: -10px 0 16px 0;
+}
+
+.lap-checkout-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lap-checkout-primary-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lap-checkout-primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lap-checkout-secondary-btn {
+  background: transparent;
+  color: #8b95a5;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lap-checkout-success-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lap-checkout-success-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 /* Filter Buttons */
@@ -510,8 +672,15 @@
 }
 
 .lap-empty-icon {
-  font-size: 48px;
   margin: 0 0 16px 0;
+  display: flex;
+  justify-content: center;
+  color: #4b5566;
+}
+
+.lap-empty-icon svg {
+  width: 48px;
+  height: 48px;
 }
 
 .lap-empty-text {
@@ -600,6 +769,43 @@
 
 .lap-manage-btn:hover {
   background: rgba(139, 92, 246, 0.25);
+}
+
+.lap-publish-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.lap-publish-btn--publish {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.lap-publish-btn--publish:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.lap-publish-btn--unpublish {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.lap-publish-btn--unpublish:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.lap-publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Responsive */
