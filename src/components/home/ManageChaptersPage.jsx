@@ -255,7 +255,10 @@ export default function ManageChaptersPage({ course, authToken, onBack, onCourse
         <div className="mcp-list-col">
           <h3 className="mcp-col-title">Chapters ({chapters.length})</h3>
           {loading ? (
-            <p className="mcp-muted">Loading chapters...</p>
+            <div className="mcp-loading">
+              <div className="mcp-loading-spinner" />
+              <p>Loading chapters...</p>
+            </div>
           ) : chapters.length === 0 ? (
             <p className="mcp-muted">No chapters yet — add the first one.</p>
           ) : (

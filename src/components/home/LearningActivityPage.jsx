@@ -423,7 +423,10 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           )}
           <div className="lap-courses-grid">
             {loading ? (
-              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>Loading courses...</p>
+              <div className="lap-loading" style={{ gridColumn: '1 / -1' }}>
+                <div className="lap-loading-spinner" />
+                <p>Loading courses...</p>
+              </div>
             ) : error ? (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>{error}</p>
             ) : visibleCourses.length === 0 ? (

@@ -287,6 +287,8 @@
 
 /* Explore Card */
 .lap-explore-card {
+  display: flex;
+  flex-direction: column;
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 12px;
@@ -298,6 +300,30 @@
 .lap-explore-card:hover {
   border-color: rgba(59, 130, 246, 0.3);
   transform: translateY(-4px);
+}
+
+.lap-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  color: #8b95a5;
+  font-size: 13px;
+}
+
+.lap-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: lap-spin 0.8s linear infinite;
+}
+
+@keyframes lap-spin {
+  to { transform: rotate(360deg); }
 }
 
 .lap-card-img-wrapper {
@@ -412,14 +438,26 @@
 }
 
 .lap-card-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding: 20px;
 }
 
 .lap-card-title {
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.35;
   margin: 0 0 12px 0;
   color: #fff;
+  /* Reserve the same 2-line block regardless of actual title length, so
+     every card's meta/duration/buttons start at the same height. */
+  min-height: calc(15px * 1.35 * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .lap-card-meta {
@@ -462,6 +500,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  margin-top: auto;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
@@ -480,6 +519,7 @@
 .lap-card-actions {
   display: flex;
   gap: 8px;
+  margin-top: auto;
 }
 
 .lap-card-actions .lap-enroll-btn {
@@ -824,6 +864,8 @@
 }
 
 .lap-my-course-card {
+  display: flex;
+  flex-direction: column;
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 12px;
@@ -856,6 +898,7 @@
 .lap-course-actions {
   display: flex;
   gap: 8px;
+  margin-top: auto;
 }
 
 .lap-edit-btn,
