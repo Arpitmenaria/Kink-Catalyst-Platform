@@ -88,6 +88,29 @@ export const courseApi = {
     }
   },
 
+  // Rate a course (1-5 stars, optional review). Only enrolled/purchased
+  // users should be allowed to rate — backend must enforce this.
+  rateCourse: async (courseId, rating, review, token) => {
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}/rate`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ rating, review }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Purchase a paid course (mock payment — no real gateway) and enroll in one step
   purchaseCourse: async (courseId, token) => {
     try {

@@ -5,6 +5,30 @@ import { courseApi } from '../../services/courseApi';
 import './CourseReaderPage.css';
 import './CourseDetailPage.css';
 
+// Authors enter free-text durations per chapter ("15 min", "1h 30m", "45") —
+// parsed leniently so the course-level total can be a real sum instead of a
+// separate (often stale/zero) course.duration field from the backend.
+function parseDurationMinutes(str) {
+  if (!str) return 0;
+  const s = String(str).toLowerCase();
+  const hMatch = s.match(/(\d+(?:\.\d+)?)\s*h/);
+  const mMatch = s.match(/(\d+(?:\.\d+)?)\s*m/);
+  if (hMatch || mMatch) {
+    return (hMatch ? parseFloat(hMatch[1]) * 60 : 0) + (mMatch ? parseFloat(mMatch[1]) : 0);
+  }
+  const bare = s.match(/(\d+(?:\.\d+)?)/);
+  return bare ? parseFloat(bare[1]) : 0;
+}
+
+function formatMinutes(totalMinutes) {
+  if (!totalMinutes) return null;
+  const h = Math.floor(totalMinutes / 60);
+  const m = Math.round(totalMinutes % 60);
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m} min`;
+}
+
 // Normalizes a real backend {course, chapters} pair into the same shape the
 // mock educationData courses use (modules -> chapters with leftBody /
 // rightSections / callout), so the reader below can stay a single code path.
@@ -28,6 +52,7 @@ function normalizeApiCourse(course, chapters) {
           label: `Chapter ${idx + 1}`,
           title: ch.title,
           description: ch.description || null,
+          duration: ch.duration || null,
           videoUrl: ch.videoUrl || null,
           pdfUrl: ch.pdfUrl || null,
           externalUrl: ch.externalUrl || null,
@@ -79,6 +104,21 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   // this is null (no token, or /progress isn't live yet).
   const [apiProgress, setApiProgress] = useState(null);
 
+  // Rating the user has just submitted this session — overrides whatever
+  // came back from the API until the next full fetch.
+  const [myRating, setMyRating] = useState(null);
+  const [ratingHover, setRatingHover] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState(null);
+
+  // Keyed by chapter id — a chapter's video URL can 404/CORS-fail without
+  // throwing, so the <video> tag alone gives no visible signal that it did.
+  const [videoErrorChapterId, setVideoErrorChapterId] = useState(null);
+
+  // Shown once the last chapter is marked complete — otherwise clicking
+  // "Complete Chapter" on the final chapter did nothing visible at all.
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
   useEffect(() => {
     if (!authToken) return;
     let cancelled = false;
@@ -121,6 +161,11 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   const course = resolvedSource === 'api' ? apiCourse : resolvedSource === 'mock' ? getCourseById(courseId) : null;
   const chapters = course ? flattenChapters(course) : [];
   const total = course ? totalChapterCount(course) : 0;
+  // Real courses: sum the author-entered per-chapter durations instead of
+  // trusting a separate course.duration field. Falls back to that field
+  // (mock courses, or a real course with no durations entered yet).
+  const summedMinutes = chapters.reduce((sum, ch) => sum + parseDurationMinutes(ch.duration), 0);
+  const displayDuration = formatMinutes(summedMinutes) ?? course?.duration;
 
   const [selectedChapterId, setSelectedChapterId] = useState(
     () => progress.lastViewedChapter[courseId] ?? chapters[0]?.id
@@ -202,10 +247,33 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
     progress.markChapterComplete(courseId, chapterId);
   }
 
+  async function submitRating(value) {
+    if (!authToken || resolvedSource !== 'api' || ratingSubmitting) return;
+    setRatingSubmitting(true);
+    setRatingError(null);
+    try {
+      const res = await courseApi.rateCourse(courseId, value, undefined, authToken);
+      if (res.success) {
+        setMyRating(value);
+        setApiCourse(prev => prev ? { ...prev, rating: res.rating ?? prev.rating, ratingCount: res.ratingCount ?? prev.ratingCount } : prev);
+      } else {
+        setRatingError(res.error || 'Failed to submit rating');
+      }
+    } catch (err) {
+      setRatingError(err?.message || err?.error || 'Failed to submit rating');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  }
+
   function completeAndAdvance() {
     markComplete(chapter.id);
     const next = chapters[chapterIdx + 1];
-    if (next) setSelectedChapterId(next.id);
+    if (next) {
+      setSelectedChapterId(next.id);
+    } else {
+      setShowCompletionModal(true);
+    }
   }
 
   const isLastChapter = chapterIdx >= chapters.length - 1;
@@ -237,8 +305,13 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         </div>
 
         <div className="cr-topbar-right">
-          <span className="cdp-meta-item cdp-meta-item--rating"><StarIcon /> {course.rating}</span>
-          <span className="cdp-meta-item"><ClockIcon /> {course.duration}</span>
+          {course.rating ? (
+            <span className="cdp-meta-item cdp-meta-item--rating">
+              <StarIcon /> {Number(course.rating).toFixed(1)}
+              {!!course.ratingCount && <span className="cdp-meta-rating-count"> ({course.ratingCount})</span>}
+            </span>
+          ) : null}
+          <span className="cdp-meta-item"><ClockIcon /> {displayDuration}</span>
           <span className="cr-chapter-pill">{course.instructor}</span>
           {isEnrolled ? (
             <span className="cdp-price-badge cdp-price-badge--enrolled">
@@ -277,6 +350,28 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
               })}
             </div>
           ))}
+
+          {isEnrolled && resolvedSource === 'api' && (
+            <div className="cdp-rate-box">
+              <p className="cdp-rate-label">{(myRating ?? course.userRating) ? 'Your rating' : 'Rate this course'}</p>
+              <div className="cdp-rate-stars" onMouseLeave={() => setRatingHover(0)}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`cdp-rate-star${(ratingHover || myRating || course.userRating || 0) >= n ? ' cdp-rate-star--filled' : ''}`}
+                    disabled={ratingSubmitting}
+                    onMouseEnter={() => setRatingHover(n)}
+                    onClick={() => submitRating(n)}
+                    aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}
+                  >
+                    <StarIcon />
+                  </button>
+                ))}
+              </div>
+              {ratingError && <p className="cdp-rate-error">{ratingError}</p>}
+            </div>
+          )}
         </aside>
 
         {/* ── Reader Content ── */}
@@ -298,7 +393,14 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
                         poster={chapter.img}
                         controls
                         onEnded={() => markComplete(chapter.id)}
+                        onError={() => setVideoErrorChapterId(chapter.id)}
+                        onLoadedData={() => setVideoErrorChapterId(prev => (prev === chapter.id ? null : prev))}
                       />
+                      {videoErrorChapterId === chapter.id && (
+                        <p className="cdp-video-error">
+                          This video couldn&apos;t be loaded. <a href={chapter.videoUrl} target="_blank" rel="noreferrer">Open it directly</a> to check the link.
+                        </p>
+                      )}
                     </div>
                   ) : chapter.img && (
                     <div className="cr-figure">
@@ -400,6 +502,20 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
           {isLastChapter ? 'Complete Chapter' : 'Next Chapter'} <ChevRightIcon />
         </button>
       </footer>
+
+      {showCompletionModal && (
+        <div className="cdp-complete-overlay" onClick={() => setShowCompletionModal(false)}>
+          <div className="cdp-complete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cdp-complete-icon"><SparkIcon /></div>
+            <h3>Course Completed!</h3>
+            <p className="cdp-complete-sub">You've finished every chapter in <strong>{course.title}</strong>. Nice work.</p>
+            <div className="cdp-complete-actions">
+              <button className="cdp-complete-primary-btn" onClick={onBack}>Back to My Courses</button>
+              <button className="cdp-complete-secondary-btn" onClick={() => setShowCompletionModal(false)}>Keep Reviewing</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

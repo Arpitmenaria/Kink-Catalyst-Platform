@@ -203,7 +203,21 @@
       "Bash(curl -s -o /tmp/p1.json -w \"HTTP %{http_code}\\\\n\" \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123/progress\")",
       "Bash(curl -s -o /tmp/p2.json -w \"HTTP %{http_code}\\\\n\" -X POST \"https://kick-analyst-backend-production.jay886631.workers.dev/api/courses/test123/chapters/test456/complete\")",
       "Bash(grep -n \"mcp-duration-badge\\\\|mcp-video-badge,\\\\|mcp-pdf-badge,\\\\|mcp-url-badge {\" ManageChaptersPage.css)",
-      "Bash(grep -v \"no-useless-catch\\\\|fetchChapters accessed\\\\|fetchChapters is declared\\\\|fetchData accessed\\\\|fetchData is declared\\\\|missing dependency\\\\|react-hooks/immutability\\\\|missing dependencies\\\\|^$\\\\|^ *[0-9]\\\\|^>\")"
+      "Bash(grep -v \"no-useless-catch\\\\|fetchChapters accessed\\\\|fetchChapters is declared\\\\|fetchData accessed\\\\|fetchData is declared\\\\|missing dependency\\\\|react-hooks/immutability\\\\|missing dependencies\\\\|^$\\\\|^ *[0-9]\\\\|^>\")",
+      "Read(//Users/jaymandaliya/**)",
+      "Bash(find / -maxdepth 5 -iname \"*kick-analyst-backend*\" -not -path \"*/node_modules/*\")",
+      "Bash(grep -n \"CourseDetailPage$\\\\|<CourseDetailPage\" ./src/components/home/LearningActivityPage.jsx)",
+      "Bash(git check-ignore *)",
+      "Bash(ls -la /Users/jaymandaliya/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin/ 2>&1 | head -30; echo \"---try Documents variant---\"; ls -la \"/Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin/\" 2>&1 | head -30)",
+      "Read(//Users/jaymandaliya/2026/kinkAnalystAdminLatest13Aug/**)",
+      "Read(//Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin/**)",
+      "Bash(find \"/Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin/app\" -iname \"*course*\" -o -ipath \"*education*\" | grep -v node_modules)",
+      "Read(//Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin/app/**)",
+      "Bash(find \"/Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin\" -iname \"use-courses*\" -not -path \"*/node_modules/*\")",
+      "Read(//Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin/services/**)",
+      "Bash(cd \"/Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin\" && grep -rn \"chapters\\\\|/enrollments\\\\|enrolled\" services/ --include=\"*.ts\" | grep -v node_modules; echo \"---base url---\"; grep -rn \"baseURL\\\\|BASE_URL\\\\|workers.dev\" services/api/client.ts 2>/dev/null; find . -iname \"client.ts\" -path \"*/api/*\" -not -path \"*/node_modules/*\")",
+      "Bash(cd \"/Users/jaymandaliya/Documents/2026/kinkAnalystAdminLatest13Aug/kick-Catalyst-admin\" && grep -rln \"CourseActionDialog\\\\|\\\\\"ARCHIVE\\\\\"\" --include=\"*.tsx\" --include=\"*.ts\" . | grep -v node_modules)",
+      "Bash(npx tsc *)"
     ]
   },
   "enableAllProjectMcpServers": true,
