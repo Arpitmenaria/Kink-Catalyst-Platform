@@ -11,7 +11,7 @@ function LoadingContent() {
         <span className="btn-dot" />
         <span className="btn-dot" />
       </span>
-      Verifyingâ€¦
+      Verifying…
     </>
   );
 }
@@ -99,7 +99,7 @@ export default function VerifyOtpForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">Kink Analyst</div>
+      <div className="signup-logo">Kink Catalyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card verify-card">
@@ -109,7 +109,7 @@ export default function VerifyOtpForm() {
             onClick={handleBack}
             disabled={!isIdle}
           >
-            â† Back to login
+            ← Back to login
           </button>
 
           <div className="signup-card-header verify-header">
@@ -159,7 +159,7 @@ export default function VerifyOtpForm() {
               onClick={handleResend}
               disabled={resendLoading || !isIdle}
             >
-              {resendLoading ? 'Sendingâ€¦' : 'Resend'}
+              {resendLoading ? 'Sending…' : 'Resend'}
             </button>
           </p>
         </div>

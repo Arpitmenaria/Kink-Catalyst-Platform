@@ -49,10 +49,10 @@ export default function ResetPasswordForm() {
   if (step === 'done') {
     return (
       <div className="signup-left-panel">
-        <div className="signup-logo">Kink Analyst</div>
+        <div className="signup-logo">Kink Catalyst</div>
         <div className="signup-form-wrapper">
           <div className="signup-card fp-card">
-            <div className="fp-success-icon" aria-hidden="true">âœ“</div>
+            <div className="fp-success-icon" aria-hidden="true">✓</div>
             <h1 className="signup-title" style={{ textAlign: 'center', marginTop: 12 }}>
               Password reset!
             </h1>
@@ -74,7 +74,7 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">Kink Analyst</div>
+      <div className="signup-logo">Kink Catalyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card fp-card">
@@ -84,7 +84,7 @@ export default function ResetPasswordForm() {
             onClick={() => dispatch(goToStep('otp'))}
             disabled={loading}
           >
-            â† Back
+            ← Back
           </button>
 
           <div className="signup-card-header">
@@ -174,7 +174,7 @@ export default function ResetPasswordForm() {
               className="submit-btn"
               disabled={loading || !hasLength || !hasSymbol || !confirmPassword}
             >
-              {loading ? <><Spinner /> Resettingâ€¦</> : 'Reset Password'}
+              {loading ? <><Spinner /> Resetting…</> : 'Reset Password'}
             </button>
           </form>
         </div>

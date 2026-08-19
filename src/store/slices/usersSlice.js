@@ -17,6 +17,7 @@ export const fetchSuggestions = createAsyncThunk(
           _id: uid,
           name: s.name ?? s.fullName ?? s.user?.name ?? s.user?.fullName ?? '',
           avatar: (() => { const av = s.avatar ?? s.user?.avatar ?? ''; return av?.startsWith?.('http') ? av : ''; })(),
+          mutualFriends: s.mutualCount ?? s.mutualFriends ?? s.user?.mutualCount ?? 0,
         };
       });
     } catch (err) {
@@ -222,7 +223,7 @@ export const fetchBlockedUsers = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest('/api/user/blocked', { token });
+      const data = await apiRequest('/api/users/me/blocked', { token });
       const list = Array.isArray(data) ? data : (data.blockedUsers ?? data.users ?? data.data ?? []);
       return list.map(u => {
         const uid = u.id ?? u._id ?? u.userId ?? '';

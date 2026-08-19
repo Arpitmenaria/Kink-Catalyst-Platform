@@ -1,0 +1,125 @@
+.aan-notification {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(245, 158, 11, 0.05) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.aan-notification:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.08) 100%);
+}
+
+.aan-notification--read {
+  opacity: 0.7;
+  background: transparent;
+  border-color: rgba(107, 114, 128, 0.2);
+}
+
+.aan-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.aan-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.aan-title-wrap {
+  flex: 1;
+}
+
+.aan-title {
+  margin: 0;
+  color: #f3f4f6;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.aan-time {
+  margin: 2px 0 0 0;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.aan-dismiss-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.aan-dismiss-btn:hover:not(:disabled) {
+  color: #f3f4f6;
+}
+
+.aan-dismiss-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aan-content {
+  padding: 0 0 0 40px;
+}
+
+.aan-message {
+  margin: 0 0 8px 0;
+  color: #e5e7eb;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.aan-details {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #f59e0b;
+  margin-top: 8px;
+}
+
+.aan-detail-label {
+  margin: 0;
+  color: #d1d5db;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aan-detail-text {
+  margin: 4px 0 0 0;
+  color: #d1d5db;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.aan-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(107, 114, 128, 0.2);
+  text-align: center;
+}
+
+.aan-footer-text {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 11px;
+  font-style: italic;
+}

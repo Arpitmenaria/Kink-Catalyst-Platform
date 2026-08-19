@@ -24,7 +24,7 @@ export default function ForgotEmailForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">Kink Analyst</div>
+      <div className="signup-logo">Kink Catalyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card fp-card">
@@ -34,7 +34,7 @@ export default function ForgotEmailForm() {
             onClick={() => dispatch(showLogin())}
             disabled={loading}
           >
-            â† Back
+            ← Back
           </button>
 
           <div className="signup-card-header">
@@ -64,7 +64,7 @@ export default function ForgotEmailForm() {
             )}
 
             <button type="submit" className="submit-btn" disabled={loading || !email.trim()}>
-              {loading ? <><Spinner /> Sendingâ€¦</> : 'Reset Password'}
+              {loading ? <><Spinner /> Sending…</> : 'Reset Password'}
             </button>
           </form>
         </div>

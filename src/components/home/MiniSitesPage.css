@@ -36,7 +36,7 @@
 }
 
 .ms-create-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 9px 18px;
@@ -129,7 +129,7 @@
 /* ── Sites Grid ── */
 .ms-sites-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
@@ -182,10 +182,12 @@
 
 /* Site card */
 .ms-site-card {
+  position: relative;
   background: #0d1526;
   border: 1px solid #131d2e;
   border-radius: 14px;
-  overflow: hidden;
+  /* NOT overflow:hidden — that clipped the "..." dropdown the moment it grew
+     past the card's edge. The thumbnail below clips its own corners instead. */
   transition: border-color 0.18s, transform 0.18s;
 }
 .ms-site-card:hover {
@@ -196,6 +198,7 @@
 .ms-site-thumb {
   position: relative;
   height: 140px;
+  border-radius: 14px 14px 0 0;
   overflow: hidden;
 }
 .ms-site-thumb img {
@@ -211,6 +214,9 @@
   position: absolute;
   top: 10px;
   left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 3px 9px;
   border-radius: 6px;
   font-size: 10px;
@@ -219,6 +225,26 @@
 }
 .ms-site-badge--live    { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
 .ms-site-badge--draft   { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+.ms-visibility-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+}
+.ms-visibility-badge svg { width: 12px; height: 12px; flex-shrink: 0; }
+.ms-visibility-badge--public   { color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
+.ms-visibility-badge--private  { color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+.ms-visibility-badge--password { color: #c084fc; border: 1px solid rgba(192,132,252,0.3); }
 
 .ms-site-actions-overlay {
   position: absolute;
@@ -280,6 +306,11 @@
 }
 .ms-site-dots:hover { background: #1a2540; color: #93c5fd; }
 
+/* Lifts the whole card above the grid rows below it while its dropdown is
+   open, so the dropdown (which now extends past the card's own edge) can
+   never be painted over by a sibling card. */
+.ms-site-card--menu-open { z-index: 20; }
+
 .ms-site-dropdown {
   position: absolute;
   right: 0;
@@ -314,10 +345,18 @@
 .ms-dd-item--danger:hover { background: rgba(239,68,68,0.1); color: #fca5a5; }
 
 .ms-site-url {
+  display: block;
   font-size: 11px;
   color: #3b82f6;
   margin: 0 0 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
 }
+.ms-site-url:hover { text-decoration: underline; }
 
 .ms-site-meta {
   display: flex;
@@ -338,6 +377,140 @@
   color: #2e3d58;
 }
 
+/* ── Filter Buttons ── */
+.ms-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ms-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #1a2540;
+  background: rgba(26, 37, 64, 0.4);
+  color: #4b5a7a;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.ms-filter-btn:hover {
+  background: rgba(26, 37, 64, 0.7);
+  color: #7c8fb0;
+}
+.ms-filter-btn--active {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #fff;
+  border-color: #2563eb;
+}
+
+/* ── Site Actions ── */
+.ms-site-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #1a2540;
+}
+
+.ms-action-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.ms-action-btn--secondary {
+  background: rgba(75, 85, 99, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+.ms-action-btn--secondary:hover {
+  background: rgba(75, 85, 99, 0.3);
+  color: #cbd5e1;
+}
+
+.ms-action-btn--publish {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.ms-action-btn--publish:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+.ms-action-btn--unpublish {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.ms-action-btn--unpublish:hover {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fcd34d;
+}
+
+/* Report (used on other users' cards in the All Sites gallery) keeps the
+   red/danger treatment — unlike Unpublish, it IS a "flag as bad" action. */
+.ms-action-btn--report {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.ms-action-btn--report:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+/* ── Empty State ── */
+.ms-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 40px;
+  background: #0d1526;
+  border: 2px dashed #1a2540;
+  border-radius: 14px;
+}
+
+.ms-empty-icon {
+  font-size: 64px;
+  margin: 0 0 16px;
+}
+
+.ms-empty-icon svg {
+  width: 48px;
+  height: 48px;
+  color: #4b5a7a;
+}
+
+.ms-empty-text {
+  font-size: 14px;
+  color: #4b5a7a;
+  margin: 0 0 20px;
+}
+
+.ms-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
 /* ── Templates Grid ── */
 .ms-templates-grid {
   display: grid;
@@ -350,23 +523,171 @@
   border: 1px solid #131d2e;
   border-radius: 12px;
   overflow: hidden;
-  transition: border-color 0.18s, transform 0.18s;
+  transition: border-color 0.18s, transform 0.18s, background-color 0.25s;
 }
 .ms-tpl-card:hover { border-color: #1a2540; transform: translateY(-2px); }
 
+.ms-tpl-themes {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.ms-tpl-theme-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ms-tpl-theme-dot:hover { transform: scale(1.15); }
+.ms-tpl-theme-dot--active {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 3px rgba(255, 255, 255, 0.25);
+}
+
 .ms-tpl-thumb {
   position: relative;
-  height: 150px;
+  height: 172px;
   overflow: hidden;
 }
-.ms-tpl-thumb img {
+
+/* Live mockup of the template's navbar + hero, built from its real copy and
+   theme colors — replaces a generic stock photo with something that
+   actually represents what "Use Template" produces. */
+.ms-tpl-preview {
+  position: relative;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   transition: transform 0.3s;
 }
-.ms-tpl-card:hover .ms-tpl-thumb img { transform: scale(1.04); }
+.ms-tpl-card:hover .ms-tpl-preview { transform: scale(1.04); }
+
+.ms-tpl-preview-glow {
+  position: absolute;
+  top: -46px;
+  right: -46px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  filter: blur(42px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ms-tpl-preview-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.ms-tpl-preview-logo {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.ms-tpl-preview-navdots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  flex: 1;
+}
+.ms-tpl-preview-navdots i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.3;
+  font-style: normal;
+}
+
+.ms-tpl-preview-navcta {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Block layout, not flex — a -webkit-box (needed for -webkit-line-clamp)
+   miscomputes its height when it's a direct flex item under
+   justify-content: center, which made the headline and subheadline overlap
+   instead of stacking. Plain block flow with margins sidesteps that. */
+.ms-tpl-preview-hero {
+  position: relative;
+  flex: 1;
+  padding: 12px 16px 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ms-tpl-preview-icon {
+  display: block;
+  font-size: 17px;
+  line-height: 1;
+  margin: 0 0 6px;
+}
+
+.ms-tpl-preview-headline {
+  margin: 0 0 5px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ms-tpl-preview-sub {
+  margin: 0 0 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  opacity: 0.65;
+  max-width: 92%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ms-tpl-preview-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ms-tpl-preview-btn-primary,
+.ms-tpl-preview-btn-secondary {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.ms-tpl-preview-btn-secondary {
+  border: 1px solid;
+  background: transparent;
+  color: inherit;
+}
 
 .ms-tpl-tag {
   position: absolute;
@@ -393,6 +714,14 @@
 }
 .ms-tpl-card:hover .ms-tpl-overlay { opacity: 1; }
 
+/* Touch devices have no hover state before a tap, so the "Use Template"
+   button was invisible until an inconsistent tap-triggered hover fired (or
+   never, on some browsers) — keep it always visible when there's no real
+   pointer to hover with. */
+@media (hover: none) {
+  .ms-tpl-overlay { opacity: 1; background: rgba(7,11,20,0.35); }
+}
+
 .ms-tpl-use-btn {
   display: flex;
   align-items: center;
@@ -411,10 +740,18 @@
 .ms-tpl-use-btn:hover { background: #2563eb; }
 
 .ms-tpl-name {
-  padding: 12px 14px;
+  padding: 12px 14px 0;
   font-size: 13px;
   font-weight: 600;
   color: #94a3b8;
+  margin: 0;
+}
+
+.ms-tpl-desc {
+  padding: 4px 14px 14px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #5b6a7c;
   margin: 0;
 }
 
@@ -430,4 +767,210 @@
   /* Fixed 4-column stat row overflowed the viewport — wrap to 2 columns. */
   .ms-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .ms-header { flex-wrap: wrap; gap: 12px; }
+
+  /* Adjust site grid for smaller screens */
+  .ms-sites-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  /* Action buttons stack on mobile */
+  .ms-site-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ms-action-btn {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+
+  /* A long, unbroken site name (no spaces) could otherwise force
+     .ms-site-row wider than the card — nothing here ellipsizes it by
+     default — which bleeds the card past the single-column grid track and
+     scrolls the whole page horizontally. */
+  .ms-site-row { min-width: 0; }
+  .ms-site-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
+
+@media (max-width: 480px) {
+  .ms-main {
+    padding: 16px 12px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .ms-sites-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ms-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ms-stat-card {
+    padding: 12px 14px;
+  }
+
+  .ms-title {
+    font-size: 18px;
+  }
+
+  .ms-create-btn {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .ms-filter-btn {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  /* Safety net for the All/My/Templates tab strip — scroll instead of
+     overflowing the viewport if labels ever run tight on a narrow phone. */
+  .ms-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ms-tabs::-webkit-scrollbar { display: none; }
+  .ms-tab { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* ── "Yours" badge on All Sites gallery cards ── */
+.ms-site-mine-badge {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ms-browse-search {
+  width: 100%;
+  max-width: 360px;
+  background: #0d1526;
+  border: 1px solid #1a2540;
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 13px;
+  padding: 10px 14px;
+}
+.ms-browse-search:focus { outline: none; border-color: #3b82f6; }
+
+.ms-site-creator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7a9a;
+  margin: 0 0 6px;
+}
+.ms-site-creator-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ── Report Site Modal ── */
+.ms-report-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+.ms-report-modal {
+  background: #10131f; border: 1px solid #1e2338; border-radius: 14px;
+  width: 380px; max-width: 100%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  padding: 20px 22px 22px;
+  display: flex; flex-direction: column;
+}
+
+.ms-report-title {
+  font-size: 16px; font-weight: 700; color: #e8ecf8; margin: 0 0 14px;
+}
+
+.ms-report-label {
+  font-size: 12px; font-weight: 600; color: #8a97b8; margin: 10px 0 6px;
+}
+
+.ms-report-select,
+.ms-report-textarea {
+  width: 100%;
+  background: #0d1526; border: 1px solid #1a2540; border-radius: 8px;
+  color: #e8ecf8; font-size: 13px; padding: 10px 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.ms-report-select:focus,
+.ms-report-textarea:focus {
+  outline: none; border-color: #3b82f6;
+}
+
+.ms-report-error {
+  color: #f87171; font-size: 12px; margin: 8px 0 0;
+}
+
+.ms-report-actions {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;
+}
+
+/* ── Delete Confirm Modal ── */
+.ms-delete-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+.ms-delete-modal {
+  background: #10131f; border: 1px solid #2a1a1e; border-radius: 14px;
+  width: 380px; max-width: 100%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  padding: 28px 24px 22px;
+  text-align: center;
+}
+
+.ms-delete-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  display: flex; align-items: center; justify-content: center;
+}
+.ms-delete-icon svg { width: 28px; height: 28px; }
+
+.ms-delete-title {
+  margin: 0 0 8px; font-size: 17px; font-weight: 700; color: #e8ecf8;
+}
+
+.ms-delete-sub {
+  margin: 0 0 22px; font-size: 13px; color: #8a97b8; line-height: 1.5;
+}
+
+.ms-delete-actions {
+  display: flex; gap: 10px;
+}
+.ms-delete-actions .ms-action-btn { flex: 1; justify-content: center; }
+
+.ms-delete-confirm-btn {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px;
+  border: none; border-radius: 8px;
+  background: #dc2626; color: #fff;
+  font-size: 12px; font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ms-delete-confirm-btn:hover { background: #b91c1c; }

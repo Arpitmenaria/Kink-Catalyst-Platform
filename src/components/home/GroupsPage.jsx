@@ -5,23 +5,24 @@ import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import PostCard from './PostCard';
-import CommentSection from './CommentSection';
 import LikeButton from './LikeButton';
 import PostActionsMenu from './PostActionsMenu';
 import UserInvitations from './UserInvitations';
-import ActivityLog from './ActivityLog';
+import ImageCropper from './ImageCropper';
+import UserProfilePage from './UserProfilePage';
 import GlobalSearch from './GlobalSearch';
-import InviteButton from './InviteButton';
+import Loader from '../Loader';
 import {
   fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
   fetchPendingRequests, acceptGroupRequest, rejectGroupRequest,
   fetchAdminDashboard, sendFriendRequest,
 } from '../../store/slices/groupsSlice';
+import { inviteUserToGroup } from '../../store/slices/invitationsSlice';
 import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
-import { likePost, unlikePost, deletePost, editPost, pinPost, unpinPost } from '../../store/slices/commentsSlice';
+import { deletePost, editPost, pinPost, unpinPost, fetchComments } from '../../store/slices/commentsSlice';
 
 
 /* ── UI icons ── */
@@ -76,7 +77,6 @@ const ROLE_CONFIG = {
 };
 
 const MEMBER_ROLES   = ['Admin', 'Moderator', 'Member'];
-const MEMBER_JOINED  = ['2023', '2024'];
 
 function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
   const ref = useRef(null);
@@ -417,11 +417,11 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const rdxStats    = useSelector(s => s.groups.adminDashboard[groupId]?.stats ?? null);
 
   const [activeTab,      setActiveTab]      = useState('about');
+  const [aboutExpanded,  setAboutExpanded]  = useState(false);
   const [searchQuery,    setSearchQuery]    = useState('');
   const [memberRoles,    setMemberRoles]    = useState({});
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [filterRole,     setFilterRole]     = useState('');
-  const [filterJoined,   setFilterJoined]   = useState('');
   const [openMbrDrop,    setOpenMbrDrop]    = useState(null);
   const memberFilterRef = useRef(null);
   const [filterMutual,   setFilterMutual]   = useState('');
@@ -429,6 +429,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const [openPndDrop,    setOpenPndDrop]    = useState(null);
   const pendingFilterRef = useRef(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteSearchQuery, setInviteSearchQuery] = useState('');
+  const [selectedInvites, setSelectedInvites] = useState(new Set());
   const [friendIds,      setFriendIds]      = useState(new Set());
   const [coverImg,       setCoverImg]       = useState(group?.coverImg ?? null);
   const [coverImgFile,   setCoverImgFile]   = useState(null);
@@ -447,8 +450,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
     // Socket listeners for admin dashboard real-time updates
     const socket = io();
-    const roomId = `group:${groupId}`;
-    socket.emit('join-room', roomId);
+
+    // Join group room for group events
+    socket.emit('join:group', { groupId });
 
     socket.on('group:new-post', (data) => {
       if (data.groupId === groupId) {
@@ -470,11 +474,18 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
       }
     });
 
+    // Listen for new invitations sent (for notification badge)
+    socket.on('notification:new-invite', (data) => {
+      console.log('New group invite received:', data);
+      // This will trigger fetchUserInvitations in the notifications component
+    });
+
     return () => {
-      socket.emit('leave-room', roomId);
+      socket.emit('leave:group', { groupId });
       socket.off('group:new-post');
       socket.off('group:member-joined');
       socket.off('group:pending-request');
+      socket.off('notification:new-invite');
     };
   }, [dispatch, groupId, group?.privacy]);
 
@@ -558,15 +569,14 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     return () => document.removeEventListener('mousedown', onOut);
   }, [openPndDrop]);
 
-  const hasMbrFilter = filterRole || filterJoined;
+  const hasMbrFilter = filterRole;
   const hasPndFilter = filterMutual || filterDate;
 
   const filteredMembers = baseMembers.filter(m => {
     const id = m._id ?? m.id;
     const role = memberRoles[id] ?? normalizeRole(m.role);
     return (m.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (!filterRole   || role === filterRole) &&
-      (!filterJoined || (m.joined ?? '').includes(filterJoined));
+      (!filterRole   || role === filterRole);
   });
   const filteredPending = pendingList.filter(r =>
     (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -599,12 +609,18 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         <div className="adm-cover-section">
 
           {/* Banner */}
-          <div className="adm-cover">
-            <img
-              src={coverImg || group?.coverImg || `https://picsum.photos/seed/adm-cover-${group?._id || group?.id || 'default'}/1200/300`}
-              alt="Group cover"
-              className="adm-cover-img"
-            />
+          <div className="adm-cover" style={{ background: '#0d1424', position: 'relative' }}>
+            {(coverImg || group?.coverImg) ? (
+              <img
+                src={coverImg || group?.coverImg}
+                alt="Group cover"
+                className="adm-cover-img"
+              />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                <span style={{ fontSize: '24px', fontWeight: 600, color: '#94a3b8' }}>{group?.category || 'Social Platform'}</span>
+              </div>
+            )}
             <button className="adm-cover-back-btn" onClick={onBack} title="Back to Groups">
               <BackArrowIcon />
             </button>
@@ -634,7 +650,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
             <div className="adm-header-btns">
               <button className="adm-export-btn"><ExportIcon /> Export List</button>
-              <button className="adm-invite-btn"><InviteIcon /> Invite Members</button>
             </div>
           </div>
 
@@ -681,9 +696,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   Pending Requests {pendingList.length > 0 && <span className="adm-tab-count">{pendingList.length}</span>}
                 </button>
               )}
-              <button className={`adm-tab${activeTab === 'activity' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('activity')}>
-                Activity Log
-              </button>
             </div>
             {activeTab !== 'posts' && activeTab !== 'about' && (
               <div className="prof-conn-filter-bar adm-filter-bar-override" ref={activeTab === 'members' ? memberFilterRef : activeTab === 'pending' ? pendingFilterRef : null}>
@@ -699,6 +711,15 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                 </div>
 
                 {activeTab === 'members' && (<>
+                  <button
+                    className="prof-conn-fbar-pill prof-conn-fbar-pill--action"
+                    onClick={() => setShowInviteModal(true)}
+                    title="Invite new members to the group"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    Invite Members
+                  </button>
+
                   <button
                     className={`prof-conn-fbar-pill prof-conn-fbar-pill--label${hasMbrFilter ? ' prof-conn-fbar-pill--has-filter' : ''}`}
                     onClick={() => { setFilterRole(''); setFilterJoined(''); setOpenMbrDrop(null); }}
@@ -730,27 +751,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     )}
                   </div>
 
-                  <div className="prof-conn-fbar-item">
-                    <button
-                      className={`prof-conn-fbar-pill${filterJoined ? ' prof-conn-fbar-pill--active' : ''}${openMbrDrop === 'joined' ? ' prof-conn-fbar-pill--open' : ''}`}
-                      onClick={() => setOpenMbrDrop(openMbrDrop === 'joined' ? null : 'joined')}
-                    >
-                      {filterJoined || 'Joined'} <ChevronDownIcon />
-                    </button>
-                    {openMbrDrop === 'joined' && (
-                      <div className="prof-conn-fbar-dropdown">
-                        {MEMBER_JOINED.map(y => (
-                          <button
-                            key={y}
-                            className={`prof-conn-fbar-opt${filterJoined === y ? ' prof-conn-fbar-opt--active' : ''}`}
-                            onClick={() => { setFilterJoined(filterJoined === y ? '' : y); setOpenMbrDrop(null); }}
-                          >
-                            {filterJoined === y && <CheckSmIcon />} {y}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
                   {hasMbrFilter && (
                     <button className="prof-conn-fbar-clear" onClick={() => { setFilterRole(''); setFilterJoined(''); setOpenMbrDrop(null); }}>
@@ -840,9 +840,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           {/* Members table */}
           {activeTab === 'members' && (
             <>
-              <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                <InviteButton groupId={groupId} groupMembers={baseMembers} />
-              </div>
               <table className="adm-table">
                 <thead>
                   <tr>
@@ -872,7 +869,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             {m.location && (
                               <span className="gd-member-location"><PinIcon /> {m.location}</span>
                             )}
-                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                            <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
                               <div className="prof-conn-shared-avatars">
                                 {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -886,18 +883,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                         </div>
                       </td>
                       <td className="adm-date-cell">{m.joined}</td>
-                      <td>
-                        <RoleSelect
-                          value={role}
-                          memberId={mid}
-                          openId={openDropdownId}
-                          onToggle={setOpenDropdownId}
-                          onChange={newRole => {
-                            setMemberRoles(p => ({ ...p, [mid]: newRole }));
-                            dispatch(changeMemberRole({ groupId, memberId: mid, role: apiRole(newRole) }));
-                          }}
-                        />
-                      </td>
+                      <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{role}</span></td>
                       <td>
                         <div className="adm-action-cell">
                           {!isSelfRow && (isFriendOrRequested ? (
@@ -959,7 +945,30 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     <span className="adm-about-card-title">About this Group</span>
                   </div>
                   <p className="adm-about-body">
-                    {group?.description || 'No description provided for this group yet.'}
+                    {aboutExpanded || (group?.description ?? '').length <= 300
+                      ? group?.description
+                      : (group?.description ?? '').slice(0, 300) + '…'
+                    }
+                    {(group?.description ?? '').length > 300 && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={() => setAboutExpanded(!aboutExpanded)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#3b82f6',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'inline',
+                          }}
+                        >
+                          {aboutExpanded ? 'See less' : 'See more'}
+                        </button>
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -970,7 +979,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     <span className="adm-about-card-title">Group Mission</span>
                   </div>
                   <p className="adm-about-body">
-                    {group?.mission || 'No mission statement defined.'}
+                    {group?.mission}
                   </p>
                 </div>
 
@@ -1080,7 +1089,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             {r.location && (
                               <span className="gd-member-location"><PinIcon /> {r.location}</span>
                             )}
-                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                            <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
                               <div className="prof-conn-shared-avatars">
                                 {(r.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -1108,16 +1117,264 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
               </table>
             )
           )}
-
-          {/* Activity Log tab */}
-          {activeTab === 'activity' && (
-            <div style={{ padding: '16px 0' }}>
-              <ActivityLog groupId={groupId} />
-            </div>
-          )}
         </div>
 
 
+        {/* Invite Members Modal */}
+        {showInviteModal && (
+          <InviteMembersModal
+            groupId={groupId}
+            groupName={group?.name}
+            onClose={() => { setShowInviteModal(false); setSelectedInvites(new Set()); setInviteSearchQuery(''); }}
+          />
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════
+   Invite Members Modal
+══════════════════════════ */
+function InviteMembersModal({ groupId, groupName, onClose }) {
+  const dispatch = useDispatch();
+  const { connections } = useSelector(s => s.profile);
+  const { invitingIds } = useSelector(s => s.invitations);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [invitedIds, setInvitedIds] = useState(new Set());
+  const [isInviting, setIsInviting] = useState(false);
+
+  // Fetch connections when modal opens
+  useEffect(() => {
+    dispatch(fetchConnections());
+  }, [dispatch]);
+
+  // Filter connections based on search
+  const filteredConnections = (connections || []).filter(conn => {
+    const name = (conn.fullName || conn.name || '').toLowerCase();
+    const email = (conn.email || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return name.includes(query) || email.includes(query);
+  });
+
+  const handleInvite = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsInviting(true);
+    let successCount = 0;
+    const errorMessages = [];
+
+    try {
+      for (const userId of Array.from(selectedIds)) {
+        try {
+          await dispatch(inviteUserToGroup({ groupId, userId })).unwrap();
+          setInvitedIds(prev => new Set([...prev, userId]));
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to invite user ${userId}:`, err);
+          // Capture specific error message from API
+          const errorMsg = err?.message || 'Failed to invite user';
+          errorMessages.push(errorMsg);
+        }
+      }
+
+      // Show results
+      if (successCount > 0) {
+        dispatch(showToast({
+          type: 'success',
+          message: `✓ Invited ${successCount} member${successCount > 1 ? 's' : ''} to ${groupName}`,
+          duration: 3000
+        }));
+      }
+
+      if (errorMessages.length > 0) {
+        // Show the first unique error message
+        const uniqueErrors = [...new Set(errorMessages)];
+        dispatch(showToast({
+          type: 'error',
+          message: uniqueErrors[0], // Show specific error like "Invitation already sent"
+          duration: 3000
+        }));
+      }
+
+      // Close after 1 second
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Invitation error:', err);
+      dispatch(showToast({
+        type: 'error',
+        message: err?.message || 'Error sending invitations',
+        duration: 3000
+      }));
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleToggle = (userId) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-content" style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <h2>Invite Members to {groupName}</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="modal-body" style={{ padding: '20px' }}>
+          {/* Search */}
+          <div className="prof-conn-search-wrap" style={{ marginBottom: 20 }}>
+            <svg className="prof-conn-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              className="prof-conn-search"
+              type="text"
+              placeholder="Search connections by name or email…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {/* Connections list */}
+          <div style={{ maxHeight: 320, overflowY: 'auto', marginBottom: 20 }}>
+            {filteredConnections.length > 0 ? (
+              filteredConnections.map(conn => {
+                const userId = conn._id || conn.id;
+                const isSelected = selectedIds.has(userId);
+                const isInviting = invitingIds.includes(userId);
+                const wasInvited = invitedIds.has(userId);
+
+                return (
+                  <div
+                    key={userId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px',
+                      borderRadius: 8,
+                      marginBottom: 8,
+                      border: '1px solid #2d3748',
+                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                      cursor: wasInvited ? 'default' : 'pointer',
+                      opacity: wasInvited ? 0.6 : 1,
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => !wasInvited && handleToggle(userId)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => !wasInvited && handleToggle(userId)}
+                      disabled={wasInvited}
+                      style={{ marginRight: 12, cursor: wasInvited ? 'not-allowed' : 'pointer' }}
+                    />
+
+                    {/* Avatar */}
+                    {conn.avatar ? (
+                      <img
+                        src={conn.avatar}
+                        alt={conn.fullName || conn.name}
+                        style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 12, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: 12,
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 700
+                        }}
+                      >
+                        {(conn.fullName || conn.name || '?')[0].toUpperCase()}
+                      </div>
+                    )}
+
+                    {/* User info */}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, color: '#e2e8f0', fontWeight: 500 }}>
+                        {conn.fullName || conn.name}
+                      </p>
+                      {conn.location && (
+                        <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
+                          {conn.location}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Status indicator */}
+                    {wasInvited && (
+                      <span style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>✓ Invited</span>
+                    )}
+                    {isInviting && (
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Inviting...</span>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p style={{ color: '#94a3b8', textAlign: 'center', padding: 20 }}>
+                {connections.length === 0
+                  ? 'No connections yet. Make some friends first!'
+                  : 'No matching connections found'}
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="modal-actions" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 6,
+                border: '1px solid #3b82f6',
+                color: '#3b82f6',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 500
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleInvite}
+              disabled={selectedIds.size === 0 || isInviting}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 6,
+                backgroundColor: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                cursor: selectedIds.size > 0 && !isInviting ? 'pointer' : 'not-allowed',
+                fontSize: 14,
+                fontWeight: 500,
+                opacity: selectedIds.size > 0 && !isInviting ? 1 : 0.5
+              }}
+            >
+              {isInviting ? 'Inviting...' : `Send Invites (${selectedIds.size})`}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1140,16 +1397,49 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
   const [coverImgFile,   setCoverImgFile]   = useState(null);
   const [groupImg,       setGroupImg]       = useState('');
   const [groupImgFile,   setGroupImgFile]   = useState(null);
+  const [coverCropQueue, setCoverCropQueue] = useState([]);
+  const [coverCropIdx,   setCoverCropIdx]   = useState(0);
+  const [photoCropQueue, setPhotoCropQueue] = useState([]);
+  const [photoCropIdx,   setPhotoCropIdx]   = useState(0);
   const coverInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
   function handleCoverChange(e) {
     const f = e.target.files?.[0];
-    if (f) { setCoverImgFile(f); setCoverImg(URL.createObjectURL(f)); }
+    if (f) { setCoverCropQueue([f]); setCoverCropIdx(0); }
+    e.target.value = '';
   }
   function handlePhotoChange(e) {
     const f = e.target.files?.[0];
-    if (f) { setGroupImgFile(f); setGroupImg(URL.createObjectURL(f)); }
+    if (f) { setPhotoCropQueue([f]); setPhotoCropIdx(0); }
+    e.target.value = '';
+  }
+
+  function handleCoverCropComplete(croppedFile) {
+    setCoverImgFile(croppedFile);
+    setCoverImg(URL.createObjectURL(croppedFile));
+    setCoverCropQueue([]);
+    setCoverCropIdx(0);
+  }
+  function handlePhotoCropComplete(croppedFile) {
+    setGroupImgFile(croppedFile);
+    setGroupImg(URL.createObjectURL(croppedFile));
+    setPhotoCropQueue([]);
+    setPhotoCropIdx(0);
+  }
+  function handleCoverCropSkip() {
+    const original = coverCropQueue[coverCropIdx];
+    setCoverImgFile(original);
+    setCoverImg(URL.createObjectURL(original));
+    setCoverCropQueue([]);
+    setCoverCropIdx(0);
+  }
+  function handlePhotoCropSkip() {
+    const original = photoCropQueue[photoCropIdx];
+    setGroupImgFile(original);
+    setGroupImg(URL.createObjectURL(original));
+    setPhotoCropQueue([]);
+    setPhotoCropIdx(0);
   }
 
   function handleCreate() {
@@ -1209,12 +1499,18 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 
         {/* Cover + Group Photo */}
         <div className="cg-cover-section">
-          <div className="adm-cover">
-            <img
-              src={coverImg || 'https://picsum.photos/seed/cg-new-cover/1200/300'}
-              alt="Group cover"
-              className="adm-cover-img"
-            />
+          <div className="adm-cover" style={{ background: '#0d1424', position: 'relative' }}>
+            {coverImg ? (
+              <img
+                src={coverImg}
+                alt="Group cover"
+                className="adm-cover-img"
+              />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                <span style={{ fontSize: '24px', fontWeight: 600, color: '#94a3b8' }}>Social Platform</span>
+              </div>
+            )}
             <button className="gd-cover-back-btn" onClick={onBack} title="Back to Groups">
               <BackArrowIcon />
             </button>
@@ -1226,11 +1522,17 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
             {/* Centered profile photo overlapping cover bottom */}
             <div className="cg-photo-center">
               <div className="adm-group-photo-area">
-                <img
-                  src={groupImg || 'https://picsum.photos/seed/cg-new-gp/120/120'}
-                  alt="Group photo"
-                  className="adm-group-photo-img"
-                />
+                {groupImg ? (
+                  <img
+                    src={groupImg}
+                    alt="Group photo"
+                    className="adm-group-photo-img"
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: '#1a2744', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: '#94a3b8', fontSize: '32px', fontWeight: 700 }}>
+                    G
+                  </div>
+                )}
                 <button className="adm-edit-photo-btn" onClick={() => photoInputRef.current?.click()}>
                   <EditIcon />
                 </button>
@@ -1251,19 +1553,19 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
 
               <div className="cg-field">
                 <label className="cg-label">Group Name</label>
-                <input className="cg-input" placeholder="e.g. Design Systems Weekly" value={groupName} onChange={e => setGroupName(e.target.value)} maxLength={50} />
+                <input className="cg-input" value={groupName} onChange={e => setGroupName(e.target.value)} maxLength={50} />
                 <p className="cg-hint">Keep it short and descriptive. Max 50 characters.</p>
               </div>
 
               <div className="cg-field">
                 <label className="cg-label">Group Mission</label>
-                <input className="cg-input" placeholder="e.g. Empowering designers to build scalable systems" value={mission} onChange={e => setMission(e.target.value)} maxLength={100} />
+                <input className="cg-input" value={mission} onChange={e => setMission(e.target.value)} maxLength={100} />
                 <p className="cg-hint">A one-line purpose statement for your group. Max 100 characters.</p>
               </div>
 
               <div className="cg-field">
                 <label className="cg-label">Description</label>
-                <textarea className="cg-textarea" placeholder="What is this group about?" value={description} onChange={e => setDescription(e.target.value)} rows={5} />
+                <textarea className="cg-textarea" value={description} onChange={e => setDescription(e.target.value)} rows={5} />
               </div>
 
               <div className="cg-field">
@@ -1335,6 +1637,32 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
         </div>
 
       </div>
+
+      {/* Cover Image Cropper */}
+      {coverCropQueue.length > 0 && (
+        <ImageCropper
+          key={`cover-${coverCropIdx}`}
+          file={coverCropQueue[coverCropIdx]}
+          onSave={handleCoverCropComplete}
+          onSkip={handleCoverCropSkip}
+          onCancel={() => { setCoverCropQueue([]); setCoverCropIdx(0); }}
+          defaultAspect="landscape"
+          cropShape="rect"
+        />
+      )}
+
+      {/* Photo Image Cropper */}
+      {photoCropQueue.length > 0 && (
+        <ImageCropper
+          key={`photo-${photoCropIdx}`}
+          file={photoCropQueue[photoCropIdx]}
+          onSave={handlePhotoCropComplete}
+          onSkip={handlePhotoCropSkip}
+          onCancel={() => { setPhotoCropQueue([]); setPhotoCropIdx(0); }}
+          defaultAspect="square"
+          cropShape="round"
+        />
+      )}
     </div>
   );
 }
@@ -1386,7 +1714,7 @@ const GD_MEMBERS = [
   { id: 8, name: 'Nina Petrova',   title: 'Cloud Architect at Microsoft',   location: 'London, UK',        role: 'Member',    joined: 'Jun 2024', mutual: 3,  sharedAvatars: ['https://i.pravatar.cc/28?img=45','https://i.pravatar.cc/28?img=49'],                                   img: 'https://i.pravatar.cc/40?img=25', isFriend: true  },
 ];
 
-function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
+function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, onEventsClick, onCalendarClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick }) {
   const dispatch = useDispatch();
   const groupId = group?._id ?? group?.id;
   const { user: authUser } = useSelector(s => s.auth);
@@ -1394,8 +1722,9 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const rdxPosts   = useSelector(s => s.groups.groupPosts[groupId]   ?? null);
   const rdxMembers = useSelector(s => s.groups.groupMembers[groupId] ?? null);
 
-  const { postLikes, likingPostIds, pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
+  const { pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
   const [detailTab,        setDetailTab]        = useState('about');
+  const [aboutExpanded,    setAboutExpanded]    = useState(false);
   const [joinedLocal,      setJoinedLocal]      = useState(group.joined || false);
   const [pendingLocal,     setPendingLocal]     = useState(group.pending || false);
   const [createPostOpen,   setCreatePostOpen]   = useState(false);
@@ -1405,7 +1734,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const [showReportModal,  setShowReportModal]  = useState(false);
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
-  const [likePostLoading,  setLikePostLoading]  = useState({});
+  const [isReported,       setIsReported]       = useState(group?.reported ?? false);
   const [sharing,         setSharing]         = useState(false);
 
   const isJoining = joiningIds.includes(groupId);
@@ -1419,8 +1748,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
     // Socket listeners for real-time group updates
     const socket = io();
-    const roomId = `group:${groupId}`;
-    socket.emit('join-room', roomId);
+    socket.emit('join:group', { groupId });
 
     socket.on('group:new-post', (data) => {
       if (data.groupId === groupId) {
@@ -1436,19 +1764,22 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
     socket.on('group:post-liked', (data) => {
       if (data.groupId === groupId) {
-        dispatch({ type: 'comments/likePost/fulfilled', payload: { groupId, postId: data.postId, liked: true, likes: data.likes } });
+        dispatch({ type: 'comments/likePost/fulfilled', payload: { groupId, postId: data.postId, liked: true, likes: data.likesCount ?? data.likes } });
       }
     });
 
     socket.on('group:post-unliked', (data) => {
       if (data.groupId === groupId) {
-        dispatch({ type: 'comments/unlikePost/fulfilled', payload: { groupId, postId: data.postId, liked: false, likes: data.likes } });
+        dispatch({ type: 'comments/unlikePost/fulfilled', payload: { groupId, postId: data.postId, liked: false, likes: data.likesCount ?? data.likes } });
       }
     });
 
     socket.on('group:post-comment', (data) => {
       if (data.groupId === groupId) {
         dispatch(fetchGroupPosts({ groupId, page: 1 }));
+        if (data.postId && data.commentsCount > 0) {
+          dispatch(fetchComments({ groupId, postId: data.postId, page: 1, limit: 50 }));
+        }
       }
     });
 
@@ -1459,7 +1790,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     });
 
     return () => {
-      socket.emit('leave-room', roomId);
+      socket.emit('leave:group', { groupId });
       socket.off('group:new-post');
       socket.off('group:member-joined');
       socket.off('group:post-liked');
@@ -1470,10 +1801,24 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   }, [dispatch, groupId]);
 
   useEffect(() => {
+    if (group?.reported !== undefined) {
+      setIsReported(group.reported);
+    }
+  }, [group?.reported]);
+
+  useEffect(() => {
     if (rdxMembers) {
       setGdFriendIds(new Set(rdxMembers.filter(m => m.isFriend).map(m => m._id ?? m.id)));
     }
   }, [rdxMembers]);
+
+  // Auto-fetch comments for all posts when they load
+  useEffect(() => {
+    if (!rdxPosts || rdxPosts.length === 0 || !groupId) return;
+    rdxPosts.forEach(post => {
+      dispatch(fetchComments({ groupId, postId: post._id, page: 1, limit: 50 }));
+    });
+  }, [rdxPosts, groupId, dispatch]);
 
   const GROUP_REPORT_REASONS = [
     'Spam or misleading content',
@@ -1485,8 +1830,13 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
 
   function handleReportSubmit() {
     if (!reportSelected) return;
-    dispatch(reportGroup({ groupId, reason: reportSelected }));
-    setReportDone(true);
+    dispatch(reportGroup({ groupId, reason: reportSelected })).then((result) => {
+      if (reportGroup.fulfilled.match(result)) {
+        setIsReported(true);
+        setShowReportModal(false);
+      }
+      setReportDone(true);
+    });
   }
   function handleReportClose() {
     setShowReportModal(false);
@@ -1498,7 +1848,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
     setSharing(true);
     const groupName = group.name ?? 'Group';
     const groupUrl = `${window.location.origin}/groups/${groupId}`;
-    const shareText = `Check out "${groupName}" on Kick Analyst!`;
+    const shareText = `Check out "${groupName}" on Kink Catalyst!`;
 
     if (navigator.share) {
       navigator.share({
@@ -1548,6 +1898,18 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
   const myId = authUser?._id ?? authUser?.id;
   const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
   const isPrivate = group.privacy === 'private';
+  // A pending join request isn't membership yet — Posts, Members, and
+  // Report all stay locked until the group (or the admin, for private
+  // groups) actually admits this user.
+  const canViewMemberContent = (joinedLocal || isOwned) && !pendingLocal;
+
+  // Leaving the group (or a pending request reverting) while sat on a
+  // locked tab would otherwise strand the view there with no content.
+  useEffect(() => {
+    if (!canViewMemberContent && (detailTab === 'posts' || detailTab === 'members')) {
+      setDetailTab('about');
+    }
+  }, [canViewMemberContent, detailTab]);
 
   // Resolve admin name + avatar from members list (API returns admin as ID only)
   const adminId = group.admin?._id ?? group.admin;
@@ -1632,7 +1994,15 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
               <ShareIcon2 /> {sharing ? 'Sharing...' : 'Share'}
             </button>
             {!isOwned && (
-              <button className="gd-report-btn" onClick={() => setShowReportModal(true)}>Report</button>
+              <button
+                className="gd-report-btn"
+                onClick={() => setShowReportModal(true)}
+                disabled={isReported || !canViewMemberContent}
+                title={!canViewMemberContent ? 'Join this group to report it' : undefined}
+                style={{ opacity: (isReported || !canViewMemberContent) ? 0.6 : 1, cursor: (isReported || !canViewMemberContent) ? 'not-allowed' : 'pointer' }}
+              >
+                {isReported ? 'Reported' : 'Report'}
+              </button>
             )}
           </div>
         </div>
@@ -1645,8 +2015,22 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
       <div className="gd-tab-card">
       <div className="gd-tab-row">
         <button className={`gd-tab${detailTab === 'about'   ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('about')}>About</button>
-        <button className={`gd-tab${detailTab === 'posts'   ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('posts')}>Posts</button>
-        <button className={`gd-tab${detailTab === 'members' ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('members')}>Members</button>
+        <button
+          className={`gd-tab${detailTab === 'posts' ? ' gd-tab--active' : ''}${canViewMemberContent ? '' : ' gd-tab--locked'}`}
+          onClick={() => canViewMemberContent && setDetailTab('posts')}
+          disabled={!canViewMemberContent}
+          title={canViewMemberContent ? undefined : 'Join this group to see posts'}
+        >
+          Posts{!canViewMemberContent && <LockIcon />}
+        </button>
+        <button
+          className={`gd-tab${detailTab === 'members' ? ' gd-tab--active' : ''}${canViewMemberContent ? '' : ' gd-tab--locked'}`}
+          onClick={() => canViewMemberContent && setDetailTab('members')}
+          disabled={!canViewMemberContent}
+          title={canViewMemberContent ? undefined : 'Join this group to see members'}
+        >
+          Members{!canViewMemberContent && <LockIcon />}
+        </button>
       </div>
 
       {/* Body */}
@@ -1663,7 +2047,32 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     <span className="adm-about-icon adm-about-icon--blue"><InfoCircleIcon /></span>
                     <span className="adm-about-card-title">About this Group</span>
                   </div>
-                  <p className="adm-about-body">{group.description || 'No description provided for this group yet.'}</p>
+                  <p className="adm-about-body">
+                    {aboutExpanded || (group.description ?? '').length <= 300
+                      ? group.description
+                      : (group.description ?? '').slice(0, 300) + '…'
+                    }
+                    {(group.description ?? '').length > 300 && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={() => setAboutExpanded(!aboutExpanded)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#3b82f6',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'inline',
+                          }}
+                        >
+                          {aboutExpanded ? 'See less' : 'See more'}
+                        </button>
+                      </>
+                    )}
+                  </p>
                 </div>
 
                 <div className="adm-about-card">
@@ -1753,15 +2162,15 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
         {/* ── Posts tab ── */}
         {detailTab === 'posts' && (
           <div className="gd-main">
+          {!canViewMemberContent ? (
+            <div className="gd-locked-notice">
+              <LockIcon />
+              <p>Join this group to see and create posts.</p>
+            </div>
+          ) : (
+          <>
             {/* Create post compose box — only for members */}
-            {(joinedLocal || isOwned) && !pendingLocal && (
-              <div className="gd-compose-box" onClick={() => setCreatePostOpen(true)}>
-                <div className="gd-compose-avatar">
-                  {authUser?.profileImage
-                    ? <img src={authUser.profileImage} alt={authUser.name} className="gd-compose-av-img" />
-                    : <div className="gd-compose-av-placeholder">{(authUser?.name ?? 'U')[0].toUpperCase()}</div>
-                  }
-                </div>
+            <div className="gd-compose-box" onClick={() => setCreatePostOpen(true)}>
                 <div className="gd-compose-input-fake">
                   <span>Write something to the group...</span>
                 </div>
@@ -1775,8 +2184,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     Video
                   </button>
                 </div>
-              </div>
-            )}
+            </div>
 
             {rdxPosts === null && <p style={{ padding: 24, color: '#94a3b8' }}>Loading posts...</p>}
             {rdxPosts?.map(p => {
@@ -1790,7 +2198,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                 <div key={pid} className={`gd-post-wrapper ${isPinned ? 'pinned' : ''}`}>
                   {isPinned && <div className="gd-post-pinned-badge">📌 Pinned</div>}
                   <div className="gd-post-header">
-                    <PostCard post={p} />
+                    <PostCard post={p} groupId={groupId} />
                     <PostActionsMenu
                       isAuthor={isPostAuthor}
                       isAdmin={isOwned}
@@ -1810,34 +2218,28 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                       isPinning={isPinning}
                     />
                   </div>
-                  <div className="gd-post-actions">
-                    <LikeButton
-                      isLiked={postLikes[pid]?.liked ?? false}
-                      count={postLikes[pid]?.count ?? p.likes ?? 0}
-                      onLike={() => dispatch(likePost({ groupId, postId: pid }))}
-                      onUnlike={() => dispatch(unlikePost({ groupId, postId: pid }))}
-                      isLoading={likePostLoading[pid] ?? false}
-                    />
-                    <button className="gd-post-action-btn" onClick={() => {}}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                      {(p.comments?.length ?? 0) || 0}
-                    </button>
-                  </div>
-                  <CommentSection groupId={groupId} postId={pid} />
                 </div>
               );
             })}
             {rdxPosts?.length === 0 && (
               <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>
-                {(joinedLocal || isOwned) ? 'No posts yet. Be the first to post!' : 'Join this group to see and create posts.'}
+                No posts yet. Be the first to post!
               </p>
             )}
+          </>
+          )}
           </div>
         )}
 
         {/* ── Members tab ── */}
         {detailTab === 'members' && (
           <div className="gd-members-section">
+          {!canViewMemberContent ? (
+            <div className="gd-locked-notice">
+              <LockIcon />
+              <p>Join this group to see its members.</p>
+            </div>
+          ) : (
             <table className="adm-table">
               <thead>
                 <tr>
@@ -1862,7 +2264,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                   return (
                   <tr key={mid}>
                     <td>
-                      <div className="adm-member-cell">
+                      <div className="adm-member-cell" onClick={() => onUserClick?.(mid)} style={{ cursor: 'pointer' }}>
                         {m.img
                           ? <img src={m.img} alt={m.name} className="adm-member-avatar" />
                           : <div className="adm-member-avatar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>{initials(m.name ?? '')}</div>
@@ -1872,7 +2274,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                           {m.location && (
                             <span className="gd-member-location"><PinIcon /> {m.location}</span>
                           )}
-                          <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
+                          <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
                             <div className="prof-conn-shared-avatars">
                               {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                 <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -1889,23 +2291,28 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                     <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{normalizeRole(m.role)}</span></td>
                     <td>
                       <div className="adm-action-cell">
-                        {!isSelf && (isFriendOrRequested ? (
-                          <button
-                            className="prof-conn-btn prof-conn-btn--msg"
-                            onClick={() => {
-                              dispatch(startDM(mid));
-                              onMessagesClick?.();
-                            }}
-                          >Chat</button>
-                        ) : (
-                          <button
-                            className="prof-conn-btn prof-conn-btn--add"
-                            onClick={() => {
-                              dispatch(sendFriendRequest(mid));
-                              setGdFriendIds(s => new Set([...s, mid]));
-                            }}
-                          >Add Friend</button>
-                        ))}
+                        {!isSelf && (
+                          friendRequestIds.includes(mid) ? (
+                            <button className="prof-conn-btn prof-conn-btn--pending" disabled>
+                              Request Pending
+                            </button>
+                          ) : gdFriendIds.has(mid) ? (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--msg"
+                              onClick={() => {
+                                dispatch(startDM(mid));
+                                onMessagesClick?.();
+                              }}
+                            >Chat</button>
+                          ) : (
+                            <button
+                              className="prof-conn-btn prof-conn-btn--add"
+                              onClick={() => {
+                                dispatch(sendFriendRequest(mid));
+                              }}
+                            >Add Friend</button>
+                          )
+                        )}
                         {/* Only group admin can remove; cannot remove themselves or another admin */}
                         {isOwned && !isSelf && !isAdmin && (
                           <button
@@ -1920,6 +2327,7 @@ function GroupDetailPage({ group, onBack, onManage, onFeedClick, onEventsClick, 
                 })}
               </tbody>
             </table>
+          )}
           </div>
         )}
 
@@ -2194,6 +2602,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [showAdmin,      setShowAdmin]      = useState(false);
   const [showModeration, setShowModeration] = useState(false);
   const [showDetail,     setShowDetail]     = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [adminGroup,     setAdminGroup]     = useState(null);
   const [detailGroup,    setDetailGroup]    = useState(null);
   const [detailFromHome, setDetailFromHome] = useState(false);
@@ -2205,6 +2615,15 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
   }, [dispatch, hubTab, hubCat]);
+
+  // Handle user profile navigation
+  useEffect(() => {
+    if (showUserProfile && selectedUserId) {
+      // For now, just log - wire to ProfilePage navigation when available
+      console.log('Viewing user profile:', selectedUserId);
+      // TODO: Navigate to user profile page or show profile modal
+    }
+  }, [showUserProfile, selectedUserId]);
 
   // Search keyboard shortcut (Cmd/Ctrl + K)
   useEffect(() => {
@@ -2312,6 +2731,27 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     );
   }
 
+  if (showUserProfile && selectedUserId) {
+    return (
+      <UserProfilePage
+        userId={selectedUserId}
+        onBack={() => {
+          setShowUserProfile(false);
+          setSelectedUserId(null);
+        }}
+        onMessageUser={onMessagesClick}
+        onEventsClick={onEventsClick}
+        onEventsCreateClick={() => {}}
+        onGroupsClick={() => setShowUserProfile(false)}
+        onCoursesClick={onCoursesClick}
+        onLibraryClick={onLibraryClick}
+        onMinisitesClick={onMinisitesClick}
+        onUserClick={(userId) => setSelectedUserId(userId)}
+        onEventClick={() => {}}
+      />
+    );
+  }
+
   if (showDetail) {
     return (
       <GroupDetailPage
@@ -2323,6 +2763,11 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
           if (detailFromHome) onBack?.();
         }}
         onManage={() => { setAdminGroup(detailGroup); setShowDetail(false); setShowAdmin(true); }}
+        onUserClick={(userId) => {
+          setShowDetail(false);
+          setSelectedUserId(userId);
+          setShowUserProfile(true);
+        }}
         onFeedClick={onBack}
         onEventsClick={onEventsClick}
         onCalendarClick={onCalendarClick}
@@ -2384,7 +2829,9 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         {/* Group cards grid */}
         <div className="grp-hub-grid">
           {groupsLoading && (
-            <p className="grp-hub-empty">Loading groups...</p>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Loader inline />
+            </div>
           )}
           {!groupsLoading && displayGroups.map(g => {
             const gOwned = !!myId && (g.admin === myId || g.admin?._id === myId);

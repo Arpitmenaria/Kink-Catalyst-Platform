@@ -8,7 +8,7 @@ import EventsPage from './EventsPage';
 import MessagesPage from './MessagesPage';
 import GroupsPage from './GroupsPage';
 import CalendarPage from './CalendarPage';
-import CoursesPage from './CoursesPage';
+import EducationHubPage from './EducationHubPage';
 import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
 import UserProfilePage from './UserProfilePage';
@@ -249,7 +249,7 @@ export default function HomePage() {
             onMinisitesClick={() => setSection('minisites')}
           />
         ) : section === 'courses' ? (
-          <CoursesPage
+          <EducationHubPage
             onBack={() => setSection('feed')}
             onLibraryClick={() => setSection('library')}
             onEventsClick={() => setSection('events')}

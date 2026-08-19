@@ -2304,14 +2304,6 @@
 @media (max-width: 1300px) { .grp-hub-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 960px)  { .grp-hub-grid { grid-template-columns: repeat(2, 1fr); } }
 
-.grp-hub-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #4a5270;
-  font-size: 14px;
-  padding: 48px 0;
-}
-
 .grp-hub-empty-state {
   grid-column: 1 / -1;
   display: flex;
@@ -3344,6 +3336,28 @@
 .gd-tab:hover { color: #c8d0e0; }
 .gd-tab--active { color: #60a5fa; border-bottom-color: #2563eb; }
 
+.gd-tab--locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3a4260;
+  cursor: not-allowed;
+}
+.gd-tab--locked:hover { color: #3a4260; }
+.gd-tab--locked svg { flex-shrink: 0; }
+
+.gd-locked-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  color: #6b7a9e;
+  text-align: center;
+}
+.gd-locked-notice svg { width: 24px; height: 24px; opacity: 0.7; }
+.gd-locked-notice p { margin: 0; font-size: 14px; }
+
 /* Body grid */
 .gd-body {
   display: grid;
@@ -3361,27 +3375,29 @@
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   cursor: pointer;
   transition: border-color 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .gd-compose-box:hover { border-color: #3b82f6; }
-.gd-compose-box { display: flex; flex-direction: column; gap: 10px; }
-.gd-compose-avatar { display: flex; align-items: center; gap: 10px; width: 100%; }
-.gd-compose-av-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.gd-compose-av-placeholder {
-  width: 38px; height: 38px; border-radius: 50%; background: #3b82f6;
-  color: #fff; font-weight: 700; font-size: 15px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
 .gd-compose-input-fake {
-  flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 20px;
-  padding: 8px 16px; color: #64748b; font-size: 14px;
-  display: flex; align-items: center;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 20px;
+  padding: 10px 16px;
+  color: #64748b;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
 }
 .gd-compose-actions {
-  display: flex; gap: 8px; padding-left: 48px;
-  border-top: 1px solid #334155; padding-top: 10px; margin-top: 2px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #334155;
+  padding-top: 10px;
 }
 .gd-compose-btn {
   display: flex; align-items: center; gap: 6px;
@@ -3538,6 +3554,17 @@
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
+  /* Desktop-tuned 28-32px side padding ate most of a phone's width —
+     shrink it (leave padding-bottom above untouched). */
+  .cg-content,
+  .adm-content,
+  .mod-content,
+  .grp-hub-main {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 20px;
+  }
+
   /* Fixed-sidebar two-column layouts (content + a 260-320px side column)
      squeezed the main content to near-nothing on a phone — stack them. */
   .mod-two-col,
@@ -3552,4 +3579,238 @@
   .grp-hub-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .adm-stat-value { font-size: 22px; }
+
+  /* ── Group Hub header: tabs + Create button + tab strip ── */
+  .grp-hub-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .grp-hub-create-btn { justify-content: center; }
+  .grp-hub-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .grp-hub-tabs::-webkit-scrollbar { display: none; }
+
+  /* ── Cover banners + overlapping circular photo (shared by
+     Create Group page and Admin Dashboard) — desktop sizing was
+     tuned for a 220px banner and 120px photo. ── */
+  .adm-cover-section,
+  .cg-cover-section {
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+  .adm-cover { height: 150px; }
+  .adm-group-photo-area {
+    width: 84px;
+    height: 84px;
+    margin-top: -30px;
+    border-width: 3px;
+  }
+  .adm-edit-photo-btn { height: 30px; }
+  .cg-photo-center { bottom: -34px; }
+  .adm-edit-cover-btn {
+    padding: 6px 10px;
+    font-size: 11.5px;
+  }
+
+  /* Photo + name + action-button row — wrap instead of squeezing. */
+  .adm-profile-row {
+    padding: 0 16px 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .adm-title { font-size: 19px; }
+
+  /* ── Admin Dashboard: tab strip + search/filter bar ── */
+  .adm-table-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 16px 0;
+  }
+  .adm-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .adm-tabs::-webkit-scrollbar { display: none; }
+  .adm-tab { flex-shrink: 0; }
+
+  /* Members / Pending-requests / Reported-content tables — let them
+     scroll horizontally inside their card rather than crushing every
+     column (or forcing the whole page to scroll sideways). */
+  .adm-table-card,
+  .mod-reported-card {
+    overflow-x: auto;
+  }
+  .gd-members-section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .adm-table,
+  .mod-table {
+    min-width: 640px;
+  }
+  .adm-table-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .adm-pagination { flex-wrap: wrap; }
+
+  /* ── Community Moderation header ── */
+  .mod-header-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mod-save-btn { align-self: flex-start; }
+  .mod-title { font-size: 21px; }
+
+  /* ── Group Detail page ── */
+  .gd-cover { height: 160px; }
+  .gd-group-icon {
+    width: 76px;
+    height: 76px;
+    font-size: 22px;
+    margin-top: -32px;
+    border-width: 3px;
+  }
+  .gd-profile-row {
+    padding: 0 16px 16px;
+    gap: 12px;
+  }
+  .gd-title { font-size: 19px; }
+  .gd-header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .gd-tab-row {
+    padding: 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .gd-tab-row::-webkit-scrollbar { display: none; }
+  .gd-tab-card { margin: 0 16px 24px; }
+  .gd-body { padding: 16px 16px 32px; }
+
+  .grp-hub-empty-state { padding: 40px 16px; }
+}
+
+@media (max-width: 480px) {
+  /* Extra-small phones — a couple of remaining 2-column grids still
+     felt cramped once side padding dropped to 16px; go single-column. */
+  .grp-hub-grid,
+  .adm-stats-row,
+  .cg-privacy-grid,
+  .adm-about-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mod-title { font-size: 19px; }
+  .adm-title,
+  .gd-title { font-size: 18px; }
+  .adm-stat-value { font-size: 20px; }
+
+  .lgm-box { padding: 20px 18px 18px; }
+}
+
+/* ══════════════════════════════════════
+   Generic Modal Overlay & Content
+══════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: #0d1222;
+  border: 1px solid #1e2a42;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  width: 90vw;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #1e2a42;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #7c8fb0;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #1e2a42;
+  justify-content: flex-end;
 }

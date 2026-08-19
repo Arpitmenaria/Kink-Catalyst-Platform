@@ -20,6 +20,7 @@ import moderationReducer from './slices/moderationSlice';
 import memberManagementReducer from './slices/memberManagementSlice';
 import groupSettingsReducer from './slices/groupSettingsSlice';
 import reportingReducer from './slices/reportingSlice';
+import adminActionsReducer from './slices/adminActionsSlice';
 
 const store = configureStore({
   reducer: {
@@ -44,6 +45,7 @@ const store = configureStore({
     memberManagement: memberManagementReducer,
     groupSettings: groupSettingsReducer,
     reporting: reportingReducer,
+    adminActions: adminActionsReducer,
   },
 });
 

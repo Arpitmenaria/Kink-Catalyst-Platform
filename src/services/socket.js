@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 import { receiveMessage, markMessagesRead, setUserOnline, setUserOffline, fetchOnlineUsers, fetchConversations, syncMessages, groupMemberJoinedRemote, groupMemberLeftRemote, groupMemberRemovedRemote, groupDeletedRemote, groupUpdatedRemote } from '../store/slices/messagesSlice';
-import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated } from '../store/slices/eventsSlice';
+import { seatsUpdated, attendingUpdated, commentReceived, commentLikeUpdated, eventDeletedRemote } from '../store/slices/eventsSlice';
 import { fetchMe, updateFollowCounts, logout } from '../store/slices/authSlice';
 import { setFriendStatus, addIncomingRequest } from '../store/slices/usersSlice';
 import { setConnectionOnline, setConnectionOffline } from '../store/slices/profileSlice';
@@ -271,6 +271,19 @@ export function initSocket(token, store) {
 
   socket.on('event:comment_liked', data => {
     storeRef.dispatch(commentLikeUpdated(data));
+  });
+
+  // Admin deleted an event (room: event:<id>, plus the author's personal
+  // room). Drop it from every cached list right away; EventsPage reacts to
+  // eventDeletedNotice with a modal + redirect if this event is open.
+  socket.on('event:deleted', (data) => {
+    storeRef.dispatch(eventDeletedRemote(data));
+    storeRef.dispatch(showToast({
+      message: data.reason
+        ? `"${data.eventName}" was deleted by admin: ${data.reason}`
+        : `"${data.eventName}" was deleted by admin`,
+      type: 'info',
+    }));
   });
 
   // Real-time feed updates
