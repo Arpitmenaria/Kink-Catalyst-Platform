@@ -1,0 +1,58 @@
+.sam-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+.sam-modal {
+  background: #10131f; border: 1px solid #1e2338; border-radius: 14px;
+  width: 620px; max-width: 100%; max-height: 84vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  padding: 20px 22px 24px;
+}
+
+.sam-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sam-title { font-size: 17px; font-weight: 700; color: #e8ecf8; margin: 0 0 4px; }
+.sam-subtitle { font-size: 13px; color: #6b7a9a; margin: 0; }
+
+.sam-close {
+  background: none; border: none; color: #6b7a9a; cursor: pointer;
+  padding: 4px; border-radius: 6px; transition: background 0.15s, color 0.15s;
+}
+.sam-close:hover { background: #1a1f33; color: #e8ecf8; }
+
+.sam-state { padding: 40px 0; text-align: center; color: #6b7a9a; font-size: 14px; }
+.sam-state--error { color: #f87171; }
+
+.sam-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+}
+.sam-stat-card {
+  background: #0d1526; border: 1px solid #1a2540; border-radius: 12px;
+  padding: 16px;
+}
+.sam-stat-value { font-size: 24px; font-weight: 700; color: #e8ecf8; margin: 0 0 4px; }
+.sam-stat-label { font-size: 11px; letter-spacing: 0.04em; color: #6b7a9a; margin: 0; font-weight: 600; }
+
+.sam-chart-wrap { position: relative; }
+.sam-chart-svg { width: 100%; height: 220px; display: block; }
+.sam-chart-empty {
+  padding: 40px 0; text-align: center; color: #6b7a9a; font-size: 14px;
+}
+.sam-chart-axis-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: #6b7a9a; margin-top: 4px;
+}
+.sam-chart-tooltip {
+  margin-top: 10px; text-align: center;
+  font-size: 13px; color: #e8ecf8;
+  background: #0d1526; border: 1px solid #1a2540; border-radius: 8px;
+  padding: 6px 10px; display: inline-block;
+  position: relative; left: 50%; transform: translateX(-50%);
+}
+.sam-chart-tooltip strong { color: #3b82f6; }

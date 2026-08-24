@@ -68,13 +68,6 @@ function CommentSection({ groupId, postId, onCommentCountChange }) {
     <div className="comment-section">
       {/* Compose */}
       <div className="comment-compose">
-        <div className="comment-compose-avatar">
-          {authUser?.profileImage ? (
-            <img src={authUser.profileImage} alt={authUser.name} />
-          ) : (
-            <div className="comment-compose-placeholder">{(authUser?.name ?? 'U')[0].toUpperCase()}</div>
-          )}
-        </div>
         <div className="comment-compose-input-wrap">
           <input
             type="text"

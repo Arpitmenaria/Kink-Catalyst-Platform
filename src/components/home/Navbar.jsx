@@ -7,6 +7,8 @@ import { fetchNotifications, markNotificationsRead, markNotificationRead } from 
 import { fetchMyPostsCount } from '../../store/slices/postsSlice';
 import { disconnectSocket } from '../../services/socket';
 import { fetchAllUsers, acceptFriendRequest, rejectFriendRequest } from '../../store/slices/usersSlice';
+import { globalSearch } from '../../store/slices/searchSlice';
+import { acceptInvitation, rejectInvitation } from '../../store/slices/invitationsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 
 function BellIcon() {
@@ -51,6 +53,15 @@ function ChevronDownIcon() {
   );
 }
 
+function PinIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 3, position: 'relative', top: '-1px' }}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  );
+}
+
 function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
@@ -71,11 +82,12 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const { notifications, unreadCount } = useSelector((state) => state.notifications);
   const { myPostsTotal }       = useSelector((state) => state.posts);
   const { conversations }      = useSelector((state) => state.messages);
-  const { allUsers }           = useSelector((state) => state.users);
+  const { friendStatusMap } = useSelector((state) => state.users);
+  const { global: globalSearchResults } = useSelector((state) => state.search);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   // authUser/profile postsCount reflect the logged-in user; myPostsTotal (from
-  // /api/users/me/posts) is the accurate fallback â€” NOT state.posts, which is the
+  // /api/users/me/posts) is the accurate fallback — NOT state.posts, which is the
   // whole feed's posts across all users.
   const totalPosts       = authUser?.postsCount ?? profile?.postsCount ?? myPostsTotal;
   // Total Connections = accepted friend connections (NOT followers).
@@ -89,7 +101,6 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const [userOpen,   setUserOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
   const [respondingNotifId, setRespondingNotifId] = useState(null);
   const [respondedNotifActions, setRespondedNotifActions] = useState(() => new Map());
   const notifRef                    = useRef(null);
@@ -129,19 +140,26 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     return () => document.removeEventListener('mousedown', onOut);
   }, [searchOpen]);
 
-  // Handle search filtering
+  // Search the backend directly — filtering the locally cached `allUsers`
+  // (a single unparameterized /api/users/all fetch) silently missed anyone
+  // outside whatever page that endpoint returns by default.
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const query = searchQuery.toLowerCase();
-    const results = allUsers.filter(user =>
-      (user.name && user.name.toLowerCase().includes(query)) ||
-      (user._id && user._id.includes(query))
-    ).slice(0, 8); // Limit to 8 results
-    setSearchResults(results);
-  }, [searchQuery, allUsers]);
+    const query = searchQuery.trim();
+    if (!query) return;
+    const timer = setTimeout(() => {
+      dispatch(globalSearch({ q: query, page: 1, limit: 8 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, dispatch]);
+
+  const searchResults = searchQuery.trim()
+    ? globalSearchResults.users.map(u => ({
+        _id: u._id ?? u.id,
+        name: u.fullName ?? u.name ?? '',
+        avatar: u.avatar?.startsWith?.('http') ? u.avatar : '',
+        location: u.location ?? u.city ?? '',
+      }))
+    : [];
 
   function handleBell() {
     setNotifOpen(v => !v);
@@ -155,10 +173,9 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   function handleUserClick(userId) {
     setSearchQuery('');
     setSearchOpen(false);
-    setSearchResults([]);
     // Navigate to user profile using the callback from HomePage
     if (userId && onUserClick) {
-      console.log('ðŸ” [search] Navigating to user profile:', userId);
+      console.log('🔍 [search] Navigating to user profile:', userId);
       onUserClick(userId);
     }
   }
@@ -197,11 +214,45 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     }
   }
 
+  async function handleAcceptGroupInvite(n, nid) {
+    const invId = n.relatedInvitation?._id ?? n.relatedInvitation?.id ?? nid;
+    if (!invId || respondingNotifId) return;
+    setRespondingNotifId(nid);
+    try {
+      const result = await dispatch(acceptInvitation(invId));
+      if (acceptInvitation.fulfilled.match(result)) {
+        setRespondedNotifActions(prev => new Map(prev).set(nid, 'accepted'));
+        dispatch(showToast({ message: 'Joined group!', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload?.message || 'Failed to accept', type: 'error' }));
+      }
+    } finally {
+      setRespondingNotifId(null);
+    }
+  }
+
+  async function handleRejectGroupInvite(n, nid) {
+    const invId = n.relatedInvitation?._id ?? n.relatedInvitation?.id ?? nid;
+    if (!invId || respondingNotifId) return;
+    setRespondingNotifId(nid);
+    try {
+      const result = await dispatch(rejectInvitation(invId));
+      if (rejectInvitation.fulfilled.match(result)) {
+        setRespondedNotifActions(prev => new Map(prev).set(nid, 'declined'));
+        dispatch(showToast({ message: 'Invitation declined', type: 'info' }));
+      } else {
+        dispatch(showToast({ message: result.payload?.message || 'Failed to decline', type: 'error' }));
+      }
+    } finally {
+      setRespondingNotifId(null);
+    }
+  }
+
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
-        <span className="navbar-logo">Kink Analyst</span>
-        <div className="navbar-search-wrap" ref={searchRef} style={{ position: 'relative', marginLeft: '24px' }}>
+        <span className="navbar-logo">Kink Catalyst</span>
+        <div className="navbar-search-wrap" ref={searchRef}>
           <input
             type="text"
             placeholder="Search users"
@@ -209,17 +260,6 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
             onChange={handleSearchChange}
             onFocus={() => setSearchOpen(true)}
             className="navbar-search-input"
-            style={{
-              padding: '8px 12px',
-              borderRadius: '20px',
-              border: '1px solid #3b4556',
-              backgroundColor: '#1a202c',
-              color: '#d0d6ec',
-              width: '200px',
-              fontSize: '13px',
-              outline: 'none',
-              transition: 'all 0.2s',
-            }}
           />
           {searchOpen && searchResults.length > 0 && (
             <div className="navbar-search-dropdown">
@@ -241,7 +281,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                   <div className="navbar-search-info">
                     <p className="navbar-search-name">{user.name}</p>
                     {user.location && (
-                      <p className="navbar-search-location">ðŸ“ {user.location}</p>
+                      <p className="navbar-search-location"><PinIcon />{user.location}</p>
                     )}
                   </div>
                 </div>
@@ -299,7 +339,17 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
               {notifications.map((n, i) => {
                 const nid = n.id ?? n._id;
                 const respondedAction = respondedNotifActions.get(nid);
-                const isPendingRequest = n.type === 'friend_request' && !respondedAction;
+                // A friend_request notification only stays actionable while the
+                // real friendship status is still 'incoming' — once accepted/rejected
+                // (even in a prior session, before a reload) friendStatusMap reflects
+                // that from fetchAllUsers, so stale notifications don't re-show the buttons.
+                const senderId = n.actor?._id ?? n.actor?.id;
+                const senderFriendStatus = senderId ? friendStatusMap[senderId] : undefined;
+                const isPendingRequest = n.type === 'friend_request' && !respondedAction
+                  && senderFriendStatus !== 'connected' && senderFriendStatus !== 'none';
+                const isGroupInviteByText = n.text?.includes('invited you to join') || n.text?.includes('group');
+                const isPendingGroupInvite = (n.type === 'group_invitation' || n.relatedGroup || isGroupInviteByText) && !respondedAction;
+                console.log('Notif:', { type: n.type, text: n.text, hasGroup: !!n.relatedGroup, byText: isGroupInviteByText, pending: isPendingGroupInvite });
                 return (
                   <div
                     key={nid ?? i}
@@ -313,6 +363,10 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                       if (n.type === 'friend_request' || n.type === 'friend_request_accepted') {
                         // Navigate to Connections tab with Sent Requests view
                         onNavigateToConnections?.('sent-requests');
+                      } else if (n.type === 'group_invitation' && n.relatedGroup) {
+                        // Navigate to the group
+                        const gid = n.relatedGroup?._id ?? n.relatedGroup?.id;
+                        if (gid) window.location.hash = '#/group/' + gid;
                       } else if (n.relatedPost) {
                         // mention/comment/like notifications carry the post they refer to
                         onPostClick?.(n.relatedPost);
@@ -320,7 +374,7 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                     }}
                   >
                     <div className="navbar-notif-icon" style={{ background: '#3b82f622', color: '#3b82f6' }}>
-                      {n.emoji ?? 'ðŸ””'}
+                      {n.emoji ?? '🔔'}
                     </div>
                     <div className="navbar-notif-body">
                       <p className="navbar-notif-text">{n.text}</p>
@@ -345,9 +399,19 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                           </button>
                         </div>
                       )}
+                      {isPendingGroupInvite && (
+                        <div className="navbar-notif-actions" onClick={(e) => e.stopPropagation()}>
+                          <button type="button" className="navbar-notif-action navbar-notif-action--accept" disabled={respondingNotifId === nid} onClick={() => handleAcceptGroupInvite(n, nid)}>
+                            {respondingNotifId === nid ? '...' : 'Accept'}
+                          </button>
+                          <button type="button" className="navbar-notif-action navbar-notif-action--reject" disabled={respondingNotifId === nid} onClick={() => handleRejectGroupInvite(n, nid)}>
+                            {respondingNotifId === nid ? '...' : 'Reject'}
+                          </button>
+                        </div>
+                      )}
                       {respondedAction && (
                         <p className="navbar-notif-responded">
-                          {respondedAction === 'accepted' ? 'Request accepted' : 'Request declined'}
+                          {respondedAction === 'accepted' ? (n.type === 'group_invitation' ? 'Joined!' : 'Request accepted') : 'Declined'}
                         </p>
                       )}
                     </div>

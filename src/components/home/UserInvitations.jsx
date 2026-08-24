@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { io } from 'socket.io-client';
 import { fetchUserInvitations, acceptInvitation, rejectInvitation } from '../../store/slices/invitationsSlice';
 import './UserInvitations.css';
 
 function UserInvitations() {
   const dispatch = useDispatch();
+  const { user: authUser } = useSelector(s => s.auth);
   const {
     userInvitations,
     userInvitationsLoading,
@@ -15,7 +17,28 @@ function UserInvitations() {
 
   useEffect(() => {
     dispatch(fetchUserInvitations());
-  }, [dispatch]);
+
+    // Socket.io listener for real-time invitations
+    const socket = io();
+    const userId = authUser?._id || authUser?.id;
+
+    if (userId) {
+      // Join user room for personal notifications
+      socket.emit('join:user', { userId });
+
+      // Listen for new group invitations (real-time)
+      socket.on('notification:new-invite', (data) => {
+        console.log('📬 New group invite received:', data);
+        // Refresh invitations list
+        dispatch(fetchUserInvitations());
+      });
+
+      return () => {
+        socket.emit('leave:user', { userId });
+        socket.off('notification:new-invite');
+      };
+    }
+  }, [dispatch, authUser]);
 
   if (userInvitationsLoading && userInvitations.length === 0) {
     return (

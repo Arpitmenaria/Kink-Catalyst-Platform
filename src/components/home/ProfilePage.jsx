@@ -16,6 +16,7 @@ import { fetchEvents } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
+import Loader from '../Loader';
 import { CustomDatePicker } from './DateTimePicker';
 import ImageCropper from './ImageCropper';
 import { apiRequest } from '../../services/api';
@@ -97,7 +98,7 @@ function SuggLocationIcon() {
 
 function FriendSuggestionsPanel({ onUserClick }) {
   const dispatch   = useDispatch();
-  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap, followingIds, allUsers, allUsersLoading } = useSelector(s => s.users);
+  const { suggestions, dismissedIds: reduxDismissed, friendStatusMap, followingIds, allUsers, allUsersLoading, blockedUserIds } = useSelector(s => s.users);
 
   const [poppingIds, setPoppingIds] = useState(new Set());
   const [removingIds, setRemovingIds] = useState(new Set());
@@ -140,7 +141,10 @@ function FriendSuggestionsPanel({ onUserClick }) {
     }, 380);
   }
 
-  const visible = suggestions.filter(f => !reduxDismissed.includes(f.id ?? f._id));
+  const visible = suggestions.filter(f => {
+    const id = f.id ?? f._id;
+    return !reduxDismissed.includes(id) && !blockedUserIds.includes(id);
+  });
 
   return (
     <div className="prof-conn-suggestions">
@@ -174,7 +178,15 @@ function FriendSuggestionsPanel({ onUserClick }) {
               </div>
               <div className="prof-sugg-info">
                 <p className="prof-sugg-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(id)}>{f.name}</p>
-                {sub && <p className="prof-sugg-sub" style={{ margin: '-7px 0 0 0' }}>{hasMutual ? <MutualIcon /> : <SuggLocationIcon />}{sub}</p>}
+                {sub && (
+                  <p
+                    className="prof-sugg-sub"
+                    style={{ margin: '-7px 0 0 0', cursor: hasMutual ? 'pointer' : 'default' }}
+                    onClick={hasMutual ? () => onUserClick?.(id) : undefined}
+                  >
+                    {hasMutual ? <MutualIcon /> : <SuggLocationIcon />}{sub}
+                  </p>
+                )}
               </div>
             </div>
             <div className="prof-sugg-actions">
@@ -197,7 +209,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
       })}
       {showAll && (
         <AllSuggestionsModal
-          suggestions={allUsers}
+          suggestions={allUsers.filter(u => !blockedUserIds.includes(u.id ?? u._id))}
           loading={allUsersLoading}
           friendStatusMap={friendStatusMap}
           followingIds={followingIds}
@@ -215,7 +227,7 @@ function FriendSuggestionsPanel({ onUserClick }) {
 export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   const dispatch = useDispatch();
   const { connections, connectionsTotal } = useSelector(s => s.profile);
-  const { friendRequests, blockedUsersList, blockedUsersListLoading, blockingId } = useSelector(s => s.users);
+  const { friendRequests, blockedUsersList, blockedUsersListLoading, blockingId, blockedUserIds } = useSelector(s => s.users);
 
   const [viewMode,  setViewMode]  = useState('list');
   const [search,    setSearch]    = useState('');
@@ -288,6 +300,7 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
   }
 
   const visible = connections.filter(c =>
+    !blockedUserIds.includes(c.id ?? c._id) &&
     c.name.toLowerCase().includes(search.toLowerCase()) &&
     (!filterLoc || c.location === filterLoc) &&
     (!filterInd || c.industry === filterInd)
@@ -587,6 +600,9 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           {visible.length === 0 && search && (
             <p className="prof-conn-empty">No connections found for "{search}"</p>
           )}
+          {visible.length === 0 && !search && (
+            <p className="prof-conn-empty">No Connections</p>
+          )}
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
               <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
@@ -663,6 +679,9 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         <div className="prof-conn-grid">
           {visible.length === 0 && search && (
             <p className="prof-conn-empty">No connections found for "{search}"</p>
+          )}
+          {visible.length === 0 && !search && (
+            <p className="prof-conn-empty">No Connections</p>
           )}
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">
@@ -1809,6 +1828,11 @@ export default function ProfilePage({
     onViewStateChange?.({ tab: activeTab });
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Refetch profile when following count changes (Redux updates)
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [reduxFollowingIds, dispatch]);
+
   // Socket listeners for real-time follower/following count updates
   useEffect(() => {
     const socket = getSocket();
@@ -2128,28 +2152,27 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             </div>
             <div className="fp-list">
               {listLoading && list.length === 0 && (
-                <div className="fp-loading">
-                  <span className="fp-spinner" />
-                  <p style={{ margin: 0 }}>Loading {followPanel}…</p>
-                </div>
+                <Loader inline />
               )}
               {!listLoading && list.length === 0 && <p className="fp-empty">No results found</p>}
-              {list.map(person => (
+              {list.map(person => {
+                const personName = person.fullName || person.name || 'Unknown User';
+                return (
                 <div className="fp-person" key={person.id}>
                   {person.avatar?.startsWith?.('http')
-                    ? <img className="fp-avatar" style={{ cursor: 'pointer' }} src={person.avatar} alt={person.name} onClick={() => onUserClick?.(person.id)} />
+                    ? <img className="fp-avatar" style={{ cursor: 'pointer' }} src={person.avatar} alt={personName} onClick={() => onUserClick?.(person.id)} />
                     : (
                       <div
                         className="fp-avatar"
                         style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16, flexShrink: 0, cursor: 'pointer' }}
                         onClick={() => onUserClick?.(person.id)}
                       >
-                        {initials(person.name)}
+                        {initials(personName)}
                       </div>
                     )
                   }
                   <div className="fp-info">
-                    <span className="fp-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(person.id)}>{person.name}</span>
+                    <span className="fp-name" style={{ cursor: 'pointer' }} onClick={() => onUserClick?.(person.id)}>{personName}</span>
                     <span className="fp-role">{person.role}</span>
                     {person.mutual > 0 && (
                       <span className="fp-mutual">
@@ -2179,7 +2202,8 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
                     {followingIds.has(person.id) ? 'Following' : '+ Follow'}
                   </button>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         </div>

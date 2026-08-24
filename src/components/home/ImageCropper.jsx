@@ -9,9 +9,10 @@ const ASPECT_PRESETS = [
   { id: 'square',    label: '1:1'       },
   { id: 'portrait',  label: '4:5'       },
   { id: 'landscape', label: '16:9'      },
+  { id: 'cover',     label: '2:1'       },
 ];
 
-const ASPECT_VALUES = { square: 1, portrait: 4 / 5, landscape: 16 / 9 };
+const ASPECT_VALUES = { square: 1, portrait: 4 / 5, landscape: 16 / 9, cover: 2 };
 
 function ZoomOutIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>;

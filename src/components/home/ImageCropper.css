@@ -1,7 +1,10 @@
 .imgcrop-overlay {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  /* Must clear every full-screen host page that can open this cropper —
+     CreateNewSitePage and GroupsPage both use z-index:1000, which put the
+     cropper modal behind them (opened fine in the DOM, just invisible). */
+  z-index: 2000;
   background: rgba(0, 0, 0, 0.78);
   display: flex;
   align-items: center;

@@ -163,33 +163,6 @@
 .msg-list::-webkit-scrollbar-track { background: transparent; }
 .msg-list::-webkit-scrollbar-thumb { background: #1e2238; border-radius: 4px; }
 
-/* Conversation list — loading state */
-.msg-list-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 56px 24px;
-  text-align: center;
-}
-.msg-list-loading p {
-  margin: 0;
-  font-size: 13px;
-  color: #5c6a8c;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.msg-spinner {
-  width: 26px;
-  height: 26px;
-  border: 2.5px solid #1e2238;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: msg-spin 0.7s linear infinite;
-}
-@keyframes msg-spin { to { transform: rotate(360deg); } }
-
 /* Conversation list — empty state */
 .msg-list-empty {
   display: flex;
@@ -1265,6 +1238,7 @@
   font-weight: 700;
   color: #e0e6f8;
   margin: 6px 0 0;
+  line-height: 1.2;
   text-align: center;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
@@ -1272,7 +1246,8 @@
 .msg-contact-location {
   font-size: 11.5px;
   color: #5c6a8c;
-  margin: 0px 0 0;
+  margin: 2px 0 0;
+  line-height: 1.2;
   text-align: center;
   font-family: 'Plus Jakarta Sans', sans-serif;
   display: flex;

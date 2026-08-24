@@ -1,0 +1,135 @@
+.pub-site-page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.pub-site-footer {
+  text-align: center;
+  padding: 14px;
+  font-size: 12px;
+  color: #94a3b8;
+  background: #0d1526;
+}
+
+.pub-site-state {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  background: #060a15;
+  color: #e5e9f5;
+  padding: 24px;
+}
+
+.pub-site-state h1 {
+  font-size: 22px;
+  margin: 4px 0;
+}
+
+.pub-site-state p {
+  color: #7c8aab;
+  font-size: 14px;
+  margin: 0;
+}
+
+.pub-site-state-icon {
+  display: inline-flex;
+  color: #7c8aab;
+  margin-bottom: 8px;
+}
+
+.pub-site-password-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #0d1526;
+  border: 1px solid #1a2540;
+  border-radius: 16px;
+  padding: 40px 32px;
+  max-width: 340px;
+  width: 100%;
+}
+
+.pub-site-password-input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #1a2540;
+  background: #060a15;
+  color: #e5e9f5;
+  font-size: 14px;
+}
+
+.pub-site-password-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.pub-site-password-error {
+  color: #f87171 !important;
+  font-size: 13px !important;
+}
+
+.pub-site-password-submit {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pub-site-password-submit:hover:not(:disabled) { background: #2563eb; }
+.pub-site-password-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Responsive ──
+   The actual site content (nav/hero/gallery/etc.) is rendered by
+   WebsitePreview using the .wp-* classes defined in SiteBuilderPage.css
+   (shared across the builder canvas and this standalone page) — its mobile
+   rules live there. These rules cover what's actually defined in this file:
+   the wrapper, footer, and the loading/not-found/private/password-gate
+   states a visitor can land on before (or instead of) the site itself. */
+@media (max-width: 700px) {
+  .pub-site-page {
+    overflow-x: hidden;
+  }
+
+  .pub-site-state {
+    padding: 20px;
+  }
+
+  .pub-site-state h1 {
+    font-size: 19px;
+  }
+
+  .pub-site-password-card {
+    padding: 32px 22px;
+    border-radius: 14px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .pub-site-state-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .pub-site-password-card {
+    padding: 26px 18px;
+  }
+
+  .pub-site-footer {
+    font-size: 11px;
+    padding: 12px;
+  }
+}

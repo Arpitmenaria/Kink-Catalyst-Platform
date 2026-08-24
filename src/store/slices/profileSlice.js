@@ -28,7 +28,8 @@ function normalizeConnection(c) {
 function normalizePerson(p) {
   return {
     id:        p.id ?? p._id,
-    name:      p.name ?? '',
+    name:      p.fullName ?? p.name ?? '',
+    fullName:  p.fullName ?? p.name ?? '',
     role:      p.role ?? '',
     avatar:    p.avatar?.startsWith?.('http') ? p.avatar : '',
     mutual:    p.mutualCount ?? 0,

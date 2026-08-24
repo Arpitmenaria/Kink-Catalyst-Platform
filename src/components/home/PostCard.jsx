@@ -6,6 +6,7 @@ import {
   deletePost, reportPost, addCommentRealtime,
   editComment, deleteComment, editReply, deleteReply,
 } from '../../store/slices/postsSlice';
+import { createComment as createGroupComment, fetchComments as fetchGroupComments } from '../../store/slices/commentsSlice';
 import { blockUser } from '../../store/slices/usersSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import ReportModal from './ReportModal';
@@ -189,11 +190,12 @@ function normalizeComment(c) {
   };
 }
 
-export default function PostCard({ post, onUserClick }) {
+export default function PostCard({ post, onUserClick, groupId }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
   const { connections, profile } = useSelector(s => s.profile);
+  const groupComments = groupId ? useSelector(s => s.comments.commentsByPost[post._id] ?? []) : [];
   // Logged-in user's avatar for the comment composer (profile is the freshest
   // source; auth.user is the fallback right after login).
   const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
@@ -442,7 +444,7 @@ export default function PostCard({ post, onUserClick }) {
   }
 
   const likeCount    = isStatic ? post.likes    : (post.likesCount ?? post.likes?.length ?? 0);
-  const commentCount = isStatic ? post.comments : (post.commentsCount ?? post.comments?.length ?? 0);
+  const commentCount = groupId ? groupComments.length : (isStatic ? post.comments : (post.commentsCount ?? post.comments?.length ?? 0));
   const shareCount   = isStatic ? post.shares   : (post.shares?.length   ?? 0);
   const recentReactors = isStatic ? [] : (post.recentReactors ?? []);
 
@@ -456,7 +458,7 @@ export default function PostCard({ post, onUserClick }) {
   const isCommenting = isStatic ? false : commentingId === post._id;
   const commentsLoading = !isStatic && commentsLoadingIds.includes(post._id);
 
-  const realComments = (post.comments ?? [])
+  const realComments = (groupId ? groupComments : (post.comments ?? []))
     .map(normalizeComment)
     .filter(Boolean)
     .filter(c => !c.deleted);
@@ -502,11 +504,12 @@ export default function PostCard({ post, onUserClick }) {
   // fetch the actual thread the first time this post's comments are opened.
   useEffect(() => {
     if (isStatic || !showComments || post.commentsLoaded) return;
-    // Nothing to fetch for a post with no comments — showing the empty state
-    // immediately (below) avoids a fetch that could leave the panel stuck.
-    if (commentCount === 0) return;
-    dispatch(fetchPostComments(post._id));
-  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, commentCount]);
+    if (groupId) {
+      dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
+    } else {
+      dispatch(fetchPostComments(post._id));
+    }
+  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId]);
 
   // Subscribe to real-time updates (comments, reactions) for this post
   useEffect(() => {
@@ -681,8 +684,15 @@ export default function PostCard({ post, onUserClick }) {
         mentions,
         pending: true, // Mark as pending so we can style differently if needed
       };
-      dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
-      dispatch(commentPost({ postId: post._id, text, mentions }));
+      if (groupId) {
+        dispatch(createGroupComment({ groupId, postId: post._id, text })).then(() => {
+          setShowComments(true);
+          dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
+        });
+      } else {
+        dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
+        dispatch(commentPost({ postId: post._id, text, mentions }));
+      }
       setComment('');
       setCommentMentions([]);
       setCommentDropdown(null);
@@ -974,12 +984,12 @@ export default function PostCard({ post, onUserClick }) {
             ))}
           </div>
           <div className="post-action-sep" />
-          <button className="post-action-btn" onClick={() => { if (commentCount > 0) setShowComments(v => !v); }}>
+          <button className="post-action-btn" onClick={() => setShowComments(v => !v)}>
             <CommentIcon /> Comment ({commentCount})
           </button>
           <div className="post-action-sep" />
           <button className="post-action-btn" onClick={handleShare} disabled={isSharing}>
-            <ShareIcon /> {shareCount > 1 ? 'Shares' : 'Share'} ({shareCount})
+            <ShareIcon /> Share
           </button>
         </div>
 

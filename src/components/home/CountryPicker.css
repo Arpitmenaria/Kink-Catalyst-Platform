@@ -1,0 +1,101 @@
+/* ── Country dropdown: search box + scrollable list, floats below the
+   .ev-cat-select-btn trigger (reuses that trigger's styling from EventsPage.css) ── */
+.ev-country-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  min-width: 240px;
+  background: #131726;
+  border: 1px solid #252d4a;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 60;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  animation: evVisDropdownIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* Flipped variant — trigger is too close to the bottom of the viewport for
+   the dropdown to fit opening downward, so it opens upward instead. */
+.ev-country-dropdown--up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.ev-country-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e2238;
+  color: #5c6a8c;
+}
+
+.ev-country-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #c8cfe0;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.ev-country-search-input::placeholder { color: #3e4460; }
+
+.ev-country-list {
+  max-height: 240px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.ev-country-empty {
+  padding: 14px 12px;
+  text-align: center;
+  color: #5c6a8c;
+  font-size: 12.5px;
+}
+
+/* ── Phone number: dial-code trigger button + number input side by side ── */
+.ev-phone-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ev-phone-wrap--error .ev-phone-code-btn,
+.ev-phone-wrap--error .ev-phone-number-input { border-color: #ef4444 !important; }
+
+.ev-phone-code-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: #0d1020;
+  border: 1px solid #1e2238;
+  border-radius: 8px;
+  padding: 10px 10px;
+  color: #c8cfe0;
+  font-size: 13.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  white-space: nowrap;
+}
+
+.ev-phone-code-btn:hover,
+.ev-phone-code-btn--open { border-color: #2d3a5e; }
+
+.ev-phone-number-input { flex: 1; min-width: 0; }
+
+.ev-phone-dropdown { min-width: 280px; }
+
+.ev-phone-dial-tag {
+  margin-left: auto;
+  color: #5c6a8c;
+  font-size: 12px;
+  flex-shrink: 0;
+}

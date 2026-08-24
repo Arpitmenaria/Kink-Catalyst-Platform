@@ -1,308 +1,1003 @@
-/* ═══════════════════════════════════════
-   LearningActivityPage
-═══════════════════════════════════════ */
-
-.la-page {
-  display: flex;
+.lap-page {
   width: 100%;
-  height: 100%;
-  position: relative;
-  background: #0b0d17;
-  overflow: hidden;
-  color: #e2e8f0;
-}
-
-/* ── Main content — shifts right when AnimatedNav expands ── */
-.la-main {
-  flex: 1;
-  margin-left: 72px;
-  overflow-y: auto;
-  transition: margin-left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 28px 32px 48px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+  color: #e0e6ed;
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  scrollbar-width: thin;
-  scrollbar-color: #1e2238 transparent;
 }
-.la-main::-webkit-scrollbar { width: 5px; }
-.la-main::-webkit-scrollbar-thumb { background: #1e2238; border-radius: 4px; }
 
-/* ── Welcome ── */
-.la-welcome-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #f1f5f9;
-  margin: 0 0 6px;
+.lap-main {
+  flex: 1;
+  padding: 40px 40px 40px 100px;
+  overflow-y: auto;
+  min-width: 0;
 }
-.la-welcome-sub {
+
+/* Tab Navigation */
+.lap-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.lap-tab {
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid transparent;
+  color: #8b95a5;
   font-size: 14px;
-  color: #64748b;
-  margin: 0;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
 }
 
-/* ── Outer two-column grid ── */
-.la-content-grid {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 20px;
-  align-items: start;
+.lap-tab:hover {
+  background: rgba(148, 163, 184, 0.15);
 }
 
-.la-left-col  { display: flex; flex-direction: column; gap: 20px; }
-.la-right-col { display: flex; flex-direction: column; gap: 16px; }
+.lap-tab--active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-color: transparent;
+}
 
-/* ── 3 stat cards row (inside left col) ── */
-.la-stats-row {
+/* Header Section with Stats */
+.lap-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 48px;
+  gap: 32px;
+}
+
+.lap-stats-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.la-stat-card {
-  background: #111827;
-  border: 1px solid #1e293b;
-  border-radius: 14px;
-  padding: 22px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  animation: laFadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
-}
-.la-stat-icon {
-  width: 46px; height: 46px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-}
-.la-stat-value {
-  font-size: 30px;
-  font-weight: 800;
-  color: #f1f5f9;
-  margin: 0;
-  line-height: 1;
-}
-.la-stat-label {
-  font-size: 12px;
-  color: #64748b;
-  margin: 0;
-}
-
-/* Achievements card */
-.la-achievements-card {
-  gap: 16px;
-}
-.la-achievements-heading {
-  font-size: 15px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin: 0;
-}
-.la-achievements-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
+  gap: 24px;
   flex: 1;
-  gap: 8px;
 }
-.la-achievement {
+
+.lap-stat {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lap-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+}
+
+.lap-stat-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.lap-stat-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
-.la-achievement-icon {
-  width: 60px; height: 60px;
-  border-radius: 50%;
-  background: #1e293b;
-  color: #475569;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid #1e293b;
-  transition: transform 0.2s;
-}
-.la-achievement--active .la-achievement-icon {
-  background: linear-gradient(135deg, #0e7490, #06b6d4);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 20px #06b6d430;
-}
-.la-achievement:hover .la-achievement-icon { transform: scale(1.07); }
-.la-achievement-label {
+
+.lap-stat-label {
   font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
-  text-align: center;
-}
-.la-achievement--active .la-achievement-label { color: #94a3b8; }
-
-
-/* Continue Learning */
-.la-continue-card {
-  background: #111827;
-  border: 1px solid #1e293b;
-  border-radius: 16px;
-  padding: 22px 24px;
-}
-.la-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.la-card-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-weight: 600;
+  color: #8b95a5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin: 0;
 }
-.la-view-all {
-  font-size: 13px;
-  color: #3b82f6;
-  font-weight: 500;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.15s;
-}
-.la-view-all:hover { color: #60a5fa; }
 
-.la-course-list { display: flex; flex-direction: column; }
-.la-course-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 18px 0;
-  border-bottom: 1px solid #1e293b;
-  animation: laFadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
-  animation-delay: calc(var(--li, 0) * 80ms);
-}
-.la-course-item:last-child { border-bottom: none; padding-bottom: 0; }
-
-.la-course-thumb {
-  width: 120px; height: 80px;
-  border-radius: 10px;
-  object-fit: cover;
-  flex-shrink: 0;
-  filter: brightness(0.82) saturate(0.7);
-}
-.la-course-body { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-
-.la-course-top-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.la-course-title {
-  font-size: 15px;
+.lap-stat-value {
+  font-size: 24px;
   font-weight: 700;
-  color: #f1f5f9;
-  margin: 0 0 4px;
-  line-height: 1.3;
+  color: #fff;
+  margin: 0;
 }
-.la-course-module { font-size: 12px; color: #64748b; margin: 0; }
-.la-course-pct { font-size: 13px; font-weight: 700; color: #06b6d4; white-space: nowrap; }
 
-.la-progress-track {
-  width: 100%; height: 5px;
-  background: #1e293b;
-  border-radius: 99px;
+.lap-create-course-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+}
+
+.lap-create-course-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.4);
+}
+
+/* Sections */
+.lap-section {
+  margin-bottom: 48px;
+}
+
+.lap-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.lap-publish-error {
+  margin: -12px 0 20px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lap-section-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
+}
+
+.lap-see-all,
+.lap-explore-all,
+.lap-view-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.lap-see-all:hover,
+.lap-explore-all:hover,
+.lap-view-link:hover {
+  color: #2563eb;
+}
+
+/* Courses Grid */
+.lap-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* Ongoing Course Card */
+.lap-course-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.lap-course-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+}
+
+.lap-course-img-wrapper {
+  position: relative;
+  width: 100%;
+  /* Matches the 2:1 crop the cover-image cropper produces (and the "1200x600"
+     upload guidance) — any other ratio here re-crops an already-cropped
+     banner, cutting off edge text like "ADVANCE ...COURSE". */
+  aspect-ratio: 2 / 1;
   overflow: hidden;
 }
-.la-progress-fill {
+
+.lap-course-img {
+  width: 100%;
   height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #0891b2, #06b6d4);
-  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  object-fit: cover;
 }
-.la-course-bottom-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+
+.lap-ongoing-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #10b981;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
 }
-.la-course-chapter { font-size: 12px; color: #64748b; margin: 0; }
-.la-play-btn {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: #3b82f6;
-  border: none;
+
+.lap-course-content {
+  padding: 20px;
+}
+
+.lap-course-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
   color: #fff;
-  display: flex; align-items: center; justify-content: center;
+}
+
+.lap-course-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin: 0;
+  background: rgba(245, 158, 11, 0.1);
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.lap-progress-section {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.lap-progress-label {
+  color: #8b95a5;
+}
+
+.lap-progress-pct {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.lap-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.lap-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.lap-resume-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.18s, transform 0.15s;
-}
-.la-play-btn svg {
-  transform: translateX(1px);
-}
-.la-play-btn:hover { background: #2563eb; transform: scale(1.08); }
-
-/* Favorites panel */
-.la-panel {
-  background: #111827;
-  border: 1px solid #1e293b;
-  border-radius: 16px;
-  padding: 22px 22px 20px;
-}
-.la-dots-btn {
-  width: 28px; height: 28px;
-  border-radius: 7px;
-  border: none; background: none;
-  color: #64748b; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s;
-}
-.la-dots-btn:hover { background: #1e293b; color: #94a3b8; }
-
-.la-fav-list { display: flex; flex-direction: column; gap: 12px; }
-.la-fav-item {
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #1e293b;
-  background: #0d1117;
+  justify-content: center;
+  gap: 6px;
+}
+
+.lap-resume-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Explore Card */
+.lap-explore-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
   cursor: pointer;
-  transition: border-color 0.18s, background 0.18s;
-}
-.la-fav-item:hover { border-color: #243049; background: #131a27; }
-.la-fav-icon {
-  width: 36px; height: 36px;
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.la-fav-title {
-  font-size: 13px; font-weight: 600; color: #e2e8f0;
-  margin: 0 0 3px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.la-fav-meta { font-size: 11px; color: #64748b; margin: 0; }
-
-/* ── Animation ── */
-@keyframes laFadeUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 960px) {
-  .la-content-grid { grid-template-columns: 1fr; }
-  .la-right-col    { flex-direction: row; }
+.lap-explore-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
 }
-@media (max-width: 680px) {
-  .la-stats-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .la-right-col { flex-direction: column; }
-  .la-main      { padding: 20px 16px 40px; }
+
+.lap-card-img-wrapper {
+  position: relative;
+  width: 100%;
+  /* Matches the 2:1 crop the cover-image cropper produces (and the "1200x600"
+     upload guidance) — any other ratio here re-crops an already-cropped
+     banner, cutting off edge text like "ADVANCE ...COURSE". */
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+}
+
+/* ── Favorites heart button + burst animation (matches Events page) ── */
+@keyframes lapHeartSpring {
+  0%   { transform: scale(1);    }
+  25%  { transform: scale(1.6);  }
+  55%  { transform: scale(0.85); }
+  78%  { transform: scale(1.15); }
+  100% { transform: scale(1);    }
+}
+
+@keyframes lapHeartParticle {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(0px, 0px) rotate(0deg) scale(1.1);
+  }
+  60% { opacity: 0.85; }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, -50px)) rotate(var(--rot, 0deg)) scale(0.1);
+  }
+}
+
+.lap-heart-burst-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+}
+
+.lap-heart-btn {
+  position: static;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(7, 11, 20, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  backdrop-filter: blur(4px);
+}
+.lap-heart-btn:hover { color: #f87171; }
+.lap-heart-btn--active { color: #f87171; }
+
+.lap-heart-btn--spring {
+  animation: lapHeartSpring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.lap-heart-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  z-index: 50;
+  animation: lapHeartParticle 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.lap-fav-count {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.lap-status-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.lap-status-badge--draft {
+  background: rgba(148, 163, 184, 0.9);
+  color: #0f172a;
+}
+
+.lap-status-badge--published {
+  background: #10b981;
+  color: white;
+}
+
+.lap-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lap-card-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 20px;
+}
+
+.lap-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0 0 6px 0;
+  color: #fff;
+  /* Reserve the same 2-line block regardless of actual title length, so
+     every card's meta/duration/buttons start at the same height. */
+  min-height: calc(15px * 1.35 * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lap-card-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.lap-instructor,
+.lap-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lap-instructor {
+  color: #8b95a5;
+}
+
+.lap-rating {
+  color: #f59e0b;
+}
+
+.lap-rating-count {
+  color: #8b95a5;
+  font-weight: 400;
+}
+
+.lap-enroll-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lap-enroll-btn:hover {
+  transform: translateY(-2px);
+}
+
+.lap-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.lap-card-actions .lap-enroll-btn {
+  flex: 1.3;
+}
+
+.lap-details-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148, 163, 184, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.lap-details-btn:hover {
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.lap-enroll-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lap-enroll-btn--enrolled {
+  background: #10b981;
+}
+
+/* Checkout modal */
+.lap-checkout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.lap-checkout-modal {
+  width: 100%;
+  max-width: 380px;
+  background: #131a29;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+}
+
+.lap-checkout-modal h3 {
+  margin: 0 0 6px 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.lap-checkout-sub {
+  color: #8b95a5;
+  font-size: 13px;
+  margin: 0 0 20px 0;
+}
+
+.lap-checkout-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.lap-checkout-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lap-checkout-error {
+  color: #ef4444;
+  font-size: 12px;
+  margin: -10px 0 16px 0;
+}
+
+.lap-checkout-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lap-checkout-primary-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lap-checkout-primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lap-checkout-secondary-btn {
+  background: transparent;
+  color: #8b95a5;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lap-checkout-success-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lap-checkout-success-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Filter Buttons */
+.lap-filter-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.lap-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lap-filter-btn:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.lap-filter-btn--active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Categories */
+.lap-categories {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.lap-category-btn {
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lap-category-btn:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.lap-category-btn--active {
+  background: white;
+  color: #0f1419;
+  border-color: white;
+}
+
+/* Resources Grid */
+.lap-resources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+.lap-resource-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.lap-resource-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+}
+
+.lap-resource-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.lap-resource-content {
+  padding: 20px;
+}
+
+.lap-resource-type {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.lap-resource-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 8px 0;
+  color: #fff;
+}
+
+.lap-resource-desc {
+  font-size: 13px;
+  color: #8b95a5;
+  margin: 0 0 16px 0;
+}
+
+.lap-resource-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lap-resource-category {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.lap-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px dashed rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+}
+
+.lap-empty-icon {
+  margin: 0 0 16px 0;
+  display: flex;
+  justify-content: center;
+  color: #4b5566;
+}
+
+.lap-empty-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.lap-empty-text {
+  font-size: 16px;
+  color: #8b95a5;
+  margin: 0 0 20px 0;
+}
+
+.lap-create-course-link {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lap-create-course-link:hover {
+  transform: translateY(-2px);
+}
+
+.lap-my-course-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.lap-my-course-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+}
+
+.lap-course-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin: 2px 0 12px 0;
+}
+
+.lap-students {
+  color: #8b95a5;
+}
+
+.lap-price {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.lap-course-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.lap-edit-btn,
+.lap-manage-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.lap-edit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.lap-edit-btn:hover {
+  transform: translateY(-2px);
+}
+
+.lap-manage-btn {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.lap-manage-btn:hover {
+  background: rgba(139, 92, 246, 0.25);
+}
+
+.lap-publish-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.lap-publish-btn--publish {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.lap-publish-btn--publish:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.lap-publish-btn--unpublish {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.lap-publish-btn--unpublish:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.lap-publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lap-header-section {
+    flex-direction: column;
+  }
+
+  .lap-courses-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lap-resources-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
   /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
-     reserved left margin and leave room at the bottom instead. */
-  .la-main {
-    margin-left: 0;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+     reserved left padding and leave room at the bottom instead. */
+  .lap-main {
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
   }
+
+  /* Tab strip can be tight against 3 labels on a narrow phone — let it
+     scroll horizontally instead of forcing the whole page to. */
+  .lap-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .lap-tabs::-webkit-scrollbar { display: none; }
+  .lap-tab { white-space: nowrap; flex-shrink: 0; }
+
+  .lap-header-section { margin-bottom: 32px; gap: 16px; }
+  .lap-section { margin-bottom: 32px; }
+  .lap-section-header h2 { font-size: 18px; }
+
+  .lap-create-course-btn { width: 100%; justify-content: center; }
+
+  /* Stacking the 3 stat cards full-width (one per row) burned a huge amount
+     of scroll before reaching any course content. Keep them as a compact
+     3-across row instead — icon-over-number-over-label, like a standard
+     mobile stat tile, rather than desktop's icon-beside-text layout. */
+  .lap-stats-container { gap: 8px; }
+  .lap-stat {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px 6px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+  .lap-stat-icon svg { width: 18px; height: 18px; }
+  .lap-stat-info { align-items: center; gap: 2px; }
+  .lap-stat-label { font-size: 8.5px; letter-spacing: 0.3px; }
+  .lap-stat-value { font-size: 17px; }
+}
+
+@media (max-width: 480px) {
+  .lap-checkout-modal { padding: 20px; }
+  .lap-empty-state { padding: 40px 16px; }
+  .lap-filter-buttons, .lap-categories { gap: 8px; }
+  .lap-filter-btn, .lap-category-btn { padding: 7px 12px; font-size: 12px; }
 }
